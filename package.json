@@ -1,0 +1,12 @@
+{
+  "name": "coed-football-2026",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "firebase": "^10.7.0"
+  },
+  "scripts": {
+    "dev": "npx serve src",
+    "build": "echo 'Static site, no build needed'"
+  }
+}
