@@ -4,7 +4,7 @@
     {
       "src": "api/*.js",
       "use": "@vercel/node"
-    }, 
+    },
     {
       "src": "src/index.html",
       "use": "@vercel/static"
@@ -18,16 +18,6 @@
     {
       "src": "/(.*)",
       "dest": "/src/index.html"
-    }
-  ],
-  "crons": [
-    {
-      "path": "/api/sync?action=live",
-      "schedule": "*/2 * * * *"
-    },
-    {
-      "path": "/api/sync?action=matches",
-      "schedule": "0 */6 * * *"
     }
   ]
 }
