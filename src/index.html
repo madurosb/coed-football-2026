@@ -1222,14 +1222,14 @@
       html += `
         <div class="match-card">
           <div class="match-meta">
-            <span class="group">${m.group || ''}</span>
+            <span class="group">${(m.group || '').replace(/_/g, ' ')}</span>
             <div class="match-timing">
-              <div class="kickoff">${kickoff.toLocaleDateString('he-IL', {day:'2-digit',month:'short'})} ${kickoff.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})} <span class="tz">(Israel time)</span></div>
-              <div class="deadline">Deadline: ${deadline.toLocaleDateString('he-IL',{day:'2-digit',month:'short'})} ${deadline.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'})} (Israel time)</div>
+              <div class="kickoff">${kickoff.toLocaleDateString('en-GB', {day:'2-digit',month:'short'})} ${kickoff.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})} <span class="tz">(Israel time)</span></div>
+              <div class="deadline">Deadline: ${deadline.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})} ${deadline.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})} (Israel time)</div>
             </div>
           </div>
           <div class="match-teams">
-            <div class="team"><span class="flag">${m.homeFlag || '🏳'}</span><span class="name">${m.homeTeam}</span></div>
+            <div class="team"><span class="flag">${m.homeFlag || ''}</span><span class="name">${m.homeTeam}</span></div>
             <div>
               <div class="vs">VS</div>
               <div class="score-inputs">
@@ -1238,7 +1238,7 @@
                 <input class="score-input" type="number" min="0" max="20" placeholder="0" id="away-${d.id}" ${isPast?'disabled':''}>
               </div>
             </div>
-            <div class="team"><span class="flag">${m.awayFlag || '🏳'}</span><span class="name">${m.awayTeam}</span></div>
+            <div class="team"><span class="flag">${m.awayFlag || ''}</span><span class="name">${m.awayTeam}</span></div>
           </div>
           <div class="match-bonus">
             <div class="bonus-row">
@@ -1273,23 +1273,57 @@
     });
   }
 
+  function launchConfetti(btn) {
+    const colors = ['#5DCAA5','#FFD700','#FF6B6B','#4ECDC4','#45B7D1','#96CEB4'];
+    const rect = btn.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    for (let i = 0; i < 30; i++) {
+      const el = document.createElement('div');
+      el.style.cssText = `position:fixed;width:8px;height:8px;border-radius:50%;pointer-events:none;z-index:9999;
+        background:${colors[Math.floor(Math.random()*colors.length)]};
+        left:${cx}px;top:${cy}px;`;
+      document.body.appendChild(el);
+      const angle = (Math.random() * 360) * Math.PI / 180;
+      const dist = 60 + Math.random() * 80;
+      const tx = Math.cos(angle) * dist;
+      const ty = Math.sin(angle) * dist;
+      el.animate([
+        {transform:'translate(-50%,-50%) scale(1)', opacity:1},
+        {transform:`translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(0)`, opacity:0}
+      ], {duration: 600 + Math.random()*400, easing:'ease-out'}).onfinish = () => el.remove();
+    }
+  }
+
   window.savePrediction = async (matchId, homeTeam, awayTeam) => {
     const homeScore = document.getElementById('home-' + matchId).value;
     const awayScore = document.getElementById('away-' + matchId).value;
     const firstScorer = document.getElementById('scorer-' + matchId).value;
     if (homeScore === '' || awayScore === '') return alert('Please enter both scores!');
-    await setDoc(doc(db, 'predictions', `${currentUser.uid}_${matchId}`), {
-      userId: currentUser.uid,
-      matchId,
-      homeScore: parseInt(homeScore),
-      awayScore: parseInt(awayScore),
-      firstScorer,
-      submittedAt: serverTimestamp()
-    });
     const btn = event.target;
-    btn.textContent = 'Saved!';
-    btn.classList.add('saved');
-    setTimeout(() => { btn.textContent = 'Save prediction'; btn.classList.remove('saved'); }, 2000);
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+    try {
+      await setDoc(doc(db, 'predictions', `${currentUser.uid}_${matchId}`), {
+        userId: currentUser.uid,
+        matchId,
+        homeScore: parseInt(homeScore),
+        awayScore: parseInt(awayScore),
+        firstScorer,
+        submittedAt: serverTimestamp()
+      });
+      btn.textContent = '✅ Saved!';
+      btn.classList.add('saved');
+      launchConfetti(btn);
+      setTimeout(() => {
+        btn.textContent = 'Save prediction';
+        btn.classList.remove('saved');
+        btn.disabled = false;
+      }, 2500);
+    } catch(e) {
+      btn.textContent = 'Error - try again';
+      btn.disabled = false;
+    }
   };
 
   window.saveTournamentPlayer = async () => {
