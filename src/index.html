@@ -182,7 +182,7 @@
     .dyk-card { background: var(--surface); border-radius: var(--radius-lg); padding: 1.75rem 1.5rem; width: 340px; max-width: 92vw; border: 0.5px solid var(--border); text-align: center; position: relative; animation: slideUp 0.3s ease; }
     .dyk-emoji { font-size: 48px; margin-bottom: 0.75rem; display: block; }
     .dyk-label { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: var(--green); text-transform: uppercase; margin-bottom: 0.5rem; }
-    .dyk-fact { font-size: 15px; line-height: 1.6; color: var(--text); margin-bottom: 1.25rem; font-weight: 400; }
+    .dyk-fact { font-size: 15px; line-height: 1.6; color: var(--text); margin-bottom: 1.25rem; font-weight: 400; white-space: pre-line; }
     .dyk-btn { width: 100%; padding: 10px; border-radius: var(--radius); border: none; background: var(--green); color: var(--green-light); font-size: 14px; font-weight: 500; cursor: pointer; }
     .dyk-close { position: absolute; top: 10px; right: 14px; background: none; border: none; font-size: 18px; color: var(--text-muted); cursor: pointer; line-height: 1; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -1622,26 +1622,26 @@
 
   // ========== DID YOU KNOW ==========
   const DYK_FACTS = [
-    { emoji: '🏟️', fact: 'Estadio Azteca in Mexico City will host its THIRD World Cup in 2026 — after 1970 and 1986. No other stadium has ever done this. It also hosted two World Cup finals. Absolute legend of a stadium.' },
-    { emoji: '🤏', fact: "Curaçao — an island with only 156,000 people — qualified for WC 2026! That's smaller than most cities. The USA has 330 million people, making them 2,115x more populous than their fellow tournament participants." },
-    { emoji: '⚡', fact: 'The fastest goal in World Cup history was scored by Turkey\'s Hakan Şükür — just 11 seconds into the match vs South Korea in 2002. His team won 3-2. He was basically done before most people found their seat.' },
-    { emoji: '👙', fact: 'In 1986, FIFA officially banned players from swapping shirts after games — because they didn\'t want players "baring their chests" on the pitch. The rule was quietly dropped later.' },
-    { emoji: '🦶', fact: 'India withdrew from the 1950 World Cup because FIFA refused to let them play BAREFOOT. Yes, barefoot. The Indian FA actually preferred no shoes. FIFA said no.' },
-    { emoji: '🍼', fact: 'When Germany hosted the 2006 World Cup and finished 3rd, the country\'s birth rate jumped 10% exactly 9 months later. Football is... a powerful motivator apparently.' },
-    { emoji: '📺', fact: 'An estimated 3.2 billion people — nearly half the world\'s population — watched the 2014 World Cup. That\'s more people than have ever watched literally anything else in human history.' },
-    { emoji: '🗺️', fact: 'WC 2026 will span 16 cities across 3 countries, with teams potentially travelling over 8,000km between matches. Vancouver to Mexico City is further than London to New York.' },
-    { emoji: '🤖', fact: 'WC 2026 will use AI-assisted offside tracking for the first time — meaning those millimetre offside calls will be made by robots. Human referees remain in charge... for now.' },
-    { emoji: '👴', fact: 'Roger Milla of Cameroon scored a goal at the 1994 World Cup aged 42. He celebrated by dancing around the corner flag. An icon. Absolute scenes.' },
-    { emoji: '🩲', fact: "Italy's Giuseppe Meazza scored a penalty at the 1938 World Cup semi-final while his shorts literally fell down mid-run. He scored anyway. The goalkeeper was apparently too distracted to save it." },
-    { emoji: '💰', fact: 'FIFA makes over $6 billion from each World Cup. The winning team gets $42 million. Even teams that don\'t make it out of the group stage pocket $10 million. Not bad for 3 games of football.' },
-    { emoji: '🏆', fact: 'The World Cup trophy is made of 18-carat gold — but winning teams don\'t actually get to keep it. They receive a gold-plated replica. The real trophy stays with FIFA forever.' },
-    { emoji: '🎯', fact: 'France\'s Just Fontaine scored 13 goals at the 1958 World Cup — still the record for a single tournament. He did it in just 6 games. That\'s over 2 goals per game. Obscene.' },
-    { emoji: '🌍', fact: 'Brazil has scored more total World Cup goals than any other nation. They\'ve also won it 5 times — more than anyone else. And they\'ve qualified for EVERY single World Cup. Every. Single. One.' },
-    { emoji: '📐', fact: 'Mexico City\'s Estadio Azteca sits over 2,200 metres above sea level — making it the highest altitude stadium in the 2026 tournament. Players from sea-level countries will feel it in their lungs.' },
-    { emoji: '🇺🇾', fact: 'The 1950 World Cup "final" between Brazil and Uruguay drew an estimated 200,000 fans in Rio — the largest crowd in football history. Uruguay won 2-1. Brazil still hasn\'t fully recovered emotionally.' },
-    { emoji: '😅', fact: 'This is the first World Cup since 1998 to be hosted by more than one nation. It\'s also the first ever co-hosted by THREE countries. Someone at FIFA clearly enjoys a logistical challenge.' },
-    { emoji: '⚽', fact: 'WC 2026 will feature 104 matches — up from 64 in Qatar 2022. That\'s 40 more games of football. Your boss is not going to be happy about your productivity in June-July 2026.' },
-    { emoji: '🧠', fact: 'Lionel Messi holds the record for most World Cup appearances ever — 26 games. He overtook Lothar Matthäus in 2022. And 2026 could be his last tournament. No pressure.' },
+    { emoji: '🏟️', fact: 'Estadio Azteca in Mexico City is hosting its THIRD World Cup in 2026, after 1970 and 1986.\n\nNo other stadium in history has ever done this.\n\nIt also hosted two World Cup finals. A true legend.' },
+    { emoji: '🤏', fact: 'Curacao qualified for WC 2026 with a population of just 156,000 people.\n\nThe USA has 330 million people, making them over 2,000x more populous than their fellow participants.\n\nSmallest nation ever to qualify.' },
+    { emoji: '⚡', fact: 'The fastest goal in World Cup history was scored by Turkey\'s Hakan Sukur.\n\nJust 11 seconds into the match against South Korea in 2002.\n\nHe was basically done before most fans found their seat.' },
+    { emoji: '🦶', fact: 'India withdrew from the 1950 World Cup because FIFA refused to let them play barefoot.\n\nYes, barefoot. The Indian FA genuinely preferred no shoes.\n\nFIFA said no. India went home.' },
+    { emoji: '🍼', fact: 'When Germany hosted and finished 3rd at the 2006 World Cup, the country\'s birth rate jumped 10% exactly 9 months later.\n\nFootball is a powerful motivator, apparently.' },
+    { emoji: '📺', fact: 'An estimated 3.2 billion people watched the 2014 World Cup.\n\nThat\'s nearly half the world\'s entire population tuning in.\n\nMore people than have ever watched anything else in human history.' },
+    { emoji: '🤖', fact: 'WC 2026 will use AI-assisted offside tracking for the first time.\n\nThose millimetre offside calls will be made by robots.\n\nHuman referees remain in charge... for now.' },
+    { emoji: '👴', fact: 'Roger Milla of Cameroon scored a goal at the 1994 World Cup at age 42.\n\nHe celebrated by dancing around the corner flag.\n\nAbsolute scenes.' },
+    { emoji: '🩲', fact: 'Italy\'s Giuseppe Meazza scored a penalty at the 1938 World Cup semi-final while his shorts literally fell down mid-run.\n\nHe scored anyway.\n\nThe goalkeeper was apparently too distracted to save it.' },
+    { emoji: '💰', fact: 'FIFA makes over $6 billion from each World Cup.\n\nThe winning team gets $42 million.\n\nEven teams knocked out in the group stage pocket $10 million. Not bad for 3 games of football.' },
+    { emoji: '🏆', fact: 'The World Cup trophy is made of 18-carat gold, but winning teams don\'t actually get to keep it.\n\nThey receive a gold-plated replica.\n\nThe real trophy stays with FIFA forever.' },
+    { emoji: '🎯', fact: 'France\'s Just Fontaine scored 13 goals at the 1958 World Cup. Still the record for a single tournament.\n\nHe did it in just 6 games.\n\nThat\'s over 2 goals per game.' },
+    { emoji: '🌍', fact: 'Brazil has scored more total World Cup goals than any other nation.\n\nThey have won it 5 times and qualified for every single World Cup ever held.\n\nEvery. Single. One.' },
+    { emoji: '📐', fact: 'Mexico City\'s Estadio Azteca sits over 2,200 metres above sea level.\n\nThe highest altitude stadium in the 2026 tournament.\n\nPlayers from sea-level countries will feel it in their lungs.' },
+    { emoji: '🇺🇾', fact: 'The 1950 World Cup match between Brazil and Uruguay drew an estimated 200,000 fans in Rio.\n\nThe largest crowd in football history.\n\nUruguay won 2-1. Brazil still hasn\'t fully recovered emotionally.' },
+    { emoji: '😅', fact: 'WC 2026 is the first World Cup co-hosted by three countries at the same time.\n\nTeams could potentially travel over 8,000km between matches.\n\nVancouver to Mexico City is further than London to New York.' },
+    { emoji: '⚽', fact: 'WC 2026 will feature 104 matches, up from 64 in Qatar 2022.\n\nThat\'s 40 extra games of football to watch.\n\nYour boss is not going to be happy about your productivity in June and July.' },
+    { emoji: '🧠', fact: 'Lionel Messi holds the record for most World Cup appearances ever with 26 games.\n\nHe overtook Lothar Matthaus in 2022.\n\n2026 is likely his last tournament. No pressure.' },
+    { emoji: '👙', fact: 'In 1986, FIFA banned players from swapping shirts after games because they didn\'t want players baring their chests on the pitch.\n\nThe rule was quietly dropped a few years later.\n\nThe shirt swap lives on.' },
+    { emoji: '🗺️', fact: 'WC 2026 spans 16 cities across 3 countries on 2 continents.\n\nIt\'s the biggest World Cup logistical operation in history.\n\nSomeone at FIFA really likes a challenge.' },
   ];
 
   function showDyk() {
