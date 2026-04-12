@@ -188,8 +188,8 @@
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     /* MUSIC TOOLTIP */
-    .music-tooltip { position: fixed; top: 58px; right: 12px; background: #1a1a1a; color: #fff; font-size: 13px; padding: 10px 14px; border-radius: 10px; z-index: 999; max-width: 200px; line-height: 1.4; text-align: center; animation: tooltipIn 0.4s ease; pointer-events: none; }
-    .music-tooltip::before { content: ''; position: absolute; top: -8px; right: 22px; border: 8px solid transparent; border-bottom-color: #1a1a1a; border-top: none; }
+    .music-tooltip { position: fixed; top: 58px; right: 60px; background: #1a1a1a; color: #fff; font-size: 13px; padding: 10px 14px; border-radius: 10px; z-index: 999; max-width: 200px; line-height: 1.4; text-align: center; animation: tooltipIn 0.4s ease; pointer-events: none; }
+    .music-tooltip::before { content: ''; position: absolute; top: -8px; right: 14px; border: 8px solid transparent; border-bottom-color: #1a1a1a; border-top: none; }
     @keyframes tooltipIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
@@ -1127,10 +1127,15 @@
   function showMusicTooltip() {
     const existing = document.getElementById('music-tooltip');
     if (existing) return;
+    const btn = document.getElementById('music-btn');
+    const rect = btn.getBoundingClientRect();
     const tip = document.createElement('div');
     tip.id = 'music-tooltip';
     tip.className = 'music-tooltip';
-    tip.textContent = '🎵 Vibing? Tap here to mute — we won\'t judge you.';
+    tip.textContent = '🔊 Your neighbors called. They said tap here.';
+    // Position below the button
+    tip.style.top = (rect.bottom + 10) + 'px';
+    tip.style.right = (window.innerWidth - rect.right - 10) + 'px';
     document.body.appendChild(tip);
     setTimeout(() => {
       tip.style.transition = 'opacity 0.5s';
