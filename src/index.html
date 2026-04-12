@@ -1141,6 +1141,7 @@
     loadHomeData();
     loadMatches();
     loadPrizes();
+    setTimeout(showDyk, 1500);
   }
 
   // SIGN IN
@@ -1665,7 +1666,7 @@
   window.closeDyk = closeDyk;
 
   // Show popup 1.5 seconds after login
-  setTimeout(showDyk, 1500);
+  // (called from onAuthStateChanged after user is confirmed logged in)
 </script>
 </body>
 </html>
