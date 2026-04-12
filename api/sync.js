@@ -1,21 +1,13 @@
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
-const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
-const TOURNAMENT_ID = 132;
-const BASE_URL = 'https://sportapi7.p.rapidapi.com/api/v1';
-
-const headers = {
-  'Content-Type': 'application/json',
-  'x-rapidapi-host': 'sportapi7.p.rapidapi.com',
-  'x-rapidapi-key': RAPIDAPI_KEY
-};
+const BALLDONTLIE_KEY = process.env.BALLDONTLIE_KEY;
+const BASE_URL = 'https://api.balldontlie.io/fifa/worldcup/v1';
+const headers = { 'Authorization': BALLDONTLIE_KEY };
 
 function getDb() {
   if (!getApps().length) {
-    initializeApp({
-      credential: cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT))
-    });
+    initializeApp({ credential: cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)) });
   }
   return getFirestore();
 }
@@ -26,102 +18,87 @@ async function fetchAPI(path) {
   return res.json();
 }
 
-function getFlag(alpha2) {
-  if (!alpha2) return '🏳';
+function getFlag(code) {
+  if (!code) return '🏳';
   const flags = {
     'US':'🇺🇸','MX':'🇲🇽','CA':'🇨🇦','BR':'🇧🇷','AR':'🇦🇷','FR':'🇫🇷',
-    'DE':'🇩🇪','ES':'🇪🇸','PT':'🇵🇹','GB':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','IT':'🇮🇹','NL':'🇳🇱',
+    'DE':'🇩🇪','ES':'🇪🇸','PT':'🇵🇹','EN':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','GB':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','IT':'🇮🇹','NL':'🇳🇱',
     'BE':'🇧🇪','HR':'🇭🇷','RS':'🇷🇸','JP':'🇯🇵','KR':'🇰🇷','AU':'🇦🇺',
     'MA':'🇲🇦','SN':'🇸🇳','NG':'🇳🇬','GH':'🇬🇭','CI':'🇨🇮','CM':'🇨🇲',
     'EG':'🇪🇬','SA':'🇸🇦','IR':'🇮🇷','QA':'🇶🇦','UY':'🇺🇾','CO':'🇨🇴',
     'PE':'🇵🇪','EC':'🇪🇨','PL':'🇵🇱','CH':'🇨🇭','DK':'🇩🇰','SE':'🇸🇪',
     'NO':'🇳🇴','CZ':'🇨🇿','AT':'🇦🇹','TR':'🇹🇷','UA':'🇺🇦','HU':'🇭🇺',
-    'RO':'🇷🇴','SK':'🇸🇰','AL':'🇦🇱','ME':'🇲🇪','MK':'🇲🇰','BA':'🇧🇦','SI':'🇸🇮'
+    'RO':'🇷🇴','SK':'🇸🇰','AL':'🇦🇱','SI':'🇸🇮','GE':'🇬🇪','VE':'🇻🇪',
+    'PA':'🇵🇦','TN':'🇹🇳','DZ':'🇩🇿','KE':'🇰🇪','ML':'🇲🇱','ZM':'🇿🇲',
+    'GT':'🇬🇹','HN':'🇭🇳','SV':'🇸🇻','CR':'🇨🇷','DO':'🇩🇴','TT':'🇹🇹',
+    'BO':'🇧🇴','CL':'🇨🇱','PY':'🇵🇾','NZ':'🇳🇿','CN':'🇨🇳','TH':'🇹🇭',
+    'ID':'🇮🇩','UZ':'🇺🇿','IQ':'🇮🇶','JO':'🇯🇴'
   };
-  return flags[alpha2.toUpperCase()] || '🏳';
+  return flags[code.toUpperCase()] || '🏳';
 }
 
-async function getSeason() {
-  try {
-    const data = await fetchAPI(`/unique-tournament/${TOURNAMENT_ID}/seasons`);
-    return data.seasons?.[0]?.id || 65360;
-  } catch {
-    return 65360;
-  }
-}
-
-async function syncMatches(db, seasonId) {
-  let allEvents = [];
-  try {
-    const past = await fetchAPI(`/unique-tournament/${TOURNAMENT_ID}/season/${seasonId}/events/last/0`);
-    allEvents = [...allEvents, ...(past.events || [])];
-  } catch(e) { console.log('No past events'); }
-  try {
-    const next = await fetchAPI(`/unique-tournament/${TOURNAMENT_ID}/season/${seasonId}/events/next/0`);
-    allEvents = [...allEvents, ...(next.events || [])];
-  } catch(e) { console.log('No next events'); }
-
-  for (const event of allEvents) {
-    const kickoff = new Date(event.startTimestamp * 1000);
+async function syncMatches(db) {
+  const data = await fetchAPI('/games');
+  const games = data.data || [];
+  for (const game of games) {
+    const kickoff = new Date(game.datetime || game.date);
     const israelTime = new Intl.DateTimeFormat('he-IL', {
       timeZone: 'Asia/Jerusalem', day:'2-digit', month:'2-digit',
       year:'numeric', hour:'2-digit', minute:'2-digit'
     }).format(kickoff);
-
-    await db.collection('matches').doc(String(event.id)).set({
-      sofascoreId: event.id,
-      homeTeam: event.homeTeam?.name || '',
-      awayTeam: event.awayTeam?.name || '',
-      homeFlag: getFlag(event.homeTeam?.country?.alpha2 || ''),
-      awayFlag: getFlag(event.awayTeam?.country?.alpha2 || ''),
-      kickoff: kickoff,
-      kickoffIsrael: israelTime,
-      group: event.roundInfo?.name || 'World Cup 2026',
-      status: event.status?.type || 'notstarted',
-      homeScore: event.homeScore?.current ?? null,
-      awayScore: event.awayScore?.current ?? null,
+    const home = game.home_team || {};
+    const away = game.away_team || {};
+    await db.collection('matches').doc(String(game.id)).set({
+      balldontlieId: game.id,
+      homeTeam: home.name || '',
+      awayTeam: away.name || '',
+      homeFlag: getFlag(home.abbreviation || ''),
+      awayFlag: getFlag(away.abbreviation || ''),
+      kickoff, kickoffIsrael: israelTime,
+      group: game.group_name || game.round || 'World Cup 2026',
+      status: game.status || 'scheduled',
+      homeScore: game.home_team_score ?? null,
+      awayScore: game.away_team_score ?? null,
+      homePlayers: [], awayPlayers: [],
       lastSynced: new Date()
     }, { merge: true });
   }
-  return allEvents.length;
+  return games.length;
 }
 
-async function syncLiveResults(db, seasonId) {
-  let liveEvents = [];
+async function syncLiveResults(db) {
+  let liveGames = [];
   try {
-    const data = await fetchAPI(`/unique-tournament/${TOURNAMENT_ID}/season/${seasonId}/events/live`);
-    liveEvents = data.events || [];
+    const data = await fetchAPI('/games?status=in_progress');
+    liveGames = data.data || [];
   } catch(e) { return 0; }
 
-  for (const event of liveEvents) {
-    const matchId = String(event.id);
-    const homeScore = event.homeScore?.current ?? null;
-    const awayScore = event.awayScore?.current ?? null;
-    const status = event.status?.type;
+  for (const game of liveGames) {
+    const matchId = String(game.id);
+    const homeScore = game.home_team_score ?? null;
+    const awayScore = game.away_team_score ?? null;
+    const status = game.status;
+    await db.collection('matches').doc(matchId).set({ status, homeScore, awayScore, lastSynced: new Date() }, { merge: true });
 
-    await db.collection('matches').doc(matchId).set({
-      status, homeScore, awayScore, lastSynced: new Date()
-    }, { merge: true });
-
-    if (status === 'finished') {
+    const finished = ['finished','ft','full_time','ended'].includes((status||'').toLowerCase());
+    if (finished) {
       const resultRef = db.collection('results').doc(matchId);
       const existing = await resultRef.get();
       if (!existing.exists || !existing.data()?.pointsCalculated) {
         let firstScorer = null;
         try {
-          const incidents = await fetchAPI(`/event/${event.id}/incidents`);
-          const goals = (incidents.incidents || [])
-            .filter(i => i.incidentType === 'goal' || i.incidentType === 'penalty')
-            .sort((a, b) => (a.time || 0) - (b.time || 0));
-          if (goals.length > 0) firstScorer = goals[0].player?.name || null;
-        } catch(e) { console.log('No incidents for', matchId); }
-
+          const eventsData = await fetchAPI(`/games/${game.id}/events`);
+          const goals = (eventsData.data || [])
+            .filter(e => e.type === 'goal' || e.type === 'penalty_goal')
+            .sort((a, b) => (a.minute || 0) - (b.minute || 0));
+          if (goals.length > 0) firstScorer = goals[0].player_name || null;
+        } catch(e) { console.log('No events for', matchId); }
         await calculatePoints(db, matchId, homeScore, awayScore, firstScorer);
         await resultRef.set({ homeScore, awayScore, firstScorer, pointsCalculated: true, calculatedAt: new Date() }, { merge: true });
       }
     }
   }
-  return liveEvents.length;
+  return liveGames.length;
 }
 
 async function calculatePoints(db, matchId, homeScore, awayScore, firstScorer) {
@@ -146,11 +123,10 @@ async function calculatePoints(db, matchId, homeScore, awayScore, firstScorer) {
       }
     }
   }
-
   // Tournament player goals
   try {
-    const incidents = await fetchAPI(`/event/${matchId}/incidents`);
-    const goals = (incidents.incidents || []).filter(i => i.incidentType === 'goal').map(i => i.player?.name).filter(Boolean);
+    const eventsData = await fetchAPI(`/games/${matchId}/events`);
+    const goals = (eventsData.data || []).filter(e => e.type === 'goal').map(e => e.player_name).filter(Boolean);
     if (goals.length > 0) {
       const usersSnap = await db.collection('users').get();
       for (const userDoc of usersSnap.docs) {
@@ -174,19 +150,14 @@ export default async function handler(req, res) {
   }
   try {
     const db = getDb();
-    const seasonId = await getSeason();
     const action = req.query.action || 'live';
     let result = { action, timestamp: new Date().toISOString() };
-
-    if (action === 'matches') {
-      result.synced = await syncMatches(db, seasonId);
-    } else if (action === 'live') {
-      result.live = await syncLiveResults(db, seasonId);
-    } else if (action === 'all') {
-      result.matches = await syncMatches(db, seasonId);
-      result.live = await syncLiveResults(db, seasonId);
+    if (action === 'matches') result.synced = await syncMatches(db);
+    else if (action === 'live') result.live = await syncLiveResults(db);
+    else if (action === 'all') {
+      result.matches = await syncMatches(db);
+      result.live = await syncLiveResults(db);
     }
-
     res.status(200).json({ success: true, ...result });
   } catch (err) {
     console.error(err);
