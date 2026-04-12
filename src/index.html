@@ -1247,16 +1247,25 @@
     document.getElementById('view-app').style.display = 'block';
     document.getElementById('user-handle').textContent = '@' + (currentUserData.nickname || currentUserData.displayName);
     const avatarEl = document.getElementById('user-avatar');
-    const av = getAvatarById(currentUserData.avatar);
-    if (av) {
-      avatarEl.innerHTML = makeAvatarSVG(av, 30);
+    const isAdmin = currentUserData.isAdmin || currentUser.email === ADMIN_EMAIL;
+    if (isAdmin) {
+      avatarEl.innerHTML = `<img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #00ff41;">`;
       avatarEl.style.background = 'none';
       avatarEl.style.padding = '0';
+      // Add admin badge next to handle
+      document.getElementById('user-handle').innerHTML = '@' + (currentUserData.nickname || currentUserData.displayName) + ' <span style="font-size:10px;background:#00ff41;color:#000;padding:1px 6px;border-radius:99px;font-weight:700;margin-left:4px;letter-spacing:0.05em;">ADMIN</span>';
     } else {
-      avatarEl.textContent = (currentUserData.nickname || currentUserData.displayName || '?').substring(0, 2).toUpperCase();
-      avatarEl.style.fontSize = '12px';
+      const av = getAvatarById(currentUserData.avatar);
+      if (av) {
+        avatarEl.innerHTML = makeAvatarSVG(av, 30);
+        avatarEl.style.background = 'none';
+        avatarEl.style.padding = '0';
+      } else {
+        avatarEl.textContent = (currentUserData.nickname || currentUserData.displayName || '?').substring(0, 2).toUpperCase();
+        avatarEl.style.fontSize = '12px';
+      }
     }
-    if (currentUserData.isAdmin || currentUser.email === ADMIN_EMAIL) {
+    if (isAdmin) {
       document.getElementById('admin-nav-btn').style.display = 'flex';
     }
     showPage('home');
@@ -1350,17 +1359,28 @@
     const container = document.getElementById(containerId);
     const header = '<div class="lb-row header"><div></div><div>Player</div><div style="text-align:center">Pts</div><div style="text-align:center">Exact</div><div style="text-align:center">Bonus</div></div>';
     const rows = users.map((u, i) => {
-      const av = getAvatarById(u.avatar);
-      const avatarHTML = av
-        ? `<div style="width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0;">${makeAvatarSVG(av, 36)}</div>`
-        : `<div class="avatar" style="background:${['#FAEEDA','#E6F1FB','#E1F5EE'][i]||'#f0f0f0'};color:${['#633806','#0C447C','#085041'][i]||'#333'};">${(u.nickname||u.displayName||'?').substring(0,2).toUpperCase()}</div>`;
+      let avatarHTML;
+      if (u.isAdmin) {
+        avatarHTML = `<div style="position:relative;width:36px;height:36px;flex-shrink:0;">
+          <img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #00ff41;">
+          <span style="position:absolute;top:-6px;right:-4px;font-size:12px;">👑</span>
+        </div>`;
+      } else {
+        const av = getAvatarById(u.avatar);
+        avatarHTML = av
+          ? `<div style="width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0;">${makeAvatarSVG(av, 36)}</div>`
+          : `<div class="avatar" style="background:${['#FAEEDA','#E6F1FB','#E1F5EE'][i]||'#f0f0f0'};color:${['#633806','#0C447C','#085041'][i]||'#333'};">${(u.nickname||u.displayName||'?').substring(0,2).toUpperCase()}</div>`;
+      }
+      const nameHTML = u.isAdmin
+        ? `${u.nickname||u.displayName} <span style="font-size:10px;background:#00ff41;color:#000;padding:1px 5px;border-radius:99px;font-weight:700;">ADMIN</span>`
+        : (u.nickname||u.displayName);
       return `
       <div class="lb-row">
         <div class="lb-rank ${medals[i] || ''}">${i + 1}</div>
         <div class="lb-user">
           ${avatarHTML}
           <div>
-            <div class="name">${u.nickname || u.displayName}</div>
+            <div class="name">${nameHTML}</div>
             <div class="handle">${u.email || ''}</div>
           </div>
         </div>
