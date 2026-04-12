@@ -975,7 +975,7 @@
   <div class="page" id="page-rules">
     <div class="rules-card">
       <h2>Scoring system</h2>
-      <div class="rule-row"><div><div class="rule-name">Correct winner</div><div class="rule-desc">You predicted the right team to win (or draw)</div></div><div class="rule-pts">+1 pt</div></div>
+      <div class="rule-row"><div><div class="rule-name">Correct result</div><div class="rule-desc">You predicted the right winner or correctly predicted a draw</div></div><div class="rule-pts">+1 pt</div></div>
       <div class="rule-row"><div><div class="rule-name">Exact score</div><div class="rule-desc">You got the exact final score right</div></div><div class="rule-pts">+3 pts</div></div>
       <div class="rule-row"><div><div class="rule-name">First goalscorer</div><div class="rule-desc">You predicted who scored the first goal in the match</div></div><div class="rule-pts">+2 pts</div></div>
       <div class="rule-row"><div><div class="rule-name">Tournament player goal</div><div class="rule-desc">Your chosen player scores a goal at any point in the tournament</div></div><div class="rule-pts">+1 pt per goal</div></div>
@@ -1483,7 +1483,8 @@
               </select>
             </div>
           </div>
-          ${!isPast ? `<button class="save-btn" onclick="savePrediction('${d.id}', '${m.homeTeam}', '${m.awayTeam}')">Save prediction</button>` : '<p style="font-size:12px;color:var(--text-muted);margin-top:0.75rem;text-align:center;">Deadline passed - predictions locked</p>'}
+          ${!isPast ? `<button class="save-btn" onclick="savePrediction('${d.id}', '${m.homeTeam}', '${m.awayTeam}')">Save prediction</button>` : `<p style="font-size:12px;color:var(--text-muted);margin-top:0.75rem;text-align:center;">${m.status === 'FINISHED' ? 'Match finished' : 'Deadline passed - predictions locked'}</p>`}
+          <div id="result-${d.id}"></div>
         </div>`;
     });
     container.innerHTML = html;
@@ -1492,16 +1493,73 @@
 
   async function loadExistingPredictions(matchesSnap) {
     matchesSnap.forEach(async (d) => {
+      const m = d.data();
       const predRef = doc(db, 'predictions', `${currentUser.uid}_${d.id}`);
       const predSnap = await getDoc(predRef);
-      if (predSnap.exists()) {
-        const pred = predSnap.data();
-        const homeEl = document.getElementById('home-' + d.id);
-        const awayEl = document.getElementById('away-' + d.id);
-        const scorerEl = document.getElementById('scorer-' + d.id);
-        if (homeEl) homeEl.value = pred.homeScore ?? '';
-        if (awayEl) awayEl.value = pred.awayScore ?? '';
-        if (scorerEl) scorerEl.value = pred.firstScorer || '';
+      if (!predSnap.exists()) return;
+      const pred = predSnap.data();
+
+      const homeEl = document.getElementById('home-' + d.id);
+      const awayEl = document.getElementById('away-' + d.id);
+      const scorerEl = document.getElementById('scorer-' + d.id);
+      if (homeEl) homeEl.value = pred.homeScore ?? '';
+      if (awayEl) awayEl.value = pred.awayScore ?? '';
+      if (scorerEl) scorerEl.value = pred.firstScorer || '';
+
+      // Show result feedback for finished matches
+      if (m.status === 'FINISHED' && m.homeScore !== null && m.awayScore !== null) {
+        const resultEl = document.getElementById('result-' + d.id);
+        if (!resultEl) return;
+
+        const actualResult = m.homeScore > m.awayScore ? 'home' : m.homeScore < m.awayScore ? 'away' : 'draw';
+        const predResult   = pred.homeScore > pred.awayScore ? 'home' : pred.homeScore < pred.awayScore ? 'away' : 'draw';
+        const isExact  = pred.homeScore === m.homeScore && pred.awayScore === m.awayScore;
+        const isWinner = actualResult === predResult;
+
+        // Build result label
+        let resultLabel = '';
+        let resultStyle = '';
+        let pts = 0;
+
+        if (isExact) {
+          pts += 3;
+          resultLabel = '🎯 Exact score';
+          resultStyle = 'background:#E1F5EE;color:#085041;border:0.5px solid #5DCAA5;';
+        } else if (isWinner) {
+          pts += 1;
+          if (actualResult === 'draw') {
+            resultLabel = '✅ Correct draw';
+          } else {
+            const winnerTeam = actualResult === 'home' ? m.homeTeam : m.awayTeam;
+            resultLabel = `✅ Correct winner: ${winnerTeam}`;
+          }
+          resultStyle = 'background:#E6F1FB;color:#0C447C;border:0.5px solid #378ADD;';
+        } else {
+          resultLabel = '❌ Wrong result';
+          resultStyle = 'background:#FCEBEB;color:#791F1F;border:0.5px solid #E24B4A;';
+        }
+
+        // Scorer feedback
+        let scorerLabel = '';
+        if (pred.firstScorer) {
+          const resultSnap = await getDoc(doc(db, 'results', d.id));
+          const actualScorer = resultSnap.exists() ? resultSnap.data().firstScorer : null;
+          if (actualScorer && pred.firstScorer === actualScorer) {
+            pts += 2;
+            scorerLabel = `<div style="font-size:12px;margin-top:4px;color:#085041;">⚽ Scorer correct: ${pred.firstScorer} +2 pts</div>`;
+          } else if (actualScorer) {
+            scorerLabel = `<div style="font-size:12px;margin-top:4px;color:#791F1F;">⚽ Scorer was ${actualScorer}</div>`;
+          }
+        }
+
+        resultEl.innerHTML = `
+          <div style="margin-top:10px;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:500;${resultStyle}">
+            ${resultLabel} &nbsp;·&nbsp; +${pts} pt${pts !== 1 ? 's' : ''}
+            ${scorerLabel}
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:6px;text-align:center;">
+            Final score: ${m.homeTeam} ${m.homeScore} - ${m.awayScore} ${m.awayTeam}
+          </div>`;
       }
     });
   }
