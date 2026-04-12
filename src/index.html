@@ -177,9 +177,30 @@
       .lb-row .lb-pts.muted { display: none; }
       .nav-links .nav-btn { padding: 0 8px; font-size: 12px; }
     }
+    /* DID YOU KNOW POPUP */
+    .dyk-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; animation: fadeIn 0.3s ease; }
+    .dyk-card { background: var(--surface); border-radius: var(--radius-lg); padding: 1.75rem 1.5rem; width: 340px; max-width: 92vw; border: 0.5px solid var(--border); text-align: center; position: relative; animation: slideUp 0.3s ease; }
+    .dyk-emoji { font-size: 48px; margin-bottom: 0.75rem; display: block; }
+    .dyk-label { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: var(--green); text-transform: uppercase; margin-bottom: 0.5rem; }
+    .dyk-fact { font-size: 15px; line-height: 1.6; color: var(--text); margin-bottom: 1.25rem; font-weight: 400; }
+    .dyk-btn { width: 100%; padding: 10px; border-radius: var(--radius); border: none; background: var(--green); color: var(--green-light); font-size: 14px; font-weight: 500; cursor: pointer; }
+    .dyk-close { position: absolute; top: 10px; right: 14px; background: none; border: none; font-size: 18px; color: var(--text-muted); cursor: pointer; line-height: 1; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
   </style>
 </head>
 <body>
+
+<!-- DID YOU KNOW POPUP -->
+<div id="dyk-overlay" class="dyk-overlay" style="display:none;">
+  <div class="dyk-card">
+    <button class="dyk-close" onclick="closeDyk()">✕</button>
+    <span class="dyk-emoji" id="dyk-emoji">⚽</span>
+    <div class="dyk-label">⚡ Did You Know?</div>
+    <div class="dyk-fact" id="dyk-fact"></div>
+    <button class="dyk-btn" onclick="closeDyk()">Got it! Let's predict 🎯</button>
+  </div>
+</div>
 
 <div id="loading" class="loading">Loading...</div>
 
@@ -1598,6 +1619,53 @@
       detail.textContent = 'No data yet.';
     }
   }
+
+  // ========== DID YOU KNOW ==========
+  const DYK_FACTS = [
+    { emoji: '🏟️', fact: 'Estadio Azteca in Mexico City will host its THIRD World Cup in 2026 — after 1970 and 1986. No other stadium has ever done this. It also hosted two World Cup finals. Absolute legend of a stadium.' },
+    { emoji: '🤏', fact: "Curaçao — an island with only 156,000 people — qualified for WC 2026! That's smaller than most cities. The USA has 330 million people, making them 2,115x more populous than their fellow tournament participants." },
+    { emoji: '⚡', fact: 'The fastest goal in World Cup history was scored by Turkey\'s Hakan Şükür — just 11 seconds into the match vs South Korea in 2002. His team won 3-2. He was basically done before most people found their seat.' },
+    { emoji: '👙', fact: 'In 1986, FIFA officially banned players from swapping shirts after games — because they didn\'t want players "baring their chests" on the pitch. The rule was quietly dropped later.' },
+    { emoji: '🦶', fact: 'India withdrew from the 1950 World Cup because FIFA refused to let them play BAREFOOT. Yes, barefoot. The Indian FA actually preferred no shoes. FIFA said no.' },
+    { emoji: '🍼', fact: 'When Germany hosted the 2006 World Cup and finished 3rd, the country\'s birth rate jumped 10% exactly 9 months later. Football is... a powerful motivator apparently.' },
+    { emoji: '📺', fact: 'An estimated 3.2 billion people — nearly half the world\'s population — watched the 2014 World Cup. That\'s more people than have ever watched literally anything else in human history.' },
+    { emoji: '🗺️', fact: 'WC 2026 will span 16 cities across 3 countries, with teams potentially travelling over 8,000km between matches. Vancouver to Mexico City is further than London to New York.' },
+    { emoji: '🤖', fact: 'WC 2026 will use AI-assisted offside tracking for the first time — meaning those millimetre offside calls will be made by robots. Human referees remain in charge... for now.' },
+    { emoji: '👴', fact: 'Roger Milla of Cameroon scored a goal at the 1994 World Cup aged 42. He celebrated by dancing around the corner flag. An icon. Absolute scenes.' },
+    { emoji: '🩲', fact: "Italy's Giuseppe Meazza scored a penalty at the 1938 World Cup semi-final while his shorts literally fell down mid-run. He scored anyway. The goalkeeper was apparently too distracted to save it." },
+    { emoji: '💰', fact: 'FIFA makes over $6 billion from each World Cup. The winning team gets $42 million. Even teams that don\'t make it out of the group stage pocket $10 million. Not bad for 3 games of football.' },
+    { emoji: '🏆', fact: 'The World Cup trophy is made of 18-carat gold — but winning teams don\'t actually get to keep it. They receive a gold-plated replica. The real trophy stays with FIFA forever.' },
+    { emoji: '🎯', fact: 'France\'s Just Fontaine scored 13 goals at the 1958 World Cup — still the record for a single tournament. He did it in just 6 games. That\'s over 2 goals per game. Obscene.' },
+    { emoji: '🌍', fact: 'Brazil has scored more total World Cup goals than any other nation. They\'ve also won it 5 times — more than anyone else. And they\'ve qualified for EVERY single World Cup. Every. Single. One.' },
+    { emoji: '📐', fact: 'Mexico City\'s Estadio Azteca sits over 2,200 metres above sea level — making it the highest altitude stadium in the 2026 tournament. Players from sea-level countries will feel it in their lungs.' },
+    { emoji: '🇺🇾', fact: 'The 1950 World Cup "final" between Brazil and Uruguay drew an estimated 200,000 fans in Rio — the largest crowd in football history. Uruguay won 2-1. Brazil still hasn\'t fully recovered emotionally.' },
+    { emoji: '😅', fact: 'This is the first World Cup since 1998 to be hosted by more than one nation. It\'s also the first ever co-hosted by THREE countries. Someone at FIFA clearly enjoys a logistical challenge.' },
+    { emoji: '⚽', fact: 'WC 2026 will feature 104 matches — up from 64 in Qatar 2022. That\'s 40 more games of football. Your boss is not going to be happy about your productivity in June-July 2026.' },
+    { emoji: '🧠', fact: 'Lionel Messi holds the record for most World Cup appearances ever — 26 games. He overtook Lothar Matthäus in 2022. And 2026 could be his last tournament. No pressure.' },
+  ];
+
+  function showDyk() {
+    const last = localStorage.getItem('dyk_last_shown');
+    const now = Date.now();
+    if (last && now - parseInt(last) < 24 * 60 * 60 * 1000) return; // once per 24h
+    const lastIndex = parseInt(localStorage.getItem('dyk_last_index') ?? '-1');
+    let idx;
+    do { idx = Math.floor(Math.random() * DYK_FACTS.length); } while (idx === lastIndex && DYK_FACTS.length > 1);
+    const fact = DYK_FACTS[idx];
+    document.getElementById('dyk-emoji').textContent = fact.emoji;
+    document.getElementById('dyk-fact').textContent = fact.fact;
+    document.getElementById('dyk-overlay').style.display = 'flex';
+    localStorage.setItem('dyk_last_shown', String(now));
+    localStorage.setItem('dyk_last_index', String(idx));
+  }
+
+  function closeDyk() {
+    document.getElementById('dyk-overlay').style.display = 'none';
+  }
+  window.closeDyk = closeDyk;
+
+  // Show popup 1.5 seconds after login
+  setTimeout(showDyk, 1500);
 </script>
 </body>
 </html>
