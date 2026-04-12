@@ -259,6 +259,10 @@ export default async function handler(req, res) {
     else if (action === 'all') {
       result.matches = await syncMatches(db);
       result.live = await syncLiveResults(db);
+    } else if (action === 'debug') {
+      const data = await fetchAPI(`/competitions/${WC_CODE}/matches?limit=3`);
+      const m = (data.matches || [])[0];
+      result.sample = m ? { home: m.homeTeam, away: m.awayTeam } : null;
     }
     res.status(200).json({ success: true, ...result });
   } catch (err) {
