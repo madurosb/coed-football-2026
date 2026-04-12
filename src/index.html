@@ -246,10 +246,14 @@
       <button class="nav-btn" data-page="admin" id="admin-nav-btn" style="display:none;" onclick="showPage('admin')">Admin</button>
     </div>
     <div class="nav-user">
+      <button id="music-btn" onclick="toggleMusic()" style="background:none;border:none;cursor:pointer;font-size:20px;padding:4px 8px;border-radius:8px;transition:background 0.15s;" title="Play/Stop music">🔇</button>
       <div class="avatar" id="user-avatar">?</div>
       <span id="user-handle" style="font-size:13px; color: var(--text-muted);"></span>
     </div>
   </nav>
+
+  <!-- AUDIO TRACKS -->
+  <audio id="audio-player" loop style="display:none;"></audio>
 
   <!-- HOME -->
   <div class="page" id="page-home">
@@ -1142,6 +1146,10 @@
     loadMatches();
     loadPrizes();
     setTimeout(showDyk, 1500);
+    // Autoplay music after login (browser allows it after user interaction)
+    setTimeout(() => {
+      if (!musicPlaying) toggleMusic();
+    }, 800);
   }
 
   // SIGN IN
@@ -1672,6 +1680,40 @@
 
   // Show popup 1.5 seconds after login
   // (called from onAuthStateChanged after user is confirmed logged in)
+
+  // ========== MUSIC ==========
+  const TRACKS = [
+    'https://coed-football-2026.vercel.app/1.mp3',
+    'https://coed-football-2026.vercel.app/2.mp3',
+    'https://coed-football-2026.vercel.app/3.mp3',
+    'https://coed-football-2026.vercel.app/4.mp3',
+  ];
+  let musicPlaying = false;
+  let currentTrack = 0;
+  const audioPlayer = document.getElementById('audio-player');
+  const musicBtn = document.getElementById('music-btn');
+
+  audioPlayer.addEventListener('ended', () => {
+    currentTrack = (currentTrack + 1) % TRACKS.length;
+    audioPlayer.src = TRACKS[currentTrack];
+    audioPlayer.play();
+  });
+
+  window.toggleMusic = () => {
+    if (musicPlaying) {
+      audioPlayer.pause();
+      musicPlaying = false;
+      musicBtn.textContent = '🔇';
+    } else {
+      currentTrack = Math.floor(Math.random() * TRACKS.length);
+      audioPlayer.src = TRACKS[currentTrack];
+      audioPlayer.volume = 0.4;
+      audioPlayer.loop = false;
+      audioPlayer.play().catch(() => {});
+      musicPlaying = true;
+      musicBtn.textContent = '🔊';
+    }
+  };
 </script>
 </body>
 </html>
