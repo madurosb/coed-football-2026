@@ -271,6 +271,32 @@
 
   <!-- HOME -->
   <div class="page" id="page-home">
+    <div style="background:#0a1f0a;border-radius:16px;padding:1.25rem 1rem;text-align:center;margin-bottom:1rem;">
+      <div style="font-size:11px;letter-spacing:0.15em;color:#4ade80;text-transform:uppercase;margin-bottom:4px;font-family:monospace;">⚽ COED&FOOTBALL &nbsp;·&nbsp; 🏆 WORLD CUP 2026</div>
+      <div style="font-size:13px;color:#86efac;margin-bottom:1rem;" id="cd-sub">Kickoff countdown</div>
+      <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;" id="cd-units">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="background:#0d2b0d;border:1px solid #166534;border-radius:10px;padding:10px 0;width:68px;font-size:30px;font-weight:700;color:#00ff41;font-family:monospace;" id="cd-days">00</div>
+          <div style="font-size:10px;color:#4ade80;letter-spacing:0.12em;text-transform:uppercase;">Days</div>
+        </div>
+        <div style="font-size:26px;color:#166534;padding-top:8px;font-weight:700;">:</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="background:#0d2b0d;border:1px solid #166534;border-radius:10px;padding:10px 0;width:68px;font-size:30px;font-weight:700;color:#00ff41;font-family:monospace;" id="cd-hours">00</div>
+          <div style="font-size:10px;color:#4ade80;letter-spacing:0.12em;text-transform:uppercase;">Hours</div>
+        </div>
+        <div style="font-size:26px;color:#166534;padding-top:8px;font-weight:700;">:</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="background:#0d2b0d;border:1px solid #166534;border-radius:10px;padding:10px 0;width:68px;font-size:30px;font-weight:700;color:#00ff41;font-family:monospace;" id="cd-mins">00</div>
+          <div style="font-size:10px;color:#4ade80;letter-spacing:0.12em;text-transform:uppercase;">Min</div>
+        </div>
+        <div style="font-size:26px;color:#166534;padding-top:8px;font-weight:700;">:</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div style="background:#0d2b0d;border:1px solid #166534;border-radius:10px;padding:10px 0;width:68px;font-size:30px;font-weight:700;color:#00ff41;font-family:monospace;" id="cd-secs">00</div>
+          <div style="font-size:10px;color:#4ade80;letter-spacing:0.12em;text-transform:uppercase;">Sec</div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:#4ade80;margin-top:10px;">🇲🇽 Mexico vs Ecuador 🇪🇨 &nbsp;·&nbsp; Estadio Azteca</div>
+    </div>
     <div class="hero">
       <img src="https://coed-football-2026.vercel.app/hero-banner.png" alt="COED&FOOTBALL" style="width:100%; max-height:280px; object-fit:cover; border-radius:8px; margin-bottom:1rem;">
       <h1>COED&FOOTBALL Mundial 2026</h1>
@@ -2146,6 +2172,31 @@
       </div>
     `;
   }
+
+  // ========== COUNTDOWN ==========
+  (function() {
+    const target = new Date('2026-06-11T19:00:00Z');
+    function pad(n){ return String(n).padStart(2,'0'); }
+    function tick(){
+      const diff = target - new Date();
+      if(diff <= 0){
+        document.getElementById('cd-units').innerHTML = '<div style="font-size:20px;color:#00ff41;font-weight:600;padding:0.5rem;">🎉 המונדיאל התחיל!</div>';
+        document.getElementById('cd-sub').textContent = "Let\'s go!";
+        return;
+      }
+      const days  = Math.floor(diff / 86400000);
+      const hours = Math.floor((diff % 86400000) / 3600000);
+      const mins  = Math.floor((diff % 3600000)  / 60000);
+      const secs  = Math.floor((diff % 60000)    / 1000);
+      document.getElementById('cd-days').textContent  = pad(days);
+      document.getElementById('cd-hours').textContent = pad(hours);
+      document.getElementById('cd-mins').textContent  = pad(mins);
+      document.getElementById('cd-secs').textContent  = pad(secs);
+      document.getElementById('cd-sub').textContent   = days === 0 ? 'TODAY! 🔥' : days === 1 ? 'Tomorrow! 🔥' : days + ' days to go 🔥';
+    }
+    tick();
+    setInterval(tick, 1000);
+  })();
 
   // Show popup 1.5 seconds after login
   // (called from onAuthStateChanged after user is confirmed logged in)
