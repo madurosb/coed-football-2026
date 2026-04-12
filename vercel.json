@@ -1,23 +1,17 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/*.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "src/index.html",
-      "use": "@vercel/static"
+  "functions": {
+    "api/sync.js": {
+      "runtime": "nodejs20.x"
     }
-  ],
-  "routes": [
+  },
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
+      "source": "/api/sync",
+      "destination": "/api/sync"
     },
     {
-      "src": "/(.*)",
-      "dest": "/src/index.html"
+      "source": "/(.*)",
+      "destination": "/src/index.html"
     }
   ]
 }
