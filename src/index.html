@@ -1080,6 +1080,46 @@
   import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
   import { getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, updateDoc, deleteDoc, query, orderBy, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 
+  // ========== MUSIC ==========
+  const TRACKS = [
+    'https://coed-football-2026.vercel.app/1.mp3',
+    'https://coed-football-2026.vercel.app/2.mp3',
+    'https://coed-football-2026.vercel.app/3.mp3',
+    'https://coed-football-2026.vercel.app/4.mp3',
+  ];
+  let musicPlaying = false;
+  let currentTrack = 0;
+
+  function startMusic() {
+    const ap = document.getElementById('audio-player');
+    const mb = document.getElementById('music-btn');
+    if (!ap || musicPlaying) return;
+    currentTrack = Math.floor(Math.random() * TRACKS.length);
+    ap.src = TRACKS[currentTrack];
+    ap.volume = 0.4;
+    ap.play().then(() => {
+      musicPlaying = true;
+      mb.textContent = '🔊';
+    }).catch(() => {});
+    ap.addEventListener('ended', () => {
+      currentTrack = (currentTrack + 1) % TRACKS.length;
+      ap.src = TRACKS[currentTrack];
+      ap.play();
+    });
+  }
+
+  window.toggleMusic = () => {
+    const ap = document.getElementById('audio-player');
+    const mb = document.getElementById('music-btn');
+    if (musicPlaying) {
+      ap.pause();
+      musicPlaying = false;
+      mb.textContent = '🔇';
+    } else {
+      startMusic();
+    }
+  };
+
   const firebaseConfig = {
     apiKey: "AIzaSyDqHBefYm759z1eR3S5V_ppaadIceeS9-4",
     authDomain: "coed-football-2026.firebaseapp.com",
@@ -1147,20 +1187,7 @@
     loadPrizes();
     setTimeout(showDyk, 1500);
     // Autoplay music after login
-    setTimeout(() => {
-      const ap = document.getElementById('audio-player');
-      const mb = document.getElementById('music-btn');
-      if (ap && !musicPlaying) {
-        const idx = Math.floor(Math.random() * TRACKS.length);
-        ap.src = TRACKS[idx];
-        ap.volume = 0.4;
-        ap.play().then(() => {
-          musicPlaying = true;
-          currentTrack = idx;
-          mb.textContent = '🔊';
-        }).catch(() => {});
-      }
-    }, 800);
+    setTimeout(startMusic, 800);
   }
 
   // SIGN IN
@@ -1691,40 +1718,6 @@
 
   // Show popup 1.5 seconds after login
   // (called from onAuthStateChanged after user is confirmed logged in)
-
-  // ========== MUSIC ==========
-  const TRACKS = [
-    'https://coed-football-2026.vercel.app/1.mp3',
-    'https://coed-football-2026.vercel.app/2.mp3',
-    'https://coed-football-2026.vercel.app/3.mp3',
-    'https://coed-football-2026.vercel.app/4.mp3',
-  ];
-  let musicPlaying = false;
-  let currentTrack = 0;
-  const audioPlayer = document.getElementById('audio-player');
-  const musicBtn = document.getElementById('music-btn');
-
-  audioPlayer.addEventListener('ended', () => {
-    currentTrack = (currentTrack + 1) % TRACKS.length;
-    audioPlayer.src = TRACKS[currentTrack];
-    audioPlayer.play();
-  });
-
-  window.toggleMusic = () => {
-    if (musicPlaying) {
-      audioPlayer.pause();
-      musicPlaying = false;
-      musicBtn.textContent = '🔇';
-    } else {
-      currentTrack = Math.floor(Math.random() * TRACKS.length);
-      audioPlayer.src = TRACKS[currentTrack];
-      audioPlayer.volume = 0.4;
-      audioPlayer.loop = false;
-      audioPlayer.play().catch(() => {});
-      musicPlaying = true;
-      musicBtn.textContent = '🔊';
-    }
-  };
 </script>
 </body>
 </html>
