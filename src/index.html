@@ -264,16 +264,619 @@
       <p>Pick one player before the tournament starts. Every goal they score = +1 point for you throughout the whole tournament.</p>
       <div style="display:flex; gap:8px; align-items:center;">
         <select id="tournament-player-select" style="flex:1;">
-          <optgroup label="🇫🇷 France"><option>Kylian Mbappe</option><option>Antoine Griezmann</option><option>Ousmane Dembele</option></optgroup>
-          <optgroup label="🇧🇷 Brazil"><option>Vinicius Jr.</option><option>Rodrygo</option><option>Endrick</option><option>Raphinha</option></optgroup>
-          <optgroup label="🏴󠁧󠁢󠁥󠁮󠁧󠁿 England"><option>Harry Kane</option><option>Jude Bellingham</option><option>Bukayo Saka</option><option>Phil Foden</option></optgroup>
-          <optgroup label="🇪🇸 Spain"><option>Lamine Yamal</option><option>Pedri</option><option>Rodri</option><option>Morata</option></optgroup>
-          <optgroup label="🇳🇴 Norway"><option>Erling Haaland</option></optgroup>
-          <optgroup label="🇦🇷 Argentina"><option>Lionel Messi</option><option>Julian Alvarez</option><option>Lautaro Martinez</option></optgroup>
-          <optgroup label="🇵🇹 Portugal"><option>Cristiano Ronaldo</option><option>Rafael Leao</option><option>Bruno Fernandes</option></optgroup>
-          <optgroup label="🇩🇪 Germany"><option>Florian Wirtz</option><option>Jamal Musiala</option><option>Kai Havertz</option></optgroup>
-          <optgroup label="🇺🇸 USA"><option>Christian Pulisic</option><option>Gio Reyna</option><option>Josh Weah</option></optgroup>
-          <optgroup label="🇲🇽 Mexico"><option>Hirving Lozano</option><option>Santiago Gimenez</option><option>Raul Jimenez</option></optgroup>
+          <optgroup label="🇦🇷 Argentina">
+            <option>Lionel Messi</option>
+            <option>Julian Alvarez</option>
+            <option>Lautaro Martinez</option>
+            <option>Rodrigo De Paul</option>
+            <option>Thiago Almada</option>
+            <option>Enzo Fernandez</option>
+            <option>Alejandro Garnacho</option>
+            <option>Angel Di Maria</option>
+            <option>Nicolas Gonzalez</option>
+            <option>Leandro Paredes</option>
+          </optgroup>
+          <optgroup label="🇦🇹 Austria">
+            <option>Marcel Sabitzer</option>
+            <option>Christoph Baumgartner</option>
+            <option>Michael Gregoritsch</option>
+            <option>Marko Arnautovic</option>
+            <option>Konrad Laimer</option>
+            <option>Florian Grillitsch</option>
+            <option>Patrick Wimmer</option>
+            <option>Christoph Trimmel</option>
+            <option>Nicolas Seiwald</option>
+            <option>Romano Schmid</option>
+          </optgroup>
+          <optgroup label="🇦🇺 Australia">
+            <option>Mathew Leckie</option>
+            <option>Mitchell Duke</option>
+            <option>Martin Boyle</option>
+            <option>Aaron Mooy</option>
+            <option>Ajdin Hrustic</option>
+            <option>Craig Goodwin</option>
+            <option>Garang Kuol</option>
+            <option>Riley McGree</option>
+            <option>Keanu Baccus</option>
+            <option>Denis Genreau</option>
+          </optgroup>
+          <optgroup label="🇧🇪 Belgium">
+            <option>Romelu Lukaku</option>
+            <option>Kevin De Bruyne</option>
+            <option>Jeremy Doku</option>
+            <option>Lois Openda</option>
+            <option>Youri Tielemans</option>
+            <option>Axel Witsel</option>
+            <option>Dodi Lukebakio</option>
+            <option>Leandro Trossard</option>
+            <option>Charles De Ketelaere</option>
+            <option>Arthur Theate</option>
+          </optgroup>
+          <optgroup label="🇧🇴 Bolivia">
+            <option>Marcelo Martins</option>
+            <option>Henry Vaca</option>
+            <option>Juan Carlos Arce</option>
+            <option>Erwin Saavedra</option>
+            <option>Jeyson Chura</option>
+            <option>Fernando Saucedo</option>
+            <option>Ramiro Vaca</option>
+            <option>Roberto Carlos Fernandez</option>
+            <option>Marc Enoumba</option>
+            <option>Rodrigo Ramallo</option>
+          </optgroup>
+          <optgroup label="🇧🇷 Brazil">
+            <option>Vinicius Jr.</option>
+            <option>Rodrygo</option>
+            <option>Endrick</option>
+            <option>Raphinha</option>
+            <option>Lucas Paqueta</option>
+            <option>Gabriel Martinelli</option>
+            <option>Casemiro</option>
+            <option>Bruno Guimaraes</option>
+            <option>Gabriel Jesus</option>
+            <option>Antony</option>
+          </optgroup>
+          <optgroup label="🇨🇦 Canada">
+            <option>Alphonso Davies</option>
+            <option>Jonathan David</option>
+            <option>Cyle Larin</option>
+            <option>Tajon Buchanan</option>
+            <option>Stephen Eustaquio</option>
+            <option>Atiba Hutchinson</option>
+            <option>Liam Millar</option>
+            <option>Junior Hoilett</option>
+            <option>Richie Laryea</option>
+            <option>Ismaël Koné</option>
+          </optgroup>
+          <optgroup label="🇨🇭 Switzerland">
+            <option>Granit Xhaka</option>
+            <option>Xherdan Shaqiri</option>
+            <option>Breel Embolo</option>
+            <option>Haris Seferovic</option>
+            <option>Denis Zakaria</option>
+            <option>Fabian Schar</option>
+            <option>Remo Freuler</option>
+            <option>Ricardo Rodriguez</option>
+            <option>Renato Steffen</option>
+            <option>Cedric Itten</option>
+          </optgroup>
+          <optgroup label="🇨🇱 Chile">
+            <option>Alexis Sanchez</option>
+            <option>Arturo Vidal</option>
+            <option>Ben Brereton Diaz</option>
+            <option>Erick Pulgar</option>
+            <option>Gary Medel</option>
+            <option>Charles Aranguiz</option>
+            <option>Alexis Mac Allister</option>
+            <option>Felipe Mora</option>
+            <option>Ivan Morales</option>
+            <option>Damian Pizarro</option>
+          </optgroup>
+          <optgroup label="🇨🇴 Colombia">
+            <option>James Rodriguez</option>
+            <option>Luis Diaz</option>
+            <option>Jhon Duran</option>
+            <option>Cucho Hernandez</option>
+            <option>Falcao Garcia</option>
+            <option>Juan Cuadrado</option>
+            <option>Rafael Santos Borre</option>
+            <option>Jefferson Lerma</option>
+            <option>Richard Rios</option>
+            <option>Jhon Arias</option>
+          </optgroup>
+          <optgroup label="🇨🇷 Costa Rica">
+            <option>Bryan Ruiz</option>
+            <option>Joel Campbell</option>
+            <option>Manfred Ugalde</option>
+            <option>Celso Borges</option>
+            <option>Keysher Fuller</option>
+            <option>Francisco Calvo</option>
+            <option>Yeltsin Tejeda</option>
+            <option>Anthony Contreras</option>
+            <option>Gerson Torres</option>
+            <option>Johan Venegas</option>
+          </optgroup>
+          <optgroup label="🇨🇿 Czech Republic">
+            <option>Patrik Schick</option>
+            <option>Tomas Soucek</option>
+            <option>Vladimir Coufal</option>
+            <option>Ondrej Duda</option>
+            <option>Jakub Jankto</option>
+            <option>Alex Kral</option>
+            <option>Lukas Provod</option>
+            <option>Jan Kuchta</option>
+            <option>Adam Hlozek</option>
+            <option>Mojmir Chytil</option>
+          </optgroup>
+          <optgroup label="🇩🇪 Germany">
+            <option>Florian Wirtz</option>
+            <option>Jamal Musiala</option>
+            <option>Kai Havertz</option>
+            <option>Leroy Sane</option>
+            <option>Thomas Muller</option>
+            <option>Toni Kroos</option>
+            <option>Joshua Kimmich</option>
+            <option>Leon Goretzka</option>
+            <option>Serge Gnabry</option>
+            <option>Niclas Fullkrug</option>
+          </optgroup>
+          <optgroup label="🇩🇰 Denmark">
+            <option>Christian Eriksen</option>
+            <option>Pierre-Emile Hojbjerg</option>
+            <option>Rasmus Hojlund</option>
+            <option>Andreas Christensen</option>
+            <option>Mikkel Damsgaard</option>
+            <option>Simon Kjaer</option>
+            <option>Viktor Gyokeres</option>
+            <option>Yussuf Poulsen</option>
+            <option>Martin Braithwaite</option>
+            <option>Andreas Cornelius</option>
+          </optgroup>
+          <optgroup label="🇪🇨 Ecuador">
+            <option>Enner Valencia</option>
+            <option>Michael Estrada</option>
+            <option>Gonzalo Plata</option>
+            <option>Jeremy Sarmiento</option>
+            <option>Piero Hincapie</option>
+            <option>Angelo Preciado</option>
+            <option>Pervis Estupinan</option>
+            <option>Moises Caicedo</option>
+            <option>Jose Cifuentes</option>
+            <option>Djorkaeff Reasco</option>
+          </optgroup>
+          <optgroup label="🇪🇬 Egypt">
+            <option>Mohamed Salah</option>
+            <option>Mostafa Mohamed</option>
+            <option>Omar Marmoush</option>
+            <option>Trezeguet</option>
+            <option>Ahmed Hegazi</option>
+            <option>Amr El Sulaya</option>
+            <option>Mahmoud Trezeguet</option>
+            <option>Mahmoud Hassan</option>
+            <option>Ahmed Sayed Zizou</option>
+            <option>Emam Ashour</option>
+          </optgroup>
+          <optgroup label="🇪🇸 Spain">
+            <option>Lamine Yamal</option>
+            <option>Pedri</option>
+            <option>Rodri</option>
+            <option>Alvaro Morata</option>
+            <option>Nico Williams</option>
+            <option>Ferran Torres</option>
+            <option>Dani Olmo</option>
+            <option>Gavi</option>
+            <option>Mikel Oyarzabal</option>
+            <option>Fabian Ruiz</option>
+          </optgroup>
+          <optgroup label="🇫🇷 France">
+            <option>Kylian Mbappe</option>
+            <option>Antoine Griezmann</option>
+            <option>Ousmane Dembele</option>
+            <option>Marcus Thuram</option>
+            <option>Eduardo Camavinga</option>
+            <option>Aurelien Tchouameni</option>
+            <option>Kingsley Coman</option>
+            <option>Christopher Nkunku</option>
+            <option>Randal Kolo Muani</option>
+            <option>Adrien Rabiot</option>
+          </optgroup>
+          <optgroup label="🇬🇭 Ghana">
+            <option>Jordan Ayew</option>
+            <option>Mohammed Kudus</option>
+            <option>Antoine Semenyo</option>
+            <option>Thomas Partey</option>
+            <option>Andre Ayew</option>
+            <option>Inaki Williams</option>
+            <option>Tariq Lamptey</option>
+            <option>Daniel Amartey</option>
+            <option>Osman Bukari</option>
+            <option>Abdul Fatawu</option>
+          </optgroup>
+          <optgroup label="🇬🇹 Guatemala">
+            <option>Ruben Morales</option>
+            <option>Jordan Aguilar</option>
+            <option>Luis Martinez</option>
+            <option>Brandon Aguilera</option>
+            <option>Carlos Mejia</option>
+            <option>Darwin Lom</option>
+            <option>Gersson Mayorga</option>
+            <option>Elias Hernandez</option>
+            <option>Kevin Ramirez</option>
+            <option>Mario Maranon</option>
+          </optgroup>
+          <optgroup label="🇭🇳 Honduras">
+            <option>Romell Quioto</option>
+            <option>Alberth Elis</option>
+            <option>Anthony Lozano</option>
+            <option>Rigoberto Rivas</option>
+            <option>Alex Lopez</option>
+            <option>Boniek Garcia</option>
+            <option>Bryan Acosta</option>
+            <option>Deybi Flores</option>
+            <option>Kervin Arriaga</option>
+            <option>Luis Palma</option>
+          </optgroup>
+          <optgroup label="🇭🇷 Croatia">
+            <option>Luka Modric</option>
+            <option>Ivan Perisic</option>
+            <option>Mateo Kovacic</option>
+            <option>Andrej Kramaric</option>
+            <option>Bruno Petkovic</option>
+            <option>Marcelo Brozovic</option>
+            <option>Nikola Vlasic</option>
+            <option>Lovro Majer</option>
+            <option>Josip Sutalo</option>
+            <option>Mario Pasalic</option>
+          </optgroup>
+          <optgroup label="🇭🇺 Hungary">
+            <option>Dominik Szoboszlai</option>
+            <option>Roland Sallai</option>
+            <option>Martin Adam</option>
+            <option>Peter Gulacsi</option>
+            <option>Willi Orban</option>
+            <option>Loic Nego</option>
+            <option>Attila Fiola</option>
+            <option>Adam Nagy</option>
+            <option>Barnabas Varga</option>
+            <option>Milos Kerkez</option>
+          </optgroup>
+          <optgroup label="🇮🇷 Iran">
+            <option>Mehdi Taremi</option>
+            <option>Sardar Azmoun</option>
+            <option>Alireza Jahanbakhsh</option>
+            <option>Karim Ansarifard</option>
+            <option>Vahid Amiri</option>
+            <option>Ehsan Hajsafi</option>
+            <option>Milad Mohammadi</option>
+            <option>Saeid Ezatolahi</option>
+            <option>Ahmad Nourollahi</option>
+            <option>Ali Gholizadeh</option>
+          </optgroup>
+          <optgroup label="🇯🇲 Jamaica">
+            <option>Michail Antonio</option>
+            <option>Bobby Reid</option>
+            <option>Leon Bailey</option>
+            <option>Demarai Gray</option>
+            <option>Kasey Palmer</option>
+            <option>Je-Vaughn Watson</option>
+            <option>Ravel Morrison</option>
+            <option>Andre Blake</option>
+            <option>Javain Brown</option>
+            <option>Brentford Burke</option>
+          </optgroup>
+          <optgroup label="🇯🇵 Japan">
+            <option>Takumi Minamino</option>
+            <option>Kaoru Mitoma</option>
+            <option>Ritsu Doan</option>
+            <option>Daichi Kamada</option>
+            <option>Wataru Endo</option>
+            <option>Takehiro Tomiyasu</option>
+            <option>Junya Ito</option>
+            <option>Ao Tanaka</option>
+            <option>Yukinari Sugawara</option>
+            <option>Ayase Ueda</option>
+          </optgroup>
+          <optgroup label="🇰🇪 Kenya">
+            <option>Michael Olunga</option>
+            <option>Ayub Timbe</option>
+            <option>Clifton Miheso</option>
+            <option>Victor Wanyama</option>
+            <option>John Avire</option>
+            <option>Francis Kahata</option>
+            <option>Olunga Michael</option>
+            <option>Lawrence Juma</option>
+            <option>Nicholas Kipkirui</option>
+            <option>Johanna Omollo</option>
+          </optgroup>
+          <optgroup label="🇰🇷 South Korea">
+            <option>Son Heung-min</option>
+            <option>Lee Kang-in</option>
+            <option>Hwang Hee-chan</option>
+            <option>Kim Min-jae</option>
+            <option>Hwang In-beom</option>
+            <option>Lee Jae-sung</option>
+            <option>Cho Gue-sung</option>
+            <option>Na Sang-ho</option>
+            <option>Oh Hyeon-gyu</option>
+            <option>Kwon Chang-hoon</option>
+          </optgroup>
+          <optgroup label="🇲🇦 Morocco">
+            <option>Hakim Ziyech</option>
+            <option>Achraf Hakimi</option>
+            <option>Youssef En-Nesyri</option>
+            <option>Sofiane Boufal</option>
+            <option>Nayef Aguerd</option>
+            <option>Azzedine Ounahi</option>
+            <option>Romain Saiss</option>
+            <option>Abde Ezzalzouli</option>
+            <option>Ibrahim Diaz</option>
+            <option>Selim Amallah</option>
+          </optgroup>
+          <optgroup label="🇲🇽 Mexico">
+            <option>Hirving Lozano</option>
+            <option>Santiago Gimenez</option>
+            <option>Raul Jimenez</option>
+            <option>Alexis Vega</option>
+            <option>Andres Guardado</option>
+            <option>Hector Herrera</option>
+            <option>Carlos Vela</option>
+            <option>Orbelin Pineda</option>
+            <option>Henry Martin</option>
+            <option>Roberto Alvarado</option>
+          </optgroup>
+          <optgroup label="🇳🇬 Nigeria">
+            <option>Victor Osimhen</option>
+            <option>Kelechi Iheanacho</option>
+            <option>Alex Iwobi</option>
+            <option>Wilfred Ndidi</option>
+            <option>Samuel Chukwueze</option>
+            <option>Moses Simon</option>
+            <option>Taiwo Awoniyi</option>
+            <option>Frank Onyeka</option>
+            <option>Oghenekaro Etebo</option>
+            <option>Emmanuel Dennis</option>
+          </optgroup>
+          <optgroup label="🇳🇱 Netherlands">
+            <option>Virgil van Dijk</option>
+            <option>Memphis Depay</option>
+            <option>Cody Gakpo</option>
+            <option>Xavi Simons</option>
+            <option>Frenkie de Jong</option>
+            <option>Davy Klaassen</option>
+            <option>Steven Bergwijn</option>
+            <option>Wout Weghorst</option>
+            <option>Tijjani Reijnders</option>
+            <option>Donyell Malen</option>
+          </optgroup>
+          <optgroup label="🇳🇴 Norway">
+            <option>Erling Haaland</option>
+            <option>Martin Odegaard</option>
+            <option>Alexander Sorloth</option>
+            <option>Antonio Nusa</option>
+            <option>Sander Berge</option>
+            <option>Mohamed Elyounoussi</option>
+            <option>Kristian Thorstvedt</option>
+            <option>Mathias Normann</option>
+            <option>Patrick Berg</option>
+            <option>Ola Solbakken</option>
+          </optgroup>
+          <optgroup label="🇵🇦 Panama">
+            <option>Rolando Blackburn</option>
+            <option>Cecilio Waterman</option>
+            <option>Ismael Diaz</option>
+            <option>Anibal Godoy</option>
+            <option>Adalberto Carrasquilla</option>
+            <option>Jose Fajardo</option>
+            <option>Abdiel Arroyo</option>
+            <option>Alfredo Stephens</option>
+            <option>Ricardo Avila</option>
+            <option>Erick Davis</option>
+          </optgroup>
+          <optgroup label="🇵🇪 Peru">
+            <option>Andre Carrillo</option>
+            <option>Gianluca Lapadula</option>
+            <option>Edison Flores</option>
+            <option>Christian Cueva</option>
+            <option>Luis Advincula</option>
+            <option>Renato Tapia</option>
+            <option>Paolo Guerrero</option>
+            <option>Santiago Ormeño</option>
+            <option>Bryan Reyna</option>
+            <option>Marcos Lopez</option>
+          </optgroup>
+          <optgroup label="🇵🇱 Poland">
+            <option>Robert Lewandowski</option>
+            <option>Piotr Zielinski</option>
+            <option>Arkadiusz Milik</option>
+            <option>Kamil Grosicki</option>
+            <option>Grzegorz Krychowiak</option>
+            <option>Jakub Moder</option>
+            <option>Sebastian Szymanski</option>
+            <option>Przemyslaw Frankowski</option>
+            <option>Karol Swiderski</option>
+            <option>Bartosz Bereszynski</option>
+          </optgroup>
+          <optgroup label="🇵🇹 Portugal">
+            <option>Cristiano Ronaldo</option>
+            <option>Rafael Leao</option>
+            <option>Bruno Fernandes</option>
+            <option>Bernardo Silva</option>
+            <option>Joao Felix</option>
+            <option>Ruben Neves</option>
+            <option>Diogo Jota</option>
+            <option>Goncalo Ramos</option>
+            <option>Pedro Neto</option>
+            <option>Vitinha</option>
+          </optgroup>
+          <optgroup label="🇵🇾 Paraguay">
+            <option>Miguel Almiron</option>
+            <option>Gustavo Gomez</option>
+            <option>Richard Sanchez</option>
+            <option>Junior Alonso</option>
+            <option>Angel Cardozo</option>
+            <option>Carlos Gonzalez</option>
+            <option>Matias Rojas</option>
+            <option>Omar Alderete</option>
+            <option>Antonio Sanabria</option>
+            <option>Julio Enciso</option>
+          </optgroup>
+          <optgroup label="🇷🇴 Romania">
+            <option>Razvan Marin</option>
+            <option>Nicolae Stanciu</option>
+            <option>Denis Alibec</option>
+            <option>Florin Tanase</option>
+            <option>Dragos Nedelcu</option>
+            <option>Radu Dragusin</option>
+            <option>Alexandru Ioniță</option>
+            <option>Valentin Mihaila</option>
+            <option>Ianis Hagi</option>
+            <option>Andrei Ratiu</option>
+          </optgroup>
+          <optgroup label="🇷🇸 Serbia">
+            <option>Dusan Vlahovic</option>
+            <option>Aleksandar Mitrovic</option>
+            <option>Dusan Tadic</option>
+            <option>Sergej Milinkovic-Savic</option>
+            <option>Nikola Milenkovic</option>
+            <option>Nemanja Matic</option>
+            <option>Filip Kostic</option>
+            <option>Andrija Zivkovic</option>
+            <option>Luka Jovic</option>
+            <option>Sasa Lukic</option>
+          </optgroup>
+          <optgroup label="🇸🇦 Saudi Arabia">
+            <option>Salem Al-Dawsari</option>
+            <option>Firas Al-Buraikan</option>
+            <option>Mohammed Al-Owais</option>
+            <option>Ali Al-Bulayhi</option>
+            <option>Sami Al-Najei</option>
+            <option>Abdullah Otayf</option>
+            <option>Hattan Bahebri</option>
+            <option>Moussa Al-Tammari</option>
+            <option>Nasser Al-Dawsari</option>
+            <option>Riyadh Sharahili</option>
+          </optgroup>
+          <optgroup label="🇸🇮 Slovenia">
+            <option>Jan Oblak</option>
+            <option>Benjamin Sesko</option>
+            <option>Josip Ilicic</option>
+            <option>Jan Mlakar</option>
+            <option>Timi Max Elsnik</option>
+            <option>Adam Cerin</option>
+            <option>Petar Stojanovic</option>
+            <option>Jon Gorenc Stankovic</option>
+            <option>Andraz Sporar</option>
+            <option>Jaka Bijol</option>
+          </optgroup>
+          <optgroup label="🇸🇰 Slovakia">
+            <option>Milan Skriniar</option>
+            <option>Robert Mak</option>
+            <option>Ondrej Duda</option>
+            <option>Stanislav Lobotka</option>
+            <option>Juraj Kucka</option>
+            <option>Marek Hamsik</option>
+            <option>Lukas Haraslin</option>
+            <option>Ivan Schranz</option>
+            <option>Tomas Suslov</option>
+            <option>David Strelec</option>
+          </optgroup>
+          <optgroup label="🇸🇳 Senegal">
+            <option>Sadio Mane</option>
+            <option>Ismaila Sarr</option>
+            <option>Kalidou Koulibaly</option>
+            <option>Cheikhou Kouyate</option>
+            <option>Idrissa Gueye</option>
+            <option>Bamba Dieng</option>
+            <option>Pape Matar Sarr</option>
+            <option>Lamine Camara</option>
+            <option>Nicolas Jackson</option>
+            <option>Iliman Ndiaye</option>
+          </optgroup>
+          <optgroup label="🇹🇳 Tunisia">
+            <option>Wahbi Khazri</option>
+            <option>Youssef Msakni</option>
+            <option>Seifeddine Jaziri</option>
+            <option>Naim Sliti</option>
+            <option>Ellyes Skhiri</option>
+            <option>Montassar Talbi</option>
+            <option>Ferjani Sassi</option>
+            <option>Dylan Bronn</option>
+            <option>Mohamed Ben Romdhane</option>
+            <option>Ghaylane Chaalali</option>
+          </optgroup>
+          <optgroup label="🇹🇷 Turkey">
+            <option>Hakan Calhanoglu</option>
+            <option>Arda Guler</option>
+            <option>Cengiz Under</option>
+            <option>Burak Yilmaz</option>
+            <option>Kerem Akturkoglu</option>
+            <option>Zeki Celik</option>
+            <option>Orkun Kokcu</option>
+            <option>Yunus Akgun</option>
+            <option>Baris Alper Yilmaz</option>
+            <option>Ferdi Kadioglu</option>
+          </optgroup>
+          <optgroup label="🇺🇦 Ukraine">
+            <option>Andriy Yarmolenko</option>
+            <option>Roman Yaremchuk</option>
+            <option>Mykhailo Mudryk</option>
+            <option>Oleksandr Zinchenko</option>
+            <option>Ruslan Malinovskyi</option>
+            <option>Taras Stepanenko</option>
+            <option>Viktor Tsygankov</option>
+            <option>Artem Dovbyk</option>
+            <option>Georgiy Sudakov</option>
+            <option>Vladyslav Vanat</option>
+          </optgroup>
+          <optgroup label="🇺🇸 USA">
+            <option>Christian Pulisic</option>
+            <option>Gio Reyna</option>
+            <option>Josh Weah</option>
+            <option>Tyler Adams</option>
+            <option>Folarin Balogun</option>
+            <option>Weston McKennie</option>
+            <option>Yunus Musah</option>
+            <option>Antonee Robinson</option>
+            <option>Sergiño Dest</option>
+            <option>Ricardo Pepi</option>
+          </optgroup>
+          <optgroup label="🇺🇾 Uruguay">
+            <option>Darwin Nunez</option>
+            <option>Federico Valverde</option>
+            <option>Luis Suarez</option>
+            <option>Rodrigo Bentancur</option>
+            <option>Ronald Araujo</option>
+            <option>Matias Vecino</option>
+            <option>Jose Maria Gimenez</option>
+            <option>Martin Caceres</option>
+            <option>Maxi Gomez</option>
+            <option>Facundo Torres</option>
+          </optgroup>
+          <optgroup label="🇻🇪 Venezuela">
+            <option>Salomon Rondon</option>
+            <option>Josef Martinez</option>
+            <option>Yeferson Soteldo</option>
+            <option>Darwin Machis</option>
+            <option>Tomás Rincón</option>
+            <option>Yangel Herrera</option>
+            <option>Jhon Chancellor</option>
+            <option>Junior Moreno</option>
+            <option>Eric Ramirez</option>
+            <option>Adalberto Penaranda</option>
+          </optgroup>
+          <optgroup label="🏴󠁧󠁢󠁥󠁮󠁧󠁿 England">
+            <option>Harry Kane</option>
+            <option>Jude Bellingham</option>
+            <option>Bukayo Saka</option>
+            <option>Phil Foden</option>
+            <option>Marcus Rashford</option>
+            <option>Cole Palmer</option>
+            <option>Declan Rice</option>
+            <option>Jack Grealish</option>
+            <option>Ollie Watkins</option>
+            <option>Trent Alexander-Arnold</option>
+          </optgroup>
+
         </select>
         <button class="save-btn" style="width:auto; padding:7px 16px; margin-top:0;" onclick="saveTournamentPlayer()">Lock in</button>
       </div>
