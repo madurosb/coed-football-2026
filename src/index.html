@@ -953,8 +953,9 @@
           </optgroup>
 
         </select>
-        <button class="save-btn" style="width:auto; padding:7px 16px; margin-top:0;" onclick="saveTournamentPlayer()">Lock in</button>
+        <button class="save-btn" id="tournament-lock-btn" style="width:auto; padding:7px 16px; margin-top:0;" onclick="saveTournamentPlayer()">Lock in</button>
       </div>
+      <div id="tournament-deadline-notice" style="font-size:12px;color:var(--text-muted);margin-top:6px;"></div>
     </div>
     <p class="section-title">Upcoming matches - place your predictions</p>
     <div class="matches" id="matches-list">
@@ -1353,6 +1354,24 @@
     document.getElementById('home-pts').textContent = currentUserData.points || 0;
     document.getElementById('home-exact').textContent = currentUserData.exactScores || 0;
     document.getElementById('home-player').textContent = currentUserData.tournamentPlayer || 'Not set';
+
+    // Tournament player deadline check
+    const tournamentDeadline = new Date('2026-06-10T19:00:00Z');
+    const now = new Date();
+    const noticeEl = document.getElementById('tournament-deadline-notice');
+    const lockBtn = document.getElementById('tournament-lock-btn');
+    const playerSelect = document.getElementById('tournament-player-select');
+    if (now >= tournamentDeadline) {
+      if (lockBtn) { lockBtn.disabled = true; lockBtn.textContent = 'Locked 🔒'; lockBtn.style.opacity = '0.5'; }
+      if (playerSelect) playerSelect.disabled = true;
+      if (noticeEl) noticeEl.innerHTML = '🔒 Tournament player deadline has passed.';
+    } else {
+      const diff = tournamentDeadline - now;
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      if (noticeEl) noticeEl.innerHTML = `⏰ Deadline: 10 Jun 22:00 (Israel time) &nbsp;·&nbsp; ${days}d ${hours}h left`;
+    }
+
     const usersSnap = await getDocs(collection(db, 'users'));
     const users = [];
     usersSnap.forEach(d => users.push(d.data()));
@@ -1629,7 +1648,15 @@
   };
 
   window.saveTournamentPlayer = async () => {
+    // Lock 24h before first match: June 11 2026 22:00 Israel time = June 10 2026 21:00 UTC (Israel is UTC+3)
+    const tournamentDeadline = new Date('2026-06-10T19:00:00Z'); // 22:00 Israel = 19:00 UTC
+    const now = new Date();
+    if (now >= tournamentDeadline) {
+      alert('Tournament player deadline has passed! You can no longer change your pick.');
+      return;
+    }
     const player = document.getElementById('tournament-player-select').value;
+    if (!player) return alert('Please select a player first!');
     await updateDoc(doc(db, 'users', currentUser.uid), { tournamentPlayer: player });
     alert('Tournament player locked in: ' + player);
     document.getElementById('home-player').textContent = player;
