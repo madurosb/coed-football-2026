@@ -4,7 +4,6 @@ import { getFirestore } from 'firebase-admin/firestore';
 const FOOTBALL_DATA_KEY = process.env.FOOTBALL_DATA_KEY;
 const BASE_URL = 'https://api.football-data.org/v4';
 const WC_CODE = 'WC';
-
 const headers = { 'X-Auth-Token': FOOTBALL_DATA_KEY };
 
 function getDb() {
@@ -20,58 +19,98 @@ async function fetchAPI(path) {
   return res.json();
 }
 
-function getFlag(countryCode) {
-  if (!countryCode) return '';
+function getFlag(tla) {
+  if (!tla) return '';
   const flags = {
-    'US':'🇺🇸','MEX':'🇲🇽','CAN':'🇨🇦','BRA':'🇧🇷','ARG':'🇦🇷','FRA':'🇫🇷',
-    'GER':'🇩🇪','ESP':'🇪🇸','POR':'🇵🇹','ENG':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','ITA':'🇮🇹','NED':'🇳🇱',
-    'BEL':'🇧🇪','CRO':'🇭🇷','SRB':'🇷🇸','JPN':'🇯🇵','KOR':'🇰🇷','AUS':'🇦🇺',
-    'MAR':'🇲🇦','SEN':'🇸🇳','NGA':'🇳🇬','GHA':'🇬🇭','CIV':'🇨🇮','CMR':'🇨🇲',
-    'EGY':'🇪🇬','KSA':'🇸🇦','IRN':'🇮🇷','QAT':'🇶🇦','URU':'🇺🇾','COL':'🇨🇴',
-    'PER':'🇵🇪','ECU':'🇪🇨','POL':'🇵🇱','SUI':'🇨🇭','DEN':'🇩🇰','SWE':'🇸🇪',
-    'NOR':'🇳🇴','CZE':'🇨🇿','AUT':'🇦🇹','TUR':'🇹🇷','UKR':'🇺🇦','HUN':'🇭🇺',
-    'ROU':'🇷🇴','SVK':'🇸🇰','ALB':'🇦🇱','SVN':'🇸🇮','GEO':'🇬🇪','SCO':'🏴󠁧󠁢󠁳󠁣󠁴󠁿',
-    'BIH':'🇧🇦','SWZ':'🇸🇿','CPV':'🇨🇻','CUW':'🇨🇼','HTI':'🇭🇹','PAN':'🇵🇦',
-    'IRQ':'🇮🇶','COD':'🇨🇩','NZL':'🇳🇿','UZB':'🇺🇿','JOR':'🇯🇴','ALG':'🇩🇿',
-    'RSA':'🇿🇦','TUN':'🇹🇳','PAR':'🇵🇾','VEN':'🇻🇪','BOL':'🇧🇴','CHL':'🇨🇱',
-    'GTM':'🇬🇹','HON':'🇭🇳','JAM':'🇯🇲','CRC':'🇨🇷','CHI':'🇨🇱'
+    'USA':'🇺🇸','MEX':'🇲🇽','CAN':'🇨🇦','BRA':'🇧🇷','ARG':'🇦🇷','FRA':'🇫🇷',
+    'GER':'🇩🇪','ESP':'🇪🇸','POR':'🇵🇹','ENG':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','NED':'🇳🇱','BEL':'🇧🇪',
+    'CRO':'🇭🇷','JPN':'🇯🇵','KOR':'🇰🇷','AUS':'🇦🇺','MAR':'🇲🇦','SEN':'🇸🇳',
+    'NGA':'🇳🇬','GHA':'🇬🇭','CIV':'🇨🇮','EGY':'🇪🇬','KSA':'🇸🇦','IRN':'🇮🇷',
+    'QAT':'🇶🇦','URU':'🇺🇾','COL':'🇨🇴','ECU':'🇪🇨','SUI':'🇨🇭','NOR':'🇳🇴',
+    'CZE':'🇨🇿','AUT':'🇦🇹','TUR':'🇹🇷','UKR':'🇺🇦','SCO':'🏴󠁧󠁢󠁳󠁣󠁴󠁿','SWE':'🇸🇪',
+    'BIH':'🇧🇦','CPV':'🇨🇻','CUW':'🇨🇼','HTI':'🇭🇹','PAN':'🇵🇦','IRQ':'🇮🇶',
+    'COD':'🇨🇩','NZL':'🇳🇿','UZB':'🇺🇿','JOR':'🇯🇴','ALG':'🇩🇿','RSA':'🇿🇦',
+    'TUN':'🇹🇳','PAR':'🇵🇾','VEN':'🇻🇪','BOL':'🇧🇴','PER':'🇵🇪','CHI':'🇨🇱',
+    'GTM':'🇬🇹','HON':'🇭🇳'
   };
-  return flags[countryCode.toUpperCase()] || '';
+  return flags[tla.toUpperCase()] || '';
 }
 
-// Cache team squads to avoid repeated API calls
-const teamSquadCache = {};
+// Hardcoded squads - outfield players only
+const SQUADS = {
+  'Algeria': ['Riyad Mahrez','Islam Slimani','Youcef Atal','Sofiane Feghouli','Haris Belkebla','Aissa Mandi','Djamel Benlamri','Ismael Bennacer','Bilal Benkhedim','Ilyes Chetti'],
+  'Argentina': ['Lionel Messi','Julian Alvarez','Lautaro Martinez','Rodrigo De Paul','Enzo Fernandez','Alejandro Garnacho','Thiago Almada','Nicolas Gonzalez','Leandro Paredes','Giovani Lo Celso'],
+  'Australia': ['Mathew Leckie','Mitchell Duke','Martin Boyle','Aaron Mooy','Craig Goodwin','Garang Kuol','Riley McGree','Keanu Baccus','Denis Genreau','Kye Rowles'],
+  'Austria': ['Marcel Sabitzer','Christoph Baumgartner','Michael Gregoritsch','Marko Arnautovic','Konrad Laimer','Patrick Wimmer','Nicolas Seiwald','Romano Schmid','Florian Grillitsch','Philipp Lienhart'],
+  'Belgium': ['Romelu Lukaku','Kevin De Bruyne','Jeremy Doku','Lois Openda','Youri Tielemans','Leandro Trossard','Charles De Ketelaere','Arthur Theate','Axel Witsel','Dodi Lukebakio'],
+  'Bosnia & Herzegovina': ['Ermedin Demirovic','Edin Dzeko','Dzenis Burnic','Miralem Pjanic','Sasa Kalajdzic','Rade Krunic','Nedim Bajrami','Edin Visca','Amar Dedic','Anel Ahmedhodzic'],
+  'Bosnia and Herzegovina': ['Ermedin Demirovic','Edin Dzeko','Dzenis Burnic','Miralem Pjanic','Sasa Kalajdzic','Rade Krunic','Nedim Bajrami','Edin Visca','Amar Dedic','Anel Ahmedhodzic'],
+  'Brazil': ['Vinicius Jr.','Endrick','Raphinha','Lucas Paqueta','Gabriel Martinelli','Casemiro','Bruno Guimaraes','Gabriel Jesus','Savinho','Estevao'],
+  'Canada': ['Alphonso Davies','Jonathan David','Cyle Larin','Tajon Buchanan','Stephen Eustaquio','Ismael Kone','Alistair Johnston','Moise Bombito','Derek Cornelius','Richie Laryea'],
+  'Cape Verde': ['Garry Rodrigues','Ryan Mendes','Kenny Rocha Santos','Dylan Tavares','Roberto Lopes','Jamiro Monteiro','Steven Fortes','Julio Tavares','Carlos Ponck','Stopira'],
+  'Chile': ['Alexis Sanchez','Ben Brereton Diaz','Erick Pulgar','Charles Aranguiz','Felipe Mora','Damian Pizarro','Marcelino Nunez','Ivan Morales','Junior Fernandes','Paulo Diaz'],
+  'Colombia': ['James Rodriguez','Luis Diaz','Jhon Duran','Cucho Hernandez','Rafael Santos Borre','Jefferson Lerma','Richard Rios','Jhon Arias','Daniel Munoz','Davinson Sanchez'],
+  'Croatia': ['Luka Modric','Mateo Kovacic','Andrej Kramaric','Bruno Petkovic','Marcelo Brozovic','Nikola Vlasic','Lovro Majer','Mario Pasalic','Borna Sosa','Ivan Perisic'],
+  'Curacao': ['Leandro Bacuna','Cuco Martina','Rangelo Janga','Elson Hooi','Jarchinio Antonia','Gino van Kessel','Jurien Gaari','Darryl Lachman','Juninho Bacuna','Etienne Reijnen'],
+  'Czech Republic': ['Patrik Schick','Tomas Soucek','Vladimir Coufal','Stanislav Lobotka','Adam Hlozek','Lukas Provod','Tomas Suslov','Jan Kuchta','Mojmir Chytil','Ondrej Duda'],
+  'Czechia': ['Patrik Schick','Tomas Soucek','Vladimir Coufal','Stanislav Lobotka','Adam Hlozek','Lukas Provod','Tomas Suslov','Jan Kuchta','Mojmir Chytil','Ondrej Duda'],
+  'DR Congo': ['Silas Wissa','Yoane Wissa','Cedric Bakambu','Chancel Mbemba','Arthur Masuaku','Paul-Jose Mpoku','Neeskens Kebano','Dodi Lukebakio','Theo Bongonda','Samuel Bastien'],
+  'Ecuador': ['Enner Valencia','Michael Estrada','Gonzalo Plata','Jeremy Sarmiento','Piero Hincapie','Pervis Estupinan','Moises Caicedo','Jose Cifuentes','Djorkaeff Reasco','Angelo Preciado'],
+  'Egypt': ['Mohamed Salah','Omar Marmoush','Mostafa Mohamed','Trezeguet','Mahmoud Hassan','Emam Ashour','Ahmed Sayed Zizou','Amr El Sulaya','Ramy Rabia','Karim El Ahmadi'],
+  'England': ['Harry Kane','Jude Bellingham','Bukayo Saka','Phil Foden','Cole Palmer','Marcus Rashford','Declan Rice','Kobbie Mainoo','Ollie Watkins','Trent Alexander-Arnold'],
+  'France': ['Kylian Mbappe','Antoine Griezmann','Ousmane Dembele','Marcus Thuram','Randal Kolo Muani','Christopher Nkunku','Eduardo Camavinga','Aurelien Tchouameni','Kingsley Coman','Warren Zaire-Emery'],
+  'Germany': ['Florian Wirtz','Jamal Musiala','Kai Havertz','Leroy Sane','Niclas Fullkrug','Joshua Kimmich','Leon Goretzka','Serge Gnabry','Nick Woltemade','Aleksandar Pavlovic'],
+  'Ghana': ['Mohammed Kudus','Jordan Ayew','Antoine Semenyo','Thomas Partey','Inaki Williams','Abdul Fatawu','Tariq Lamptey','Osman Bukari','Andre Ayew','Daniel Amartey'],
+  'Haiti': ['Duckens Nazon','Frantzdy Pierrot','Steeven Saba','Mechack Jerome','Derrick Etienne','Wilde-Donald Guerrier','Kevin Laventure','Chery Duckens','Jhon Luzincourt','Frantz Gerald Calixte'],
+  'Honduras': ['Alberth Elis','Romell Quioto','Anthony Lozano','Luis Palma','Alex Lopez','Bryan Acosta','Kervin Arriaga','Rigoberto Rivas','Deybi Flores','Jorge Alvarez'],
+  'Iran': ['Mehdi Taremi','Sardar Azmoun','Alireza Jahanbakhsh','Karim Ansarifard','Vahid Amiri','Ehsan Hajsafi','Saeid Ezatolahi','Ali Gholizadeh','Ahmad Nourollahi','Milad Mohammadi'],
+  'Iraq': ['Aymen Hussein','Amjed Attwan','Mohanad Ali','Yaser Kasim','Alaa Abbas','Ibrahim Bayesh','Muhanad Abdulraheem','Bashar Resan','Saad Natiq','Ali Adnan'],
+  "Côte d'Ivoire": ['Sebastien Haller','Nicolas Pepe','Franck Kessie','Serge Aurier','Max Gradel','Simon Adingra','Jeremie Boga','Ibrahim Sangare','Seko Fofana','Wilfried Zaha'],
+  'Ivory Coast': ['Sebastien Haller','Nicolas Pepe','Franck Kessie','Serge Aurier','Max Gradel','Simon Adingra','Jeremie Boga','Ibrahim Sangare','Seko Fofana','Wilfried Zaha'],
+  'Japan': ['Takefusa Kubo','Kaoru Mitoma','Ritsu Doan','Daichi Kamada','Wataru Endo','Ao Tanaka','Takehiro Tomiyasu','Ayase Ueda','Yukinari Sugawara','Hiroki Ito'],
+  'Jordan': ['Musa Al-Taamari','Yazan Al-Naimat','Baha Faisal','Ahmad Gharaibeh','Hamza Al-Dardour','Ashraf Nour','Odai Al-Rashid','Mohammad Abu Hasna','Rawan Rawashdeh','Ahmad Al-Saify'],
+  'Mexico': ['Santiago Gimenez','Hirving Lozano','Raul Jimenez','Roberto Alvarado','Henry Martin','Orbelin Pineda','Carlos Vela','Uriel Antuna','Edson Alvarez','Cesar Montes'],
+  'Morocco': ['Hakim Ziyech','Achraf Hakimi','Youssef En-Nesyri','Sofiane Boufal','Azzedine Ounahi','Nayef Aguerd','Abde Ezzalzouli','Ibrahim Diaz','Selim Amallah','Romain Saiss'],
+  'Netherlands': ['Cody Gakpo','Xavi Simons','Frenkie de Jong','Wout Weghorst','Donyell Malen','Tijjani Reijnders','Teun Koopmeiners','Nathan Ake','Denzel Dumfries','Memphis Depay'],
+  'New Zealand': ['Chris Wood','Clayton Lewis','Liberato Cacace','Elijah Just','Matthew Garbett','Alex Rufer','Deklan Wynne','Tommy Smith','Bill Tuilagi','Marko Stamenic'],
+  'Nigeria': ['Victor Osimhen','Ademola Lookman','Alex Iwobi','Wilfred Ndidi','Samuel Chukwueze','Moses Simon','Taiwo Awoniyi','Frank Onyeka','Emmanuel Dennis','Kelechi Iheanacho'],
+  'Norway': ['Erling Haaland','Martin Odegaard','Alexander Isak','Viktor Gyokeres','Antonio Nusa','Sander Berge','Kristian Thorstvedt','Mohamed Elyounoussi','Patrick Berg','Alexander Sorloth'],
+  'Panama': ['Cecilio Waterman','Rolando Blackburn','Ismael Diaz','Anibal Godoy','Adalberto Carrasquilla','Jose Fajardo','Abdiel Arroyo','Edgar Barcenas','Alfredo Stephens','Ricardo Avila'],
+  'Paraguay': ['Miguel Almiron','Gustavo Gomez','Richard Sanchez','Junior Alonso','Matias Rojas','Omar Alderete','Antonio Sanabria','Julio Enciso','Julio Romero','Carlos Gonzalez'],
+  'Peru': ['Paolo Guerrero','Andre Carrillo','Gianluca Lapadula','Edison Flores','Christian Cueva','Luis Advincula','Renato Tapia','Bryan Reyna','Marcos Lopez','Santiago Ormeño'],
+  'Portugal': ['Cristiano Ronaldo','Rafael Leao','Bruno Fernandes','Bernardo Silva','Joao Felix','Goncalo Ramos','Pedro Neto','Vitinha','Diogo Jota','Ruben Neves'],
+  'Qatar': ['Akram Afif','Almoez Ali','Hassan Al-Haydos','Abdulaziz Hatem','Ismaeel Mohammad','Karim Boudiaf','Pedro Miguel','Boualem Khoukhi','Bassam Al-Rawi','Ahmed Al-Harazi'],
+  'Saudi Arabia': ['Salem Al-Dawsari','Firas Al-Buraikan','Sami Al-Najei','Abdullah Otayf','Hattan Bahebri','Moussa Al-Tammari','Nasser Al-Dawsari','Mohamed Kanno','Ali Al-Hassan','Saleh Al-Shehri'],
+  'Scotland': ['Scott McTominay','Andrew Robertson','Kieran Tierney','Che Adams','Ryan Christie','John McGinn','Billy Gilmour','Lawrence Shankland','Ryan Jack','Stuart Armstrong'],
+  'Senegal': ['Sadio Mane','Ismaila Sarr','Nicolas Jackson','Iliman Ndiaye','Kalidou Koulibaly','Pape Matar Sarr','Lamine Camara','Idrissa Gueye','Cheikhou Kouyate','Bamba Dieng'],
+  'South Africa': ['Percy Tau','Bongani Zungu','Themba Zwane','Keagan Dolly','Evidence Makgopa','Sifiso Hlanti','Mothobi Mvala','Yusuf Maart','Lyle Foster','Teboho Mokoena'],
+  'South Korea': ['Son Heung-min','Lee Kang-in','Hwang Hee-chan','Kim Min-jae','Hwang In-beom','Lee Jae-sung','Cho Gue-sung','Na Sang-ho','Oh Hyeon-gyu','Kwon Chang-hoon'],
+  'Spain': ['Lamine Yamal','Pedri','Rodri','Alvaro Morata','Nico Williams','Dani Olmo','Ferran Torres','Gavi','Mikel Oyarzabal','Fabian Ruiz'],
+  'Sweden': ['Viktor Gyokeres','Alexander Isak','Dejan Kulusevski','Emil Forsberg','Isak Hien','Victor Lindelof','Robin Quaison','Albin Ekdal','Pontus Jansson','Mattias Svanberg'],
+  'Switzerland': ['Granit Xhaka','Breel Embolo','Dan Ndoye','Denis Zakaria','Fabian Schar','Remo Freuler','Ricardo Rodriguez','Manuel Akanji','Cedric Itten','Nico Elvedi'],
+  'Tunisia': ['Wahbi Khazri','Youssef Msakni','Seifeddine Jaziri','Ellyes Skhiri','Naim Sliti','Ferjani Sassi','Dylan Bronn','Montassar Talbi','Mohamed Ben Romdhane','Ghaylane Chaalali'],
+  'Türkiye': ['Hakan Calhanoglu','Arda Guler','Kerem Akturkoglu','Orkun Kokcu','Baris Alper Yilmaz','Ferdi Kadioglu','Cengiz Under','Yunus Akgun','Zeki Celik','Ozan Kabak'],
+  'Turkey': ['Hakan Calhanoglu','Arda Guler','Kerem Akturkoglu','Orkun Kokcu','Baris Alper Yilmaz','Ferdi Kadioglu','Cengiz Under','Yunus Akgun','Zeki Celik','Ozan Kabak'],
+  'Ukraine': ['Artem Dovbyk','Mykhailo Mudryk','Oleksandr Zinchenko','Ruslan Malinovskyi','Viktor Tsygankov','Georgiy Sudakov','Vladyslav Vanat','Andriy Yarmolenko','Roman Yaremchuk','Taras Stepanenko'],
+  'Uruguay': ['Darwin Nunez','Federico Valverde','Luis Suarez','Rodrigo Bentancur','Ronald Araujo','Facundo Torres','Matias Vecino','Jose Maria Gimenez','Maxi Gomez','Brian Rodriguez'],
+  'USA': ['Christian Pulisic','Gio Reyna','Folarin Balogun','Weston McKennie','Yunus Musah','Tyler Adams','Ricardo Pepi','Sergino Dest','Antonee Robinson','Josh Weah'],
+  'United States': ['Christian Pulisic','Gio Reyna','Folarin Balogun','Weston McKennie','Yunus Musah','Tyler Adams','Ricardo Pepi','Sergino Dest','Antonee Robinson','Josh Weah'],
+  'Uzbekistan': ['Eldor Shomurodov','Jaloliddin Masharipov','Abbosbek Fayzullaev','Otabek Shukurov','Dostonbek Khamdamov','Khojiakbar Alijonov','Islom Tukhtamurodov','Sanjar Tursunov','Sherzod Nasrullayev','Jasurbek Yakhshiboev'],
+  'Venezuela': ['Salomon Rondon','Josef Martinez','Yeferson Soteldo','Darwin Machis','Yangel Herrera','Jhon Chancellor','Tomas Rincon','Adalberto Penaranda','Eric Ramirez','Junior Moreno'],
+};
 
-async function getTeamSquad(teamId) {
-  if (teamSquadCache[teamId]) return teamSquadCache[teamId];
-  try {
-    const data = await fetchAPI(`/teams/${teamId}`);
-    // Filter outfield players only (no goalkeepers)
-    const outfield = (data.squad || [])
-      .filter(p => p.position !== 'Goalkeeper')
-      .map(p => p.name);
-    teamSquadCache[teamId] = outfield;
-    return outfield;
-  } catch(e) {
-    console.log('Could not fetch squad for team', teamId);
-    return [];
-  }
+function getSquad(teamName) {
+  if (!teamName) return [];
+  // Try exact match first
+  if (SQUADS[teamName]) return SQUADS[teamName];
+  // Try case-insensitive match
+  const key = Object.keys(SQUADS).find(k => k.toLowerCase() === teamName.toLowerCase());
+  return key ? SQUADS[key] : [];
 }
 
 async function syncMatches(db) {
   const data = await fetchAPI(`/competitions/${WC_CODE}/matches`);
   const matches = data.matches || [];
-
-  // Also get all WC teams to build squad cache
-  let wcTeams = {};
-  try {
-    const teamsData = await fetchAPI(`/competitions/${WC_CODE}/teams`);
-    (teamsData.teams || []).forEach(t => {
-      wcTeams[t.id] = t;
-    });
-  } catch(e) {
-    console.log('Could not fetch WC teams');
-  }
 
   for (const match of matches) {
     const kickoff = new Date(match.utcDate);
@@ -85,26 +124,13 @@ async function syncMatches(db) {
     const score = match.score || {};
     const ft = score.fullTime || {};
 
-    // Fetch squad for home and away teams
-    let homePlayers = [];
-    let awayPlayers = [];
-
-    if (home.id) {
-      homePlayers = await getTeamSquad(home.id);
-      // Small delay to avoid rate limiting
-      await new Promise(r => setTimeout(r, 200));
-    }
-    if (away.id) {
-      awayPlayers = await getTeamSquad(away.id);
-      await new Promise(r => setTimeout(r, 200));
-    }
+    const homePlayers = getSquad(home.name || home.shortName || '');
+    const awayPlayers = getSquad(away.name || away.shortName || '');
 
     await db.collection('matches').doc(String(match.id)).set({
       footballDataId: match.id,
       homeTeam: home.name || home.shortName || '',
       awayTeam: away.name || away.shortName || '',
-      homeTeamId: home.id || null,
-      awayTeamId: away.id || null,
       homeFlag: getFlag(home.tla || ''),
       awayFlag: getFlag(away.tla || ''),
       kickoff,
@@ -125,9 +151,7 @@ async function syncLiveResults(db) {
   let liveMatches = [];
   try {
     const data = await fetchAPI(`/competitions/${WC_CODE}/matches?status=IN_PLAY,PAUSED,FINISHED`);
-    liveMatches = (data.matches || []).filter(m =>
-      ['IN_PLAY','PAUSED','FINISHED'].includes(m.status)
-    );
+    liveMatches = (data.matches || []).filter(m => ['IN_PLAY','PAUSED','FINISHED'].includes(m.status));
   } catch(e) { return 0; }
 
   for (const match of liveMatches) {
@@ -190,7 +214,6 @@ async function calculatePoints(db, matchId, homeScore, awayScore, firstScorer) {
     }
   }
 
-  // Tournament player goals
   try {
     const detail = await fetchAPI(`/matches/${matchId}`);
     const goals = (detail.goals || [])
@@ -222,16 +245,12 @@ export default async function handler(req, res) {
     const db = getDb();
     const action = req.query.action || 'live';
     let result = { action, timestamp: new Date().toISOString() };
-
-    if (action === 'matches') {
-      result.synced = await syncMatches(db);
-    } else if (action === 'live') {
-      result.live = await syncLiveResults(db);
-    } else if (action === 'all') {
+    if (action === 'matches') result.synced = await syncMatches(db);
+    else if (action === 'live') result.live = await syncLiveResults(db);
+    else if (action === 'all') {
       result.matches = await syncMatches(db);
       result.live = await syncLiveResults(db);
     }
-
     res.status(200).json({ success: true, ...result });
   } catch (err) {
     console.error(err);
