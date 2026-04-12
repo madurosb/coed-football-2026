@@ -1381,7 +1381,7 @@
           ${avatarHTML}
           <div>
             <div class="name">${nameHTML}</div>
-            <div class="handle">${u.email || ''}</div>
+            <div class="handle">${u.isAdmin ? 'nirbrainin@gmail.com' : (u.email || '')}</div>
           </div>
         </div>
         <div class="lb-pts">${u.points || 0}</div>
@@ -1737,7 +1737,7 @@
       html += `<div class="user-row">
         <div class="lb-user">
           <div class="avatar" style="${(() => { const av2 = getAvatarById(u.avatar); return av2 ? 'background:none;padding:0;' : ''; })()}">${(() => { const av2 = getAvatarById(u.avatar); return av2 ? makeAvatarSVG(av2, 30) : (u.nickname||u.displayName||'?').substring(0,2).toUpperCase(); })()}</div>
-          <div><div class="name" style="font-size:14px;font-weight:500;">${u.nickname || u.displayName}</div><div style="font-size:12px;color:var(--text-muted);">${u.email}</div></div>
+          <div><div class="name" style="font-size:14px;font-weight:500;">${u.nickname || u.displayName}</div><div style="font-size:12px;color:var(--text-muted);">${u.isAdmin ? 'nirbrainin@gmail.com' : u.email}</div></div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           <span class="status-badge status-active">Active</span>
