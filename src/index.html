@@ -1074,7 +1074,7 @@
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
   import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
-  import { getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, updateDoc, query, orderBy, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+  import { getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, updateDoc, deleteDoc, query, orderBy, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 
   const firebaseConfig = {
     apiKey: "AIzaSyDqHBefYm759z1eR3S5V_ppaadIceeS9-4",
@@ -1544,6 +1544,7 @@
     let html = '';
     snap.forEach(d => {
       const u = d.data();
+      if (u.removed) return;
       html += `<div class="user-row">
         <div class="lb-user">
           <div class="avatar">${(u.nickname||u.displayName||'?').substring(0,2).toUpperCase()}</div>
@@ -1559,9 +1560,13 @@
   }
 
   window.removeUser = async (uid) => {
-    if (!confirm('Remove this user?')) return;
-    await updateDoc(doc(db, 'users', uid), { removed: true });
-    loadAdminUsers();
+    if (!confirm('Remove this user? This cannot be undone.')) return;
+    try {
+      await deleteDoc(doc(db, 'users', uid));
+      loadAdminUsers();
+    } catch(e) {
+      alert('Error removing user: ' + e.message);
+    }
   };
 
   window.savePrizes = async () => {
