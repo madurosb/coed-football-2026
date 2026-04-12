@@ -1960,6 +1960,7 @@
     myPreds.forEach(pred => {
       const match = matches.find(m => m.id === pred.matchId);
       if (!match || match.homeScore === null) return;
+      if (match.status !== 'FINISHED' && match.homeScore === null) return;
       const actual = match.homeScore > match.awayScore ? 'home' : match.homeScore < match.awayScore ? 'away' : 'draw';
       const predicted = pred.homeScore > pred.awayScore ? 'home' : pred.homeScore < pred.awayScore ? 'away' : 'draw';
       if (actual === predicted) correctResults++;
@@ -1975,7 +1976,10 @@
     });
 
     const predCount = myPreds.length;
-    const finishedPreds = myPreds.filter(p => { const m = matches.find(x => x.id === p.matchId); return m && m.status === 'FINISHED'; });
+    const finishedPreds = myPreds.filter(p => {
+      const m = matches.find(x => x.id === p.matchId);
+      return m && (m.status === 'FINISHED' || m.homeScore !== null);
+    });
     const correctPct = finishedPreds.length > 0 ? Math.round((correctResults / finishedPreds.length) * 100) : 0;
     const exactPct = finishedPreds.length > 0 ? Math.round(((user.exactScores||0) / finishedPreds.length) * 100) : 0;
     const scorerPct = finishedPreds.length > 0 ? Math.round(((user.bonusPoints||0) / finishedPreds.length) * 100) : 0;
