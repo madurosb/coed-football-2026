@@ -255,6 +255,7 @@
       <button class="nav-btn" data-page="home" onclick="showPage('home')">Home</button>
       <button class="nav-btn" data-page="matches" onclick="showPage('matches')">Matches</button>
       <button class="nav-btn" data-page="leaderboard" onclick="showPage('leaderboard')">Standings</button>
+      <button class="nav-btn" data-page="stats" onclick="showPage('stats')">My Stats</button>
       <button class="nav-btn" data-page="rules" onclick="showPage('rules')">Rules</button>
       <button class="nav-btn" data-page="admin" id="admin-nav-btn" style="display:none;" onclick="showPage('admin')">Admin</button>
     </div>
@@ -999,6 +1000,13 @@
     </div>
   </div>
 
+  <!-- STATS -->
+  <div class="page" id="page-stats">
+    <div id="stats-content">
+      <div style="padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);">Loading your stats...</div>
+    </div>
+  </div>
+
   <!-- ADMIN -->
   <div class="page" id="page-admin">
     <div id="admin-main">
@@ -1336,6 +1344,7 @@
     if (btn) btn.classList.add('active');
     if (id === 'admin') { showAdminMain(); loadAdminUsers(); loadAdminStats(); }
     if (id === 'leaderboard') loadFullLeaderboard();
+    if (id === 'stats') loadStatsPage();
   };
 
   // LOAD HOME DATA
@@ -1858,6 +1867,182 @@
     document.getElementById('dyk-overlay').style.display = 'none';
   }
   window.closeDyk = closeDyk;
+
+  // ========== STATS PAGE ==========
+  async function loadStatsPage() {
+    const container = document.getElementById('stats-content');
+    container.innerHTML = '<div style="padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);">Loading your stats...</div>';
+
+    const [userSnap, predsSnap, matchesSnap, allUsersSnap] = await Promise.all([
+      getDoc(doc(db, 'users', currentUser.uid)),
+      getDocs(query(collection(db, 'predictions'), orderBy('submittedAt'))),
+      getDocs(query(collection(db, 'matches'), orderBy('kickoff'))),
+      getDocs(collection(db, 'users'))
+    ]);
+
+    const user = userSnap.data();
+    const allUsers = [];
+    allUsersSnap.forEach(d => { if (!d.data().removed) allUsers.push(d.data()); });
+    allUsers.sort((a,b) => (b.points||0)-(a.points||0));
+    const rank = allUsers.findIndex(u => u.uid === currentUser.uid) + 1;
+    const totalPlayers = allUsers.length;
+
+    const myPreds = [];
+    predsSnap.forEach(d => { if (d.data().userId === currentUser.uid) myPreds.push(d.data()); });
+
+    const matches = [];
+    matchesSnap.forEach(d => matches.push({id: d.id, ...d.data()}));
+    const finishedMatches = matches.filter(m => m.status === 'FINISHED');
+    const totalMatches = matches.length;
+
+    // Calculate stats
+    let correctResults = 0, biggestMiss = null, biggestMissScore = 999;
+    let favoriteTeam = {}, mostPredicted = null;
+
+    myPreds.forEach(pred => {
+      const match = matches.find(m => m.id === pred.matchId);
+      if (!match || match.homeScore === null) return;
+      const actual = match.homeScore > match.awayScore ? 'home' : match.homeScore < match.awayScore ? 'away' : 'draw';
+      const predicted = pred.homeScore > pred.awayScore ? 'home' : pred.homeScore < pred.awayScore ? 'away' : 'draw';
+      if (actual === predicted) correctResults++;
+      // Find biggest miss (total goal difference between prediction and reality)
+      const diff = Math.abs(pred.homeScore - match.homeScore) + Math.abs(pred.awayScore - match.awayScore);
+      if (diff > 0 && diff < biggestMissScore) {
+        biggestMissScore = diff;
+        biggestMiss = { pred: `${pred.homeScore}-${pred.awayScore}`, actual: `${match.homeScore}-${match.awayScore}`, home: match.homeTeam, away: match.awayTeam };
+      }
+      // Track teams predicted to win
+      const winner = pred.homeScore > pred.awayScore ? match.homeTeam : pred.homeScore < pred.awayScore ? match.awayTeam : null;
+      if (winner) favoriteTeam[winner] = (favoriteTeam[winner] || 0) + 1;
+    });
+
+    const predCount = myPreds.length;
+    const finishedPreds = myPreds.filter(p => { const m = matches.find(x => x.id === p.matchId); return m && m.status === 'FINISHED'; });
+    const correctPct = finishedPreds.length > 0 ? Math.round((correctResults / finishedPreds.length) * 100) : 0;
+    const exactPct = finishedPreds.length > 0 ? Math.round(((user.exactScores||0) / finishedPreds.length) * 100) : 0;
+    const scorerPct = finishedPreds.length > 0 ? Math.round(((user.bonusPoints||0) / finishedPreds.length) * 100) : 0;
+
+    const favTeamEntry = Object.entries(favoriteTeam).sort((a,b) => b[1]-a[1])[0];
+    const favTeam = favTeamEntry ? favTeamEntry[0] : null;
+
+    // Badges
+    const badges = [];
+    if (rank === 1) badges.push({label:'👑 Leader', cls:'badge-gold'});
+    if (exactPct >= 20) badges.push({label:'🎯 Sniper', cls:'badge-teal'});
+    if (correctPct >= 60) badges.push({label:'🔥 Hot streak', cls:'badge-red'});
+    if (predCount >= 20) badges.push({label:'📋 Committed', cls:'badge-blue'});
+    if ((user.bonusPoints||0) >= 3) badges.push({label:'⚡ Scorer hunter', cls:'badge-amber'});
+    if (predCount === 0) badges.push({label:'😴 Just watching', cls:'badge-gray'});
+
+    // Fun verdict
+    const verdicts = [
+      predCount === 0 ? "You haven't predicted anything yet. Brave strategy." : null,
+      correctPct >= 70 ? "You're either very good or very lucky. Probably lucky." : null,
+      correctPct < 30 && finishedPreds.length > 3 ? "Your predictions are basically a coin flip. A bad coin." : null,
+      rank === 1 ? "You're winning. Don't get comfortable." : null,
+      rank === totalPlayers ? "Last place. At least you showed up." : null,
+      exactPct >= 25 ? "Exact scores? You might be cheating. We're watching you." : null,
+    ].filter(Boolean);
+    const verdict = verdicts[0] || `Rank ${rank} of ${totalPlayers}. ${rank <= 3 ? 'Solid.' : 'There\'s room to grow.'}`;
+
+    // Avatar
+    const isAdmin = user.isAdmin;
+    const avatarHTML = isAdmin
+      ? `<img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #00ff41;">`
+      : (() => { const av = getAvatarById(user.avatar); return av ? makeAvatarSVG(av, 56) : `<div style="width:56px;height:56px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:500;color:var(--green-dark);">${(user.nickname||'?').substring(0,2).toUpperCase()}</div>`; })();
+
+    const nameHTML = isAdmin
+      ? `${user.nickname||user.displayName} <span style="font-size:10px;background:#00ff41;color:#000;padding:1px 5px;border-radius:99px;font-weight:700;margin-left:4px;">ADMIN</span>`
+      : (user.nickname || user.displayName);
+
+    container.innerHTML = `
+      <div style="margin-bottom:1.5rem;padding:1rem 1.25rem;background:var(--surface);border:0.5px solid var(--border);border-radius:12px;display:flex;align-items:center;gap:16px;">
+        <div style="flex-shrink:0;">${avatarHTML}</div>
+        <div style="flex:1;">
+          <div style="font-size:18px;font-weight:500;margin-bottom:4px;">${nameHTML}</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">Rank #${rank} of ${totalPlayers} players &nbsp;·&nbsp; ${user.tournamentPlayer || 'No tournament player set'}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
+            ${badges.map(b => `<span style="font-size:11px;padding:2px 8px;border-radius:99px;font-weight:500;background:var(--surface2);color:var(--text-muted);">${b.label}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:1rem;">
+        <div style="background:var(--surface2);border-radius:8px;padding:1rem;text-align:center;">
+          <div style="font-size:16px;margin-bottom:2px;">⭐</div>
+          <div style="font-size:24px;font-weight:500;">${user.points||0}</div>
+          <div style="font-size:12px;color:var(--text-muted);">Total points</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:1rem;text-align:center;">
+          <div style="font-size:16px;margin-bottom:2px;">🎯</div>
+          <div style="font-size:24px;font-weight:500;">${user.exactScores||0}</div>
+          <div style="font-size:12px;color:var(--text-muted);">Exact scores</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:1rem;text-align:center;">
+          <div style="font-size:16px;margin-bottom:2px;">✅</div>
+          <div style="font-size:24px;font-weight:500;">${correctPct}%</div>
+          <div style="font-size:12px;color:var(--text-muted);">Winner correct</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:1rem;text-align:center;">
+          <div style="font-size:16px;margin-bottom:2px;">⚽</div>
+          <div style="font-size:24px;font-weight:500;">${user.bonusPoints||0}</div>
+          <div style="font-size:12px;color:var(--text-muted);">Scorer hits</div>
+        </div>
+      </div>
+
+      <div style="font-size:11px;font-weight:500;letter-spacing:0.08em;color:var(--text-muted);text-transform:uppercase;margin:1.25rem 0 0.5rem;">Prediction breakdown</div>
+      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:10px;">
+        ${[
+          {label:'Correct result', pct: correctPct, color:'#5DCAA5'},
+          {label:'Exact score',    pct: exactPct,   color:'#378ADD'},
+          {label:'First scorer',   pct: scorerPct,  color:'#BA7517'},
+        ].map(r => `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <span style="font-size:12px;color:var(--text-muted);width:100px;flex-shrink:0;">${r.label}</span>
+            <div style="flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;">
+              <div style="width:${r.pct}%;height:100%;background:${r.color};border-radius:3px;"></div>
+            </div>
+            <span style="font-size:12px;color:var(--text-muted);width:32px;text-align:right;">${r.pct}%</span>
+          </div>`).join('')}
+      </div>
+
+      <div style="font-size:11px;font-weight:500;letter-spacing:0.08em;color:var(--text-muted);text-transform:uppercase;margin:1.25rem 0 0.5rem;">Fun facts</div>
+
+      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:8px;">
+        <div style="font-size:13px;font-weight:500;margin-bottom:3px;">🔮 Tournament player</div>
+        <div style="font-size:13px;color:var(--text-muted);">${user.tournamentPlayer
+          ? `${user.tournamentPlayer} &nbsp;·&nbsp; ${(user.bonusPoints||0) > 0 ? `${user.bonusPoints} goal${user.bonusPoints>1?'s':''} scored. You picked a winner.` : 'No goals yet. Still believing.'}`
+          : 'You never picked one. Living on the edge.'}</div>
+      </div>
+
+      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:8px;">
+        <div style="font-size:13px;font-weight:500;margin-bottom:3px;">📋 Predictions submitted</div>
+        <div style="font-size:13px;color:var(--text-muted);">${predCount} out of ${totalMatches} matches. ${predCount === 0 ? 'Zero. Truly committed to doing nothing.' : predCount < 10 ? 'Just getting started. Or very lazy.' : predCount < 30 ? 'Decent effort. Could do more.' : predCount >= 80 ? 'You predicted almost everything. Get a hobby.' : 'Respectable. Keep going.'}</div>
+      </div>
+
+      ${biggestMiss ? `
+      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:8px;">
+        <div style="font-size:13px;font-weight:500;margin-bottom:3px;">😬 Worst prediction</div>
+        <div style="font-size:13px;color:var(--text-muted);">${biggestMiss.home} vs ${biggestMiss.away} &nbsp;·&nbsp; You said ${biggestMiss.pred}. It was ${biggestMiss.actual}. Yikes.</div>
+      </div>` : ''}
+
+      ${favTeam ? `
+      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:8px;">
+        <div style="font-size:13px;font-weight:500;margin-bottom:3px;">❤️ Favourite team to bet on</div>
+        <div style="font-size:13px;color:var(--text-muted);">${favTeam}. You picked them to win ${favTeamEntry[1]} time${favTeamEntry[1]>1?'s':''}. We see the bias.</div>
+      </div>` : ''}
+
+      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:8px;">
+        <div style="font-size:13px;font-weight:500;margin-bottom:3px;">📈 Verdict</div>
+        <div style="font-size:13px;color:var(--text-muted);">${verdict}</div>
+      </div>
+
+      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:8px;">
+        <div style="font-size:13px;font-weight:500;margin-bottom:3px;">💸 Money at stake</div>
+        <div style="font-size:13px;color:var(--text-muted);">You paid 50 ILS to enter. First prize is worth way more. ${rank === 1 ? 'You might actually win. Breathe.' : `You need to overtake ${rank-1} player${rank-1>1?'s':''} to take 1st. Easy.`}</div>
+      </div>
+    `;
+  }
 
   // Show popup 1.5 seconds after login
   // (called from onAuthStateChanged after user is confirmed logged in)
