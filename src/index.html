@@ -1208,6 +1208,26 @@
       container.innerHTML = '<div style="padding:1rem;text-align:center;font-size:13px;color:var(--text-muted);">No matches scheduled yet. Check back soon!</div>';
       return;
     }
+
+    const TEAM_FLAGS = {
+      'Mexico':'🇲🇽','South Africa':'🇿🇦','USA':'🇺🇸','United States':'🇺🇸','Canada':'🇨🇦',
+      'Argentina':'🇦🇷','Brazil':'🇧🇷','France':'🇫🇷','Germany':'🇩🇪','Spain':'🇪🇸',
+      'Portugal':'🇵🇹','England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','Netherlands':'🇳🇱','Belgium':'🇧🇪','Croatia':'🇭🇷',
+      'Japan':'🇯🇵','South Korea':'🇰🇷','Australia':'🇦🇺','Morocco':'🇲🇦','Senegal':'🇸🇳',
+      'Nigeria':'🇳🇬','Ghana':'🇬🇭',"Côte d'Ivoire":'🇨🇮','Ivory Coast':'🇨🇮','Egypt':'🇪🇬',
+      'Saudi Arabia':'🇸🇦','Iran':'🇮🇷','Qatar':'🇶🇦','Uruguay':'🇺🇾','Colombia':'🇨🇴',
+      'Ecuador':'🇪🇨','Switzerland':'🇨🇭','Norway':'🇳🇴','Czech Republic':'🇨🇿','Czechia':'🇨🇿',
+      'Austria':'🇦🇹','Turkey':'🇹🇷','Türkiye':'🇹🇷','Ukraine':'🇺🇦','Scotland':'🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+      'Sweden':'🇸🇪','Bosnia and Herzegovina':'🇧🇦','Bosnia & Herzegovina':'🇧🇦',
+      'Cape Verde':'🇨🇻','Curacao':'🇨🇼','Curaçao':'🇨🇼','Haiti':'🇭🇹','Panama':'🇵🇦',
+      'Iraq':'🇮🇶','DR Congo':'🇨🇩','New Zealand':'🇳🇿','Uzbekistan':'🇺🇿','Jordan':'🇯🇴',
+      'Algeria':'🇩🇿','Tunisia':'🇹🇳','Paraguay':'🇵🇾','Venezuela':'🇻🇪','Bolivia':'🇧🇴',
+      'Peru':'🇵🇪','Chile':'🇨🇱','Guatemala':'🇬🇹','Honduras':'🇭🇳','Serbia':'🇷🇸',
+      'Poland':'🇵🇱','Denmark':'🇩🇰','Romania':'🇷🇴','Slovakia':'🇸🇰','Slovenia':'🇸🇮',
+      'Georgia':'🇬🇪','Jamaica':'🇯🇲','Costa Rica':'🇨🇷','El Salvador':'🇸🇻',
+    };
+    const teamFlag = name => TEAM_FLAGS[name] || '';
+
     const now = new Date();
     let html = '';
     matchesSnap.forEach(d => {
@@ -1229,7 +1249,7 @@
             </div>
           </div>
           <div class="match-teams">
-            <div class="team"><span class="flag">${m.homeFlag || ''}</span><span class="name">${m.homeTeam}</span></div>
+            <div class="team"><span class="flag">${teamFlag(m.homeTeam)}</span><span class="name">${m.homeTeam}</span></div>
             <div>
               <div class="vs">VS</div>
               <div class="score-inputs">
@@ -1238,15 +1258,15 @@
                 <input class="score-input" type="number" min="0" max="20" placeholder="0" id="away-${d.id}" ${isPast?'disabled':''}>
               </div>
             </div>
-            <div class="team"><span class="flag">${m.awayFlag || ''}</span><span class="name">${m.awayTeam}</span></div>
+            <div class="team"><span class="flag">${teamFlag(m.awayTeam)}</span><span class="name">${m.awayTeam}</span></div>
           </div>
           <div class="match-bonus">
             <div class="bonus-row">
               <div><div class="bonus-label">First goalscorer</div><div class="bonus-pts">+2 pts if correct</div></div>
               <select id="scorer-${d.id}" ${isPast?'disabled':''}>
                 <option value="">Select player...</option>
-                <optgroup label="${m.homeFlag || ''} ${m.homeTeam}">${(m.homePlayers||[]).map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
-                <optgroup label="${m.awayFlag || ''} ${m.awayTeam}">${(m.awayPlayers||[]).map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
+                <optgroup label="${teamFlag(m.homeTeam)} ${m.homeTeam}">${(m.homePlayers||[]).map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
+                <optgroup label="${teamFlag(m.awayTeam)} ${m.awayTeam}">${(m.awayPlayers||[]).map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
               </select>
             </div>
           </div>
