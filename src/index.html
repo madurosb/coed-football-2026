@@ -1186,8 +1186,12 @@
     loadMatches();
     loadPrizes();
     setTimeout(showDyk, 1500);
-    // Autoplay music after login
-    setTimeout(startMusic, 800);
+    // Start music on first user interaction after login
+    const startOnInteraction = () => {
+      startMusic();
+      document.removeEventListener('click', startOnInteraction);
+    };
+    document.addEventListener('click', startOnInteraction);
   }
 
   // SIGN IN
