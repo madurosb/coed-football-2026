@@ -164,6 +164,9 @@
     .modal h2 { font-size: 18px; font-weight: 500; margin-bottom: 0.5rem; }
     .modal p { font-size: 13px; color: var(--text-muted); margin-bottom: 1rem; }
     .modal input { width: 100%; padding: 8px 10px; border-radius: var(--radius); border: 0.5px solid var(--border); background: var(--surface2); color: var(--text); font-size: 15px; margin-bottom: 1rem; }
+    .avatar-opt { font-size: 24px; width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--border); background: var(--surface2); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color 0.15s, transform 0.15s; }
+    .avatar-opt:hover { transform: scale(1.1); }
+    .avatar-opt.selected { border-color: var(--green); background: var(--green-light); }
     .modal-btn { width: 100%; padding: 10px; border-radius: var(--radius); border: none; background: var(--green); color: var(--green-light); font-size: 14px; font-weight: 500; cursor: pointer; }
 
     /* LOADING */
@@ -232,9 +235,15 @@
 <div id="nickname-modal" class="modal-overlay" style="display:none;">
   <div class="modal">
     <h2>Choose your nickname</h2>
-    <p>This is how you'll appear on the leaderboard. You can change it later from your profile.</p>
-    <input type="text" id="nickname-input" placeholder="e.g. imverygay69" maxlength="20">
-    <button class="modal-btn" onclick="saveNickname()">Let's go!</button>
+    <p>This is how you'll appear on the leaderboard.</p>
+    <input type="text" id="nickname-input" placeholder="e.g. GoalMachine99" maxlength="20">
+    <div style="margin-bottom:1rem;">
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">Pick your avatar</div>
+      <div id="avatar-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;">
+      </div>
+    </div>
+    <input type="hidden" id="avatar-input" value="⚽">
+    <button class="modal-btn" onclick="saveNickname()">Let's go! 🚀</button>
   </div>
 </div>
 
@@ -1175,6 +1184,7 @@
         // New user - show nickname modal
         document.getElementById('view-app').style.display = 'block';
         document.getElementById('nickname-modal').style.display = 'flex';
+        initAvatarGrid();
         // Create basic user doc
         await setDoc(userRef, {
           uid: user.uid,
@@ -1201,7 +1211,14 @@
     document.getElementById('view-login').style.display = 'none';
     document.getElementById('view-app').style.display = 'block';
     document.getElementById('user-handle').textContent = '@' + (currentUserData.nickname || currentUserData.displayName);
-    document.getElementById('user-avatar').textContent = (currentUserData.nickname || currentUserData.displayName || '?').substring(0, 2).toUpperCase();
+    const avatarEl = document.getElementById('user-avatar');
+    if (currentUserData.avatar && AVATARS.includes(currentUserData.avatar)) {
+      avatarEl.textContent = currentUserData.avatar;
+      avatarEl.style.fontSize = '18px';
+    } else {
+      avatarEl.textContent = (currentUserData.nickname || currentUserData.displayName || '?').substring(0, 2).toUpperCase();
+      avatarEl.style.fontSize = '12px';
+    }
     if (currentUserData.isAdmin || currentUser.email === ADMIN_EMAIL) {
       document.getElementById('admin-nav-btn').style.display = 'flex';
     }
@@ -1230,10 +1247,29 @@
   };
 
   // NICKNAME
+  // AVATAR GRID
+  const AVATARS = ['⚽','🏆','🦁','🐯','🦊','🐺','🦅','🐉','🔥','⚡','🎯','💀','👽','🤖','🧠','🥷','👑','🍺','🎲','🎸'];
+  function initAvatarGrid() {
+    const grid = document.getElementById('avatar-grid');
+    if (!grid || grid.children.length > 0) return;
+    AVATARS.forEach((emoji, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'avatar-opt' + (i === 0 ? ' selected' : '');
+      btn.textContent = emoji;
+      btn.onclick = () => {
+        document.querySelectorAll('.avatar-opt').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        document.getElementById('avatar-input').value = emoji;
+      };
+      grid.appendChild(btn);
+    });
+  }
+
   window.saveNickname = async () => {
     const nick = document.getElementById('nickname-input').value.trim();
     if (!nick) return alert('Please enter a nickname!');
-    await updateDoc(doc(db, 'users', currentUser.uid), { nickname: nick });
+    const avatar = document.getElementById('avatar-input').value || '⚽';
+    await updateDoc(doc(db, 'users', currentUser.uid), { nickname: nick, avatar });
     const snap = await getDoc(doc(db, 'users', currentUser.uid));
     currentUserData = snap.data();
     document.getElementById('nickname-modal').style.display = 'none';
@@ -1365,10 +1401,10 @@
           <div class="match-bonus">
             <div class="bonus-row">
               <div><div class="bonus-label">First goalscorer</div><div class="bonus-pts">+2 pts if correct</div></div>
-              <select id="scorer-${d.id}" ${isPast?'disabled':''}>
+              <select id="scorer-${d.id}" ${isPast?'disabled':''} onchange="autoSaveScorer('${d.id}', this)">
                 <option value="">Select player...</option>
-                <optgroup label="${teamFlag(m.homeTeam)} ${m.homeTeam}">${(m.homePlayers||[]).map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
-                <optgroup label="${teamFlag(m.awayTeam)} ${m.awayTeam}">${(m.awayPlayers||[]).map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
+                <optgroup label="${m.homeTeam}">${(m.homePlayers||[]).map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
+                <optgroup label="${m.awayTeam}">${(m.awayPlayers||[]).map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
               </select>
             </div>
           </div>
@@ -1416,6 +1452,17 @@
       ], {duration: 600 + Math.random()*400, easing:'ease-out'}).onfinish = () => el.remove();
     }
   }
+
+  window.autoSaveScorer = async (matchId, selectEl) => {
+    const firstScorer = selectEl.value;
+    const predRef = doc(db, 'predictions', `${currentUser.uid}_${matchId}`);
+    const existing = await getDoc(predRef);
+    if (!existing.exists()) return; // only update if prediction already saved
+    await updateDoc(predRef, { firstScorer });
+    selectEl.style.transition = 'box-shadow 0.2s';
+    selectEl.style.boxShadow = '0 0 0 2px #5DCAA5';
+    setTimeout(() => { selectEl.style.boxShadow = ''; }, 1200);
+  };
 
   window.savePrediction = async (matchId, homeTeam, awayTeam) => {
     const homeScore = document.getElementById('home-' + matchId).value;
