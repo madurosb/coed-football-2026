@@ -76,7 +76,7 @@
     .match-timing .tz { font-size: 10px; color: var(--text-muted); }
     .match-teams { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 1rem; margin-bottom: 0.75rem; }
     .team { text-align: center; }
-    .team .flag { font-size: 32px; display: block; margin-bottom: 4px; }
+    .team .flag { display: block; margin-bottom: 6px; height: 24px; display:flex; justify-content:center; }
     .team .name { font-size: 13px; font-weight: 500; }
     .vs { font-size: 12px; color: var(--text-muted); font-weight: 500; text-align: center; }
     .score-inputs { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px; }
@@ -1210,23 +1210,27 @@
     }
 
     const TEAM_FLAGS = {
-      'Mexico':'🇲🇽','South Africa':'🇿🇦','USA':'🇺🇸','United States':'🇺🇸','Canada':'🇨🇦',
-      'Argentina':'🇦🇷','Brazil':'🇧🇷','France':'🇫🇷','Germany':'🇩🇪','Spain':'🇪🇸',
-      'Portugal':'🇵🇹','England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','Netherlands':'🇳🇱','Belgium':'🇧🇪','Croatia':'🇭🇷',
-      'Japan':'🇯🇵','South Korea':'🇰🇷','Australia':'🇦🇺','Morocco':'🇲🇦','Senegal':'🇸🇳',
-      'Nigeria':'🇳🇬','Ghana':'🇬🇭',"Côte d'Ivoire":'🇨🇮','Ivory Coast':'🇨🇮','Egypt':'🇪🇬',
-      'Saudi Arabia':'🇸🇦','Iran':'🇮🇷','Qatar':'🇶🇦','Uruguay':'🇺🇾','Colombia':'🇨🇴',
-      'Ecuador':'🇪🇨','Switzerland':'🇨🇭','Norway':'🇳🇴','Czech Republic':'🇨🇿','Czechia':'🇨🇿',
-      'Austria':'🇦🇹','Turkey':'🇹🇷','Türkiye':'🇹🇷','Ukraine':'🇺🇦','Scotland':'🏴󠁧󠁢󠁳󠁣󠁴󠁿',
-      'Sweden':'🇸🇪','Bosnia and Herzegovina':'🇧🇦','Bosnia & Herzegovina':'🇧🇦',
-      'Cape Verde':'🇨🇻','Curacao':'🇨🇼','Curaçao':'🇨🇼','Haiti':'🇭🇹','Panama':'🇵🇦',
-      'Iraq':'🇮🇶','DR Congo':'🇨🇩','New Zealand':'🇳🇿','Uzbekistan':'🇺🇿','Jordan':'🇯🇴',
-      'Algeria':'🇩🇿','Tunisia':'🇹🇳','Paraguay':'🇵🇾','Venezuela':'🇻🇪','Bolivia':'🇧🇴',
-      'Peru':'🇵🇪','Chile':'🇨🇱','Guatemala':'🇬🇹','Honduras':'🇭🇳','Serbia':'🇷🇸',
-      'Poland':'🇵🇱','Denmark':'🇩🇰','Romania':'🇷🇴','Slovakia':'🇸🇰','Slovenia':'🇸🇮',
-      'Georgia':'🇬🇪','Jamaica':'🇯🇲','Costa Rica':'🇨🇷','El Salvador':'🇸🇻',
+      'Mexico':'mx','South Africa':'za','USA':'us','United States':'us','Canada':'ca',
+      'Argentina':'ar','Brazil':'br','France':'fr','Germany':'de','Spain':'es',
+      'Portugal':'pt','England':'gb-eng','Netherlands':'nl','Belgium':'be','Croatia':'hr',
+      'Japan':'jp','South Korea':'kr','Australia':'au','Morocco':'ma','Senegal':'sn',
+      'Nigeria':'ng','Ghana':'gh',"Côte d'Ivoire":'ci','Ivory Coast':'ci','Egypt':'eg',
+      'Saudi Arabia':'sa','Iran':'ir','Qatar':'qa','Uruguay':'uy','Colombia':'co',
+      'Ecuador':'ec','Switzerland':'ch','Norway':'no','Czech Republic':'cz','Czechia':'cz',
+      'Austria':'at','Turkey':'tr','Türkiye':'tr','Ukraine':'ua','Scotland':'gb-sct',
+      'Sweden':'se','Bosnia and Herzegovina':'ba','Bosnia & Herzegovina':'ba','Bosnia-Herzegovina':'ba',
+      'Cape Verde':'cv','Curacao':'cw','Curaçao':'cw','Haiti':'ht','Panama':'pa',
+      'Iraq':'iq','DR Congo':'cd','New Zealand':'nz','Uzbekistan':'uz','Jordan':'jo',
+      'Algeria':'dz','Tunisia':'tn','Paraguay':'py','Venezuela':'ve','Bolivia':'bo',
+      'Peru':'pe','Chile':'cl','Guatemala':'gt','Honduras':'hn','Serbia':'rs',
+      'Poland':'pl','Denmark':'dk','Romania':'ro','Slovakia':'sk','Slovenia':'si',
+      'Georgia':'ge','Jamaica':'jm','Costa Rica':'cr','El Salvador':'sv',
     };
-    const teamFlag = name => TEAM_FLAGS[name] || '';
+    const teamFlag = name => {
+      const code = TEAM_FLAGS[name];
+      if (!code) return '';
+      return `<img src="https://flagcdn.com/32x24/${code}.png" width="32" height="24" style="border-radius:3px;object-fit:cover;" alt="${name}">`;
+    };
 
     const now = new Date();
     let html = '';
