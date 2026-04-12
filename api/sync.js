@@ -5,9 +5,7 @@ const FOOTBALL_DATA_KEY = process.env.FOOTBALL_DATA_KEY;
 const BASE_URL = 'https://api.football-data.org/v4';
 const WC_CODE = 'WC';
 
-const headers = {
-  'X-Auth-Token': FOOTBALL_DATA_KEY
-};
+const headers = { 'X-Auth-Token': FOOTBALL_DATA_KEY };
 
 function getDb() {
   if (!getApps().length) {
@@ -23,7 +21,7 @@ async function fetchAPI(path) {
 }
 
 function getFlag(countryCode) {
-  if (!countryCode) return '🏳';
+  if (!countryCode) return '';
   const flags = {
     'US':'🇺🇸','MEX':'🇲🇽','CAN':'🇨🇦','BRA':'🇧🇷','ARG':'🇦🇷','FRA':'🇫🇷',
     'GER':'🇩🇪','ESP':'🇪🇸','POR':'🇵🇹','ENG':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','ITA':'🇮🇹','NED':'🇳🇱',
@@ -32,18 +30,48 @@ function getFlag(countryCode) {
     'EGY':'🇪🇬','KSA':'🇸🇦','IRN':'🇮🇷','QAT':'🇶🇦','URU':'🇺🇾','COL':'🇨🇴',
     'PER':'🇵🇪','ECU':'🇪🇨','POL':'🇵🇱','SUI':'🇨🇭','DEN':'🇩🇰','SWE':'🇸🇪',
     'NOR':'🇳🇴','CZE':'🇨🇿','AUT':'🇦🇹','TUR':'🇹🇷','UKR':'🇺🇦','HUN':'🇭🇺',
-    'ROU':'🇷🇴','SVK':'🇸🇰','ALB':'🇦🇱','SVN':'🇸🇮','GEO':'🇬🇪','VEN':'🇻🇪',
-    'PAN':'🇵🇦','TUN':'🇹🇳','DZA':'🇩🇿','KEN':'🇰🇪','MLI':'🇲🇱','ZMB':'🇿🇲',
-    'GTM':'🇬🇹','HND':'🇭🇳','SLV':'🇸🇻','CRC':'🇨🇷','DOM':'🇩🇴','TTO':'🇹🇹',
-    'BOL':'🇧🇴','CHL':'🇨🇱','PRY':'🇵🇾','NZL':'🇳🇿','CHN':'🇨🇳','THA':'🇹🇭',
-    'IDN':'🇮🇩','UZB':'🇺🇿','IRQ':'🇮🇶','JOR':'🇯🇴'
+    'ROU':'🇷🇴','SVK':'🇸🇰','ALB':'🇦🇱','SVN':'🇸🇮','GEO':'🇬🇪','SCO':'🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+    'BIH':'🇧🇦','SWZ':'🇸🇿','CPV':'🇨🇻','CUW':'🇨🇼','HTI':'🇭🇹','PAN':'🇵🇦',
+    'IRQ':'🇮🇶','COD':'🇨🇩','NZL':'🇳🇿','UZB':'🇺🇿','JOR':'🇯🇴','ALG':'🇩🇿',
+    'RSA':'🇿🇦','TUN':'🇹🇳','PAR':'🇵🇾','VEN':'🇻🇪','BOL':'🇧🇴','CHL':'🇨🇱',
+    'GTM':'🇬🇹','HON':'🇭🇳','JAM':'🇯🇲','CRC':'🇨🇷','CHI':'🇨🇱'
   };
-  return flags[countryCode.toUpperCase()] || '🏳';
+  return flags[countryCode.toUpperCase()] || '';
+}
+
+// Cache team squads to avoid repeated API calls
+const teamSquadCache = {};
+
+async function getTeamSquad(teamId) {
+  if (teamSquadCache[teamId]) return teamSquadCache[teamId];
+  try {
+    const data = await fetchAPI(`/teams/${teamId}`);
+    // Filter outfield players only (no goalkeepers)
+    const outfield = (data.squad || [])
+      .filter(p => p.position !== 'Goalkeeper')
+      .map(p => p.name);
+    teamSquadCache[teamId] = outfield;
+    return outfield;
+  } catch(e) {
+    console.log('Could not fetch squad for team', teamId);
+    return [];
+  }
 }
 
 async function syncMatches(db) {
   const data = await fetchAPI(`/competitions/${WC_CODE}/matches`);
   const matches = data.matches || [];
+
+  // Also get all WC teams to build squad cache
+  let wcTeams = {};
+  try {
+    const teamsData = await fetchAPI(`/competitions/${WC_CODE}/teams`);
+    (teamsData.teams || []).forEach(t => {
+      wcTeams[t.id] = t;
+    });
+  } catch(e) {
+    console.log('Could not fetch WC teams');
+  }
 
   for (const match of matches) {
     const kickoff = new Date(match.utcDate);
@@ -57,10 +85,26 @@ async function syncMatches(db) {
     const score = match.score || {};
     const ft = score.fullTime || {};
 
+    // Fetch squad for home and away teams
+    let homePlayers = [];
+    let awayPlayers = [];
+
+    if (home.id) {
+      homePlayers = await getTeamSquad(home.id);
+      // Small delay to avoid rate limiting
+      await new Promise(r => setTimeout(r, 200));
+    }
+    if (away.id) {
+      awayPlayers = await getTeamSquad(away.id);
+      await new Promise(r => setTimeout(r, 200));
+    }
+
     await db.collection('matches').doc(String(match.id)).set({
       footballDataId: match.id,
       homeTeam: home.name || home.shortName || '',
       awayTeam: away.name || away.shortName || '',
+      homeTeamId: home.id || null,
+      awayTeamId: away.id || null,
       homeFlag: getFlag(home.tla || ''),
       awayFlag: getFlag(away.tla || ''),
       kickoff,
@@ -69,8 +113,8 @@ async function syncMatches(db) {
       status: match.status || 'SCHEDULED',
       homeScore: ft.home ?? null,
       awayScore: ft.away ?? null,
-      homePlayers: [],
-      awayPlayers: [],
+      homePlayers,
+      awayPlayers,
       lastSynced: new Date()
     }, { merge: true });
   }
@@ -81,10 +125,10 @@ async function syncLiveResults(db) {
   let liveMatches = [];
   try {
     const data = await fetchAPI(`/competitions/${WC_CODE}/matches?status=IN_PLAY,PAUSED,FINISHED`);
-    liveMatches = data.matches || [];
-  } catch(e) {
-    return 0;
-  }
+    liveMatches = (data.matches || []).filter(m =>
+      ['IN_PLAY','PAUSED','FINISHED'].includes(m.status)
+    );
+  } catch(e) { return 0; }
 
   for (const match of liveMatches) {
     const matchId = String(match.id);
@@ -102,20 +146,14 @@ async function syncLiveResults(db) {
       const resultRef = db.collection('results').doc(matchId);
       const existing = await resultRef.get();
       if (!existing.exists || !existing.data()?.pointsCalculated) {
-        // football-data.org doesn't have goalscorer in free tier
-        // We get scorer from goals array if available
         let firstScorer = null;
         try {
           const detail = await fetchAPI(`/matches/${match.id}`);
           const goals = (detail.goals || [])
             .filter(g => g.type !== 'OWN_GOAL')
             .sort((a, b) => (a.minute || 0) - (b.minute || 0));
-          if (goals.length > 0) {
-            firstScorer = goals[0].scorer?.name || null;
-          }
-        } catch(e) {
-          console.log('Could not get scorer for', matchId);
-        }
+          if (goals.length > 0) firstScorer = goals[0].scorer?.name || null;
+        } catch(e) { console.log('Could not get scorer for', matchId); }
 
         await calculatePoints(db, matchId, homeScore, awayScore, firstScorer);
         await resultRef.set({
@@ -173,9 +211,7 @@ async function calculatePoints(db, matchId, homeScore, awayScore, firstScorer) {
         }
       }
     }
-  } catch(e) {
-    console.log('Could not sync tournament goals for', matchId);
-  }
+  } catch(e) { console.log('Could not sync tournament goals for', matchId); }
 }
 
 export default async function handler(req, res) {
@@ -186,12 +222,16 @@ export default async function handler(req, res) {
     const db = getDb();
     const action = req.query.action || 'live';
     let result = { action, timestamp: new Date().toISOString() };
-    if (action === 'matches') result.synced = await syncMatches(db);
-    else if (action === 'live') result.live = await syncLiveResults(db);
-    else if (action === 'all') {
+
+    if (action === 'matches') {
+      result.synced = await syncMatches(db);
+    } else if (action === 'live') {
+      result.live = await syncLiveResults(db);
+    } else if (action === 'all') {
       result.matches = await syncMatches(db);
       result.live = await syncLiveResults(db);
     }
+
     res.status(200).json({ success: true, ...result });
   } catch (err) {
     console.error(err);
