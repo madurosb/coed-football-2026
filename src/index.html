@@ -1146,9 +1146,20 @@
     loadMatches();
     loadPrizes();
     setTimeout(showDyk, 1500);
-    // Autoplay music after login (browser allows it after user interaction)
+    // Autoplay music after login
     setTimeout(() => {
-      if (!musicPlaying) toggleMusic();
+      const ap = document.getElementById('audio-player');
+      const mb = document.getElementById('music-btn');
+      if (ap && !musicPlaying) {
+        const idx = Math.floor(Math.random() * TRACKS.length);
+        ap.src = TRACKS[idx];
+        ap.volume = 0.4;
+        ap.play().then(() => {
+          musicPlaying = true;
+          currentTrack = idx;
+          mb.textContent = '🔊';
+        }).catch(() => {});
+      }
     }, 800);
   }
 
