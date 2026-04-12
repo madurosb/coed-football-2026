@@ -1703,6 +1703,7 @@
   }
 
   window.submitResult = async () => {
+    const btn = document.querySelector('.submit-btn');
     const matchId = document.getElementById('result-match-select').value;
     const homeScore = parseInt(document.getElementById('result-home-score').value);
     const awayScore = parseInt(document.getElementById('result-away-score').value);
@@ -1710,43 +1711,56 @@
     if (!matchId) return alert('Please select a match');
     if (isNaN(homeScore) || isNaN(awayScore)) return alert('Please enter both scores');
 
-    await setDoc(doc(db, 'results', matchId), { homeScore, awayScore, firstScorer, updatedAt: serverTimestamp() });
+    btn.textContent = 'Saving...';
+    btn.disabled = true;
 
-    // Calculate points for all predictions
-    const predsSnap = await getDocs(collection(db, 'predictions'));
-    const batch = [];
-    predsSnap.forEach(d => {
-      if (d.data().matchId === matchId) batch.push({ id: d.id, data: d.data() });
-    });
+    try {
+      await setDoc(doc(db, 'results', matchId), {
+        homeScore, awayScore, firstScorer, updatedAt: serverTimestamp()
+      });
 
-    for (const pred of batch) {
-      let pts = 0;
-      let exact = 0;
-      let bonus = 0;
-      const actualHome = homeScore;
-      const actualAway = awayScore;
-      const predHome = pred.data.homeScore;
-      const predAway = pred.data.awayScore;
-      // Correct winner
-      const actualResult = actualHome > actualAway ? 'home' : actualHome < actualAway ? 'away' : 'draw';
-      const predResult = predHome > predAway ? 'home' : predHome < predAway ? 'away' : 'draw';
-      if (actualResult === predResult) pts += 1;
-      // Exact score
-      if (predHome === actualHome && predAway === actualAway) { pts += 3; exact = 1; }
-      // First scorer
-      if (firstScorer && pred.data.firstScorer === firstScorer) { pts += 2; bonus += 1; }
+      await updateDoc(doc(db, 'matches', matchId), {
+        homeScore, awayScore, status: 'FINISHED'
+      });
 
-      const userRef = doc(db, 'users', pred.data.userId);
-      const userSnap = await getDoc(userRef);
-      if (userSnap.exists()) {
-        await updateDoc(userRef, {
-          points: (userSnap.data().points || 0) + pts,
-          exactScores: (userSnap.data().exactScores || 0) + exact,
-          bonusPoints: (userSnap.data().bonusPoints || 0) + bonus
-        });
+      const predsSnap = await getDocs(collection(db, 'predictions'));
+      const batch = [];
+      predsSnap.forEach(d => {
+        if (d.data().matchId === matchId) batch.push({ id: d.id, data: d.data() });
+      });
+
+      for (const pred of batch) {
+        let pts = 0, exact = 0, bonus = 0;
+        const predHome = pred.data.homeScore;
+        const predAway = pred.data.awayScore;
+        const actualResult = homeScore > awayScore ? 'home' : homeScore < awayScore ? 'away' : 'draw';
+        const predResult = predHome > predAway ? 'home' : predHome < predAway ? 'away' : 'draw';
+        if (actualResult === predResult) pts += 1;
+        if (predHome === homeScore && predAway === awayScore) { pts += 3; exact = 1; }
+        if (firstScorer && pred.data.firstScorer === firstScorer) { pts += 2; bonus += 1; }
+        const userRef = doc(db, 'users', pred.data.userId);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          await updateDoc(userRef, {
+            points: (userSnap.data().points || 0) + pts,
+            exactScores: (userSnap.data().exactScores || 0) + exact,
+            bonusPoints: (userSnap.data().bonusPoints || 0) + bonus
+          });
+        }
       }
+
+      btn.textContent = '✅ Done!';
+      setTimeout(() => {
+        btn.textContent = 'Submit results and calculate points';
+        btn.disabled = false;
+      }, 2000);
+      alert(`Results saved! Points calculated for ${batch.length} prediction(s).`);
+    } catch(e) {
+      console.error('submitResult error:', e);
+      alert('Error: ' + e.message);
+      btn.textContent = 'Submit results and calculate points';
+      btn.disabled = false;
     }
-    alert('Results submitted! Points calculated for all players.');
   };
 
   async function loadMatchesForPlayerAdmin() {
