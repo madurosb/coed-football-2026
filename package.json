@@ -2,7 +2,7 @@
   "name": "coed-football-2026",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
+  "type": "module", 
   "dependencies": {
     "firebase": "^10.7.0",
     "firebase-admin": "^12.0.0"
