@@ -370,7 +370,7 @@
       <button class="nav-btn" data-page="matches" onclick="showPage('matches')">Matches</button>
       <button class="nav-btn" data-page="leaderboard" onclick="showPage('leaderboard')">Standings</button>
       <button class="nav-btn" data-page="stats" onclick="showPage('stats')">My Stats</button>
-      <button class="nav-btn" data-page="tips" onclick="showPage('tips')">💡 Tips</button>
+      <button class="nav-btn" data-page="tips" onclick="showPage('tips')">Tips</button>
       <button class="nav-btn" data-page="highlights" onclick="showPage('highlights')">Highlights</button>
       <button class="nav-btn" data-page="rules" onclick="showPage('rules')">Rules</button>
       <button class="nav-btn" data-page="admin" id="admin-nav-btn" style="display:none;" onclick="showPage('admin')">Admin</button>
@@ -2310,51 +2310,35 @@
       <style>@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }</style>`;
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('/api/tips', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-          system: `You are a World Cup 2026 betting tips expert. Search the web for current information about FIFA World Cup 2026 teams, players, stats and predictions. Return ONLY a valid JSON object, no markdown, no backticks, no preamble. The JSON must have this exact structure:
-{
-  "updated": "April 2026",
-  "topScorers": [
-    {"player": "Name", "team": "Country", "reason": "short reason why to pick them"}
-  ],
-  "tournamentPlayerPicks": [
-    {"player": "Name", "team": "Country", "reason": "short reason"}
-  ],
-  "drawTeams": [
-    {"team": "Country", "stat": "short draw stat or tendency"}
-  ],
-  "highScoringTeams": [
-    {"team": "Country", "stat": "short goal scoring stat"}
-  ],
-  "round1Tips": [
-    {"match": "Team A vs Team B", "tip": "short prediction with reasoning"}
-  ],
-  "funFact": "one interesting World Cup 2026 fact"
-}
-Include 4-5 items per array. Keep each reason/tip under 20 words. Base everything on real current data from your web search.`,
-          messages: [{
-            role: 'user',
-            content: 'Search for FIFA World Cup 2026 predictions, top scorers, group stage matches round 1, teams known for draws, high scoring teams. Give me betting tips based on current form and stats.'
-          }]
-        })
+        headers: { 'Content-Type': 'application/json' }
       });
-
-      const data = await response.json();
-      const text = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
-      const clean = text.replace(/```json|```/g, '').trim();
-      const tips = JSON.parse(clean);
+      if (!response.ok) throw new Error('Server error');
+      const tips = await response.json();
+      if (tips.error) throw new Error(tips.error);
 
       const html = `
         <div style="margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;">
-          <div style="font-size:13px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;">💡 World Cup Tips</div>
+          <div style="font-size:13px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;">World Cup Tips</div>
           <div style="font-size:11px;color:var(--text-muted);">Updated: ${tips.updated} · <button onclick="tipsCache=null;loadTipsPage()" style="background:none;border:none;color:var(--green);cursor:pointer;font-size:11px;padding:0;">Refresh</button></div>
         </div>
+
+        ${tips.injuryWatch && tips.injuryWatch.length ? `
+        <div style="background:var(--surface);border:0.5px solid #E24B4A;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
+          <div style="font-size:14px;font-weight:500;margin-bottom:0.75rem;">🚑 Injury Watch</div>
+          ${tips.injuryWatch.map(p => {
+            const color = p.status === 'Out' ? '#E24B4A' : p.status === 'Doubt' ? '#BA7517' : '#1D9E75';
+            const bg = p.status === 'Out' ? '#FCEBEB' : p.status === 'Doubt' ? '#FAEEDA' : '#E1F5EE';
+            return `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:0.5rem 0;border-bottom:0.5px solid var(--border);">
+              <div>
+                <div style="font-size:13px;font-weight:500;">${p.player} <span style="font-size:11px;color:var(--text-muted);font-weight:400;">${p.team}</span></div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${p.detail}</div>
+              </div>
+              <span style="font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px;background:${bg};color:${color};flex-shrink:0;margin-left:8px;">${p.status}</span>
+            </div>`;
+          }).join('')}
+        </div>` : ''}
 
         <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
           <div style="font-size:14px;font-weight:500;margin-bottom:0.75rem;">⚽ Top First Goalscorer Picks</div>
