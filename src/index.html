@@ -2409,72 +2409,41 @@
 
     // Smooth 1-by-1 progress counter
     let currentPct = 0;
-    let targetPct = 0;
-    let stuckTimer = null;
     let stuckMsgShown = false;
 
     const stepMessages = [
-      { at: 10, step: 'Connecting to AI...', msg: 'Connecting...' },
-      { at: 22, step: 'Checking injury reports...', msg: 'Injury watch' },
-      { at: 38, step: 'Analysing goalscorer stats...', msg: 'Top scorers' },
-      { at: 54, step: 'Scouting tournament players...', msg: 'Tournament picks' },
-      { at: 68, step: 'Checking team form & trends...', msg: 'Draw & goal stats' },
-      { at: 82, step: 'Building Round 1 predictions...', msg: 'Match tips' },
-      { at: 91, step: 'Almost there...', msg: 'Finalising' },
+      { at: 0,  msg: 'Connecting to AI...' },
+      { at: 15, msg: 'Checking injury reports...' },
+      { at: 30, msg: 'Analysing goalscorer stats...' },
+      { at: 45, msg: 'Scouting tournament players...' },
+      { at: 60, msg: 'Checking team form & trends...' },
+      { at: 75, msg: 'Building Round 1 predictions...' },
+      { at: 88, msg: 'Almost there...' },
     ];
 
-    function updateBar(pct) {
-      const bar  = document.getElementById('tips-progress-bar');
+    // Calculate total duration ~25s → each % = 250ms but cap at 99
+    const tickInterval = setInterval(() => {
+      if (currentPct >= 99) return;
+      currentPct++;
+      const bar   = document.getElementById('tips-progress-bar');
       const pctEl = document.getElementById('tips-loading-pct');
       const msgEl = document.getElementById('tips-loading-msg');
-      const stepEl = document.getElementById('tips-loading-step');
       if (!bar) return;
-      bar.style.width = pct + '%';
-      if (pctEl) pctEl.textContent = pct + '%';
-      const s = [...stepMessages].reverse().find(s => pct >= s.at);
-      if (s) {
-        if (msgEl) msgEl.textContent = s.msg;
-        if (stepEl) stepEl.textContent = s.step;
-      }
-    }
+      bar.style.width = currentPct + '%';
+      if (pctEl) pctEl.textContent = currentPct + '%';
+      const s = [...stepMessages].reverse().find(s => currentPct >= s.at);
+      if (s && msgEl) msgEl.textContent = s.msg;
+    }, 250);
 
-    // Tick every 80ms - move currentPct toward targetPct one step at a time
-    const tickInterval = setInterval(() => {
-      if (currentPct < targetPct) {
-        currentPct++;
-        updateBar(currentPct);
-      }
-    }, 80);
-
-    // Every 2.5s advance target by a chunk (simulating stages)
-    const stageTargets = [10, 22, 38, 54, 68, 82, 91];
-    let stageIdx = 0;
-    const stageInterval = setInterval(() => {
-      if (stageIdx < stageTargets.length) {
-        targetPct = stageTargets[stageIdx++];
-      }
-    }, 2500);
-
-    // Stuck detection - if bar hasn't moved in 5s, show message
-    let lastPctForStuck = 0;
-    const stuckCheck = setInterval(() => {
-      if (currentPct === lastPctForStuck && currentPct > 0 && currentPct < 100) {
-        if (!stuckMsgShown) {
-          stuckMsgShown = true;
-          const msgEl = document.getElementById('tips-loading-msg');
-          if (msgEl) msgEl.textContent = 'מתקשה קצת לעלות נתונים אבל אנחנו נתגבר על זה - עוד קצת זמן באדי! 💪';
-        }
-      } else {
-        stuckMsgShown = false;
-      }
-      lastPctForStuck = currentPct;
-    }, 5000);
+    // Stuck message after 12s of loading (not based on % stopping)
+    const stuckTimeout = setTimeout(() => {
+      const msgEl = document.getElementById('tips-loading-msg');
+      if (msgEl) msgEl.textContent = 'Taking a bit longer than usual, but we\'ll get there — hang tight buddy! 💪';
+    }, 12000);
 
     function clearAllIntervals() {
       clearInterval(tickInterval);
-      clearInterval(stageInterval);
-      clearInterval(stuckCheck);
-      if (stuckTimer) clearTimeout(stuckTimer);
+      clearTimeout(stuckTimeout);
     }
 
     try {
@@ -2482,16 +2451,16 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
-      // Jump to 100%
-      targetPct = 100;
-      await new Promise(r => setTimeout(r, 500));
       clearAllIntervals();
-      const bar = document.getElementById('tips-progress-bar');
+      // Jump to 100%
+      const bar   = document.getElementById('tips-progress-bar');
       const pctEl = document.getElementById('tips-loading-pct');
       const stepEl = document.getElementById('tips-loading-step');
-      if (bar) bar.style.width = '100%';
-      if (pctEl) pctEl.textContent = '100%';
+      const msgEl  = document.getElementById('tips-loading-msg');
+      if (bar)    { bar.style.transition = 'width 0.3s ease'; bar.style.width = '100%'; }
+      if (pctEl)  pctEl.textContent = '100%';
       if (stepEl) stepEl.textContent = 'Done! ✅';
+      if (msgEl)  msgEl.textContent  = 'Done!';
       if (!response.ok) throw new Error('Server error');
       const tips = await response.json();
       if (tips.error) throw new Error(tips.error);
