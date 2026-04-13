@@ -173,25 +173,78 @@
     .loading { display: flex; align-items: center; justify-content: center; min-height: 100vh; font-size: 14px; color: var(--text-muted); }
 
     @media (max-width: 600px) {
-      .admin-grid { grid-template-columns: 1fr; }
-      .hero-stats { gap: 1rem; }
-      .stat-grid { grid-template-columns: repeat(2, 1fr); }
+      /* Hide desktop nav links and user handle */
+      .nav-links { display: none; }
+      #user-handle { display: none; }
+      .nav { padding: 0 1rem; height: 50px; }
+      .nav-logo span:nth-child(2) { font-size: 13px; }
+      .nav-logo .badge { display: none; }
+
+      /* Bottom navigation bar */
+      .bottom-nav { display: flex; }
+
+      /* Push content above bottom nav */
+      .page { padding: 0.75rem 0.75rem 80px 0.75rem; }
+
+      /* Countdown fix */
+      .cd-wrap-mobile { flex-wrap: nowrap !important; gap: 6px !important; }
+      .cd-num-m { width: 54px !important; font-size: 22px !important; padding: 8px 0 !important; }
+
+      /* Match cards */
+      .match-card { padding: 0.75rem; }
+      .match-teams { gap: 0.5rem; }
+      .score-input { width: 40px; height: 40px; font-size: 18px; }
+      select { min-width: 0; width: 100%; font-size: 13px; }
+
+      /* Leaderboard */
       .lb-row { grid-template-columns: 32px 1fr 50px; }
       .lb-row .lb-pts.muted { display: none; }
-      .nav-links .nav-btn { padding: 0 6px; font-size: 11px; }
-      .nav-logo span:first-of-type { display: none; }
-      .page { padding: 1rem 0.75rem; }
-      .match-card { padding: 1rem; }
-      .teams { gap: 6px; }
-      .score-input { width: 38px; height: 38px; font-size: 16px; }
-      .rules-card { padding: 1rem; }
-      .nav { padding: 0 0.75rem; }
-      .nav-user span { display: none; }
-      #user-handle { display: none; }
-      .hero-stats .stat-big { min-width: 0; }
-      .cd-num { width: 54px !important; font-size: 24px !important; }
+
+      /* Grids */
+      .admin-grid { grid-template-columns: 1fr; }
+      .stat-grid { grid-template-columns: repeat(2, 1fr); }
       .form-grid { grid-template-columns: 1fr !important; }
+      .stat-big-grid { grid-template-columns: repeat(2, 1fr); }
+
+      /* Hero */
+      .hero { padding: 1.25rem 1rem; }
+      .hero-stats { gap: 1rem; }
+      .hero h1 { font-size: 18px; }
+
+      /* Modal */
+      .modal { width: 92vw; }
+
+      /* Rules */
+      .rules-card { padding: 1rem; }
+
+      /* Player pick */
+      .player-pick { padding: 1rem; }
+      .player-pick > div { flex-direction: column; }
+      #tournament-lock-btn { width: 100%; margin-top: 8px; }
     }
+
+    /* Bottom nav - hidden on desktop */
+    .bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 64px;
+      background: var(--surface);
+      border-top: 0.5px solid var(--border);
+      z-index: 200;
+      align-items: center;
+      justify-content: space-around;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .bnav-btn {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 3px; flex: 1; height: 100%; background: none; border: none;
+      color: var(--text-muted); font-size: 10px; cursor: pointer;
+      transition: color 0.15s; padding: 0;
+    }
+    .bnav-btn.active { color: var(--green); }
+    .bnav-icon { font-size: 20px; line-height: 1; }
+    .bnav-label { font-size: 10px; font-weight: 500; }
     /* DID YOU KNOW POPUP */
     .dyk-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; animation: fadeIn 0.3s ease; }
     .dyk-card { background: var(--surface); border-radius: var(--radius-lg); padding: 1.75rem 1.5rem; width: 340px; max-width: 92vw; border: 0.5px solid var(--border); text-align: center; position: relative; animation: slideUp 0.3s ease; }
@@ -281,30 +334,58 @@
   <!-- AUDIO TRACKS -->
   <audio id="audio-player" loop style="display:none;"></audio>
 
+  <!-- BOTTOM NAV (mobile only) -->
+  <nav class="bottom-nav" id="bottom-nav">
+    <button class="bnav-btn active" data-page="home" onclick="showPage('home')">
+      <span class="bnav-icon">🏠</span>
+      <span class="bnav-label">Home</span>
+    </button>
+    <button class="bnav-btn" data-page="matches" onclick="showPage('matches')">
+      <span class="bnav-icon">⚽</span>
+      <span class="bnav-label">Matches</span>
+    </button>
+    <button class="bnav-btn" data-page="leaderboard" onclick="showPage('leaderboard')">
+      <span class="bnav-icon">🏆</span>
+      <span class="bnav-label">Standings</span>
+    </button>
+    <button class="bnav-btn" data-page="stats" onclick="showPage('stats')">
+      <span class="bnav-icon">📊</span>
+      <span class="bnav-label">My Stats</span>
+    </button>
+    <button class="bnav-btn" data-page="rules" onclick="showPage('rules')">
+      <span class="bnav-icon">📋</span>
+      <span class="bnav-label">Rules</span>
+    </button>
+    <button class="bnav-btn" data-page="admin" id="admin-bnav-btn" style="display:none;" onclick="showPage('admin')">
+      <span class="bnav-icon">⚙️</span>
+      <span class="bnav-label">Admin</span>
+    </button>
+  </nav>
+
   <!-- HOME -->
   <div class="page" id="page-home">
     <div style="background:#0a1f0a;border-radius:16px;padding:1.25rem 1rem;text-align:center;margin-bottom:1rem;">
       <div style="font-size:11px;letter-spacing:0.15em;color:#4ade80;text-transform:uppercase;margin-bottom:4px;font-family:monospace;">⚽ COED&FOOTBALL &nbsp;·&nbsp; 🏆 WORLD CUP 2026</div>
       <div style="font-size:13px;color:#86efac;margin-bottom:1rem;" id="cd-sub">Kickoff countdown</div>
-      <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;" id="cd-units">
+      <div style="display:flex;justify-content:center;align-items:flex-start;gap:8px;flex-wrap:nowrap;" id="cd-units">
         <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-          <div style="background:#0d2b0d;border:1px solid #166534;border-radius:10px;padding:10px 0;width:68px;font-size:30px;font-weight:700;color:#00ff41;font-family:monospace;" id="cd-days">00</div>
-          <div style="font-size:10px;color:#4ade80;letter-spacing:0.12em;text-transform:uppercase;">Days</div>
+          <div style="background:#0d2b0d;border:1px solid #166534;border-radius:10px;padding:8px 0;width:clamp(50px,14vw,68px);font-size:clamp(20px,5.5vw,30px);font-weight:700;color:#00ff41;font-family:monospace;" id="cd-days">00</div>
+          <div style="font-size:10px;color:#4ade80;letter-spacing:0.08em;text-transform:uppercase;">Days</div>
         </div>
-        <div style="font-size:26px;color:#166534;padding-top:8px;font-weight:700;">:</div>
+        <div style="font-size:22px;color:#166534;padding-top:6px;font-weight:700;">:</div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-          <div style="background:#0d2b0d;border:1px solid #166534;border-radius:10px;padding:10px 0;width:68px;font-size:30px;font-weight:700;color:#00ff41;font-family:monospace;" id="cd-hours">00</div>
-          <div style="font-size:10px;color:#4ade80;letter-spacing:0.12em;text-transform:uppercase;">Hours</div>
+          <div style="background:#0d2b0d;border:1px solid #166534;border-radius:10px;padding:8px 0;width:clamp(50px,14vw,68px);font-size:clamp(20px,5.5vw,30px);font-weight:700;color:#00ff41;font-family:monospace;" id="cd-hours">00</div>
+          <div style="font-size:10px;color:#4ade80;letter-spacing:0.08em;text-transform:uppercase;">Hours</div>
         </div>
-        <div style="font-size:26px;color:#166534;padding-top:8px;font-weight:700;">:</div>
+        <div style="font-size:22px;color:#166534;padding-top:6px;font-weight:700;">:</div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-          <div style="background:#0d2b0d;border:1px solid #166534;border-radius:10px;padding:10px 0;width:68px;font-size:30px;font-weight:700;color:#00ff41;font-family:monospace;" id="cd-mins">00</div>
-          <div style="font-size:10px;color:#4ade80;letter-spacing:0.12em;text-transform:uppercase;">Min</div>
+          <div style="background:#0d2b0d;border:1px solid #166534;border-radius:10px;padding:8px 0;width:clamp(50px,14vw,68px);font-size:clamp(20px,5.5vw,30px);font-weight:700;color:#00ff41;font-family:monospace;" id="cd-mins">00</div>
+          <div style="font-size:10px;color:#4ade80;letter-spacing:0.08em;text-transform:uppercase;">Min</div>
         </div>
-        <div style="font-size:26px;color:#166534;padding-top:8px;font-weight:700;">:</div>
+        <div style="font-size:22px;color:#166534;padding-top:6px;font-weight:700;">:</div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-          <div style="background:#0d2b0d;border:1px solid #166534;border-radius:10px;padding:10px 0;width:68px;font-size:30px;font-weight:700;color:#00ff41;font-family:monospace;" id="cd-secs">00</div>
-          <div style="font-size:10px;color:#4ade80;letter-spacing:0.12em;text-transform:uppercase;">Sec</div>
+          <div style="background:#0d2b0d;border:1px solid #166534;border-radius:10px;padding:8px 0;width:clamp(50px,14vw,68px);font-size:clamp(20px,5.5vw,30px);font-weight:700;color:#00ff41;font-family:monospace;" id="cd-secs">00</div>
+          <div style="font-size:10px;color:#4ade80;letter-spacing:0.08em;text-transform:uppercase;">Sec</div>
         </div>
       </div>
       <div style="font-size:12px;color:#4ade80;margin-top:10px;">🇲🇽 Mexico vs Ecuador 🇪🇨 &nbsp;·&nbsp; Estadio Azteca</div>
@@ -1324,6 +1405,8 @@
     }
     if (isAdmin) {
       document.getElementById('admin-nav-btn').style.display = 'flex';
+      const adminBnav = document.getElementById('admin-bnav-btn');
+      if (adminBnav) adminBnav.style.display = 'flex';
     }
     showPage('home');
     loadHomeData();
@@ -1388,9 +1471,12 @@
   window.showPage = (id) => {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('page-' + id).classList.add('active');
     const btn = document.querySelector('.nav-btn[data-page="' + id + '"]');
     if (btn) btn.classList.add('active');
+    const bnavBtn = document.querySelector('.bnav-btn[data-page="' + id + '"]');
+    if (bnavBtn) bnavBtn.classList.add('active');
     if (id === 'admin') { showAdminMain(); loadAdminUsers(); loadAdminStats(); }
     if (id === 'leaderboard') loadFullLeaderboard();
     if (id === 'stats') loadStatsPage();
@@ -1398,11 +1484,9 @@
     const vid = document.getElementById('rules-video');
     if (vid) {
       if (id === 'rules') {
-        // Unmute and play when entering rules
         vid.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
         vid.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
       } else {
-        // Pause when leaving rules
         vid.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
       }
     }
