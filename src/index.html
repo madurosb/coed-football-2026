@@ -176,8 +176,9 @@
       /* Hide desktop nav links */
       .nav-links { display: none; }
       #user-handle { display: none; }
-      .nav { padding: 0 1rem; height: 50px; }
-      .nav-logo .badge { font-size: 10px; padding: 1px 6px; }
+      .nav { padding: 0 0.75rem; height: 50px; }
+      .nav-logo .badge { display: none; }
+      .nav-wc-text { display: none !important; }
 
       /* Show hamburger */
       .hamburger { display: flex !important; }
@@ -244,7 +245,30 @@
     .bnav-icon { font-size: 20px; line-height: 1; }
     .bnav-label { font-size: 10px; font-weight: 500; }
 
-    /* Hamburger - hidden on desktop */
+    /* Hamburger tooltip */
+    .hamburger-tooltip {
+      position: fixed;
+      top: 58px;
+      right: 48px;
+      background: #1a1a1a;
+      color: #fff;
+      font-size: 13px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      z-index: 999;
+      white-space: nowrap;
+      pointer-events: none;
+      animation: tooltipIn 0.4s ease;
+    }
+    .hamburger-tooltip::before {
+      content: '';
+      position: absolute;
+      top: -7px;
+      right: 10px;
+      border: 7px solid transparent;
+      border-bottom-color: #1a1a1a;
+      border-top: none;
+    }
     .hamburger { display: none; background: none; border: none; cursor: pointer; padding: 4px 8px; flex-direction: column; gap: 5px; align-items: center; justify-content: center; }
     .hamburger span { display: block; width: 22px; height: 2px; background: var(--text); border-radius: 2px; transition: all 0.2s; }
 
@@ -340,7 +364,7 @@
 <!-- MAIN APP -->
 <div id="view-app" style="display:none;">
   <nav class="nav">
-    <a class="nav-logo" onclick="showPage('home')"><img src="https://coed-football-2026.vercel.app/logo-icon.png" alt="logo" style="height:32px; width:32px; object-fit:contain;"> <span>COED&FOOTBALL</span> <span style="font-size:11px;font-weight:600;color:#BA7517;letter-spacing:0.04em;">🏆 WORLD CUP</span> <span class="badge">2026</span></a>
+    <a class="nav-logo" onclick="showPage('home')"><img src="https://coed-football-2026.vercel.app/logo-icon.png" alt="logo" style="height:32px; width:32px; object-fit:contain;"> <span>COED&FOOTBALL</span> <span class="nav-wc-text" style="font-size:11px;font-weight:600;color:#BA7517;letter-spacing:0.04em;">🏆 WORLD CUP</span> <span class="badge">2026</span></a>
     <div class="nav-links">
       <button class="nav-btn" data-page="home" onclick="showPage('home')">Home</button>
       <button class="nav-btn" data-page="matches" onclick="showPage('matches')">Matches</button>
@@ -1290,11 +1314,25 @@
   window.mobileNav = (id) => {
     closeMobileMenu();
     showPage(id);
-    // Update mobile menu active state
     document.querySelectorAll('.mobile-menu-btn').forEach(b => b.classList.remove('active'));
     const btn = document.querySelector('.mobile-menu-btn[data-page="' + id + '"]');
     if (btn) btn.classList.add('active');
   };
+
+  function showHamburgerTooltip() {
+    if (window.innerWidth > 768) return;
+    if (localStorage.getItem('hamburger-tip-shown')) return;
+    const tip = document.createElement('div');
+    tip.className = 'hamburger-tooltip';
+    tip.textContent = '☰ Tap here for the menu';
+    document.body.appendChild(tip);
+    setTimeout(() => {
+      tip.style.transition = 'opacity 0.5s';
+      tip.style.opacity = '0';
+      setTimeout(() => tip.remove(), 500);
+    }, 3500);
+    localStorage.setItem('hamburger-tip-shown', '1');
+  }
   const TRACKS = [
     'https://coed-football-2026.vercel.app/1.mp3',
     'https://coed-football-2026.vercel.app/2.mp3',
@@ -1478,6 +1516,8 @@
     loadMatches();
     loadPrizes();
     setTimeout(showDyk, 1500);
+    // Show hamburger tooltip on mobile (first time only)
+    setTimeout(showHamburgerTooltip, 2000);
     // Start music on first user interaction - click or touch (iOS)
     const startOnInteraction = () => {
       startMusic();
