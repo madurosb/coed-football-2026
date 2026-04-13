@@ -18,28 +18,31 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
-        system: `You are a World Cup 2026 expert. The FIFA World Cup 2026 group stage starts June 11, 2026. 
+        max_tokens: 4000,
+        system: `You are a FIFA World Cup 2026 expert analyst.
 
-IMPORTANT CONTEXT: In our prediction game, users pick a "tournament player" - one player for the whole tournament. Every goal that player scores gives +1 point. So tournament player picks must be HIGH GOAL SCORERS - strikers and attacking players who are likely to score many goals throughout the tournament (not defenders or goalkeepers). Lionel Messi, Kylian Mbappe, Erling Haaland, Vinicius Jr, Harry Kane etc are ideal picks.
+TOURNAMENT PLAYER CONTEXT: Users pick ONE player for the entire tournament. Every goal that player scores = +1 point. So tournament player picks must be prolific GOAL SCORERS - strikers who score many goals. Not midfielders or defenders.
 
-The actual FIFA World Cup 2026 Group Stage Round 1 matches are:
-- Group A: Mexico vs Ecuador, USA vs Panama  
-- Group B: Argentina vs Albania, Morocco vs Iraq
-- Group C: Spain vs Brazil (not confirmed but likely group stage clash - use real confirmed matches)
-- Use the REAL confirmed group stage fixtures from the FIFA World Cup 2026 draw that happened in December 2024.
+THE REAL ROUND 1 FIXTURES ARE:
+June 11: Mexico vs South Africa (Group A), South Korea vs Czechia (Group A)
+June 12: Canada vs Bosnia-Herzegovina (Group B), USA vs Paraguay (Group D)
+June 13: Qatar vs Switzerland (Group B), Brazil vs Morocco (Group C), Haiti vs Scotland (Group C), Australia vs Türkiye (Group D)
+June 14: Germany vs Curaçao (Group E), Netherlands vs Japan (Group F), Ivory Coast vs Ecuador (Group E), Sweden vs Tunisia (Group F)
+June 15: Spain vs Cabo Verde (Group H), Belgium vs Egypt (Group G), Saudi Arabia vs Uruguay (Group H), Iran vs New Zealand (Group G)
+June 16: France vs Senegal (Group I), Iraq vs Norway (Group I), Argentina vs Algeria (Group J), Austria vs Jordan (Group J)
+June 17: Portugal vs DR Congo (Group K), England vs Croatia (Group L), Ghana vs Panama (Group L), Uzbekistan vs Colombia (Group K)
 
-Return ONLY a valid JSON object, no markdown, no backticks:
+Return ONLY valid JSON, no markdown, no backticks:
 {
   "updated": "April 2026",
   "injuryWatch": [
-    {"player": "Name", "team": "Country", "status": "Doubt/Out/Recovered", "detail": "under 15 words"}
+    {"player": "Name", "team": "Country", "status": "Doubt/Out/Recovered", "detail": "short detail under 15 words"}
   ],
-  "topScorers": [
+  "topFirstScorers": [
     {"player": "Name", "team": "Country", "reason": "under 15 words why good first goalscorer pick per match"}
   ],
-  "tournamentPlayerPicks": [
-    {"player": "Name", "team": "Country", "goals": "expected goals range e.g. 4-7", "reason": "under 15 words - focus on goal scoring ability throughout tournament"}
+  "tournamentPlayers": [
+    {"player": "Name", "team": "Country", "goals": "e.g. 5-8", "reason": "under 15 words - must be known prolific goal scorer"}
   ],
   "drawTeams": [
     {"team": "Country", "stat": "under 12 words about draw tendency"}
@@ -48,14 +51,15 @@ Return ONLY a valid JSON object, no markdown, no backticks:
     {"team": "Country", "stat": "under 12 words about goal scoring"}
   ],
   "round1Tips": [
-    {"match": "Team A vs Team B", "group": "Group X", "tip": "under 20 words prediction"}
+    {"match": "Team A vs Team B", "group": "Group X", "pick": "1/X/2", "pickLabel": "Home Win/Draw/Away Win", "tip": "under 15 words reasoning"}
   ],
   "funFact": "one interesting World Cup 2026 fact under 25 words"
 }
-Include 5 in injuryWatch, 6 in topScorers, 6 in tournamentPlayerPicks (MUST include Messi, Mbappe, Haaland, Vinicius Jr), 4 in drawTeams, 4 in highScoringTeams, 6 real round1 matches.`,
+
+Include 12 players in injuryWatch (split across pages), 6 in topFirstScorers, 8 in tournamentPlayers (MUST include Messi, Mbappe, Haaland, Vinicius Jr, Kane, Ronaldo), 5 in drawTeams, 5 in highScoringTeams, ALL 24 round1 matches listed above.`,
         messages: [{
           role: 'user',
-          content: 'Give me FIFA World Cup 2026 tips using the real confirmed group stage draw. For tournament player picks focus only on players likely to score many goals. Include the real Round 1 fixtures from the actual FIFA World Cup 2026 draw. Return only the JSON.'
+          content: 'Give me World Cup 2026 tips. For injuries include as many known injured/doubtful players as possible. For tournament players only include prolific goal scorers. Use the exact 24 Round 1 fixtures I provided. Return only JSON.'
         }]
       })
     });
