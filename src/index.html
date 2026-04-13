@@ -370,6 +370,7 @@
       <button class="nav-btn" data-page="matches" onclick="showPage('matches')">Matches</button>
       <button class="nav-btn" data-page="leaderboard" onclick="showPage('leaderboard')">Standings</button>
       <button class="nav-btn" data-page="stats" onclick="showPage('stats')">My Stats</button>
+      <button class="nav-btn" data-page="tips" onclick="showPage('tips')">💡 Tips</button>
       <button class="nav-btn" data-page="highlights" onclick="showPage('highlights')">Highlights</button>
       <button class="nav-btn" data-page="rules" onclick="showPage('rules')">Rules</button>
       <button class="nav-btn" data-page="admin" id="admin-nav-btn" style="display:none;" onclick="showPage('admin')">Admin</button>
@@ -391,6 +392,7 @@
     <button class="mobile-menu-btn" data-page="matches" onclick="mobileNav('matches')">⚽ &nbsp; Matches</button>
     <button class="mobile-menu-btn" data-page="leaderboard" onclick="mobileNav('leaderboard')">🏆 &nbsp; Standings</button>
     <button class="mobile-menu-btn" data-page="stats" onclick="mobileNav('stats')">📊 &nbsp; My Stats</button>
+    <button class="mobile-menu-btn" data-page="tips" onclick="mobileNav('tips')">💡 &nbsp; Tips</button>
     <button class="mobile-menu-btn" data-page="highlights" onclick="mobileNav('highlights')">🎬 &nbsp; Highlights</button>
     <button class="mobile-menu-btn" data-page="rules" onclick="mobileNav('rules')">📋 &nbsp; Rules</button>
     <button class="mobile-menu-btn" data-page="admin" id="admin-menu-btn" style="display:none;" onclick="mobileNav('admin')">⚙️ &nbsp; Admin</button>
@@ -1206,6 +1208,16 @@
     </div>
   </div>
 
+  <!-- TIPS -->
+  <div class="page" id="page-tips">
+    <div id="tips-content">
+      <div style="text-align:center;padding:3rem 1rem;">
+        <div style="font-size:32px;margin-bottom:1rem;">💡</div>
+        <div style="font-size:15px;color:var(--text-muted);">Loading tips...</div>
+      </div>
+    </div>
+  </div>
+
   <!-- HIGHLIGHTS -->
   <div class="page" id="page-highlights">
     <div style="text-align:center; padding: 2rem 1rem 3rem;">
@@ -1643,6 +1655,7 @@
     if (id === 'admin') { showAdminMain(); loadAdminUsers(); loadAdminStats(); }
     if (id === 'leaderboard') loadFullLeaderboard();
     if (id === 'stats') loadStatsPage();
+    if (id === 'tips') loadTipsPage();
 
     const vid = document.getElementById('rules-video');
     if (vid) {
@@ -2274,7 +2287,149 @@
   }
   window.closeDyk = closeDyk;
 
-  // ========== STATS PAGE ==========
+  // ========== TIPS PAGE ==========
+  let tipsCache = null;
+  let tipsCacheDate = null;
+
+  async function loadTipsPage() {
+    const container = document.getElementById('tips-content');
+
+    // Cache for 6 hours
+    const now = new Date();
+    if (tipsCache && tipsCacheDate && (now - tipsCacheDate) < 6 * 60 * 60 * 1000) {
+      container.innerHTML = tipsCache;
+      return;
+    }
+
+    container.innerHTML = `
+      <div style="text-align:center;padding:3rem 1rem;">
+        <div style="font-size:32px;margin-bottom:1rem;animation:spin 1.5s linear infinite;display:inline-block;">⚽</div>
+        <div style="font-size:15px;color:var(--text-muted);margin-top:0.5rem;">Researching the latest World Cup data...</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:0.5rem;">Searching the web for stats, form guides & expert tips</div>
+      </div>
+      <style>@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }</style>`;
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+          system: `You are a World Cup 2026 betting tips expert. Search the web for current information about FIFA World Cup 2026 teams, players, stats and predictions. Return ONLY a valid JSON object, no markdown, no backticks, no preamble. The JSON must have this exact structure:
+{
+  "updated": "April 2026",
+  "topScorers": [
+    {"player": "Name", "team": "Country", "reason": "short reason why to pick them"}
+  ],
+  "tournamentPlayerPicks": [
+    {"player": "Name", "team": "Country", "reason": "short reason"}
+  ],
+  "drawTeams": [
+    {"team": "Country", "stat": "short draw stat or tendency"}
+  ],
+  "highScoringTeams": [
+    {"team": "Country", "stat": "short goal scoring stat"}
+  ],
+  "round1Tips": [
+    {"match": "Team A vs Team B", "tip": "short prediction with reasoning"}
+  ],
+  "funFact": "one interesting World Cup 2026 fact"
+}
+Include 4-5 items per array. Keep each reason/tip under 20 words. Base everything on real current data from your web search.`,
+          messages: [{
+            role: 'user',
+            content: 'Search for FIFA World Cup 2026 predictions, top scorers, group stage matches round 1, teams known for draws, high scoring teams. Give me betting tips based on current form and stats.'
+          }]
+        })
+      });
+
+      const data = await response.json();
+      const text = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
+      const clean = text.replace(/```json|```/g, '').trim();
+      const tips = JSON.parse(clean);
+
+      const html = `
+        <div style="margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-size:13px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;">💡 World Cup Tips</div>
+          <div style="font-size:11px;color:var(--text-muted);">Updated: ${tips.updated} · <button onclick="tipsCache=null;loadTipsPage()" style="background:none;border:none;color:var(--green);cursor:pointer;font-size:11px;padding:0;">Refresh</button></div>
+        </div>
+
+        <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
+          <div style="font-size:14px;font-weight:500;margin-bottom:0.75rem;">⚽ Top First Goalscorer Picks</div>
+          ${tips.topScorers.map(p => `
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:0.5rem 0;border-bottom:0.5px solid var(--border);">
+              <div>
+                <div style="font-size:13px;font-weight:500;">${p.player} <span style="font-size:11px;color:var(--text-muted);font-weight:400;">${p.team}</span></div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${p.reason}</div>
+              </div>
+              <div style="font-size:18px;flex-shrink:0;margin-left:8px;">🎯</div>
+            </div>`).join('')}
+        </div>
+
+        <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
+          <div style="font-size:14px;font-weight:500;margin-bottom:0.75rem;">🏆 Tournament Player Recommendations</div>
+          ${tips.tournamentPlayerPicks.map(p => `
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:0.5rem 0;border-bottom:0.5px solid var(--border);">
+              <div>
+                <div style="font-size:13px;font-weight:500;">${p.player} <span style="font-size:11px;color:var(--text-muted);font-weight:400;">${p.team}</span></div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${p.reason}</div>
+              </div>
+              <div style="font-size:18px;flex-shrink:0;margin-left:8px;">⭐</div>
+            </div>`).join('')}
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem;">
+          <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem;">
+            <div style="font-size:13px;font-weight:500;margin-bottom:0.75rem;">🤝 Draw Specialists</div>
+            ${tips.drawTeams.map(t => `
+              <div style="padding:0.4rem 0;border-bottom:0.5px solid var(--border);">
+                <div style="font-size:13px;font-weight:500;">${t.team}</div>
+                <div style="font-size:11px;color:var(--text-muted);">${t.stat}</div>
+              </div>`).join('')}
+          </div>
+          <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem;">
+            <div style="font-size:13px;font-weight:500;margin-bottom:0.75rem;">🔥 Goal Machines</div>
+            ${tips.highScoringTeams.map(t => `
+              <div style="padding:0.4rem 0;border-bottom:0.5px solid var(--border);">
+                <div style="font-size:13px;font-weight:500;">${t.team}</div>
+                <div style="font-size:11px;color:var(--text-muted);">${t.stat}</div>
+              </div>`).join('')}
+          </div>
+        </div>
+
+        <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
+          <div style="font-size:14px;font-weight:500;margin-bottom:0.75rem;">📋 Round 1 Match Tips</div>
+          ${tips.round1Tips.map(m => `
+            <div style="padding:0.5rem 0;border-bottom:0.5px solid var(--border);">
+              <div style="font-size:13px;font-weight:500;">${m.match}</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">💬 ${m.tip}</div>
+            </div>`).join('')}
+        </div>
+
+        <div style="background:#0a1f0a;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
+          <div style="font-size:12px;color:#4ade80;font-weight:500;margin-bottom:4px;">⚡ Fun Fact</div>
+          <div style="font-size:13px;color:#86efac;">${tips.funFact}</div>
+        </div>
+
+        <div style="font-size:11px;color:var(--text-muted);text-align:center;padding-bottom:0.5rem;">
+          Tips are AI-generated based on current data. Not financial advice. Use your own judgment 😄
+        </div>`;
+
+      tipsCache = html;
+      tipsCacheDate = new Date();
+      container.innerHTML = html;
+
+    } catch(e) {
+      container.innerHTML = `
+        <div style="text-align:center;padding:3rem 1rem;">
+          <div style="font-size:32px;margin-bottom:1rem;">😅</div>
+          <div style="font-size:15px;color:var(--text-muted);">Couldn't load tips right now.</div>
+          <button onclick="loadTipsPage()" style="margin-top:1rem;padding:8px 20px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text);cursor:pointer;font-size:13px;">Try again</button>
+        </div>`;
+    }
+  }
   async function loadStatsPage() {
     const container = document.getElementById('stats-content');
     container.innerHTML = '<div style="padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);">Loading your stats...</div>';
