@@ -361,6 +361,19 @@
   </div>
 </div>
 
+<!-- RESET MODAL -->
+<div id="reset-modal" class="modal-overlay" style="display:none;">
+  <div class="modal" style="max-width:340px;">
+    <div style="font-size:28px;text-align:center;margin-bottom:0.75rem;">🗑️</div>
+    <h2 style="text-align:center;margin-bottom:0.5rem;">Reset all predictions?</h2>
+    <p style="text-align:center;color:var(--text-muted);font-size:13px;margin-bottom:1.25rem;">This will permanently delete ALL your predictions for every match. This cannot be undone.</p>
+    <div style="display:flex;gap:8px;">
+      <button onclick="document.getElementById('reset-modal').style.display='none'" style="flex:1;padding:10px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text);font-size:14px;cursor:pointer;">No, I changed my mind</button>
+      <button onclick="executeResetPredictions()" style="flex:1;padding:10px;border-radius:8px;border:none;background:#E24B4A;color:white;font-size:14px;font-weight:500;cursor:pointer;">Yes, reset all</button>
+    </div>
+  </div>
+</div>
+
 <!-- MAIN APP -->
 <div id="view-app" style="display:none;">
   <nav class="nav">
@@ -1147,7 +1160,10 @@
       </div>
       <div id="tournament-deadline-notice" style="font-size:12px;color:var(--text-muted);margin-top:6px;"></div>
     </div>
-    <p class="section-title">Upcoming matches - place your predictions</p>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
+      <p class="section-title" style="margin-bottom:0;">Upcoming matches - place your predictions</p>
+      <button onclick="confirmResetPredictions()" style="font-size:12px;color:#E24B4A;background:none;border:0.5px solid #E24B4A;padding:5px 12px;border-radius:8px;cursor:pointer;">🗑 Reset all</button>
+    </div>
     <div class="matches" id="matches-list">
       <div style="padding:1rem; text-align:center; font-size:13px; color:var(--text-muted);">Loading matches...</div>
     </div>
@@ -2287,6 +2303,48 @@
   }
   window.closeDyk = closeDyk;
 
+  window.confirmResetPredictions = () => {
+    document.getElementById('reset-modal').style.display = 'flex';
+  };
+
+  window.executeResetPredictions = async () => {
+    document.getElementById('reset-modal').style.display = 'none';
+    const btn = document.querySelector('[onclick="confirmResetPredictions()"]');
+    if (btn) { btn.textContent = 'Resetting...'; btn.disabled = true; }
+    try {
+      const predsSnap = await getDocs(collection(db, 'predictions'));
+      const batch = [];
+      predsSnap.forEach(d => {
+        if (d.data().userId === currentUser.uid) batch.push(d.id);
+      });
+      for (const id of batch) {
+        await deleteDoc(doc(db, 'predictions', id));
+      }
+      // Reload matches to clear inputs
+      await loadMatches();
+      if (btn) { btn.textContent = '🗑 Reset all'; btn.disabled = false; }
+      const tip = document.createElement('div');
+      tip.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:13px;padding:10px 16px;border-radius:10px;z-index:9999;white-space:nowrap;';
+      tip.textContent = '✅ All predictions cleared!';
+      document.body.appendChild(tip);
+      setTimeout(() => { tip.style.transition='opacity 0.5s'; tip.style.opacity='0'; setTimeout(()=>tip.remove(),500); }, 2500);
+    } catch(e) {
+      alert('Error resetting: ' + e.message);
+      if (btn) { btn.textContent = '🗑 Reset all'; btn.disabled = false; }
+    }
+  };
+
+  window.showInjuryPage = (pageIdx) => {
+    document.querySelectorAll('[id^="inj-page-"]').forEach((el, i) => {
+      el.style.display = i === pageIdx ? 'block' : 'none';
+    });
+    document.querySelectorAll('[id^="inj-tab-"]').forEach((btn, i) => {
+      btn.style.background = i === pageIdx ? '#E1F5EE' : 'none';
+      btn.style.color = i === pageIdx ? '#085041' : 'var(--text-muted)';
+      btn.style.borderColor = i === pageIdx ? '#5DCAA5' : 'var(--border)';
+    });
+  };
+
   window.pickTournamentPlayer = async (player, btn) => {
     const tournamentDeadline = new Date('2026-06-10T19:00:00Z');
     if (new Date() >= tournamentDeadline) {
@@ -2356,25 +2414,42 @@
           <div style="font-size:11px;color:var(--text-muted);">Updated: ${tips.updated} · <button onclick="tipsCache=null;loadTipsPage()" style="background:none;border:none;color:var(--green);cursor:pointer;font-size:11px;padding:0;">Refresh</button></div>
         </div>
 
-        ${tips.injuryWatch && tips.injuryWatch.length ? `
-        <div style="background:var(--surface);border:0.5px solid #E24B4A;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
-          <div style="font-size:14px;font-weight:500;margin-bottom:0.75rem;">🚑 Injury Watch</div>
-          ${tips.injuryWatch.map(p => {
-            const color = p.status === 'Out' ? '#E24B4A' : p.status === 'Doubt' ? '#BA7517' : '#1D9E75';
-            const bg = p.status === 'Out' ? '#FCEBEB' : p.status === 'Doubt' ? '#FAEEDA' : '#E1F5EE';
-            return `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:0.5rem 0;border-bottom:0.5px solid var(--border);">
-              <div>
-                <div style="font-size:13px;font-weight:500;">${p.player} <span style="font-size:11px;color:var(--text-muted);font-weight:400;">${p.team}</span></div>
-                <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${p.detail}</div>
-              </div>
-              <span style="font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px;background:${bg};color:${color};flex-shrink:0;margin-left:8px;">${p.status}</span>
+        ${(tips.injuryWatch || tips.injuryReport) && (tips.injuryWatch || tips.injuryReport).length ? (() => {
+          const injuries = tips.injuryWatch || tips.injuryReport;
+          const perPage = 5;
+          const pages = Math.ceil(injuries.length / perPage);
+          const pageButtons = pages > 1 ? Array.from({length: pages}, (_, i) =>
+            `<button onclick="showInjuryPage(${i})" id="inj-tab-${i}" style="padding:4px 12px;border-radius:99px;border:0.5px solid ${i===0?'#5DCAA5':'var(--border)'};background:${i===0?'#E1F5EE':'none'};color:${i===0?'#085041':'var(--text-muted)'};font-size:11px;cursor:pointer;">${i===0?'Page 1':'Page '+(i+1)}</button>`
+          ).join('') : '';
+          const pagesHtml = Array.from({length: pages}, (_, pageIdx) => {
+            const slice = injuries.slice(pageIdx * perPage, (pageIdx + 1) * perPage);
+            return `<div id="inj-page-${pageIdx}" style="display:${pageIdx===0?'block':'none'}">
+              ${slice.map(p => {
+                const color = p.status === 'Out' ? '#E24B4A' : p.status === 'Doubt' ? '#BA7517' : '#1D9E75';
+                const bg = p.status === 'Out' ? '#FCEBEB' : p.status === 'Doubt' ? '#FAEEDA' : '#E1F5EE';
+                return `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:0.5rem 0;border-bottom:0.5px solid var(--border);">
+                  <div>
+                    <div style="font-size:13px;font-weight:500;">${p.player} <span style="font-size:11px;color:var(--text-muted);font-weight:400;">${p.team}</span></div>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${p.detail}</div>
+                  </div>
+                  <span style="font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px;background:${bg};color:${color};flex-shrink:0;margin-left:8px;">${p.status}</span>
+                </div>`;
+              }).join('')}
             </div>`;
-          }).join('')}
-        </div>` : ''}
+          }).join('');
+          return `<div style="background:var(--surface);border:0.5px solid #E24B4A;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
+              <div style="font-size:14px;font-weight:500;">🚑 Injury Watch</div>
+              <div style="display:flex;gap:6px;">${pageButtons}</div>
+            </div>
+            ${pagesHtml}
+          </div>`;
+        })() : ''}
 
         <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
           <div style="font-size:14px;font-weight:500;margin-bottom:0.75rem;">⚽ Top First Goalscorer Picks</div>
-          ${tips.topScorers.map(p => `
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Best picks for the first scorer bonus (+2 pts per match)</div>
+          ${(tips.topFirstScorers || tips.topScorers || []).map(p => `
             <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:0.5rem 0;border-bottom:0.5px solid var(--border);">
               <div>
                 <div style="font-size:13px;font-weight:500;">${p.player} <span style="font-size:11px;color:var(--text-muted);font-weight:400;">${p.team}</span></div>
@@ -2386,21 +2461,21 @@
 
         <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
-            <div style="font-size:14px;font-weight:500;">🏆 Tournament Player Recommendations</div>
-            <div style="font-size:11px;color:var(--text-muted);background:var(--surface2);padding:3px 8px;border-radius:99px;" title="Every goal this player scores = +1 point for you all tournament">⚽ +1 pt per goal</div>
+            <div style="font-size:14px;font-weight:500;">🏆 Tournament Player Picks</div>
+            <div style="font-size:11px;color:var(--text-muted);background:var(--surface2);padding:3px 8px;border-radius:99px;">⚽ +1 pt per goal</div>
           </div>
           <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;padding:8px;background:var(--surface2);border-radius:8px;">
-            💡 Pick one player for the whole tournament. Every goal they score gives you +1 point. Choose a striker who scores a lot!
+            💡 Pick one player for the whole tournament. Every goal they score = +1 point. Click "Pick" to lock them in instantly!
           </div>
-          ${tips.tournamentPlayerPicks.map(p => `
+          ${(tips.tournamentPlayers || tips.tournamentPlayerPicks || []).map(p => `
             <div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-bottom:0.5px solid var(--border);gap:8px;">
               <div style="flex:1;min-width:0;">
                 <div style="font-size:13px;font-weight:500;">${p.player} <span style="font-size:11px;color:var(--text-muted);font-weight:400;">${p.team}</span>${p.goals ? ` <span style="font-size:10px;color:var(--green);font-weight:500;">~${p.goals} goals</span>` : ''}</div>
                 <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${p.reason}</div>
               </div>
-              <button onclick="pickTournamentPlayer('${p.player.replace(/'/g,"\\'")}', this)" 
+              <button onclick="pickTournamentPlayer('${(p.player||'').replace(/'/g,"\\'")}', this)"
                 style="flex-shrink:0;padding:5px 10px;border-radius:99px;border:0.5px solid #5DCAA5;background:none;color:#1D9E75;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.15s;"
-                onmouseover="this.style.background='#E1F5EE'" 
+                onmouseover="this.style.background='#E1F5EE'"
                 onmouseout="this.style.background='none'">
                 Pick ✓
               </button>
@@ -2410,7 +2485,7 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem;">
           <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem;">
             <div style="font-size:13px;font-weight:500;margin-bottom:0.75rem;">🤝 Draw Specialists</div>
-            ${tips.drawTeams.map(t => `
+            ${(tips.drawTeams || []).map(t => `
               <div style="padding:0.4rem 0;border-bottom:0.5px solid var(--border);">
                 <div style="font-size:13px;font-weight:500;">${t.team}</div>
                 <div style="font-size:11px;color:var(--text-muted);">${t.stat}</div>
@@ -2418,7 +2493,7 @@
           </div>
           <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem;">
             <div style="font-size:13px;font-weight:500;margin-bottom:0.75rem;">🔥 Goal Machines</div>
-            ${tips.highScoringTeams.map(t => `
+            ${(tips.highScoringTeams || []).map(t => `
               <div style="padding:0.4rem 0;border-bottom:0.5px solid var(--border);">
                 <div style="font-size:13px;font-weight:500;">${t.team}</div>
                 <div style="font-size:11px;color:var(--text-muted);">${t.stat}</div>
@@ -2428,11 +2503,18 @@
 
         <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
           <div style="font-size:14px;font-weight:500;margin-bottom:0.75rem;">📋 Round 1 Match Tips</div>
-          ${tips.round1Tips.map(m => `
-            <div style="padding:0.5rem 0;border-bottom:0.5px solid var(--border);">
-              <div style="font-size:13px;font-weight:500;">${m.match}</div>
-              <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">💬 ${m.tip}</div>
-            </div>`).join('')}
+          ${(tips.round1Tips || []).map(m => {
+            const pickColor = m.pick === 'X' ? '#BA7517' : '#1D9E75';
+            const pickBg = m.pick === 'X' ? '#FAEEDA' : '#E1F5EE';
+            return `<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:0.5rem 0;border-bottom:0.5px solid var(--border);gap:8px;">
+              <div style="flex:1;">
+                <div style="font-size:12px;color:var(--text-muted);margin-bottom:2px;">${m.group || ''}</div>
+                <div style="font-size:13px;font-weight:500;">${m.match}</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${m.tip || ''}</div>
+              </div>
+              <span style="flex-shrink:0;font-size:12px;font-weight:700;padding:3px 10px;border-radius:99px;background:${pickBg};color:${pickColor};">${m.pick} ${m.pickLabel ? '('+m.pickLabel+')' : ''}</span>
+            </div>`;
+          }).join('')}
         </div>
 
         <div style="background:#0a1f0a;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
@@ -2441,7 +2523,7 @@
         </div>
 
         <div style="font-size:11px;color:var(--text-muted);text-align:center;padding-bottom:0.5rem;">
-          Tips are AI-generated based on current data. Not financial advice. Use your own judgment 😄
+          Tips are AI-generated. Not financial advice. Use your own judgment 😄
         </div>`;
 
       tipsCache = html;
