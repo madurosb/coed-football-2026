@@ -2287,6 +2287,38 @@
   }
   window.closeDyk = closeDyk;
 
+  window.pickTournamentPlayer = async (player, btn) => {
+    const tournamentDeadline = new Date('2026-06-10T19:00:00Z');
+    if (new Date() >= tournamentDeadline) {
+      alert('Tournament player deadline has passed!');
+      return;
+    }
+    // Find the matching option in the home page select
+    const sel = document.getElementById('tournament-player-select');
+    if (sel) {
+      // Find option that matches player name
+      const opts = Array.from(sel.options);
+      const match = opts.find(o => o.value.toLowerCase().includes(player.toLowerCase().split(' ')[0]));
+      if (match) {
+        sel.value = match.value;
+        await updateDoc(doc(db, 'users', currentUser.uid), { tournamentPlayer: match.value });
+        document.getElementById('home-player').textContent = match.value;
+        btn.textContent = '✅ Picked!';
+        btn.style.background = '#E1F5EE';
+        btn.style.borderColor = '#1D9E75';
+        btn.disabled = true;
+        // Show tooltip
+        const tip = document.createElement('div');
+        tip.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:13px;padding:10px 16px;border-radius:10px;z-index:9999;white-space:nowrap;';
+        tip.textContent = '✅ ' + match.value + ' set as your tournament player!';
+        document.body.appendChild(tip);
+        setTimeout(() => { tip.style.transition='opacity 0.5s'; tip.style.opacity='0'; setTimeout(()=>tip.remove(),500); }, 2500);
+      } else {
+        alert('Player not found in squad list. Go to Home page to pick manually.');
+      }
+    }
+  };
+
   // ========== TIPS PAGE ==========
   let tipsCache = null;
   let tipsCacheDate = null;
@@ -2353,14 +2385,25 @@
         </div>
 
         <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
-          <div style="font-size:14px;font-weight:500;margin-bottom:0.75rem;">🏆 Tournament Player Recommendations</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
+            <div style="font-size:14px;font-weight:500;">🏆 Tournament Player Recommendations</div>
+            <div style="font-size:11px;color:var(--text-muted);background:var(--surface2);padding:3px 8px;border-radius:99px;" title="Every goal this player scores = +1 point for you all tournament">⚽ +1 pt per goal</div>
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;padding:8px;background:var(--surface2);border-radius:8px;">
+            💡 Pick one player for the whole tournament. Every goal they score gives you +1 point. Choose a striker who scores a lot!
+          </div>
           ${tips.tournamentPlayerPicks.map(p => `
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:0.5rem 0;border-bottom:0.5px solid var(--border);">
-              <div>
-                <div style="font-size:13px;font-weight:500;">${p.player} <span style="font-size:11px;color:var(--text-muted);font-weight:400;">${p.team}</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-bottom:0.5px solid var(--border);gap:8px;">
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:13px;font-weight:500;">${p.player} <span style="font-size:11px;color:var(--text-muted);font-weight:400;">${p.team}</span>${p.goals ? ` <span style="font-size:10px;color:var(--green);font-weight:500;">~${p.goals} goals</span>` : ''}</div>
                 <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${p.reason}</div>
               </div>
-              <div style="font-size:18px;flex-shrink:0;margin-left:8px;">⭐</div>
+              <button onclick="pickTournamentPlayer('${p.player.replace(/'/g,"\\'")}', this)" 
+                style="flex-shrink:0;padding:5px 10px;border-radius:99px;border:0.5px solid #5DCAA5;background:none;color:#1D9E75;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.15s;"
+                onmouseover="this.style.background='#E1F5EE'" 
+                onmouseout="this.style.background='none'">
+                Pick ✓
+              </button>
             </div>`).join('')}
         </div>
 
