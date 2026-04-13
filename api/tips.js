@@ -19,9 +19,11 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
-        system: `You are a FIFA World Cup 2026 expert analyst.
+        system: `You are a FIFA World Cup 2026 expert analyst. Today is April 2026.
 
-TOURNAMENT PLAYER CONTEXT: Users pick ONE player for the entire tournament. Every goal that player scores = +1 point. So tournament player picks must be prolific GOAL SCORERS - strikers who score many goals. Not midfielders or defenders.
+INJURY RULES: Only include players who are currently INJURED or DOUBTFUL for the World Cup. Do NOT include players who have already recovered. Status must be either "Out" (definitely missing the tournament) or "Doubt" (uncertain, may miss games). Never use "Recovered". Include as many real injured/doubtful players as you know about across all World Cup 2026 teams.
+
+TOURNAMENT PLAYER CONTEXT: Users pick ONE player for the entire tournament. Every goal that player scores = +1 point. So tournament player picks must be prolific GOAL SCORERS - strikers only.
 
 THE REAL ROUND 1 FIXTURES ARE:
 June 11: Mexico vs South Africa (Group A), South Korea vs Czechia (Group A)
@@ -36,7 +38,7 @@ Return ONLY valid JSON, no markdown, no backticks:
 {
   "updated": "April 2026",
   "injuryWatch": [
-    {"player": "Name", "team": "Country", "status": "Doubt/Out/Recovered", "detail": "short detail under 15 words"}
+    {"player": "Name", "team": "Country", "status": "Doubt or Out only", "detail": "specific injury and expected return under 15 words"}
   ],
   "topFirstScorers": [
     {"player": "Name", "team": "Country", "reason": "under 15 words why good first goalscorer pick per match"}
@@ -56,10 +58,10 @@ Return ONLY valid JSON, no markdown, no backticks:
   "funFact": "one interesting World Cup 2026 fact under 25 words"
 }
 
-Include 12 players in injuryWatch (split across pages), 6 in topFirstScorers, 8 in tournamentPlayers (MUST include Messi, Mbappe, Haaland, Vinicius Jr, Kane, Ronaldo), 5 in drawTeams, 5 in highScoringTeams, ALL 24 round1 matches listed above.`,
+Include as many real injured/doubtful players as possible in injuryWatch (minimum 8, only Doubt or Out status), 6 in topFirstScorers, 8 in tournamentPlayers (MUST include Messi, Mbappe, Haaland, Vinicius Jr, Kane, Ronaldo), 5 in drawTeams, 5 in highScoringTeams, ALL 24 round1 matches.`,
         messages: [{
           role: 'user',
-          content: 'Give me World Cup 2026 tips. For injuries include as many known injured/doubtful players as possible. For tournament players only include prolific goal scorers. Use the exact 24 Round 1 fixtures I provided. Return only JSON.'
+          content: 'List all known injured or doubtful players for World Cup 2026 (status: Doubt or Out only, no Recovered). Then give tournament player picks (goal scorers only), top first scorers, draw teams, high scoring teams, and all 24 Round 1 predictions. Return only JSON.'
         }]
       })
     });
@@ -69,6 +71,14 @@ Include 12 players in injuryWatch (split across pages), 6 in topFirstScorers, 8 
     const text = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
     const clean = text.replace(/```json|```/g, '').trim();
     const tips = JSON.parse(clean);
+
+    // Filter out any Recovered statuses just in case
+    if (tips.injuryWatch) {
+      tips.injuryWatch = tips.injuryWatch.filter(p =>
+        p.status === 'Doubt' || p.status === 'Out'
+      );
+    }
+
     return res.status(200).json(tips);
 
   } catch (e) {
