@@ -2482,8 +2482,8 @@
             const slice = injuries.slice(pageIdx * perPage, (pageIdx + 1) * perPage);
             return `<div id="inj-page-${pageIdx}" style="display:${pageIdx===0?'block':'none'}">
               ${slice.map(p => {
-                const color = p.status === 'Out' ? '#E24B4A' : p.status === 'Doubt' ? '#BA7517' : '#1D9E75';
-                const bg = p.status === 'Out' ? '#FCEBEB' : p.status === 'Doubt' ? '#FAEEDA' : '#E1F5EE';
+                const color = p.status === 'Out' ? '#E24B4A' : '#BA7517';
+                const bg = p.status === 'Out' ? '#FCEBEB' : '#FAEEDA';
                 return `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:0.5rem 0;border-bottom:0.5px solid var(--border);">
                   <div>
                     <div style="font-size:13px;font-weight:500;">${p.player} <span style="font-size:11px;color:var(--text-muted);font-weight:400;">${p.team}</span></div>
