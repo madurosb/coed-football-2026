@@ -370,6 +370,7 @@
       <button class="nav-btn" data-page="matches" onclick="showPage('matches')">Matches</button>
       <button class="nav-btn" data-page="leaderboard" onclick="showPage('leaderboard')">Standings</button>
       <button class="nav-btn" data-page="stats" onclick="showPage('stats')">My Stats</button>
+      <button class="nav-btn" data-page="highlights" onclick="showPage('highlights')">Highlights</button>
       <button class="nav-btn" data-page="rules" onclick="showPage('rules')">Rules</button>
       <button class="nav-btn" data-page="admin" id="admin-nav-btn" style="display:none;" onclick="showPage('admin')">Admin</button>
     </div>
@@ -390,6 +391,7 @@
     <button class="mobile-menu-btn" data-page="matches" onclick="mobileNav('matches')">⚽ &nbsp; Matches</button>
     <button class="mobile-menu-btn" data-page="leaderboard" onclick="mobileNav('leaderboard')">🏆 &nbsp; Standings</button>
     <button class="mobile-menu-btn" data-page="stats" onclick="mobileNav('stats')">📊 &nbsp; My Stats</button>
+    <button class="mobile-menu-btn" data-page="highlights" onclick="mobileNav('highlights')">🎬 &nbsp; Highlights</button>
     <button class="mobile-menu-btn" data-page="rules" onclick="mobileNav('rules')">📋 &nbsp; Rules</button>
     <button class="mobile-menu-btn" data-page="admin" id="admin-menu-btn" style="display:none;" onclick="mobileNav('admin')">⚙️ &nbsp; Admin</button>
   </div>
@@ -414,6 +416,10 @@
     <button class="bnav-btn" data-page="stats" onclick="showPage('stats')">
       <span class="bnav-icon">📊</span>
       <span class="bnav-label">My Stats</span>
+    </button>
+    <button class="bnav-btn" data-page="highlights" onclick="showPage('highlights')">
+      <span class="bnav-icon">🎬</span>
+      <span class="bnav-label">Highlights</span>
     </button>
     <button class="bnav-btn" data-page="rules" onclick="showPage('rules')">
       <span class="bnav-icon">📋</span>
@@ -1181,11 +1187,11 @@
     </div>
     <div class="rules-card">
       <h2>Prizes</h2>
-      <div class="prize-row"><div class="prize-place"><span style="font-size:18px;">🥇</span> 1st place</div><div class="prize-amt" id="prize-1" style="color:#BA7517;">TBD</div></div>
+      <div class="prize-row"><div class="prize-place"><span style="font-size:18px;">🥇</span> 1st place <span style="font-size:11px;color:var(--text-muted);font-weight:400;">*(net of 10% tournament fee)</span></div><div class="prize-amt" id="prize-1" style="color:#BA7517;">TBD</div></div>
       <div class="prize-row"><div class="prize-place"><span style="font-size:18px;">🥈</span> 2nd place</div><div class="prize-amt" id="prize-2" style="color:#888780;">TBD</div></div>
       <div class="prize-row"><div class="prize-place"><span style="font-size:18px;">🥉</span> 3rd place</div><div class="prize-amt" id="prize-3" style="color:#854F0B;">TBD</div></div>
       <div class="prize-row"><div class="prize-place"><span style="font-size:16px;">🎯</span> The Sniper</div><div class="prize-amt" id="prize-sniper">TBD</div></div>
-      <p style="font-size:12px; color:var(--text-muted); margin-top:0.75rem;">Prize amounts will be announced once all participants have joined. Entry fee: 50 ILS per player.</p>
+      <p style="font-size:12px; color:var(--text-muted); margin-top:0.75rem;">Prize amounts will be announced once all participants have joined. Entry fee: 50 ILS per player. *10% of the 1st place prize goes to the tournament organiser to cover site and tournament maintenance costs.</p>
     </div>
     <div class="rules-card">
       <h2>The Sniper award</h2>
@@ -1197,6 +1203,57 @@
   <div class="page" id="page-stats">
     <div id="stats-content">
       <div style="padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);">Loading your stats...</div>
+    </div>
+  </div>
+
+  <!-- HIGHLIGHTS -->
+  <div class="page" id="page-highlights">
+    <div style="text-align:center; padding: 2rem 1rem 3rem;">
+      <div style="font-size:13px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2rem;">Match Highlights</div>
+
+      <svg viewBox="0 0 320 260" width="280" style="display:block;margin:0 auto 2rem;" xmlns="http://www.w3.org/2000/svg">
+        <!-- Screen/TV -->
+        <rect x="30" y="20" width="260" height="160" rx="12" fill="#1a1a2e" stroke="#334155" stroke-width="2"/>
+        <rect x="44" y="34" width="232" height="132" rx="6" fill="#0f172a"/>
+        <!-- Pitch lines -->
+        <rect x="44" y="34" width="232" height="132" rx="6" fill="#166534" opacity="0.3"/>
+        <line x1="160" y1="34" x2="160" y2="166" stroke="#ffffff" stroke-width="0.8" opacity="0.3"/>
+        <circle cx="160" cy="100" r="28" fill="none" stroke="#ffffff" stroke-width="0.8" opacity="0.3"/>
+        <rect x="126" y="34" width="68" height="22" fill="none" stroke="#ffffff" stroke-width="0.8" opacity="0.3"/>
+        <rect x="126" y="144" width="68" height="22" fill="none" stroke="#ffffff" stroke-width="0.8" opacity="0.3"/>
+        <!-- Play button -->
+        <circle cx="160" cy="100" r="22" fill="#1D9E75" opacity="0.9"/>
+        <polygon points="154,91 154,109 172,100" fill="white"/>
+        <!-- Lock icon overlay -->
+        <rect x="110" y="70" width="100" height="60" rx="8" fill="#0f172a" opacity="0.85"/>
+        <rect x="143" y="82" width="34" height="26" rx="4" fill="none" stroke="#5DCAA5" stroke-width="2"/>
+        <path d="M150 82 Q150 72 160 72 Q170 72 170 82" fill="none" stroke="#5DCAA5" stroke-width="2"/>
+        <circle cx="160" cy="95" r="4" fill="#5DCAA5"/>
+        <line x1="160" y1="99" x2="160" y2="104" stroke="#5DCAA5" stroke-width="2"/>
+        <!-- TV stand -->
+        <rect x="148" y="180" width="24" height="14" rx="2" fill="#334155"/>
+        <rect x="128" y="192" width="64" height="6" rx="3" fill="#334155"/>
+        <!-- Floating calendar icons -->
+        <rect x="58" y="48" width="28" height="26" rx="4" fill="#1e3a5f" opacity="0.8"/>
+        <line x1="64" y1="52" x2="80" y2="52" stroke="#60a5fa" stroke-width="1.5"/>
+        <rect x="62" y="56" width="4" height="4" rx="1" fill="#60a5fa" opacity="0.6"/>
+        <rect x="70" y="56" width="4" height="4" rx="1" fill="#60a5fa" opacity="0.6"/>
+        <rect x="62" y="64" width="4" height="4" rx="1" fill="#60a5fa" opacity="0.4"/>
+        <rect x="70" y="64" width="4" height="4" rx="1" fill="#60a5fa" opacity="0.4"/>
+        <!-- Stars -->
+        <text x="240" y="58" font-size="14" opacity="0.4">⭐</text>
+        <text x="52" y="155" font-size="12" opacity="0.3">⭐</text>
+        <text x="258" y="148" font-size="10" opacity="0.3">✨</text>
+      </svg>
+
+      <div style="font-size:22px;font-weight:500;margin-bottom:0.5rem;">No highlights yet</div>
+      <div style="font-size:14px;color:var(--text-muted);line-height:1.7;max-width:320px;margin:0 auto 2rem;">
+        Once the World Cup kicks off on <strong>June 11</strong>, match highlights will appear here after every game.
+      </div>
+
+      <div style="display:inline-flex;align-items:center;gap:8px;background:#0a1f0a;border-radius:99px;padding:10px 20px;">
+        <span style="font-size:14px;color:#4ade80;font-weight:500;">⚽ Check back on June 11, 2026</span>
+      </div>
     </div>
   </div>
 
