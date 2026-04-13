@@ -178,7 +178,19 @@
       .stat-grid { grid-template-columns: repeat(2, 1fr); }
       .lb-row { grid-template-columns: 32px 1fr 50px; }
       .lb-row .lb-pts.muted { display: none; }
-      .nav-links .nav-btn { padding: 0 8px; font-size: 12px; }
+      .nav-links .nav-btn { padding: 0 6px; font-size: 11px; }
+      .nav-logo span:first-of-type { display: none; }
+      .page { padding: 1rem 0.75rem; }
+      .match-card { padding: 1rem; }
+      .teams { gap: 6px; }
+      .score-input { width: 38px; height: 38px; font-size: 16px; }
+      .rules-card { padding: 1rem; }
+      .nav { padding: 0 0.75rem; }
+      .nav-user span { display: none; }
+      #user-handle { display: none; }
+      .hero-stats .stat-big { min-width: 0; }
+      .cd-num { width: 54px !important; font-size: 24px !important; }
+      .form-grid { grid-template-columns: 1fr !important; }
     }
     /* DID YOU KNOW POPUP */
     .dyk-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; animation: fadeIn 0.3s ease; }
@@ -1003,7 +1015,8 @@
 
     <div style="border-radius:16px;overflow:hidden;margin-bottom:1.25rem;background:#000;position:relative;padding-top:56.25%;">
       <iframe
-        src="https://www.youtube.com/embed/ZCPAnc-oae4?autoplay=1&loop=1&playlist=ZCPAnc-oae4&mute=1&controls=1&modestbranding=1&rel=0"
+        id="rules-video"
+        src="https://www.youtube.com/embed/ZCPAnc-oae4?autoplay=1&loop=1&playlist=ZCPAnc-oae4&mute=1&controls=1&modestbranding=1&rel=0&enablejsapi=1"
         style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"
         allow="autoplay; encrypted-media"
         allowfullscreen>
@@ -1381,6 +1394,18 @@
     if (id === 'admin') { showAdminMain(); loadAdminUsers(); loadAdminStats(); }
     if (id === 'leaderboard') loadFullLeaderboard();
     if (id === 'stats') loadStatsPage();
+
+    const vid = document.getElementById('rules-video');
+    if (vid) {
+      if (id === 'rules') {
+        // Unmute and play when entering rules
+        vid.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+        vid.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+      } else {
+        // Pause when leaving rules
+        vid.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+      }
+    }
   };
 
   // LOAD HOME DATA
