@@ -1296,6 +1296,7 @@
         <div class="admin-card" onclick="showAdminSub('prizes')"><div class="icon">🏆</div><div class="title">Prize settings</div><div class="desc">Set prize amounts for 1st, 2nd, 3rd and the Sniper. Amounts appear automatically on the Rules page.</div></div>
         <div class="admin-card" onclick="showAdminSub('schedule')"><div class="icon">📅</div><div class="title">Match schedule</div><div class="desc">Add, edit or remove matches. Set kickoff times (Israel time), group info, and prediction deadlines.</div></div>
         <div class="admin-card" onclick="showAdminSub('stats')"><div class="icon">📊</div><div class="title">Statistics</div><div class="desc">Full tournament analytics - accuracy rates, most popular player picks, predicted scorers, group performance.</div></div>
+        <div class="admin-card" onclick="showAdminSub('predictions-backup')"><div class="icon">📦</div><div class="title">Predictions backup</div><div class="desc">Full snapshot of all player predictions before the tournament starts. Use this to manually verify or restore predictions.</div></div>
       </div>
     </div>
     <div id="admin-results" class="admin-sub">
@@ -1369,6 +1370,16 @@
           <div class="stat-big"><div class="num" id="stat-accuracy">-</div><div class="lbl">Avg accuracy</div></div>
         </div>
         <div id="admin-stats-detail" style="font-size:13px;color:var(--text-muted);">Loading statistics...</div>
+      </div>
+    </div>
+
+    <div id="admin-predictions-backup" class="admin-sub">
+      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
+      <div class="form-card">
+        <h2>📦 Predictions backup</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Full snapshot of all predictions per player. Use this as a reference if you need to manually verify or restore predictions.</p>
+        <button class="submit-btn" onclick="loadPredictionsBackup()" style="margin-bottom:1rem;">Load all predictions</button>
+        <div id="predictions-backup-content" style="font-size:13px;color:var(--text-muted);">Click the button above to load.</div>
       </div>
     </div>
   </div>
@@ -2234,6 +2245,64 @@
     alert('Match added!');
     ['sch-home','sch-away','sch-home-flag','sch-away-flag','sch-date','sch-time'].forEach(id => document.getElementById(id).value = '');
     loadMatches();
+  };
+
+  window.loadPredictionsBackup = async () => {
+    const container = document.getElementById('predictions-backup-content');
+    container.innerHTML = 'Loading...';
+    try {
+      const [predsSnap, matchesSnap, usersSnap] = await Promise.all([
+        getDocs(collection(db, 'predictions')),
+        getDocs(collection(db, 'matches')),
+        getDocs(collection(db, 'users'))
+      ]);
+
+      const matches = {};
+      matchesSnap.forEach(d => { matches[d.id] = d.data(); });
+      const users = {};
+      usersSnap.forEach(d => { users[d.data().uid] = d.data(); });
+
+      // Group by user
+      const byUser = {};
+      predsSnap.forEach(d => {
+        const p = d.data();
+        if (!byUser[p.userId]) byUser[p.userId] = [];
+        byUser[p.userId].push(p);
+      });
+
+      let html = '';
+      for (const uid of Object.keys(byUser)) {
+        const u = users[uid] || {};
+        const preds = byUser[uid];
+        preds.sort((a, b) => {
+          const ma = matches[a.matchId], mb = matches[b.matchId];
+          if (!ma || !mb) return 0;
+          return (ma.kickoff?.toDate?.() || 0) - (mb.kickoff?.toDate?.() || 0);
+        });
+
+        html += `<div style="margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:0.5px solid var(--border);">
+          <div style="font-size:14px;font-weight:500;margin-bottom:0.5rem;">
+            ${u.nickname || u.displayName || uid}
+            <span style="font-size:11px;color:var(--text-muted);font-weight:400;"> · ${u.email || ''}</span>
+            <span style="font-size:11px;color:var(--green);"> · 🏆 ${u.tournamentPlayer || 'No player picked'}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+            ${preds.map(p => {
+              const m = matches[p.matchId] || {};
+              return `<div style="font-size:12px;padding:4px 8px;background:var(--surface2);border-radius:6px;">
+                <span style="color:var(--text-muted);">${m.homeTeam || '?'} vs ${m.awayTeam || '?'}</span>
+                <span style="font-weight:500;margin-left:6px;">${p.homeScore ?? '-'} - ${p.awayScore ?? '-'}</span>
+                ${p.firstScorer ? `<span style="color:var(--text-muted);font-size:11px;margin-left:4px;">⚽ ${p.firstScorer}</span>` : ''}
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }
+
+      container.innerHTML = html || 'No predictions found.';
+    } catch(e) {
+      container.innerHTML = 'Error: ' + e.message;
+    }
   };
 
   async function loadAdminStats() {
