@@ -19,17 +19,27 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 2000,
-        system: `You are a World Cup 2026 expert analyst with up to date knowledge. Return ONLY a valid JSON object with no markdown, no backticks, no explanation. Use this exact structure:
+        system: `You are a World Cup 2026 expert. The FIFA World Cup 2026 group stage starts June 11, 2026. 
+
+IMPORTANT CONTEXT: In our prediction game, users pick a "tournament player" - one player for the whole tournament. Every goal that player scores gives +1 point. So tournament player picks must be HIGH GOAL SCORERS - strikers and attacking players who are likely to score many goals throughout the tournament (not defenders or goalkeepers). Lionel Messi, Kylian Mbappe, Erling Haaland, Vinicius Jr, Harry Kane etc are ideal picks.
+
+The actual FIFA World Cup 2026 Group Stage Round 1 matches are:
+- Group A: Mexico vs Ecuador, USA vs Panama  
+- Group B: Argentina vs Albania, Morocco vs Iraq
+- Group C: Spain vs Brazil (not confirmed but likely group stage clash - use real confirmed matches)
+- Use the REAL confirmed group stage fixtures from the FIFA World Cup 2026 draw that happened in December 2024.
+
+Return ONLY a valid JSON object, no markdown, no backticks:
 {
   "updated": "April 2026",
   "injuryWatch": [
-    {"player": "Name", "team": "Country", "status": "Doubt/Out/Recovered", "detail": "short injury detail under 15 words"}
+    {"player": "Name", "team": "Country", "status": "Doubt/Out/Recovered", "detail": "under 15 words"}
   ],
   "topScorers": [
-    {"player": "Name", "team": "Country", "reason": "under 15 words why to pick them as first scorer"}
+    {"player": "Name", "team": "Country", "reason": "under 15 words why good first goalscorer pick per match"}
   ],
   "tournamentPlayerPicks": [
-    {"player": "Name", "team": "Country", "reason": "under 15 words why good tournament player pick"}
+    {"player": "Name", "team": "Country", "goals": "expected goals range e.g. 4-7", "reason": "under 15 words - focus on goal scoring ability throughout tournament"}
   ],
   "drawTeams": [
     {"team": "Country", "stat": "under 12 words about draw tendency"}
@@ -38,23 +48,20 @@ export default async function handler(req, res) {
     {"team": "Country", "stat": "under 12 words about goal scoring"}
   ],
   "round1Tips": [
-    {"match": "Team A vs Team B", "tip": "under 20 words prediction with reasoning"}
+    {"match": "Team A vs Team B", "group": "Group X", "tip": "under 20 words prediction"}
   ],
   "funFact": "one interesting World Cup 2026 fact under 25 words"
 }
-Include 5 items in injuryWatch, 5 in topScorers, 5 in tournamentPlayerPicks, 4 in drawTeams, 4 in highScoringTeams, 5 in round1Tips.`,
+Include 5 in injuryWatch, 6 in topScorers, 6 in tournamentPlayerPicks (MUST include Messi, Mbappe, Haaland, Vinicius Jr), 4 in drawTeams, 4 in highScoringTeams, 6 real round1 matches.`,
         messages: [{
           role: 'user',
-          content: 'Give me FIFA World Cup 2026 tips: injury watch, top goalscorer picks, best tournament player picks, teams known for draws, high scoring teams, and round 1 group stage match predictions. Return only the JSON.'
+          content: 'Give me FIFA World Cup 2026 tips using the real confirmed group stage draw. For tournament player picks focus only on players likely to score many goals. Include the real Round 1 fixtures from the actual FIFA World Cup 2026 draw. Return only the JSON.'
         }]
       })
     });
 
     const data = await response.json();
-    console.log('Anthropic response:', JSON.stringify(data).substring(0, 200));
-
     if (data.error) return res.status(500).json({ error: data.error.message });
-
     const text = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
     const clean = text.replace(/```json|```/g, '').trim();
     const tips = JSON.parse(clean);
