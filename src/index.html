@@ -1858,7 +1858,36 @@
     section.style.display = 'block';
   }
 
-  function renderLeaderboard(containerId, users) {
+  function getUserBadge(u, i, allUsers, predStats) {
+    const pts = u.points || 0;
+    const exact = u.exactScores || 0;
+    const bonus = u.bonusPoints || 0;
+    const total = allUsers.length;
+    const preds = predStats?.[u.uid] || {};
+    const drawCount = preds.draws || 0;
+    const predCount = preds.total || 0;
+    const exactRate = predCount > 0 ? exact / predCount : 0;
+
+    // Only show during tournament (after June 11)
+    const started = new Date() >= new Date('2026-06-11T19:00:00Z');
+
+    if (!started) return null;
+
+    // Priority order - first match wins
+    if (i === 0 && pts > 0) return { emoji: '👑', text: 'King of the table', bg: '#FAEEDA', color: '#633806' };
+    if (i === total - 1 && pts === 0) return { emoji: '💀', text: 'Wooden spoon candidate', bg: '#FCEBEB', color: '#791F1F' };
+    if (exactRate >= 0.3 && exact >= 3) return { emoji: '🎯', text: 'Sniper', bg: '#E1F5EE', color: '#085041' };
+    if (bonus >= 4) return { emoji: '⚡', text: 'Scorer hunter', bg: '#E1F5EE', color: '#085041' };
+    if (drawCount >= 5 && predCount > 5) return { emoji: '🤝', text: 'Mr. Draw', bg: '#E6F1FB', color: '#0C447C' };
+    if (predCount === 0) return { emoji: '😴', text: 'Just watching', bg: '#F1EFE8', color: '#444441' };
+    if (predCount >= 30) return { emoji: '📋', text: 'Prediction machine', bg: '#E6F1FB', color: '#0C447C' };
+    if (pts === 0 && predCount > 3) return { emoji: '🫠', text: 'Confidently wrong', bg: '#FCEBEB', color: '#791F1F' };
+    if (i === 1) return { emoji: '🥈', text: 'So close', bg: '#E6F1FB', color: '#0C447C' };
+    if (i === 2) return { emoji: '🥉', text: 'Podium chaser', bg: '#FAEEDA', color: '#633806' };
+    return null;
+  }
+
+  function renderLeaderboard(containerId, users, predStats) {
     const medals = ['gold', 'silver', 'bronze'];
     const container = document.getElementById(containerId);
     const header = '<div class="lb-row header"><div></div><div>Player</div><div style="text-align:center">Pts</div><div style="text-align:center">Exact</div><div style="text-align:center">Bonus</div></div>';
@@ -1875,16 +1904,20 @@
           ? `<div style="width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0;">${makeAvatarSVG(av, 36)}</div>`
           : `<div class="avatar" style="background:${['#FAEEDA','#E6F1FB','#E1F5EE'][i]||'#f0f0f0'};color:${['#633806','#0C447C','#085041'][i]||'#333'};">${(u.nickname||u.displayName||'?').substring(0,2).toUpperCase()}</div>`;
       }
+      const badge = getUserBadge(u, i, users, predStats);
+      const badgeHTML = badge
+        ? `<span style="font-size:10px;padding:1px 6px;border-radius:99px;background:${badge.bg};color:${badge.color};font-weight:500;margin-left:4px;">${badge.emoji} ${badge.text}</span>`
+        : '';
       const nameHTML = u.isAdmin
         ? `${u.nickname||u.displayName} <span style="font-size:10px;background:#00ff41;color:#000;padding:1px 5px;border-radius:99px;font-weight:700;">ADMIN</span>`
-        : (u.nickname||u.displayName);
+        : `${u.nickname||u.displayName}${badgeHTML}`;
       return `
       <div class="lb-row">
         <div class="lb-rank ${medals[i] || ''}">${i + 1}</div>
         <div class="lb-user">
           ${avatarHTML}
           <div>
-            <div class="name">${nameHTML}</div>
+            <div class="name" style="display:flex;align-items:center;flex-wrap:wrap;gap:3px;">${nameHTML}</div>
             <div class="handle">${u.isAdmin ? 'nirbrainin@gmail.com' : (u.email || '')}</div>
           </div>
         </div>
@@ -1897,11 +1930,24 @@
   }
 
   async function loadFullLeaderboard() {
-    const usersSnap = await getDocs(collection(db, 'users'));
+    const [usersSnap, predsSnap] = await Promise.all([
+      getDocs(collection(db, 'users')),
+      getDocs(collection(db, 'predictions'))
+    ]);
     const users = [];
     usersSnap.forEach(d => users.push(d.data()));
     users.sort((a, b) => (b.points || 0) - (a.points || 0));
-    renderLeaderboard('full-leaderboard', users);
+
+    // Build pred stats per user
+    const predStats = {};
+    predsSnap.forEach(d => {
+      const p = d.data();
+      if (!predStats[p.userId]) predStats[p.userId] = { total: 0, draws: 0 };
+      predStats[p.userId].total++;
+      if ((p.homeScore ?? -1) === (p.awayScore ?? -2)) predStats[p.userId].draws++;
+    });
+
+    renderLeaderboard('full-leaderboard', users, predStats);
   }
 
   // LOAD MATCHES
