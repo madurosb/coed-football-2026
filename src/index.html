@@ -14,7 +14,18 @@
       --border: rgba(0,0,0,0.1);
       --radius: 8px; --radius-lg: 12px;
     }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+    body.dark-mode {
+      --bg: #0f0f0f; --surface: #1a1a1a; --surface2: #222222;
+      --text: #f0f0f0; --text-muted: #888888;
+      --border: rgba(255,255,255,0.1);
+      --green-light: #0d2e1e; --gold-light: #2a1e00;
+    }
+    body.dark-mode .nav { background: #141414; }
+    body.dark-mode .mobile-menu { background: #141414; }
+    body.dark-mode .login-card { background: #1a1a1a; }
+    body.dark-mode .score-input { background: #222; color: #f0f0f0; }
+    body.dark-mode select { background: #222; color: #f0f0f0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); transition: background 0.3s, color 0.3s; }
 
     /* NAV */
     .nav { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
@@ -389,6 +400,7 @@
       <button class="nav-btn" data-page="admin" id="admin-nav-btn" style="display:none;" onclick="showPage('admin')">Admin</button>
     </div>
     <div class="nav-user">
+      <button id="darkmode-btn" onclick="toggleDarkMode()" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px 6px;border-radius:8px;transition:background 0.15s;" title="Toggle dark mode">🌙</button>
       <button id="music-btn" onclick="toggleMusic()" style="background:none;border:none;cursor:pointer;font-size:20px;padding:4px 8px;border-radius:8px;transition:background 0.15s;" title="Play/Stop music">🔇</button>
       <button class="hamburger" id="hamburger-btn" onclick="toggleMobileMenu()">
         <span></span><span></span><span></span>
@@ -495,6 +507,19 @@
       <div class="lb-row header"><div></div><div>Player</div><div style="text-align:center">Pts</div><div style="text-align:center">Exact</div><div style="text-align:center">Bonus</div></div>
       <div style="padding:1rem; text-align:center; font-size:13px; color:var(--text-muted);">Loading standings...</div>
     </div>
+
+    <!-- PLAYER OF THE ROUND -->
+    <div id="player-of-round-section" style="display:none;margin-bottom:1.5rem;">
+      <p class="section-title">🌟 Player of the round</p>
+      <div id="player-of-round-card" style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1.25rem;"></div>
+    </div>
+
+    <!-- FUN STATS -->
+    <div id="fun-stats-section" style="display:none;margin-bottom:1.5rem;">
+      <p class="section-title">😄 Fun stats</p>
+      <div id="fun-stats-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+
     <img src="https://coed-football-2026.vercel.app/logo-full.png" alt="COED&FOOTBALL" style="width:180px; display:block; margin:2rem auto 0; opacity:0.7;">
   </div>
 
@@ -1727,6 +1752,110 @@
     const rank = users.findIndex(u => u.uid === currentUser.uid) + 1;
     document.getElementById('home-rank').textContent = '#' + rank;
     renderLeaderboard('home-leaderboard', users.slice(0, 3));
+
+    // Only show fun stats and player of round if tournament has started
+    const tournamentStart = new Date('2026-06-11T19:00:00Z');
+    if (new Date() >= tournamentStart && users.length > 1) {
+      loadFunStats(users);
+      loadPlayerOfRound(users);
+    }
+  }
+
+  async function loadFunStats(users) {
+    const predsSnap = await getDocs(collection(db, 'predictions'));
+    const matchesSnap = await getDocs(collection(db, 'matches'));
+    const matches = {};
+    matchesSnap.forEach(d => matches[d.id] = d.data());
+
+    // Count draws predicted per user
+    const drawCounts = {}, scorerCounts = {}, totalCounts = {};
+    predsSnap.forEach(d => {
+      const p = d.data();
+      const u = users.find(u => u.uid === p.userId);
+      if (!u) return;
+      const name = u.nickname || u.displayName;
+      totalCounts[name] = (totalCounts[name] || 0) + 1;
+      if (p.homeScore === p.awayScore) drawCounts[name] = (drawCounts[name] || 0) + 1;
+      if (p.firstScorer) scorerCounts[name] = (scorerCounts[name] || 0) + 1;
+    });
+
+    const topDrawer = Object.entries(drawCounts).sort((a,b) => b[1]-a[1])[0];
+    const topScorer = Object.entries(scorerCounts).sort((a,b) => b[1]-a[1])[0];
+    const topPredictor = Object.entries(totalCounts).sort((a,b) => b[1]-a[1])[0];
+    const leastPredictor = Object.entries(totalCounts).sort((a,b) => a[1]-b[1])[0];
+    const topPoints = users[0];
+    const bottomPoints = [...users].sort((a,b) => (a.points||0)-(b.points||0))[0];
+
+    const funnies = [
+      topDrawer ? `🤝 <strong>${topDrawer[0]}</strong> predicted ${topDrawer[1]} draws. You really don't believe in winners, do you?` : null,
+      topScorer ? `🎯 <strong>${topScorer[0]}</strong> predicted a first goalscorer in ${topScorer[1]} matches. Suspiciously confident.` : null,
+      topPredictor ? `📋 <strong>${topPredictor[0]}</strong> submitted ${topPredictor[1]} predictions. We see you. No job?` : null,
+      leastPredictor && leastPredictor[0] !== topPredictor?.[0] ? `😴 <strong>${leastPredictor[0]}</strong> only predicted ${leastPredictor[1]} match${leastPredictor[1]>1?'es':''}. What are you even doing here?` : null,
+      bottomPoints && bottomPoints.uid !== topPoints?.uid ? `💀 <strong>${bottomPoints.nickname||bottomPoints.displayName}</strong> is last with ${bottomPoints.points||0} pts. Hang in there buddy.` : null,
+    ].filter(Boolean);
+
+    const section = document.getElementById('fun-stats-section');
+    const list = document.getElementById('fun-stats-list');
+    if (funnies.length > 0) {
+      list.innerHTML = funnies.map(f => `
+        <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:0.75rem 1rem;font-size:13px;color:var(--text-muted);line-height:1.5;">${f}</div>
+      `).join('');
+      section.style.display = 'block';
+    }
+  }
+
+  function loadPlayerOfRound(users) {
+    const leader = users[0];
+    if (!leader || !leader.points) return;
+
+    const section = document.getElementById('player-of-round-section');
+    const card = document.getElementById('player-of-round-card');
+    const isAdmin = leader.isAdmin;
+    const av = getAvatarById(leader.avatar);
+    const avatarHTML = isAdmin
+      ? `<img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #00ff41;">`
+      : av ? makeAvatarSVG(av, 48) : `<div style="width:48px;height:48px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:500;">${(leader.nickname||'?').substring(0,2).toUpperCase()}</div>`;
+
+    // Next round end - roughly every 3 days during group stage
+    const now = new Date();
+    const tournamentStart = new Date('2026-06-11T19:00:00Z');
+    const daysSinceStart = Math.floor((now - tournamentStart) / (1000*60*60*24));
+    const currentRound = Math.floor(daysSinceStart / 3) + 1;
+    const nextRoundEnd = new Date(tournamentStart.getTime() + (currentRound * 3) * 24*60*60*1000);
+    const diffToNext = nextRoundEnd - now;
+    const daysLeft = Math.floor(diffToNext / (1000*60*60*24));
+    const hoursLeft = Math.floor((diffToNext % (1000*60*60*24)) / (1000*60*60));
+
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:1rem;">
+        ${avatarHTML}
+        <div>
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">🌟 Leading this round</div>
+          <div style="font-size:16px;font-weight:500;">${leader.nickname||leader.displayName}</div>
+        </div>
+        <div style="margin-left:auto;text-align:right;">
+          <div style="font-size:24px;font-weight:700;color:var(--green);">${leader.points||0}</div>
+          <div style="font-size:11px;color:var(--text-muted);">points</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem;">
+        <div style="background:var(--surface2);border-radius:8px;padding:0.6rem;text-align:center;">
+          <div style="font-size:16px;font-weight:600;">${leader.exactScores||0}</div>
+          <div style="font-size:11px;color:var(--text-muted);">Exact scores</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:0.6rem;text-align:center;">
+          <div style="font-size:16px;font-weight:600;">${leader.bonusPoints||0}</div>
+          <div style="font-size:11px;color:var(--text-muted);">Scorer hits</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:0.6rem;text-align:center;">
+          <div style="font-size:16px;font-weight:600;">${leader.tournamentPlayer ? leader.tournamentPlayer.split(' ').pop() : '-'}</div>
+          <div style="font-size:11px;color:var(--text-muted);">Tournament pick</div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);text-align:center;padding:6px;background:var(--surface2);border-radius:8px;">
+        ⏱ Next update in ${daysLeft}d ${hoursLeft}h &nbsp;·&nbsp; Round ${currentRound}
+      </div>`;
+    section.style.display = 'block';
   }
 
   function renderLeaderboard(containerId, users) {
@@ -2870,8 +2999,82 @@
         <div style="font-size:13px;font-weight:500;margin-bottom:3px;">💸 Money at stake</div>
         <div style="font-size:13px;color:var(--text-muted);">You paid 50 ILS to enter. First prize is worth way more. ${rank === 1 ? 'You might actually win. Breathe.' : `You need to overtake ${rank-1} player${rank-1>1?'s':''} to take 1st. Easy.`}</div>
       </div>
+
+      <div style="font-size:11px;font-weight:500;letter-spacing:0.08em;color:var(--text-muted);text-transform:uppercase;margin:1.25rem 0 0.5rem;">⚽ Goals King</div>
+      <div id="goals-king-table" style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;overflow:hidden;">
+        <div style="padding:1rem;text-align:center;font-size:13px;color:var(--text-muted);">Loading...</div>
+      </div>
     `;
+    loadGoalsKing();
   }
+
+  async function loadGoalsKing() {
+    const container = document.getElementById('goals-king-table');
+    if (!container) return;
+    try {
+      const usersSnap = await getDocs(collection(db, 'users'));
+      const users = [];
+      usersSnap.forEach(d => { if (d.data().tournamentPlayer) users.push(d.data()); });
+
+      // Group by tournament player and count bonusPoints
+      const playerGoals = {};
+      users.forEach(u => {
+        const p = u.tournamentPlayer;
+        if (!playerGoals[p]) playerGoals[p] = { goals: 0, pickers: [] };
+        playerGoals[p].goals = Math.max(playerGoals[p].goals, u.bonusPoints || 0);
+        playerGoals[p].pickers.push(u.nickname || u.displayName);
+      });
+
+      const sorted = Object.entries(playerGoals).sort((a,b) => b[1].goals - a[1].goals);
+
+      if (sorted.length === 0 || sorted.every(([,v]) => v.goals === 0)) {
+        container.innerHTML = `<div style="padding:1.25rem;text-align:center;font-size:13px;color:var(--text-muted);">⚽ Goals will appear here once the tournament starts.</div>`;
+        return;
+      }
+
+      const medals = ['🥇','🥈','🥉'];
+      container.innerHTML = `
+        <div style="display:grid;grid-template-columns:32px 1fr 60px;font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;padding:0.5rem 1rem;background:var(--surface2);">
+          <div></div><div>Player</div><div style="text-align:center;">Goals</div>
+        </div>
+        ${sorted.map(([player, data], i) => `
+          <div style="display:grid;grid-template-columns:32px 1fr 60px;align-items:center;padding:0.65rem 1rem;border-top:0.5px solid var(--border);">
+            <div style="font-size:16px;">${medals[i] || (i+1)+'.'}</div>
+            <div>
+              <div style="font-size:13px;font-weight:500;">${player}</div>
+              <div style="font-size:11px;color:var(--text-muted);">Picked by: ${data.pickers.join(', ')}</div>
+            </div>
+            <div style="text-align:center;font-size:18px;font-weight:700;color:var(--green);">${data.goals}</div>
+          </div>`).join('')}`;
+    } catch(e) {
+      if (container) container.innerHTML = `<div style="padding:1rem;font-size:13px;color:var(--text-muted);">Could not load goals.</div>`;
+    }
+  }
+
+  // ========== DARK MODE ==========
+  function applyDarkMode(dark) {
+    document.body.classList.toggle('dark-mode', dark);
+    document.getElementById('darkmode-btn').textContent = dark ? '☀️' : '🌙';
+    localStorage.setItem('darkMode', dark ? '1' : '0');
+  }
+
+  window.toggleDarkMode = () => {
+    const isDark = document.body.classList.contains('dark-mode');
+    applyDarkMode(!isDark);
+  };
+
+  // Auto dark mode 20:00 - 06:00, unless user has manually set preference
+  function checkAutoDarkMode() {
+    const saved = localStorage.getItem('darkMode');
+    if (saved !== null) {
+      applyDarkMode(saved === '1');
+      return;
+    }
+    const hour = new Date().getHours();
+    applyDarkMode(hour >= 20 || hour < 6);
+  }
+  checkAutoDarkMode();
+  setInterval(checkAutoDarkMode, 60 * 1000);
 
   // ========== COUNTDOWN ==========
   (function() {
