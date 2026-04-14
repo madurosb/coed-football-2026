@@ -1196,10 +1196,28 @@
 
   <!-- STANDINGS -->
   <div class="page" id="page-leaderboard">
-    <p class="section-title" style="margin-bottom:1rem;">Full standings</p>
-    <div class="leaderboard" id="full-leaderboard">
-      <div class="lb-row header"><div></div><div>Player</div><div style="text-align:center">Pts</div><div style="text-align:center">Exact</div><div style="text-align:center">Bonus</div></div>
-      <div style="padding:1rem; text-align:center; font-size:13px; color:var(--text-muted);">Loading standings...</div>
+
+    <!-- TABS -->
+    <div style="display:flex;gap:8px;margin-bottom:1rem;">
+      <button id="tab-standings" onclick="switchStandingsTab('standings')" style="flex:1;padding:8px;border-radius:8px;border:0.5px solid var(--green);background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">🏆 Player standings</button>
+      <button id="tab-groups" onclick="switchStandingsTab('groups')" style="flex:1;padding:8px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">🌍 WC Groups</button>
+    </div>
+
+    <!-- PLAYER STANDINGS -->
+    <div id="tab-content-standings">
+      <p class="section-title" style="margin-bottom:1rem;">Full standings</p>
+      <div class="leaderboard" id="full-leaderboard">
+        <div class="lb-row header"><div></div><div>Player</div><div style="text-align:center">Pts</div><div style="text-align:center">Exact</div><div style="text-align:center">Bonus</div></div>
+        <div style="padding:1rem; text-align:center; font-size:13px; color:var(--text-muted);">Loading standings...</div>
+      </div>
+    </div>
+
+    <!-- WC GROUPS -->
+    <div id="tab-content-groups" style="display:none;">
+      <p class="section-title" style="margin-bottom:1rem;">World Cup 2026 — Group stage</p>
+      <div id="wc-groups-content">
+        <div style="padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);">Loading groups...</div>
+      </div>
     </div>
   </div>
 
@@ -1705,7 +1723,7 @@
     const bnavBtn = document.querySelector('.bnav-btn[data-page="' + id + '"]');
     if (bnavBtn) bnavBtn.classList.add('active');
     if (id === 'admin') { showAdminMain(); loadAdminUsers(); loadAdminStats(); }
-    if (id === 'leaderboard') loadFullLeaderboard();
+    if (id === 'leaderboard') { loadFullLeaderboard(); document.getElementById('wc-groups-content').dataset.loaded = ''; }
     if (id === 'stats') loadStatsPage();
     if (id === 'tips') loadTipsPage();
 
@@ -1927,6 +1945,139 @@
       </div>`;
     }).join('');
     container.innerHTML = header + (rows || '<div style="padding:1rem;text-align:center;font-size:13px;color:var(--text-muted);">No players yet</div>');
+  }
+
+  window.switchStandingsTab = (tab) => {
+    const isStandings = tab === 'standings';
+    document.getElementById('tab-content-standings').style.display = isStandings ? 'block' : 'none';
+    document.getElementById('tab-content-groups').style.display = isStandings ? 'none' : 'block';
+    document.getElementById('tab-standings').style.background = isStandings ? 'var(--green)' : 'none';
+    document.getElementById('tab-standings').style.color = isStandings ? 'white' : 'var(--text-muted)';
+    document.getElementById('tab-standings').style.borderColor = isStandings ? 'var(--green)' : 'var(--border)';
+    document.getElementById('tab-groups').style.background = isStandings ? 'none' : 'var(--green)';
+    document.getElementById('tab-groups').style.color = isStandings ? 'var(--text-muted)' : 'white';
+    document.getElementById('tab-groups').style.borderColor = isStandings ? 'var(--border)' : 'var(--green)';
+    if (!isStandings) loadWCGroups();
+  };
+
+  // World Cup 2026 groups definition
+  const WC_GROUPS = {
+    'A': ['Mexico','South Africa','South Korea','Czechia'],
+    'B': ['Canada','Qatar','Bosnia-Herzegovina','Switzerland'],
+    'C': ['Brazil','Haiti','Morocco','Scotland'],
+    'D': ['USA','Australia','Paraguay','Türkiye'],
+    'E': ['Germany','Ivory Coast','Curaçao','Ecuador'],
+    'F': ['Netherlands','Sweden','Japan','Tunisia'],
+    'G': ['Belgium','Iran','Egypt','New Zealand'],
+    'H': ['Spain','Saudi Arabia','Cabo Verde','Uruguay'],
+    'I': ['France','Iraq','Senegal','Norway'],
+    'J': ['Argentina','Austria','Algeria','Jordan'],
+    'K': ['Portugal','Uzbekistan','DR Congo','Colombia'],
+    'L': ['England','Ghana','Croatia','Panama'],
+  };
+
+  async function loadWCGroups() {
+    const container = document.getElementById('wc-groups-content');
+    if (container.dataset.loaded) return;
+    container.dataset.loaded = '1';
+
+    const matchesSnap = await getDocs(query(collection(db, 'matches'), orderBy('kickoff')));
+    const matches = [];
+    matchesSnap.forEach(d => matches.push({ id: d.id, ...d.data() }));
+
+    // Calculate group table standings from finished matches
+    const teamStats = {};
+    const initTeam = (name) => {
+      if (!teamStats[name]) teamStats[name] = { p:0, w:0, d:0, l:0, gf:0, ga:0, pts:0 };
+    };
+
+    matches.forEach(m => {
+      if (m.status !== 'FINISHED' || m.homeScore === null) return;
+      // Only group stage matches (not KO)
+      if (!m.group) return;
+      const h = m.homeTeam, a = m.awayTeam;
+      const hs = m.homeScore, as = m.awayScore;
+      initTeam(h); initTeam(a);
+      teamStats[h].p++; teamStats[a].p++;
+      teamStats[h].gf += hs; teamStats[h].ga += as;
+      teamStats[a].gf += as; teamStats[a].ga += hs;
+      if (hs > as) { teamStats[h].w++; teamStats[h].pts += 3; teamStats[a].l++; }
+      else if (hs < as) { teamStats[a].w++; teamStats[a].pts += 3; teamStats[h].l++; }
+      else { teamStats[h].d++; teamStats[h].pts++; teamStats[a].d++; teamStats[a].pts++; }
+    });
+
+    // Get recent results per group
+    const groupResults = {};
+    matches.filter(m => m.status === 'FINISHED' && m.group && m.homeScore !== null)
+      .forEach(m => {
+        if (!groupResults[m.group]) groupResults[m.group] = [];
+        groupResults[m.group].push(m);
+      });
+
+    const TEAM_FLAGS_MAP = {
+      'Mexico':'mx','South Africa':'za','South Korea':'kr','Czechia':'cz',
+      'Canada':'ca','Qatar':'qa','Bosnia-Herzegovina':'ba','Switzerland':'ch',
+      'Brazil':'br','Haiti':'ht','Morocco':'ma','Scotland':'gb-sct',
+      'USA':'us','Australia':'au','Paraguay':'py','Türkiye':'tr',
+      'Germany':'de','Ivory Coast':'ci','Curaçao':'cw','Ecuador':'ec',
+      'Netherlands':'nl','Sweden':'se','Japan':'jp','Tunisia':'tn',
+      'Belgium':'be','Iran':'ir','Egypt':'eg','New Zealand':'nz',
+      'Spain':'es','Saudi Arabia':'sa','Cabo Verde':'cv','Uruguay':'uy',
+      'France':'fr','Iraq':'iq','Senegal':'sn','Norway':'no',
+      'Argentina':'ar','Austria':'at','Algeria':'dz','Jordan':'jo',
+      'Portugal':'pt','Uzbekistan':'uz','DR Congo':'cd','Colombia':'co',
+      'England':'gb-eng','Ghana':'gh','Croatia':'hr','Panama':'pa',
+    };
+
+    const flag = (name) => {
+      const code = TEAM_FLAGS_MAP[name];
+      return code ? `<img src="https://flagcdn.com/20x15/${code}.png" style="border-radius:2px;vertical-align:middle;margin-right:4px;">` : '';
+    };
+
+    let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
+    for (const [group, teams] of Object.entries(WC_GROUPS)) {
+      const sortedTeams = teams.map(t => ({
+        name: t,
+        ...(teamStats[t] || { p:0, w:0, d:0, l:0, gf:0, ga:0, pts:0 })
+      })).sort((a,b) => b.pts - a.pts || (b.gf-b.ga) - (a.gf-a.ga) || b.gf - a.gf);
+
+      const results = groupResults[`GROUP_${group}`] || groupResults[group] || [];
+
+      html += `<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:4px;">
+        <div style="background:var(--green);padding:6px 10px;font-size:12px;font-weight:600;color:white;letter-spacing:0.05em;">GROUP ${group}</div>
+        <table style="width:100%;border-collapse:collapse;font-size:11px;">
+          <tr style="background:var(--surface2);color:var(--text-muted);">
+            <td style="padding:4px 8px;">Team</td>
+            <td style="text-align:center;padding:4px 3px;">P</td>
+            <td style="text-align:center;padding:4px 3px;">W</td>
+            <td style="text-align:center;padding:4px 3px;">D</td>
+            <td style="text-align:center;padding:4px 3px;">L</td>
+            <td style="text-align:center;padding:4px 3px;">GD</td>
+            <td style="text-align:center;padding:4px 3px;font-weight:600;color:var(--green);">Pts</td>
+          </tr>
+          ${sortedTeams.map((t, idx) => `
+            <tr style="border-top:0.5px solid var(--border);${idx < 2 ? 'background:rgba(29,158,117,0.06);' : ''}">
+              <td style="padding:5px 8px;">${flag(t.name)}<span style="font-size:11px;">${t.name}</span></td>
+              <td style="text-align:center;padding:4px 3px;">${t.p}</td>
+              <td style="text-align:center;padding:4px 3px;">${t.w}</td>
+              <td style="text-align:center;padding:4px 3px;">${t.d}</td>
+              <td style="text-align:center;padding:4px 3px;">${t.l}</td>
+              <td style="text-align:center;padding:4px 3px;">${t.gf-t.ga > 0 ? '+' : ''}${t.gf-t.ga}</td>
+              <td style="text-align:center;padding:4px 3px;font-weight:700;color:var(--green);">${t.pts}</td>
+            </tr>`).join('')}
+        </table>
+        ${results.length > 0 ? `
+          <div style="padding:6px 8px;border-top:0.5px solid var(--border);background:var(--surface2);">
+            ${results.slice(-2).map(m => `
+              <div style="font-size:11px;color:var(--text-muted);padding:2px 0;">
+                ${flag(m.homeTeam)}${m.homeTeam} <strong style="color:var(--text);">${m.homeScore}-${m.awayScore}</strong> ${flag(m.awayTeam)}${m.awayTeam}
+              </div>`).join('')}
+          </div>` : ''}
+      </div>`;
+    }
+    html += '</div>';
+    html += '<div style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:8px;">Top 2 from each group advance · Updates automatically after each match</div>';
+    container.innerHTML = html;
   }
 
   async function loadFullLeaderboard() {
