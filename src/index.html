@@ -316,6 +316,10 @@
     .dyk-close { position: absolute; top: 10px; right: 14px; background: none; border: none; font-size: 18px; color: var(--text-muted); cursor: pointer; line-height: 1; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    /* ADMIN NOTIFICATION BAR */
+    .admin-notif { position:fixed; top:56px; left:0; right:0; z-index:500; background:#0a1f0a; color:#4ade80; font-size:13px; padding:10px 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #166534; animation:slideDown 0.3s ease; }
+    @keyframes slideDown { from { transform:translateY(-100%); opacity:0; } to { transform:translateY(0); opacity:1; } }
+    .admin-notif button { background:none; border:none; color:#4ade80; cursor:pointer; font-size:16px; padding:0 4px; }
     /* MUSIC TOOLTIP */
     .music-tooltip { position: fixed; top: 58px; right: 60px; background: #1a1a1a; color: #fff; font-size: 13px; padding: 10px 14px; border-radius: 10px; z-index: 999; max-width: 200px; line-height: 1.4; text-align: center; animation: tooltipIn 0.4s ease; pointer-events: none; }
     .music-tooltip::before { content: ''; position: absolute; top: -8px; right: 14px; border: 8px solid transparent; border-bottom-color: #1a1a1a; border-top: none; }
@@ -1444,6 +1448,38 @@
   import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
   import { getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, updateDoc, deleteDoc, query, orderBy, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 
+  function startAdminMemberWatcher() {
+    let knownUids = new Set();
+    // Seed with current users silently first
+    getDocs(collection(db, 'users')).then(snap => {
+      snap.forEach(d => knownUids.add(d.id));
+    });
+
+    // Poll every 30 seconds for new users
+    setInterval(async () => {
+      const snap = await getDocs(collection(db, 'users'));
+      snap.forEach(d => {
+        if (!knownUids.has(d.id)) {
+          knownUids.add(d.id);
+          const u = d.data();
+          showAdminNotif(`🆕 ${u.nickname || u.displayName || 'Someone'} just joined! (${u.email || ''})`);
+        }
+      });
+    }, 30 * 1000);
+  }
+
+  function showAdminNotif(msg) {
+    const existing = document.getElementById('admin-notif-bar');
+    if (existing) existing.remove();
+    const bar = document.createElement('div');
+    bar.id = 'admin-notif-bar';
+    bar.className = 'admin-notif';
+    bar.innerHTML = `<span>👾 ${msg}</span><button onclick="document.getElementById('admin-notif-bar').remove()">✕</button>`;
+    document.body.appendChild(bar);
+    // Auto-hide after 10 seconds
+    setTimeout(() => bar.remove(), 10000);
+  }
+
   // ========== MOBILE MENU ==========
   window.toggleMobileMenu = () => {
     const menu = document.getElementById('mobile-menu');
@@ -1604,7 +1640,7 @@
   let currentUserData = null;
 
   // ADMIN EMAIL - change this to your Gmail
-  const ADMIN_EMAIL = 'YOUR_EMAIL@gmail.com';
+  const ADMIN_EMAIL = 'grandfathercame@gmail.com';
 
   // AUTH STATE
   onAuthStateChanged(auth, async (user) => {
@@ -1674,6 +1710,14 @@
     loadHomeData();
     loadMatches();
     loadPrizes();
+    // Auto-refresh every 15 minutes
+    setTimeout(() => location.reload(), 15 * 60 * 1000);
+
+    // Admin-only: watch for new members
+    if (currentUser.email === ADMIN_EMAIL) {
+      startAdminMemberWatcher();
+    }
+
     setTimeout(showDyk, 1500);
     // Show hamburger tooltip on mobile (first time only)
     setTimeout(showHamburgerTooltip, 2000);
