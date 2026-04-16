@@ -409,6 +409,7 @@
       <button class="nav-btn" data-page="leaderboard" onclick="showPage('leaderboard')">Standings</button>
       <button class="nav-btn" data-page="stats" onclick="showPage('stats')">My Stats</button>
       <button class="nav-btn" data-page="tips" onclick="showPage('tips')">Tips</button>
+      <button class="nav-btn" data-page="watch" onclick="showPage('watch')">📺 Watch Together</button>
       <button class="nav-btn" data-page="highlights" onclick="showPage('highlights')">Highlights</button>
       <button class="nav-btn" data-page="rules" onclick="showPage('rules')">Rules</button>
       <button class="nav-btn" data-page="admin" id="admin-nav-btn" style="display:none;" onclick="showPage('admin')">Admin</button>
@@ -432,6 +433,7 @@
     <button class="mobile-menu-btn" data-page="leaderboard" onclick="mobileNav('leaderboard')">🏆 &nbsp; Standings</button>
     <button class="mobile-menu-btn" data-page="stats" onclick="mobileNav('stats')">📊 &nbsp; My Stats</button>
     <button class="mobile-menu-btn" data-page="tips" onclick="mobileNav('tips')">💡 &nbsp; Tips</button>
+    <button class="mobile-menu-btn" data-page="watch" onclick="mobileNav('watch')">📺 &nbsp; Watch Together</button>
     <button class="mobile-menu-btn" data-page="highlights" onclick="mobileNav('highlights')">🎬 &nbsp; Highlights</button>
     <button class="mobile-menu-btn" data-page="rules" onclick="mobileNav('rules')">📋 &nbsp; Rules</button>
     <button class="mobile-menu-btn" data-page="admin" id="admin-menu-btn" style="display:none;" onclick="mobileNav('admin')">⚙️ &nbsp; Admin</button>
@@ -1299,6 +1301,15 @@
     </div>
   </div>
 
+  <!-- WATCH TOGETHER -->
+  <div class="page" id="page-watch">
+    <p class="section-title" style="margin-bottom:0.25rem;">📺 Watch Together</p>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:1.25rem;">Vote on which matches you want to watch with the group. Minimum 4 people needed to make it happen!</p>
+    <div id="watch-content">
+      <div style="text-align:center;padding:2rem;font-size:13px;color:var(--text-muted);">Loading...</div>
+    </div>
+  </div>
+
   <!-- HIGHLIGHTS -->
   <div class="page" id="page-highlights">
     <div style="text-align:center; padding: 2rem 1rem 3rem;">
@@ -1363,6 +1374,7 @@
         <div class="admin-card" onclick="showAdminSub('stats')"><div class="icon">📊</div><div class="title">Statistics</div><div class="desc">Full tournament analytics - accuracy rates, most popular player picks, predicted scorers, group performance.</div></div>
         <div class="admin-card" onclick="showAdminSub('predictions-backup')"><div class="icon">📦</div><div class="title">Predictions backup</div><div class="desc">Full snapshot of all player predictions before the tournament starts. Use this to manually verify or restore predictions.</div></div>
         <div class="admin-card" onclick="showAdminSub('members')"><div class="icon">🆕</div><div class="title">New members log</div><div class="desc">See who joined and when, with a full activity log including registration date and actions taken.</div></div>
+        <div class="admin-card" onclick="showAdminSub('watch-admin')"><div class="icon">📺</div><div class="title">Watch Together</div><div class="desc">Add location options for matches that reached 4+ viewers. Players will then vote on where to meet.</div></div>
       </div>
     </div>
     <div id="admin-results" class="admin-sub">
@@ -1439,6 +1451,15 @@
       </div>
     </div>
 
+    <div id="admin-watch-admin" class="admin-sub">
+      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
+      <div class="form-card">
+        <h2>📺 Watch Together — Add Locations</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">For matches that hit 4+ watchers, add location options so people can vote where to meet.</p>
+        <div id="watch-admin-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div></div>
+      </div>
+    </div>
+
     <div id="admin-members" class="admin-sub">
       <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
       <div class="form-card">
@@ -1464,6 +1485,58 @@
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
   import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
   import { getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, updateDoc, deleteDoc, query, orderBy, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+
+  async function loadWatchAdmin() {
+    const container = document.getElementById('watch-admin-content');
+    const [votesSnap, locationsSnap] = await Promise.all([
+      getDocs(collection(db, 'watchVotes')),
+      getDocs(collection(db, 'watchLocations'))
+    ]);
+
+    const votes = {};
+    votesSnap.forEach(d => {
+      const v = d.data();
+      if (!votes[v.matchId]) votes[v.matchId] = 0;
+      if (v.watching) votes[v.matchId]++;
+    });
+
+    const locations = {};
+    locationsSnap.forEach(d => { locations[d.id] = d.data().locations || []; });
+
+    let html = '';
+    for (const m of WATCH_MATCHES) {
+      const count = votes[m.id] || 0;
+      const reached = count >= MIN_WATCHERS;
+      const locs = locations[m.id] || [];
+      html += `<div style="padding:0.75rem 0;border-bottom:0.5px solid var(--border);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div>
+            <div style="font-size:13px;font-weight:500;">${m.home} vs ${m.away}</div>
+            <div style="font-size:11px;color:var(--text-muted);">${m.date} · ${m.group}</div>
+          </div>
+          <span style="font-size:12px;padding:2px 8px;border-radius:99px;background:${reached?'#E1F5EE':'var(--surface2)'};color:${reached?'#085041':'var(--text-muted)'};">${count}/${MIN_WATCHERS} ${reached?'✅':''}</span>
+        </div>
+        ${reached ? `
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">Current locations: ${locs.length > 0 ? locs.join(', ') : 'None added yet'}</div>
+          <div style="display:flex;gap:6px;">
+            <input id="loc-input-${m.id}" placeholder="e.g. Nir's place, Bar Moshiko..." style="flex:1;padding:6px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;">
+            <button onclick="saveWatchLocations('${m.id}')" style="padding:6px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:12px;cursor:pointer;">Save</button>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Comma-separated list replaces existing options</div>
+        ` : `<div style="font-size:12px;color:var(--text-muted);">Waiting for ${MIN_WATCHERS - count} more people to join before location vote opens.</div>`}
+      </div>`;
+    }
+    container.innerHTML = html || 'No matches found.';
+  }
+
+  window.saveWatchLocations = async (matchId) => {
+    const input = document.getElementById(`loc-input-${matchId}`);
+    const locs = input.value.split(',').map(l => l.trim()).filter(Boolean);
+    if (locs.length === 0) return alert('Please enter at least one location');
+    await setDoc(doc(db, 'watchLocations', matchId), { locations: locs, updatedAt: serverTimestamp() });
+    showAdminNotif(`✅ Location options saved for ${matchId}!`);
+    loadWatchAdmin();
+  };
 
   function startAdminMemberWatcher() {
     let knownUids = new Set();
@@ -1819,6 +1892,7 @@
     if (id === 'leaderboard') { loadFullLeaderboard(); document.getElementById('wc-groups-content').dataset.loaded = ''; }
     if (id === 'stats') loadStatsPage();
     if (id === 'tips') loadTipsPage();
+    if (id === 'watch') loadWatchPage();
 
     const vid = document.getElementById('rules-video');
     if (vid) {
@@ -2586,6 +2660,7 @@
     if (id === 'results') loadMatchesForAdmin();
     if (id === 'players') loadMatchesForPlayerAdmin();
     if (id === 'members') loadMembersLog();
+    if (id === 'watch-admin') loadWatchAdmin();
   };
 
   async function loadMembersLog() {
@@ -3060,6 +3135,167 @@
         alert('Player not found in squad list. Go to Home page to pick manually.');
       }
     }
+  };
+
+  // ========== WATCH TOGETHER ==========
+  const WATCH_MATCHES = [
+    { id:'w1',  date:'Jun 11', home:'Mexico',      away:'South Africa', time:'22:00', group:'Group A', emoji:'🇲🇽🇿🇦' },
+    { id:'w2',  date:'Jun 13', home:'Brazil',       away:'Morocco',      time:'22:00', group:'Group C', emoji:'🇧🇷🇲🇦' },
+    { id:'w3',  date:'Jun 14', home:'Germany',      away:'Curaçao',      time:'22:00', group:'Group E', emoji:'🇩🇪🇨🇼' },
+    { id:'w4',  date:'Jun 14', home:'Netherlands',  away:'Japan',        time:'01:00', group:'Group F', emoji:'🇳🇱🇯🇵' },
+    { id:'w5',  date:'Jun 15', home:'Spain',        away:'Cabo Verde',   time:'22:00', group:'Group H', emoji:'🇪🇸🇨🇻' },
+    { id:'w6',  date:'Jun 16', home:'France',       away:'Senegal',      time:'22:00', group:'Group I', emoji:'🇫🇷🇸🇳' },
+    { id:'w7',  date:'Jun 16', home:'Argentina',    away:'Algeria',      time:'22:00', group:'Group J', emoji:'🇦🇷🇩🇿' },
+    { id:'w8',  date:'Jun 17', home:'England',      away:'Croatia',      time:'22:00', group:'Group L', emoji:'🏴󠁧󠁢󠁥󠁮󠁧󠁿🇭🇷' },
+    { id:'w9',  date:'Jun 17', home:'Portugal',     away:'DR Congo',     time:'22:00', group:'Group K', emoji:'🇵🇹🇨🇩' },
+  ];
+
+  const MIN_WATCHERS = 4;
+
+  async function loadWatchPage() {
+    const container = document.getElementById('watch-content');
+    container.innerHTML = '<div style="text-align:center;padding:2rem;font-size:13px;color:var(--text-muted);">Loading...</div>';
+
+    const votesSnap = await getDocs(collection(db, 'watchVotes'));
+    const locationVotesSnap = await getDocs(collection(db, 'watchLocationVotes'));
+
+    // Build votes map: matchId -> { userId -> true/false, locationVotes: {loc: count} }
+    const votes = {};
+    votesSnap.forEach(d => {
+      const v = d.data();
+      if (!votes[v.matchId]) votes[v.matchId] = { watchers: {}, total: 0, names: {} };
+      votes[v.matchId].watchers[v.userId] = v.watching;
+      votes[v.matchId].names[v.userId] = v.nickname;
+      if (v.watching) votes[v.matchId].total++;
+    });
+
+    const locationVotes = {};
+    locationVotesSnap.forEach(d => {
+      const v = d.data();
+      if (!locationVotes[v.matchId]) locationVotes[v.matchId] = {};
+      if (!locationVotes[v.matchId][v.location]) locationVotes[v.matchId][v.location] = { count: 0, voters: [] };
+      locationVotes[v.matchId][v.location].count++;
+      locationVotes[v.matchId][v.location].voters.push(v.nickname);
+    });
+
+    // Admin's proposed locations per match (from Firestore)
+    const locationsSnap = await getDocs(collection(db, 'watchLocations'));
+    const adminLocations = {};
+    locationsSnap.forEach(d => { adminLocations[d.id] = d.data().locations || []; });
+
+    let html = '';
+    for (const m of WATCH_MATCHES) {
+      const mv = votes[m.id] || { watchers: {}, total: 0, names: {} };
+      const myVote = mv.watchers[currentUser.uid];
+      const watcherNames = Object.entries(mv.watchers).filter(([,v]) => v).map(([uid]) => mv.names[uid] || 'Someone');
+      const total = mv.total;
+      const reached = total >= MIN_WATCHERS;
+      const lv = locationVotes[m.id] || {};
+      const myLocationVote = Object.entries(lv).find(([,v]) => v.voters.includes(currentUserData?.nickname || ''));
+      const locations = adminLocations[m.id] || [];
+
+      html += `<div style="background:var(--surface);border:0.5px solid ${reached?'var(--green)':'var(--border)'};border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);">${m.group} · ${m.date} at ${m.time}</div>
+            <div style="font-size:15px;font-weight:500;margin-top:2px;">${m.home} vs ${m.away} ${m.emoji}</div>
+          </div>
+          ${reached ? `<span style="font-size:11px;background:#E1F5EE;color:#085041;padding:2px 8px;border-radius:99px;font-weight:500;">✅ ${total} going!</span>`
+                    : `<span style="font-size:11px;background:var(--surface2);color:var(--text-muted);padding:2px 8px;border-radius:99px;">${total}/${MIN_WATCHERS}</span>`}
+        </div>
+
+        ${watcherNames.length > 0 ? `<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">👥 ${watcherNames.join(', ')}</div>` : ''}
+
+        ${!reached ? `
+          <!-- VOTE BUTTONS -->
+          <div style="display:flex;gap:8px;margin-bottom:0;">
+            <button onclick="voteWatch('${m.id}', true)" style="flex:1;padding:8px;border-radius:8px;border:0.5px solid ${myVote===true?'var(--green)':'var(--border)'};background:${myVote===true?'#E1F5EE':'none'};color:${myVote===true?'#085041':'var(--text-muted)'};font-size:13px;cursor:pointer;font-weight:${myVote===true?'500':'400'};">
+              ✅ I'm in!
+            </button>
+            <button onclick="voteWatch('${m.id}', false)" style="flex:1;padding:8px;border-radius:8px;border:0.5px solid ${myVote===false?'#E24B4A':'var(--border)'};background:${myVote===false?'#FCEBEB':'none'};color:${myVote===false?'#791F1F':'var(--text-muted)'};font-size:13px;cursor:pointer;font-weight:${myVote===false?'500':'400'};">
+              ❌ Can't make it
+            </button>
+          </div>
+        ` : `
+          <!-- MINIMUM REACHED -->
+          <div style="background:#E1F5EE;border-radius:8px;padding:10px 12px;margin-bottom:${locations.length>0?'10px':'0'};">
+            <div style="font-size:13px;font-weight:500;color:#085041;margin-bottom:2px;">🎉 Minimum reached — we're watching this one!</div>
+            <div style="font-size:12px;color:#1D9E75;">${locations.length > 0 ? 'Now vote for the location below 👇' : 'The organiser will post a location vote soon!'}</div>
+          </div>
+
+          ${locations.length > 0 ? `
+          <!-- LOCATION VOTE -->
+          <div style="margin-top:4px;">
+            <div style="font-size:12px;font-weight:500;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;">📍 Where should we watch?</div>
+            ${locations.map(loc => {
+              const locVote = lv[loc] || { count: 0, voters: [] };
+              const myLocVote = locVote.voters.includes(currentUserData?.nickname || '');
+              const topCount = Math.max(...Object.values(lv).map(v => v.count), 1);
+              const pct = Math.round((locVote.count / Math.max(mv.total, 1)) * 100);
+              return `<div style="margin-bottom:6px;">
+                <button onclick="voteLocation('${m.id}', '${loc.replace(/'/g,"\\'")}')"
+                  style="width:100%;text-align:left;padding:8px 10px;border-radius:8px;border:0.5px solid ${myLocVote?'var(--green)':'var(--border)'};background:none;cursor:pointer;position:relative;overflow:hidden;">
+                  <div style="position:absolute;left:0;top:0;bottom:0;width:${pct}%;background:${myLocVote?'rgba(29,158,117,0.12)':'rgba(128,128,128,0.08)'};border-radius:8px;transition:width 0.3s;"></div>
+                  <div style="position:relative;display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-size:13px;color:var(--text);font-weight:${myLocVote?'500':'400'};">${loc}</span>
+                    <span style="font-size:12px;color:${myLocVote?'var(--green)':'var(--text-muted)'};">${locVote.count > 0 ? locVote.count + ' vote' + (locVote.count>1?'s':'') : ''}</span>
+                  </div>
+                </button>
+              </div>`;
+            }).join('')}
+          </div>` : ''}
+
+          <!-- My vote for watching -->
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button onclick="voteWatch('${m.id}', true)" style="flex:1;padding:6px;border-radius:8px;border:0.5px solid ${myVote===true?'var(--green)':'var(--border)'};background:${myVote===true?'#E1F5EE':'none'};color:${myVote===true?'#085041':'var(--text-muted)'};font-size:12px;cursor:pointer;">
+              ${myVote===true?'✅ You\'re in!':'✅ I\'m in!'}
+            </button>
+            <button onclick="voteWatch('${m.id}', false)" style="flex:1;padding:6px;border-radius:8px;border:0.5px solid ${myVote===false?'#E24B4A':'var(--border)'};background:${myVote===false?'#FCEBEB':'none'};color:${myVote===false?'#791F1F':'var(--text-muted)'};font-size:12px;cursor:pointer;">
+              ❌ Can't make it
+            </button>
+          </div>
+        `}
+      </div>`;
+    }
+
+    container.innerHTML = html;
+  }
+
+  window.voteWatch = async (matchId, watching) => {
+    await setDoc(doc(db, 'watchVotes', `${currentUser.uid}_${matchId}`), {
+      matchId, userId: currentUser.uid,
+      nickname: currentUserData?.nickname || currentUser.displayName,
+      watching, updatedAt: serverTimestamp()
+    });
+    // Check if we just hit the minimum
+    if (watching) {
+      const snap = await getDocs(collection(db, 'watchVotes'));
+      const matchVotes = [];
+      snap.forEach(d => { if (d.data().matchId === matchId && d.data().watching) matchVotes.push(d.data()); });
+      if (matchVotes.length === MIN_WATCHERS) {
+        const match = WATCH_MATCHES.find(m => m.id === matchId);
+        // Notify admin via EmailJS
+        try {
+          if (window.EMAILJS_INIT) {
+            emailjs.send('service_khhwpau', 'template_77gccpa', {
+              nickname: '⚽ Watch Together Alert',
+              email: `${match?.home} vs ${match?.away} just hit ${MIN_WATCHERS} watchers! Add location options in Admin → Watch Together.`,
+              time: new Date().toLocaleString('en-GB', { timeZone: 'Asia/Jerusalem' })
+            });
+          }
+        } catch(e) {}
+      }
+    }
+    loadWatchPage();
+  };
+
+  window.voteLocation = async (matchId, location) => {
+    await setDoc(doc(db, 'watchLocationVotes', `${currentUser.uid}_${matchId}`), {
+      matchId, userId: currentUser.uid,
+      nickname: currentUserData?.nickname || currentUser.displayName,
+      location, updatedAt: serverTimestamp()
+    });
+    loadWatchPage();
   };
 
   // ========== SNAKE GAME ==========
