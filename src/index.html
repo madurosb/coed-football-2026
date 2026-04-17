@@ -1201,6 +1201,37 @@
       </div>
       <div id="tournament-deadline-notice" style="font-size:12px;color:var(--text-muted);margin-top:6px;"></div>
     </div>
+
+    <!-- TOURNAMENT WINNER PICK -->
+    <div class="player-pick" style="margin-bottom:1rem;">
+      <h3>🏆 Who will win the World Cup?</h3>
+      <p>Pick the tournament winner. Correct = <strong>+10 bonus points</strong>. Must be locked in before June 10.</p>
+      <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+        <select id="winner-pick-select" style="flex:1;">
+          <option value="">Select a team...</option>
+          <option>Argentina</option><option>France</option><option>Brazil</option>
+          <option>England</option><option>Portugal</option><option>Spain</option>
+          <option>Germany</option><option>Netherlands</option><option>Belgium</option>
+          <option>Uruguay</option><option>Colombia</option><option>USA</option>
+          <option>Mexico</option><option>Morocco</option><option>Senegal</option>
+          <option>Japan</option><option>South Korea</option><option>Canada</option>
+          <option>Australia</option><option>Croatia</option><option>Switzerland</option>
+          <option>Sweden</option><option>Norway</option><option>Denmark</option>
+          <option>Austria</option><option>Czechia</option><option>Scotland</option>
+          <option>Turkey</option><option>Serbia</option><option>Poland</option>
+          <option>Ukraine</option><option>Ecuador</option><option>Iran</option>
+          <option>Saudi Arabia</option><option>Qatar</option><option>Iraq</option>
+          <option>Ghana</option><option>Ivory Coast</option><option>Egypt</option>
+          <option>Cameroon</option><option>Algeria</option><option>South Africa</option>
+          <option>New Zealand</option><option>Uzbekistan</option><option>DR Congo</option>
+          <option>Panama</option><option>Haiti</option><option>Jordan</option>
+          <option>Cabo Verde</option><option>Curaçao</option><option>Bosnia-Herzegovina</option>
+          <option>Paraguay</option><option>Tunisia</option>
+        </select>
+        <button class="save-btn" id="winner-lock-btn" style="width:auto; padding:7px 16px; margin-top:0;" onclick="saveWinnerPick()">Lock in</button>
+      </div>
+      <div id="winner-pick-notice" style="font-size:12px;color:var(--text-muted);margin-top:6px;"></div>
+    </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
       <p class="section-title" style="margin-bottom:0;">Upcoming matches - place your predictions</p>
       <div style="display:flex;gap:8px;">
@@ -1268,6 +1299,18 @@
       <div class="rule-row"><div><div class="rule-name">Tournament player goal</div><div class="rule-desc">Your chosen player scores a goal at any point in the tournament</div></div><div class="rule-pts">+2 pts per goal</div></div>
       <div class="rule-row"><div><div class="rule-name">Tournament player assist</div><div class="rule-desc">Your chosen player provides an assist at any point in the tournament</div></div><div class="rule-pts">+1 pt per assist</div></div>
       <div class="rule-row"><div><div class="rule-name">Tournament player red card</div><div class="rule-desc">Your chosen player receives a red card</div></div><div class="rule-pts" style="color:#E24B4A;">−1 pt</div></div>
+      <div class="rule-row"><div><div class="rule-name">Tournament winner</div><div class="rule-desc">You correctly predicted the World Cup winner</div></div><div class="rule-pts">+10 pts</div></div>
+
+      <div style="background:var(--surface2);border-radius:10px;padding:0.75rem 1rem;margin-top:0.75rem;">
+        <div style="font-size:13px;font-weight:500;margin-bottom:6px;">🔥 Stage multipliers — points double each round!</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;">
+          <div>Group stage <span style="color:var(--green);font-weight:500;">×1</span></div>
+          <div>Round of 16 <span style="color:var(--green);font-weight:500;">×2</span></div>
+          <div>Quarter-finals <span style="color:var(--green);font-weight:500;">×3</span></div>
+          <div>Semi-finals <span style="color:var(--green);font-weight:500;">×4</span></div>
+          <div>Final <span style="color:#BA7517;font-weight:500;">exact=50pts · result=30pts</span></div>
+        </div>
+      </div>
     </div>
     <div class="rules-card">
       <h2>Prediction rules</h2>
@@ -1974,6 +2017,21 @@
       if (noticeEl) noticeEl.innerHTML = `⏰ Deadline: 10 Jun 22:00 (Israel time) &nbsp;·&nbsp; ${days}d ${hours}h left`;
     }
 
+    // Winner pick setup
+    const winnerSel = document.getElementById('winner-pick-select');
+    const winnerBtn = document.getElementById('winner-lock-btn');
+    const winnerNotice = document.getElementById('winner-pick-notice');
+    if (now >= tournamentDeadline) {
+      if (winnerBtn) { winnerBtn.disabled = true; winnerBtn.textContent = 'Locked 🔒'; winnerBtn.style.opacity = '0.5'; }
+      if (winnerSel) winnerSel.disabled = true;
+      if (winnerNotice) winnerNotice.textContent = currentUserData.tournamentWinner ? `🏆 Your pick: ${currentUserData.tournamentWinner}` : '🔒 Deadline passed.';
+    } else {
+      if (currentUserData.tournamentWinner) {
+        if (winnerSel) winnerSel.value = currentUserData.tournamentWinner;
+        if (winnerNotice) winnerNotice.textContent = `✅ Current pick: ${currentUserData.tournamentWinner}`;
+      }
+    }
+
     const usersSnap = await getDocs(collection(db, 'users'));
     const users = [];
     usersSnap.forEach(d => users.push(d.data()));
@@ -2676,6 +2734,22 @@
     }
   };
 
+  window.saveWinnerPick = async () => {
+    const sel = document.getElementById('winner-pick-select');
+    const notice = document.getElementById('winner-pick-notice');
+    const btn = document.getElementById('winner-lock-btn');
+    const val = sel?.value;
+    if (!val) return alert('Please select a team!');
+    const deadline = new Date('2026-06-10T19:00:00Z');
+    if (new Date() >= deadline) return alert('Deadline has passed!');
+    btn.disabled = true; btn.textContent = 'Saving...';
+    await updateDoc(doc(db, 'users', currentUser.uid), { tournamentWinner: val });
+    currentUserData.tournamentWinner = val;
+    if (notice) notice.textContent = `✅ Locked in: ${val}`;
+    btn.textContent = 'Saved ✅';
+    setTimeout(() => { btn.textContent = 'Lock in'; btn.disabled = false; }, 2000);
+  };
+
   window.saveTournamentPlayer = async () => {
     // Lock 24h before first match: June 11 2026 22:00 Israel time = June 10 2026 21:00 UTC (Israel is UTC+3)
     const tournamentDeadline = new Date('2026-06-10T19:00:00Z'); // 22:00 Israel = 19:00 UTC
@@ -2870,15 +2944,31 @@
         if (d.data().tournamentPlayer) userTourneyPlayer[d.data().uid] = d.data().tournamentPlayer;
       });
 
+      // Get match group to determine stage multiplier
+      const matchSnap = await getDoc(doc(db, 'matches', matchId));
+      const matchGroup = (matchSnap.data()?.group || '').toUpperCase();
+      const isFinal = matchGroup.includes('FINAL') && !matchGroup.includes('QUARTER') && !matchGroup.includes('SEMI');
+      const isSemi = matchGroup.includes('SEMI');
+      const isQuarter = matchGroup.includes('QUARTER');
+      const isR16 = matchGroup.includes('16') || matchGroup.includes('ROUND_OF_16');
+      const multiplier = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
+
       for (const pred of batch) {
         let pts = 0, exact = 0, bonus = 0;
         const predHome = pred.data.homeScore;
         const predAway = pred.data.awayScore;
         const actualResult = homeScore > awayScore ? 'home' : homeScore < awayScore ? 'away' : 'draw';
         const predResult = predHome > predAway ? 'home' : predHome < predAway ? 'away' : 'draw';
-        if (actualResult === predResult) pts += 1;
-        if (predHome === homeScore && predAway === awayScore) { pts += 3; exact = 1; }
-        if (firstScorer && pred.data.firstScorer === firstScorer) { pts += 2; bonus += 1; }
+
+        if (isFinal) {
+          // Final special: exact=50, correct result=30
+          if (predHome === homeScore && predAway === awayScore) { pts = 50; exact = 1; }
+          else if (actualResult === predResult) { pts = 30; }
+        } else {
+          if (actualResult === predResult) pts += 1 * multiplier;
+          if (predHome === homeScore && predAway === awayScore) { pts += 3 * multiplier; exact = 1; }
+        }
+        if (firstScorer && pred.data.firstScorer === firstScorer) { pts += 2 * multiplier; bonus += 1; }
 
         // Tournament player scoring: goals x2, assists x1, red card -1
         const tp = userTourneyPlayer[pred.data.userId];
@@ -3326,7 +3416,6 @@
   window.selectLiveMatch = (id) => { liveMatchId = id; loadLivePage(); };
 
   async function renderLiveMatch(match, container) {
-    // Fetch all predictions for this match
     const predsSnap = await getDocs(collection(db, 'predictions'));
     const usersSnap = await getDocs(collection(db, 'users'));
 
@@ -3339,7 +3428,7 @@
       if (p.matchId !== match.id) return;
       const u = users[p.userId];
       if (!u) return;
-      preds.push({ ...p, nickname: u.nickname || u.displayName, avatar: u.avatar, isAdmin: u.isAdmin });
+      preds.push({ ...p, nickname: u.nickname || u.displayName, avatar: u.avatar, isAdmin: u.isAdmin, totalPts: u.points || 0 });
     });
 
     const isLive = ['IN_PLAY','PAUSED','HALFTIME'].includes(match.status);
@@ -3348,17 +3437,17 @@
     const homeScore = match.homeScore ?? '?';
     const awayScore = match.awayScore ?? '?';
 
-    // Score color helper
     const predResult = (p) => {
       if (!hasScore) return '';
-      const exactHome = p.homeScore === match.homeScore;
-      const exactAway = p.awayScore === match.awayScore;
-      if (exactHome && exactAway) return '🎯';
-      const predWinner = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
-      const realWinner = match.homeScore > match.awayScore ? 'H' : match.homeScore < match.awayScore ? 'A' : 'D';
-      if (predWinner === realWinner) return '✅';
-      return '❌';
+      if (p.homeScore === match.homeScore && p.awayScore === match.awayScore) return 'exact';
+      const pw = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
+      const rw = match.homeScore > match.awayScore ? 'H' : match.homeScore < match.awayScore ? 'A' : 'D';
+      return pw === rw ? 'correct' : 'wrong';
     };
+
+    const resultIcon = (r) => r === 'exact' ? '🎯' : r === 'correct' ? '✅' : r === 'wrong' ? '❌' : '';
+    const resultBorder = (r) => r === 'exact' ? '#BA7517' : r === 'correct' ? 'var(--green)' : r === 'wrong' ? '#E24B4A' : 'var(--border)';
+    const resultBg = (r) => r === 'exact' ? '#FAEEDA' : r === 'correct' ? '#E1F5EE' : r === 'wrong' ? '#FCEBEB' : 'var(--surface)';
 
     const statusLabel = match.status === 'HALFTIME' ? '⏸ Half Time'
       : match.status === 'PAUSED' ? '⏸ Paused'
@@ -3366,53 +3455,136 @@
       : isFinished ? '✅ Full Time'
       : '⏳ Starting soon';
 
+    // Points multiplier by stage
+    const stage = (match.group || '').toUpperCase();
+    const multiplier = stage.includes('FINAL') && !stage.includes('QUARTER') && !stage.includes('SEMI') ? 10
+      : stage.includes('SEMI') ? 8
+      : stage.includes('QUARTER') ? 6
+      : stage.includes('16') || stage.includes('ROUND_OF_16') ? 4
+      : 1;
+    const stageLabel = multiplier > 1 ? `<span style="font-size:11px;background:#FAEEDA;color:#BA7517;padding:2px 7px;border-radius:99px;font-weight:500;">×${multiplier} pts multiplier</span>` : '';
+
     container.innerHTML = `
-      <!-- BACK BUTTON if multiple matches -->
       <button onclick="liveMatchId=null;loadLivePage()" style="background:none;border:none;color:var(--text-muted);font-size:13px;cursor:pointer;padding:0;margin-bottom:1rem;">← All live matches</button>
 
       <!-- MATCH HEADER -->
-      <div style="background:var(--surface);border:0.5px solid ${isLive?'#E24B4A':'var(--border)'};border-radius:14px;padding:1.25rem;margin-bottom:1rem;text-align:center;">
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">${(match.group||'').replace(/_/,' ')} · ${statusLabel}</div>
-        <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:8px;">
+      <div style="background:var(--surface);border:1.5px solid ${isLive?'#E24B4A':'var(--border)'};border-radius:14px;padding:1.25rem;margin-bottom:1rem;text-align:center;">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">${(match.group||'').replace(/_/,' ')} · ${statusLabel} ${stageLabel}</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin:8px 0;">
           <div style="font-size:14px;font-weight:500;flex:1;text-align:right;">${match.homeTeam}</div>
           <div style="font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center;">${homeScore}<span style="color:var(--text-muted);font-weight:300;"> - </span>${awayScore}</div>
           <div style="font-size:14px;font-weight:500;flex:1;text-align:left;">${match.awayTeam}</div>
         </div>
         ${match.firstGoalscorer ? `<div style="font-size:12px;color:var(--text-muted);">⚽ First scorer: <strong>${match.firstGoalscorer}</strong></div>` : ''}
-        <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">🔄 Updates every 30s</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:5px;">🔄 Updates every 10s</div>
       </div>
 
-      <!-- PREDICTIONS vs REALITY -->
-      <p class="section-title" style="margin-bottom:0.75rem;">👥 Everyone's predictions</p>
-      ${preds.length === 0 ? `<div style="text-align:center;padding:1rem;font-size:13px;color:var(--text-muted);">No predictions submitted for this match.</div>` : `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem;">
-        ${preds.map(p => {
-          const av = getAvatarById(p.avatar);
-          const avatarHTML = p.isAdmin
-            ? `<img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">`
-            : av ? `<div style="width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0;">${makeAvatarSVG(av,28)}</div>`
-            : `<div style="width:28px;height:28px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;">${(p.nickname||'?').substring(0,2).toUpperCase()}</div>`;
-          const res = predResult(p);
-          return `<div style="background:var(--surface);border:0.5px solid ${res==='🎯'?'#BA7517':res==='✅'?'var(--green)':res==='❌'?'#E24B4A':'var(--border)'};border-radius:10px;padding:0.6rem 0.75rem;">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-              ${avatarHTML}
-              <div style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.nickname}</div>
-              ${res ? `<span style="margin-left:auto;font-size:14px;">${res}</span>` : ''}
-            </div>
-            <div style="font-size:18px;font-weight:700;text-align:center;letter-spacing:1px;">${p.homeScore ?? '?'} - ${p.awayScore ?? '?'}</div>
-            ${p.firstScorer ? `<div style="font-size:10px;color:var(--text-muted);text-align:center;margin-top:2px;">⚽ ${p.firstScorer}</div>` : ''}
-          </div>`;
-        }).join('')}
-      </div>`}
+      <!-- TABS -->
+      <div style="display:flex;gap:6px;margin-bottom:1rem;">
+        <button id="ltab-participants" onclick="switchLiveTab('participants')" style="flex:1;padding:7px;border-radius:8px;border:0.5px solid var(--green);background:var(--green);color:white;font-size:12px;font-weight:500;cursor:pointer;">👥 Participants</button>
+        <button id="ltab-stats" onclick="switchLiveTab('stats')" style="flex:1;padding:7px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:12px;font-weight:500;cursor:pointer;">📊 Stats</button>
+        <button id="ltab-scorers" onclick="switchLiveTab('scorers')" style="flex:1;padding:7px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:12px;font-weight:500;cursor:pointer;">⚽ Scorers</button>
+      </div>
 
-      <!-- LIVE STATS FROM API -->
-      <p class="section-title" style="margin-bottom:0.75rem;">📊 Match stats</p>
-      <div id="live-api-stats" style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem;">
-        <div style="text-align:center;font-size:13px;color:var(--text-muted);">Loading stats...</div>
+      <!-- PARTICIPANTS TAB -->
+      <div id="ltab-content-participants">
+        ${preds.length === 0
+          ? `<div style="text-align:center;padding:2rem;font-size:13px;color:var(--text-muted);">No predictions submitted for this match.</div>`
+          : `<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;overflow:hidden;">
+              <div style="display:grid;grid-template-columns:1fr 80px 60px 32px;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;padding:8px 12px;background:var(--surface2);">
+                <div>Player</div><div style="text-align:center;">Prediction</div><div style="text-align:center;">Pts</div><div></div>
+              </div>
+              ${preds.map(p => {
+                const r = predResult(p);
+                const av = getAvatarById(p.avatar);
+                const avatarHTML = p.isAdmin
+                  ? `<img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">`
+                  : av ? `<div style="width:28px;height:28px;border-radius:50%;overflow:hidden;">${makeAvatarSVG(av,28)}</div>`
+                  : `<div style="width:28px;height:28px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;">${(p.nickname||'?').substring(0,2).toUpperCase()}</div>`;
+                return `<div style="display:grid;grid-template-columns:1fr 80px 60px 32px;align-items:center;padding:8px 12px;border-top:0.5px solid var(--border);background:${resultBg(r)};">
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    ${avatarHTML}
+                    <span style="font-size:13px;font-weight:500;">${p.nickname}</span>
+                  </div>
+                  <div style="text-align:center;font-size:14px;font-weight:700;">${p.homeScore ?? '?'} - ${p.awayScore ?? '?'}</div>
+                  <div style="text-align:center;font-size:12px;color:var(--text-muted);">${p.totalPts} pts</div>
+                  <div style="text-align:center;font-size:16px;">${resultIcon(r)}</div>
+                </div>`;
+              }).join('')}
+            </div>`}
+      </div>
+
+      <!-- STATS TAB -->
+      <div id="ltab-content-stats" style="display:none;">
+        <div id="live-api-stats" style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem;">
+          <div style="text-align:center;font-size:13px;color:var(--text-muted);">Loading stats...</div>
+        </div>
+      </div>
+
+      <!-- TOP SCORERS TAB -->
+      <div id="ltab-content-scorers" style="display:none;">
+        <div id="live-top-scorers" style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem;">
+          <div style="text-align:center;font-size:13px;color:var(--text-muted);">Loading scorers...</div>
+        </div>
       </div>`;
 
-    // Fetch live stats from football-data API via sync endpoint
     loadLiveStats(match.id, match.homeTeam, match.awayTeam);
+    loadLiveTopScorers();
+  }
+
+  window.switchLiveTab = (tab) => {
+    ['participants','stats','scorers'].forEach(t => {
+      const btn = document.getElementById(`ltab-${t}`);
+      const content = document.getElementById(`ltab-content-${t}`);
+      const isActive = t === tab;
+      if (btn) { btn.style.background = isActive ? 'var(--green)' : 'none'; btn.style.color = isActive ? 'white' : 'var(--text-muted)'; btn.style.borderColor = isActive ? 'var(--green)' : 'var(--border)'; }
+      if (content) content.style.display = isActive ? 'block' : 'none';
+    });
+  };
+
+  async function loadLiveTopScorers() {
+    const el = document.getElementById('live-top-scorers');
+    if (!el) return;
+    try {
+      // Get all finished matches and their goals from results
+      const resultsSnap = await getDocs(collection(db, 'results'));
+      const scorers = {}, assisters = {};
+      resultsSnap.forEach(d => {
+        const r = d.data();
+        if (r.firstScorer && r.firstScorer !== 'og' && r.firstScorer !== 'none') {
+          scorers[r.firstScorer] = (scorers[r.firstScorer] || 0) + 1;
+        }
+      });
+      // Also pull from tournament bonus points if available
+      const usersSnap = await getDocs(collection(db, 'users'));
+      const tourneyGoals = {};
+      usersSnap.forEach(d => {
+        const u = d.data();
+        if (u.tournamentPlayer && u.bonusPoints > 0) {
+          tourneyGoals[u.tournamentPlayer] = Math.max(tourneyGoals[u.tournamentPlayer] || 0, Math.floor(u.bonusPoints / 2));
+        }
+      });
+      const combined = { ...scorers };
+      Object.entries(tourneyGoals).forEach(([p, g]) => { combined[p] = Math.max(combined[p] || 0, g); });
+      const sorted = Object.entries(combined).sort((a,b) => b[1]-a[1]).slice(0,10);
+      if (sorted.length === 0) {
+        el.innerHTML = `<div style="text-align:center;font-size:13px;color:var(--text-muted);padding:1rem;">No goals recorded yet</div>`;
+        return;
+      }
+      const medals = ['🥇','🥈','🥉'];
+      el.innerHTML = `
+        <div style="font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">⚽ Top Scorers</div>
+        ${sorted.map(([name,goals],i) => `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--border);">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:16px;">${medals[i] || (i+1)+'.'}</span>
+              <span style="font-size:13px;font-weight:500;">${name}</span>
+            </div>
+            <span style="font-size:13px;font-weight:700;color:var(--green);">${goals} ⚽</span>
+          </div>`).join('')}`;
+    } catch(e) {
+      if (el) el.innerHTML = `<div style="text-align:center;font-size:13px;color:var(--text-muted);">Stats not available yet</div>`;
+    }
   }
 
   async function loadLiveStats(matchId, homeTeam, awayTeam) {
