@@ -189,6 +189,26 @@ async function syncLiveResults(db) {
         } catch(e) { console.log('Could not get scorer for', matchId); }
 
         await calculatePoints(db, matchId, homeScore, awayScore, firstScorer);
+
+        // If this is the Final, award +10 pts to correct tournament winner pickers
+        const matchData = (await db.collection('matches').doc(matchId).get()).data();
+        const grp = (matchData?.group || '').toUpperCase();
+        if (grp.includes('FINAL') && !grp.includes('SEMI') && !grp.includes('QUARTER')) {
+          const winner = homeScore > awayScore ? matchData.homeTeam : awayScore > homeScore ? matchData.awayTeam : null;
+          if (winner) {
+            const usersSnap = await db.collection('users').get();
+            for (const userDoc of usersSnap.docs) {
+              const u = userDoc.data();
+              if (u.tournamentWinner === winner && !u.winnerBonusAwarded) {
+                await userDoc.ref.update({
+                  points: (u.points || 0) + 10,
+                  winnerBonusAwarded: true
+                });
+              }
+            }
+          }
+        }
+
         await resultRef.set({
           homeScore, awayScore, firstScorer,
           pointsCalculated: true,
@@ -201,15 +221,31 @@ async function syncLiveResults(db) {
 }
 
 async function calculatePoints(db, matchId, homeScore, awayScore, firstScorer) {
+  // Get match group for stage multiplier
+  const matchDoc = await db.collection('matches').doc(matchId).get();
+  const matchGroup = (matchDoc.data()?.group || '').toUpperCase();
+  const isFinal = matchGroup.includes('FINAL') && !matchGroup.includes('QUARTER') && !matchGroup.includes('SEMI');
+  const isSemi = matchGroup.includes('SEMI');
+  const isQuarter = matchGroup.includes('QUARTER');
+  const isR16 = matchGroup.includes('16') || matchGroup.includes('ROUND_OF_16');
+  const multiplier = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
+
   const predsSnap = await db.collection('predictions').where('matchId', '==', matchId).get();
   for (const predDoc of predsSnap.docs) {
     const pred = predDoc.data();
     let pts = 0, exact = 0, bonus = 0;
     const actualResult = homeScore > awayScore ? 'home' : homeScore < awayScore ? 'away' : 'draw';
     const predResult = pred.homeScore > pred.awayScore ? 'home' : pred.homeScore < pred.awayScore ? 'away' : 'draw';
-    if (actualResult === predResult) pts += 1;
-    if (pred.homeScore === homeScore && pred.awayScore === awayScore) { pts += 3; exact = 1; }
-    if (firstScorer && pred.firstScorer === firstScorer) { pts += 2; bonus += 1; }
+
+    if (isFinal) {
+      if (pred.homeScore === homeScore && pred.awayScore === awayScore) { pts = 50; exact = 1; }
+      else if (actualResult === predResult) { pts = 30; }
+    } else {
+      if (actualResult === predResult) pts += 1 * multiplier;
+      if (pred.homeScore === homeScore && pred.awayScore === awayScore) { pts += 3 * multiplier; exact = 1; }
+    }
+    if (firstScorer && pred.firstScorer === firstScorer) { pts += 2 * multiplier; bonus += 1; }
+
     if (pts > 0 || exact > 0 || bonus > 0) {
       const userRef = db.collection('users').doc(pred.userId);
       const userSnap = await userRef.get();
