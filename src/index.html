@@ -406,11 +406,9 @@
     <div class="nav-links">
       <button class="nav-btn" data-page="home" onclick="showPage('home')">Home</button>
       <button class="nav-btn" data-page="matches" onclick="showPage('matches')">Matches</button>
-      <button class="nav-btn" data-page="live" onclick="showPage('live')" id="live-nav-btn">🔴 Live</button>
       <button class="nav-btn" data-page="leaderboard" onclick="showPage('leaderboard')">Standings</button>
       <button class="nav-btn" data-page="stats" onclick="showPage('stats')">My Stats</button>
       <button class="nav-btn" data-page="tips" onclick="showPage('tips')">Tips</button>
-      <button class="nav-btn" data-page="live" onclick="showPage('live')">🔴 Live</button>
       <button class="nav-btn" data-page="watch" onclick="showPage('watch')">📺 Watch Together</button>
       <button class="nav-btn" data-page="highlights" onclick="showPage('highlights')">Highlights</button>
       <button class="nav-btn" data-page="rules" onclick="showPage('rules')">Rules</button>
@@ -432,11 +430,9 @@
   <div class="mobile-menu" id="mobile-menu">
     <button class="mobile-menu-btn" data-page="home" onclick="mobileNav('home')">🏠 &nbsp; Home</button>
     <button class="mobile-menu-btn" data-page="matches" onclick="mobileNav('matches')">⚽ &nbsp; Matches</button>
-    <button class="mobile-menu-btn" data-page="live" onclick="mobileNav('live')">🔴 &nbsp; Live</button>
     <button class="mobile-menu-btn" data-page="leaderboard" onclick="mobileNav('leaderboard')">🏆 &nbsp; Standings</button>
     <button class="mobile-menu-btn" data-page="stats" onclick="mobileNav('stats')">📊 &nbsp; My Stats</button>
     <button class="mobile-menu-btn" data-page="tips" onclick="mobileNav('tips')">💡 &nbsp; Tips</button>
-    <button class="mobile-menu-btn" data-page="live" onclick="mobileNav('live')">🔴 &nbsp; Live Game</button>
     <button class="mobile-menu-btn" data-page="watch" onclick="mobileNav('watch')">📺 &nbsp; Watch Together</button>
     <button class="mobile-menu-btn" data-page="highlights" onclick="mobileNav('highlights')">🎬 &nbsp; Highlights</button>
     <button class="mobile-menu-btn" data-page="rules" onclick="mobileNav('rules')">📋 &nbsp; Rules</button>
@@ -1207,7 +1203,10 @@
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
       <p class="section-title" style="margin-bottom:0;">Upcoming matches - place your predictions</p>
-      <button onclick="confirmResetPredictions()" style="font-size:12px;color:#E24B4A;background:none;border:0.5px solid #E24B4A;padding:5px 12px;border-radius:8px;cursor:pointer;">🗑 Reset all</button>
+      <div style="display:flex;gap:8px;">
+        <button onclick="showPage('live')" id="live-matches-btn" style="display:none;font-size:12px;color:white;background:#E24B4A;border:none;padding:5px 12px;border-radius:8px;cursor:pointer;animation:pulse 1.5s infinite;">🔴 Live now!</button>
+        <button onclick="confirmResetPredictions()" style="font-size:12px;color:#E24B4A;background:none;border:0.5px solid #E24B4A;padding:5px 12px;border-radius:8px;cursor:pointer;">🗑 Reset all</button>
+      </div>
     </div>
     <div id="matches-date-tabs" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:0.75rem;scrollbar-width:none;"></div>
     <div class="matches" id="matches-list">
@@ -2418,6 +2417,7 @@
     const now = new Date();
     let html = '';
     const deadlineSoonMatches = [];
+    const liveMatches = [];
     let visibleCount = 0;
     matchesSnap.forEach(d => {
       const m = d.data();
@@ -2432,6 +2432,7 @@
       const isPast = deadline < now;
       const isLive = m.status === 'IN_PLAY' || m.status === 'PAUSED' || m.status === 'HALFTIME';
       const isFinished = m.status === 'FINISHED';
+      if (isLive) liveMatches.push(m);
       const hoursToDeadline = (deadline - now) / (1000 * 60 * 60);
       if (!isPast && hoursToDeadline < 6 && hoursToDeadline > 0) deadlineSoonMatches.push(m);
 
@@ -2506,6 +2507,10 @@
         </div>`;
     });
     container.innerHTML = html;
+
+    // Show/hide live button
+    const liveBtn = document.getElementById('live-matches-btn');
+    if (liveBtn) liveBtn.style.display = liveMatches.length > 0 ? 'inline-block' : 'none';
 
     // Show deadline notifications for matches closing in < 6h
     if (deadlineSoonMatches.length > 0) {
