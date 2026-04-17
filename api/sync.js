@@ -225,25 +225,45 @@ async function calculatePoints(db, matchId, homeScore, awayScore, firstScorer) {
 
   try {
     const detail = await fetchAPI(`/matches/${matchId}`);
+
+    // Goals (x2 pts each, exclude own goals)
     const goals = (detail.goals || [])
       .filter(g => g.type !== 'OWN_GOAL')
       .map(g => g.scorer?.name)
       .filter(Boolean);
-    if (goals.length > 0) {
+
+    // Assists (+1 pt each)
+    const assists = (detail.goals || [])
+      .filter(g => g.type !== 'OWN_GOAL' && g.assist?.name)
+      .map(g => g.assist.name)
+      .filter(Boolean);
+
+    // Red cards (-1 pt each)
+    const bookings = detail.bookings || [];
+    const redCards = bookings
+      .filter(b => b.card === 'RED_CARD' || b.card === 'YELLOW_RED_CARD')
+      .map(b => b.player?.name)
+      .filter(Boolean);
+
+    if (goals.length > 0 || assists.length > 0 || redCards.length > 0) {
       const usersSnap = await db.collection('users').get();
       for (const userDoc of usersSnap.docs) {
         const user = userDoc.data();
         if (!user.tournamentPlayer) continue;
-        const scored = goals.filter(g => g === user.tournamentPlayer).length;
-        if (scored > 0) {
+        const tp = user.tournamentPlayer;
+        const goalsScored = goals.filter(g => g === tp).length;
+        const assistsMade = assists.filter(a => a === tp).length;
+        const reds = redCards.filter(r => r === tp).length;
+        const tpPts = (goalsScored * 2) + (assistsMade * 1) - (reds * 1);
+        if (tpPts !== 0) {
           await userDoc.ref.update({
-            points: (user.points || 0) + scored,
-            bonusPoints: (user.bonusPoints || 0) + scored
+            points: (user.points || 0) + tpPts,
+            bonusPoints: (user.bonusPoints || 0) + goalsScored + assistsMade
           });
         }
       }
     }
-  } catch(e) { console.log('Could not sync tournament goals for', matchId); }
+  } catch(e) { console.log('Could not sync tournament player stats for', matchId); }
 }
 
 export default async function handler(req, res) {
