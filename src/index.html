@@ -1879,6 +1879,11 @@
   };
 
   // NAVIGATION
+  function preventZoom(e) {
+    if (e.touches && e.touches.length > 1) e.preventDefault();
+    if (e.type === 'gesturestart') e.preventDefault();
+  }
+
   window.showPage = (id) => {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -1888,6 +1893,15 @@
     if (btn) btn.classList.add('active');
     const bnavBtn = document.querySelector('.bnav-btn[data-page="' + id + '"]');
     if (bnavBtn) bnavBtn.classList.add('active');
+
+    // Disable zoom on matches page only
+    if (id === 'matches') {
+      document.addEventListener('touchmove', preventZoom, { passive: false });
+      document.addEventListener('gesturestart', preventZoom, { passive: false });
+    } else {
+      document.removeEventListener('touchmove', preventZoom);
+      document.removeEventListener('gesturestart', preventZoom);
+    }
     if (id === 'admin') { showAdminMain(); loadAdminUsers(); loadAdminStats(); }
     if (id === 'leaderboard') { loadFullLeaderboard(); document.getElementById('wc-groups-content').dataset.loaded = ''; }
     if (id === 'stats') loadStatsPage();
