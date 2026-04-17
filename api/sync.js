@@ -201,7 +201,7 @@ async function syncLiveResults(db) {
               const u = userDoc.data();
               if (u.tournamentWinner === winner && !u.winnerBonusAwarded) {
                 await userDoc.ref.update({
-                  points: (u.points || 0) + 10,
+                  points: (u.points || 0) + 15,
                   winnerBonusAwarded: true
                 });
               }
@@ -238,8 +238,8 @@ async function calculatePoints(db, matchId, homeScore, awayScore, firstScorer) {
     const predResult = pred.homeScore > pred.awayScore ? 'home' : pred.homeScore < pred.awayScore ? 'away' : 'draw';
 
     if (isFinal) {
-      if (pred.homeScore === homeScore && pred.awayScore === awayScore) { pts = 50; exact = 1; }
-      else if (actualResult === predResult) { pts = 30; }
+      if (pred.homeScore === homeScore && pred.awayScore === awayScore) { pts = 20; exact = 1; }
+      else if (actualResult === predResult) { pts = 10; }
     } else {
       if (actualResult === predResult) pts += 1 * multiplier;
       if (pred.homeScore === homeScore && pred.awayScore === awayScore) { pts += 3 * multiplier; exact = 1; }
