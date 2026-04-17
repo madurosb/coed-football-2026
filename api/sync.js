@@ -263,6 +263,50 @@ export default async function handler(req, res) {
       const data = await fetchAPI(`/competitions/${WC_CODE}/matches?limit=3`);
       const m = (data.matches || [])[0];
       result.sample = m ? { home: m.homeTeam, away: m.awayTeam } : null;
+    } else if (action === 'matchStats') {
+      const matchId = req.query.matchId;
+      if (!matchId) return res.status(400).json({ error: 'matchId required' });
+      // Get match from Firestore to find API id
+      const matchDoc = await db.collection('matches').doc(matchId).get();
+      const matchData = matchDoc.data();
+      const apiId = matchData?.apiId;
+      if (!apiId) return res.status(200).json({ success: true, matchStats: null });
+      // Fetch full match from API
+      const data = await fetchAPI(`/matches/${apiId}`);
+      const m = data.match || data;
+      // Goals
+      const goals = (m.goals || []).map(g => ({
+        minute: g.minute,
+        scorer: g.scorer?.name || 'Unknown',
+        team: g.team?.name || ''
+      }));
+      // Stats
+      const rawStats = m.statistics || [];
+      const statMap = {
+        'Shots on Goal': 'Shots on target',
+        'Shots off Goal': 'Shots off target',
+        'Total Shots': 'Total shots',
+        'Ball Possession': 'Possession %',
+        'Corner Kicks': 'Corners',
+        'Fouls': 'Fouls',
+        'Yellow Cards': 'Yellow cards',
+        'Red Cards': 'Red cards',
+        'Offsides': 'Offsides',
+        'Passes Accurate': 'Accurate passes',
+      };
+      const stats = [];
+      const homeStats = rawStats.find(s => s.team?.id === m.homeTeam?.id)?.statistics || [];
+      const awayStats = rawStats.find(s => s.team?.id === m.awayTeam?.id)?.statistics || [];
+      const wanted = Object.keys(statMap);
+      wanted.forEach(key => {
+        const hs = homeStats.find(s => s.type === key);
+        const as = awayStats.find(s => s.type === key);
+        if (hs || as) stats.push({ label: statMap[key], home: hs?.value ?? null, away: as?.value ?? null });
+      });
+      // Lineups
+      const homeLineup = (m.lineups?.[0]?.startXI || []).map(p => `${p.player?.number||''} ${p.player?.name||''}`);
+      const awayLineup = (m.lineups?.[1]?.startXI || []).map(p => `${p.player?.number||''} ${p.player?.name||''}`);
+      result.matchStats = { goals, stats, homeLineup, awayLineup, minute: m.minute, status: m.status };
     }
     res.status(200).json({ success: true, ...result });
   } catch (err) {
