@@ -3228,6 +3228,33 @@
   // ========== LIVE PAGE ==========
   let liveRefreshInterval = null;
   let liveMatchId = null;
+  let lastLiveScore = { home: null, away: null };
+
+  function playGoalSound() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const now = ctx.currentTime;
+      const crowdBuf = ctx.createBuffer(1, ctx.sampleRate * 3, ctx.sampleRate);
+      const crowdData = crowdBuf.getChannelData(0);
+      for (let i = 0; i < crowdData.length; i++) crowdData[i] = (Math.random()*2-1) * Math.min(1, i/(ctx.sampleRate*0.3));
+      const crowd = ctx.createBufferSource();
+      crowd.buffer = crowdBuf;
+      const cf = ctx.createBiquadFilter(); cf.type='lowpass'; cf.frequency.value=1200;
+      const cg = ctx.createGain();
+      cg.gain.setValueAtTime(0,now); cg.gain.linearRampToValueAtTime(0.4,now+0.4);
+      cg.gain.setValueAtTime(0.4,now+1.5); cg.gain.exponentialRampToValueAtTime(0.001,now+3);
+      crowd.connect(cf); cf.connect(cg); cg.connect(ctx.destination);
+      crowd.start(now); crowd.stop(now+3);
+      [180,220,280,320,380,420,460,480].forEach((freq,i) => {
+        const osc=ctx.createOscillator(), g=ctx.createGain();
+        osc.type='square'; osc.frequency.value=freq;
+        g.gain.setValueAtTime(0,now+i*0.08); g.gain.linearRampToValueAtTime(0.12,now+i*0.08+0.04);
+        g.gain.exponentialRampToValueAtTime(0.001,now+i*0.08+0.28);
+        osc.connect(g); g.connect(ctx.destination);
+        osc.start(now+i*0.08); osc.stop(now+i*0.08+0.3);
+      });
+    } catch(e) {}
+  }
 
   async function loadLivePage() {
     const container = document.getElementById('live-content');
@@ -3278,13 +3305,22 @@
     liveMatchId = match.id;
     await renderLiveMatch(match, container);
 
-    // Auto-refresh every 30s
+    // Auto-refresh every 10s (API allows ~10 req/min on free tier)
     liveRefreshInterval = setInterval(async () => {
       const snap = await getDocs(collection(db, 'matches'));
       let updatedMatch = null;
       snap.forEach(d => { if (d.id === match.id) updatedMatch = { id: d.id, ...d.data() }; });
-      if (updatedMatch) await renderLiveMatch(updatedMatch, container);
-    }, 30000);
+      if (updatedMatch) {
+        // Detect new goal → play sound
+        const newHome = updatedMatch.homeScore ?? 0;
+        const newAway = updatedMatch.awayScore ?? 0;
+        if (lastLiveScore.home !== null && (newHome > lastLiveScore.home || newAway > lastLiveScore.away)) {
+          playGoalSound();
+        }
+        lastLiveScore = { home: newHome, away: newAway };
+        await renderLiveMatch(updatedMatch, container);
+      }
+    }, 10000);
   }
 
   window.selectLiveMatch = (id) => { liveMatchId = id; loadLivePage(); };
