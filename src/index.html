@@ -406,9 +406,11 @@
     <div class="nav-links">
       <button class="nav-btn" data-page="home" onclick="showPage('home')">Home</button>
       <button class="nav-btn" data-page="matches" onclick="showPage('matches')">Matches</button>
+      <button class="nav-btn" data-page="live" onclick="showPage('live')" id="live-nav-btn">🔴 Live</button>
       <button class="nav-btn" data-page="leaderboard" onclick="showPage('leaderboard')">Standings</button>
       <button class="nav-btn" data-page="stats" onclick="showPage('stats')">My Stats</button>
       <button class="nav-btn" data-page="tips" onclick="showPage('tips')">Tips</button>
+      <button class="nav-btn" data-page="live" onclick="showPage('live')">🔴 Live</button>
       <button class="nav-btn" data-page="watch" onclick="showPage('watch')">📺 Watch Together</button>
       <button class="nav-btn" data-page="highlights" onclick="showPage('highlights')">Highlights</button>
       <button class="nav-btn" data-page="rules" onclick="showPage('rules')">Rules</button>
@@ -430,9 +432,11 @@
   <div class="mobile-menu" id="mobile-menu">
     <button class="mobile-menu-btn" data-page="home" onclick="mobileNav('home')">🏠 &nbsp; Home</button>
     <button class="mobile-menu-btn" data-page="matches" onclick="mobileNav('matches')">⚽ &nbsp; Matches</button>
+    <button class="mobile-menu-btn" data-page="live" onclick="mobileNav('live')">🔴 &nbsp; Live</button>
     <button class="mobile-menu-btn" data-page="leaderboard" onclick="mobileNav('leaderboard')">🏆 &nbsp; Standings</button>
     <button class="mobile-menu-btn" data-page="stats" onclick="mobileNav('stats')">📊 &nbsp; My Stats</button>
     <button class="mobile-menu-btn" data-page="tips" onclick="mobileNav('tips')">💡 &nbsp; Tips</button>
+    <button class="mobile-menu-btn" data-page="live" onclick="mobileNav('live')">🔴 &nbsp; Live Game</button>
     <button class="mobile-menu-btn" data-page="watch" onclick="mobileNav('watch')">📺 &nbsp; Watch Together</button>
     <button class="mobile-menu-btn" data-page="highlights" onclick="mobileNav('highlights')">🎬 &nbsp; Highlights</button>
     <button class="mobile-menu-btn" data-page="rules" onclick="mobileNav('rules')">📋 &nbsp; Rules</button>
@@ -544,7 +548,7 @@
     <img src="https://coed-football-2026.vercel.app/match-card.png" alt="" style="width:100%; height:auto; border-radius:12px; margin-bottom:1.5rem;">
     <div class="player-pick">
       <h3>Your tournament player</h3>
-      <p>Pick one player before the tournament starts. Every goal they score = +1 point for you throughout the whole tournament.</p>
+      <p>Pick one player before the tournament starts. Every goal = +2 pts, every assist = +1 pt, red card = −1 pt.</p>
       <div style="display:flex; gap:8px; align-items:center;">
         <select id="tournament-player-select" style="flex:1;">
           <optgroup label="Algeria">
@@ -1262,7 +1266,9 @@
       <div class="rule-row"><div><div class="rule-name">Correct result</div><div class="rule-desc">You predicted the right winner or correctly predicted a draw</div></div><div class="rule-pts">+1 pt</div></div>
       <div class="rule-row"><div><div class="rule-name">Exact score</div><div class="rule-desc">You got the exact final score right</div></div><div class="rule-pts">+3 pts</div></div>
       <div class="rule-row"><div><div class="rule-name">First goalscorer</div><div class="rule-desc">You predicted who scored the first goal in the match</div></div><div class="rule-pts">+2 pts</div></div>
-      <div class="rule-row"><div><div class="rule-name">Tournament player goal</div><div class="rule-desc">Your chosen player scores a goal at any point in the tournament</div></div><div class="rule-pts">+1 pt per goal</div></div>
+      <div class="rule-row"><div><div class="rule-name">Tournament player goal</div><div class="rule-desc">Your chosen player scores a goal at any point in the tournament</div></div><div class="rule-pts">+2 pts per goal</div></div>
+      <div class="rule-row"><div><div class="rule-name">Tournament player assist</div><div class="rule-desc">Your chosen player provides an assist at any point in the tournament</div></div><div class="rule-pts">+1 pt per assist</div></div>
+      <div class="rule-row"><div><div class="rule-name">Tournament player red card</div><div class="rule-desc">Your chosen player receives a red card</div></div><div class="rule-pts" style="color:#E24B4A;">−1 pt</div></div>
     </div>
     <div class="rules-card">
       <h2>Prediction rules</h2>
@@ -1301,12 +1307,31 @@
     </div>
   </div>
 
+  <!-- LIVE GAME -->
+  <div class="page" id="page-live">
+    <div id="live-match-selector" style="margin-bottom:1rem;">
+      <p class="section-title" style="margin-bottom:0.5rem;">🔴 Live Game</p>
+      <div id="live-match-list" style="font-size:13px;color:var(--text-muted);text-align:center;padding:1rem;">Loading matches...</div>
+    </div>
+    <div id="live-content" style="display:none;"></div>
+  </div>
+
   <!-- WATCH TOGETHER -->
   <div class="page" id="page-watch">
     <p class="section-title" style="margin-bottom:0.25rem;">📺 Watch Together</p>
     <p style="font-size:13px;color:var(--text-muted);margin-bottom:1.25rem;">Vote on which matches you want to watch with the group. Minimum 4 people needed to make it happen!</p>
     <div id="watch-content">
       <div style="text-align:center;padding:2rem;font-size:13px;color:var(--text-muted);">Loading...</div>
+    </div>
+  </div>
+
+  <!-- LIVE -->
+  <div class="page" id="page-live">
+    <div id="live-content">
+      <div style="text-align:center;padding:3rem 1rem;">
+        <div style="font-size:40px;margin-bottom:1rem;">🔴</div>
+        <div style="font-size:15px;color:var(--text-muted);">Loading live matches...</div>
+      </div>
     </div>
   </div>
 
@@ -1387,7 +1412,9 @@
           <div class="form-row"><label id="result-away-label">Away score</label><input type="number" min="0" id="result-away-score" placeholder="0"></div>
         </div>
         <div class="form-row" id="result-scorer-row" style="display:none;"><label>First goalscorer</label><select id="result-scorer"><option value="">Select player...</option><option value="og">Own goal</option><option value="none">No goals scored</option></select></div>
-        <div class="form-row"><label>Tournament player goals in this match (auto-filled, edit if needed)</label><input type="text" id="result-tourney-goals" placeholder="e.g. Mbappe x1, Haaland x0"></div>
+        <div class="form-row"><label>Tournament player goals in this match</label><input type="text" id="result-tourney-goals" placeholder="e.g. Mbappe x1, Haaland x0"></div>
+        <div class="form-row"><label>Tournament player assists in this match</label><input type="text" id="result-tourney-assists" placeholder="e.g. Mbappe x1"></div>
+        <div class="form-row"><label>Tournament player red cards in this match</label><input type="text" id="result-tourney-reds" placeholder="e.g. Vinicius x1 (or leave empty)"></div>
         <button class="submit-btn" onclick="submitResult()">Submit results and calculate points</button>
       </div>
     </div>
@@ -1894,7 +1921,11 @@
     const bnavBtn = document.querySelector('.bnav-btn[data-page="' + id + '"]');
     if (bnavBtn) bnavBtn.classList.add('active');
 
-    // Disable zoom on matches page only
+    // Stop live refresh when leaving live page
+    if (id !== 'live' && liveRefreshInterval) {
+      clearInterval(liveRefreshInterval);
+      liveRefreshInterval = null;
+    }
     if (id === 'matches') {
       document.addEventListener('touchmove', preventZoom, { passive: false });
       document.addEventListener('gesturestart', preventZoom, { passive: false });
@@ -1906,6 +1937,7 @@
     if (id === 'leaderboard') { loadFullLeaderboard(); document.getElementById('wc-groups-content').dataset.loaded = ''; }
     if (id === 'stats') loadStatsPage();
     if (id === 'tips') loadTipsPage();
+    if (id === 'live') loadLivePage();
     if (id === 'watch') loadWatchPage();
 
     const vid = document.getElementById('rules-video');
@@ -2044,7 +2076,7 @@
         </div>
         <div style="background:var(--surface2);border-radius:8px;padding:0.6rem;text-align:center;">
           <div style="font-size:16px;font-weight:600;">${leader.bonusPoints||0}</div>
-          <div style="font-size:11px;color:var(--text-muted);">Scorer hits</div>
+          <div style="font-size:11px;color:var(--text-muted);">Scorer hits & assists</div>
         </div>
         <div style="background:var(--surface2);border-radius:8px;padding:0.6rem;text-align:center;">
           <div style="font-size:16px;font-weight:600;">${leader.tournamentPlayer ? leader.tournamentPlayer.split(' ').pop() : '-'}</div>
@@ -2787,11 +2819,28 @@
     const homeScore = parseInt(document.getElementById('result-home-score').value);
     const awayScore = parseInt(document.getElementById('result-away-score').value);
     const firstScorer = document.getElementById('result-scorer').value;
+    const tourneyGoalsRaw = document.getElementById('result-tourney-goals').value;
+    const tourneyAssistsRaw = document.getElementById('result-tourney-assists').value;
+    const tourneyRedsRaw = document.getElementById('result-tourney-reds').value;
     if (!matchId) return alert('Please select a match');
     if (isNaN(homeScore) || isNaN(awayScore)) return alert('Please enter both scores');
 
     btn.textContent = 'Saving...';
     btn.disabled = true;
+
+    // Parse "Mbappe x2, Haaland x1" → { 'Mbappe': 2, 'Haaland': 1 }
+    const parsePlayerCounts = (raw) => {
+      const result = {};
+      if (!raw) return result;
+      raw.split(',').forEach(part => {
+        const match = part.trim().match(/^(.+?)\s*x(\d+)$/i);
+        if (match) result[match[1].trim()] = parseInt(match[2]);
+      });
+      return result;
+    };
+    const goalMap = parsePlayerCounts(tourneyGoalsRaw);
+    const assistMap = parsePlayerCounts(tourneyAssistsRaw);
+    const redMap = parsePlayerCounts(tourneyRedsRaw);
 
     try {
       await setDoc(doc(db, 'results', matchId), {
@@ -2799,13 +2848,21 @@
       });
 
       await updateDoc(doc(db, 'matches', matchId), {
-        homeScore, awayScore, status: 'FINISHED'
+        homeScore, awayScore, status: 'FINISHED',
+        firstGoalscorer: firstScorer
       });
 
       const predsSnap = await getDocs(collection(db, 'predictions'));
+      const usersSnap = await getDocs(collection(db, 'users'));
       const batch = [];
       predsSnap.forEach(d => {
         if (d.data().matchId === matchId) batch.push({ id: d.id, data: d.data() });
+      });
+
+      // Build user → tournamentPlayer map
+      const userTourneyPlayer = {};
+      usersSnap.forEach(d => {
+        if (d.data().tournamentPlayer) userTourneyPlayer[d.data().uid] = d.data().tournamentPlayer;
       });
 
       for (const pred of batch) {
@@ -2817,6 +2874,18 @@
         if (actualResult === predResult) pts += 1;
         if (predHome === homeScore && predAway === awayScore) { pts += 3; exact = 1; }
         if (firstScorer && pred.data.firstScorer === firstScorer) { pts += 2; bonus += 1; }
+
+        // Tournament player scoring: goals x2, assists x1, red card -1
+        const tp = userTourneyPlayer[pred.data.userId];
+        if (tp) {
+          const goals = goalMap[tp] || 0;
+          const assists = assistMap[tp] || 0;
+          const reds = redMap[tp] || 0;
+          const tpPts = (goals * 2) + (assists * 1) - (reds * 1);
+          pts += tpPts;
+          bonus += goals + assists; // track in bonusPoints for display
+        }
+
         const userRef = doc(db, 'users', pred.data.userId);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
@@ -3150,6 +3219,232 @@
       }
     }
   };
+
+  // ========== LIVE PAGE ==========
+  let liveRefreshInterval = null;
+  let liveMatchId = null;
+
+  async function loadLivePage() {
+    const container = document.getElementById('live-content');
+    if (liveRefreshInterval) clearInterval(liveRefreshInterval);
+
+    // Fetch all matches, find live or most recent
+    const matchesSnap = await getDocs(query(collection(db, 'matches'), orderBy('kickoff')));
+    const matches = [];
+    matchesSnap.forEach(d => matches.push({ id: d.id, ...d.data() }));
+
+    const liveMatches = matches.filter(m => ['IN_PLAY','PAUSED','HALFTIME'].includes(m.status));
+    const now = new Date();
+    // Also include matches that started within last 2h (in case status not updated yet)
+    const recentMatches = matches.filter(m => {
+      const k = m.kickoff?.toDate?.() || new Date(m.kickoff);
+      const minsAgo = (now - k) / 60000;
+      return minsAgo > 0 && minsAgo < 120 && m.status !== 'FINISHED';
+    });
+
+    const candidates = [...new Map([...liveMatches, ...recentMatches].map(m => [m.id, m])).values()];
+
+    if (candidates.length === 0) {
+      container.innerHTML = `
+        <div style="text-align:center;padding:3rem 1rem;">
+          <div style="font-size:40px;margin-bottom:1rem;">😴</div>
+          <div style="font-size:16px;font-weight:500;margin-bottom:8px;">No live matches right now</div>
+          <div style="font-size:13px;color:var(--text-muted);">Come back when a match is in play — this page updates every 30 seconds.</div>
+        </div>`;
+      return;
+    }
+
+    // If multiple live, show selector
+    if (candidates.length > 1 && !liveMatchId) {
+      container.innerHTML = `
+        <p class="section-title" style="margin-bottom:1rem;">🔴 Live now — pick a match</p>
+        ${candidates.map(m => `
+          <div onclick="selectLiveMatch('${m.id}')" style="background:var(--surface);border:0.5px solid #E24B4A;border-radius:12px;padding:1rem 1.25rem;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:11px;color:var(--text-muted);">${(m.group||'').replace(/_/,' ')}</div>
+              <div style="font-size:15px;font-weight:500;">${m.homeTeam} vs ${m.awayTeam}</div>
+            </div>
+            <span style="background:#E24B4A;color:white;font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px;animation:pulse 1.5s infinite;">● LIVE</span>
+          </div>`).join('')}`;
+      return;
+    }
+
+    const match = liveMatchId ? candidates.find(m => m.id === liveMatchId) || candidates[0] : candidates[0];
+    liveMatchId = match.id;
+    await renderLiveMatch(match, container);
+
+    // Auto-refresh every 30s
+    liveRefreshInterval = setInterval(async () => {
+      const snap = await getDocs(collection(db, 'matches'));
+      let updatedMatch = null;
+      snap.forEach(d => { if (d.id === match.id) updatedMatch = { id: d.id, ...d.data() }; });
+      if (updatedMatch) await renderLiveMatch(updatedMatch, container);
+    }, 30000);
+  }
+
+  window.selectLiveMatch = (id) => { liveMatchId = id; loadLivePage(); };
+
+  async function renderLiveMatch(match, container) {
+    // Fetch all predictions for this match
+    const predsSnap = await getDocs(collection(db, 'predictions'));
+    const usersSnap = await getDocs(collection(db, 'users'));
+
+    const users = {};
+    usersSnap.forEach(d => { users[d.data().uid] = d.data(); });
+
+    const preds = [];
+    predsSnap.forEach(d => {
+      const p = d.data();
+      if (p.matchId !== match.id) return;
+      const u = users[p.userId];
+      if (!u) return;
+      preds.push({ ...p, nickname: u.nickname || u.displayName, avatar: u.avatar, isAdmin: u.isAdmin });
+    });
+
+    const isLive = ['IN_PLAY','PAUSED','HALFTIME'].includes(match.status);
+    const isFinished = match.status === 'FINISHED';
+    const hasScore = match.homeScore !== null && match.homeScore !== undefined;
+    const homeScore = match.homeScore ?? '?';
+    const awayScore = match.awayScore ?? '?';
+
+    // Score color helper
+    const predResult = (p) => {
+      if (!hasScore) return '';
+      const exactHome = p.homeScore === match.homeScore;
+      const exactAway = p.awayScore === match.awayScore;
+      if (exactHome && exactAway) return '🎯';
+      const predWinner = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
+      const realWinner = match.homeScore > match.awayScore ? 'H' : match.homeScore < match.awayScore ? 'A' : 'D';
+      if (predWinner === realWinner) return '✅';
+      return '❌';
+    };
+
+    const statusLabel = match.status === 'HALFTIME' ? '⏸ Half Time'
+      : match.status === 'PAUSED' ? '⏸ Paused'
+      : isLive ? '🔴 Live'
+      : isFinished ? '✅ Full Time'
+      : '⏳ Starting soon';
+
+    container.innerHTML = `
+      <!-- BACK BUTTON if multiple matches -->
+      <button onclick="liveMatchId=null;loadLivePage()" style="background:none;border:none;color:var(--text-muted);font-size:13px;cursor:pointer;padding:0;margin-bottom:1rem;">← All live matches</button>
+
+      <!-- MATCH HEADER -->
+      <div style="background:var(--surface);border:0.5px solid ${isLive?'#E24B4A':'var(--border)'};border-radius:14px;padding:1.25rem;margin-bottom:1rem;text-align:center;">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">${(match.group||'').replace(/_/,' ')} · ${statusLabel}</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:8px;">
+          <div style="font-size:14px;font-weight:500;flex:1;text-align:right;">${match.homeTeam}</div>
+          <div style="font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center;">${homeScore}<span style="color:var(--text-muted);font-weight:300;"> - </span>${awayScore}</div>
+          <div style="font-size:14px;font-weight:500;flex:1;text-align:left;">${match.awayTeam}</div>
+        </div>
+        ${match.firstGoalscorer ? `<div style="font-size:12px;color:var(--text-muted);">⚽ First scorer: <strong>${match.firstGoalscorer}</strong></div>` : ''}
+        <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">🔄 Updates every 30s</div>
+      </div>
+
+      <!-- PREDICTIONS vs REALITY -->
+      <p class="section-title" style="margin-bottom:0.75rem;">👥 Everyone's predictions</p>
+      ${preds.length === 0 ? `<div style="text-align:center;padding:1rem;font-size:13px;color:var(--text-muted);">No predictions submitted for this match.</div>` : `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem;">
+        ${preds.map(p => {
+          const av = getAvatarById(p.avatar);
+          const avatarHTML = p.isAdmin
+            ? `<img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">`
+            : av ? `<div style="width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0;">${makeAvatarSVG(av,28)}</div>`
+            : `<div style="width:28px;height:28px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;">${(p.nickname||'?').substring(0,2).toUpperCase()}</div>`;
+          const res = predResult(p);
+          return `<div style="background:var(--surface);border:0.5px solid ${res==='🎯'?'#BA7517':res==='✅'?'var(--green)':res==='❌'?'#E24B4A':'var(--border)'};border-radius:10px;padding:0.6rem 0.75rem;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+              ${avatarHTML}
+              <div style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.nickname}</div>
+              ${res ? `<span style="margin-left:auto;font-size:14px;">${res}</span>` : ''}
+            </div>
+            <div style="font-size:18px;font-weight:700;text-align:center;letter-spacing:1px;">${p.homeScore ?? '?'} - ${p.awayScore ?? '?'}</div>
+            ${p.firstScorer ? `<div style="font-size:10px;color:var(--text-muted);text-align:center;margin-top:2px;">⚽ ${p.firstScorer}</div>` : ''}
+          </div>`;
+        }).join('')}
+      </div>`}
+
+      <!-- LIVE STATS FROM API -->
+      <p class="section-title" style="margin-bottom:0.75rem;">📊 Match stats</p>
+      <div id="live-api-stats" style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem;">
+        <div style="text-align:center;font-size:13px;color:var(--text-muted);">Loading stats...</div>
+      </div>`;
+
+    // Fetch live stats from football-data API via sync endpoint
+    loadLiveStats(match.id, match.homeTeam, match.awayTeam);
+  }
+
+  async function loadLiveStats(matchId, homeTeam, awayTeam) {
+    const statsEl = document.getElementById('live-api-stats');
+    if (!statsEl) return;
+    try {
+      const res = await fetch(`/api/sync?action=matchStats&matchId=${matchId}`, {
+        headers: { 'x-sync-secret': 'coed2026secret' }
+      });
+      const data = await res.json();
+      const ms = data?.matchStats;
+
+      if (!ms) {
+        statsEl.innerHTML = renderFallbackStats(homeTeam, awayTeam);
+        return;
+      }
+
+      // Render lineups if available
+      let html = '';
+
+      if (ms.homeLineup || ms.awayLineup) {
+        html += `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem;">
+            <div>
+              <div style="font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">${homeTeam}</div>
+              ${(ms.homeLineup||[]).map(p=>`<div style="font-size:12px;padding:2px 0;border-bottom:0.5px solid var(--border);">${p}</div>`).join('')}
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">${awayTeam}</div>
+              ${(ms.awayLineup||[]).map(p=>`<div style="font-size:12px;padding:2px 0;border-bottom:0.5px solid var(--border);">${p}</div>`).join('')}
+            </div>
+          </div>`;
+      }
+
+      if (ms.goals?.length) {
+        html += `<div style="margin-bottom:1rem;">
+          <div style="font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">⚽ Goals</div>
+          ${ms.goals.map(g=>`<div style="font-size:13px;padding:3px 0;border-bottom:0.5px solid var(--border);">${g.minute}' ${g.scorer} <span style="color:var(--text-muted);font-size:11px;">(${g.team})</span></div>`).join('')}
+        </div>`;
+      }
+
+      if (ms.stats?.length) {
+        html += `<div>
+          <div style="font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">📊 Stats</div>
+          ${ms.stats.map(s => {
+            const total = (s.home||0) + (s.away||0);
+            const homePct = total > 0 ? Math.round((s.home||0)/total*100) : 50;
+            return `<div style="margin-bottom:8px;">
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">
+                <span style="font-weight:500;">${s.home ?? '-'}</span>
+                <span style="color:var(--text-muted);">${s.label}</span>
+                <span style="font-weight:500;">${s.away ?? '-'}</span>
+              </div>
+              <div style="height:4px;background:var(--surface2);border-radius:99px;overflow:hidden;">
+                <div style="height:100%;width:${homePct}%;background:var(--green);border-radius:99px;"></div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>`;
+      }
+
+      statsEl.innerHTML = html || renderFallbackStats(homeTeam, awayTeam);
+    } catch(e) {
+      if (statsEl) statsEl.innerHTML = renderFallbackStats(homeTeam, awayTeam);
+    }
+  }
+
+  function renderFallbackStats(homeTeam, awayTeam) {
+    return `<div style="text-align:center;padding:0.5rem;font-size:13px;color:var(--text-muted);">
+      Live stats will appear here once the match starts.<br>
+      <span style="font-size:11px;">Powered by football-data.org</span>
+    </div>`;
+  }
 
   // ========== WATCH TOGETHER ==========
   const WATCH_MATCHES = [
@@ -3626,10 +3921,10 @@
         <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
             <div style="font-size:14px;font-weight:500;">🏆 Tournament Player Picks</div>
-            <div style="font-size:11px;color:var(--text-muted);background:var(--surface2);padding:3px 8px;border-radius:99px;">⚽ +1 pt per goal</div>
+            <div style="font-size:11px;color:var(--text-muted);background:var(--surface2);padding:3px 8px;border-radius:99px;">⚽ +2 pts goal · 🎯 +1 assist · 🟥 -1 red</div>
           </div>
           <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;padding:8px;background:var(--surface2);border-radius:8px;">
-            💡 Pick one player for the whole tournament. Every goal they score = +1 point. Click "Pick" to lock them in instantly!
+            💡 Pick one player for the whole tournament. Goal = +2 pts, assist = +1 pt, red card = −1 pt. Click "Pick" to lock in!
           </div>
           ${(tips.tournamentPlayers || tips.tournamentPlayerPicks || []).map(p => `
             <div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-bottom:0.5px solid var(--border);gap:8px;">
@@ -3854,7 +4149,7 @@
         <div style="background:var(--surface2);border-radius:8px;padding:1rem;text-align:center;">
           <div style="font-size:16px;margin-bottom:2px;">⚽</div>
           <div style="font-size:24px;font-weight:500;">${user.bonusPoints||0}</div>
-          <div style="font-size:12px;color:var(--text-muted);">Scorer hits</div>
+          <div style="font-size:12px;color:var(--text-muted);">Scorer hits & assists</div>
         </div>
       </div>
 
