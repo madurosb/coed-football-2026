@@ -246,7 +246,23 @@ async function calculatePoints(db, matchId, homeScore, awayScore, firstScorer) {
     }
     if (firstScorer && pred.firstScorer === firstScorer) { pts += 2 * multiplier; bonus += 1; }
 
-    if (pts > 0 || exact > 0 || bonus > 0) {
+    // Joker card — double points if activated
+    const jokerSnap = await db.collection('jokerCards').where('matchId','==',matchId).where('userId','==',pred.userId).get();
+    if (!jokerSnap.empty) pts *= 2;
+
+    // Double or Nothing Version B — correct = x2, wrong = lose points from total
+    const donSnap = await db.collection('donOptIns').where('matchId','==',matchId).where('userId','==',pred.userId).get();
+    if (!donSnap.empty) {
+      const isCorrect = actualResult === predResult;
+      if (isCorrect) {
+        pts *= 2;
+      } else {
+        const basePenalty = isFinal ? 10 : (1 + 3) * multiplier;
+        pts = -basePenalty;
+      }
+    }
+
+    if (pts !== 0 || exact > 0 || bonus > 0) {
       const userRef = db.collection('users').doc(pred.userId);
       const userSnap = await userRef.get();
       if (userSnap.exists) {
