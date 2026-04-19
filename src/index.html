@@ -4196,7 +4196,7 @@
             pts = (resultPts * 2) + scorerPts;
           } else {
             // Penalty = what you would have won on result (min 1 pt * multiplier)
-            const penalty = isFinal ? 10 : Math.max(1 * multiplier, Math.abs(resultPts) > 0 ? Math.abs(resultPts) : 1 * multiplier);
+            const penalty = isFinal ? 10 : 1 * multiplier; // always 1 base pt × stage multiplier
             pts = scorerPts - penalty;
           }
         }
