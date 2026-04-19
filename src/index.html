@@ -2229,10 +2229,18 @@
   // ========== FIRST-TIME USER POPUP ==========
   function checkFirstTimeUser() {
     if (localStorage.getItem('seenWelcome')) return;
+    // Only show if user has no predictions yet (truly new)
     setTimeout(() => {
       const popup = document.getElementById('welcome-popup');
-      if (popup) popup.style.display = 'flex';
-    }, 1500);
+      if (popup) {
+        popup.style.display = 'flex';
+        popup.style.opacity = '0';
+        requestAnimationFrame(() => {
+          popup.style.transition = 'opacity 0.4s';
+          popup.style.opacity = '1';
+        });
+      }
+    }, 2500);
   }
 
   window.closeWelcomePopup = (goPage) => {
@@ -2272,9 +2280,10 @@
   ];
   let musicPlaying = false;
   let currentTrack = 0;
+  let ap = null; // module-level so accessible everywhere
 
   function startMusic() {
-    const ap = document.getElementById('audio-player');
+    if (!ap) ap = document.getElementById('audio-player');
     const mb = document.getElementById('music-btn');
     if (!ap || musicPlaying) return;
     currentTrack = Math.floor(Math.random() * TRACKS.length);
@@ -2282,22 +2291,22 @@
     ap.volume = 0.4;
     ap.play().then(() => {
       musicPlaying = true;
-      mb.textContent = '🔊';
+      if (mb) mb.textContent = '🔊';
     }).catch(() => {});
-    ap.addEventListener('ended', () => {
+    ap.onended = () => {
       currentTrack = (currentTrack + 1) % TRACKS.length;
       ap.src = TRACKS[currentTrack];
       ap.play();
-    });
+    };
   }
 
   window.toggleMusic = () => {
-    const ap = document.getElementById('audio-player');
+    if (!ap) ap = document.getElementById('audio-player');
     const mb = document.getElementById('music-btn');
     if (musicPlaying) {
       ap.pause();
       musicPlaying = false;
-      mb.textContent = '🔇';
+      if (mb) mb.textContent = '🔇';
     } else {
       startMusic();
     }
@@ -2470,15 +2479,20 @@
     setTimeout(checkFirstTimeUser, 3000);
     // Check for bold prediction award
     setTimeout(checkBoldPredictionPopup, 4000);
-    // Start music on first user interaction - click or touch (iOS)
+    // Start music on first user interaction (browser requires gesture)
+    let musicStarted = false;
     const startOnInteraction = () => {
+      if (musicStarted) return;
+      musicStarted = true;
       startMusic();
-      document.removeEventListener('click', startOnInteraction);
-      document.removeEventListener('touchend', startOnInteraction);
+      document.removeEventListener('click', startOnInteraction, true);
+      document.removeEventListener('touchstart', startOnInteraction, true);
+      document.removeEventListener('keydown', startOnInteraction, true);
       setTimeout(showMusicTooltip, 1200);
     };
-    document.addEventListener('click', startOnInteraction);
-    document.addEventListener('touchend', startOnInteraction);
+    document.addEventListener('click', startOnInteraction, true);
+    document.addEventListener('touchstart', startOnInteraction, true);
+    document.addEventListener('keydown', startOnInteraction, true);
   }
 
   // SIGN IN
@@ -2968,13 +2982,13 @@
     const vid = document.getElementById('rules-video');
     if (vid) {
       if (id === 'rules') {
-        // Mute background music when rules video plays
-        if (musicPlaying && ap) { ap.volume = 0; }
+        if (!ap) ap = document.getElementById('audio-player');
+        if (ap && musicPlaying) ap.volume = 0;
         vid.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
         vid.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
       } else {
-        // Restore music when leaving rules
-        if (musicPlaying && ap) { ap.volume = 0.6; }
+        if (!ap) ap = document.getElementById('audio-player');
+        if (ap && musicPlaying) ap.volume = 0.4;
         vid.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
       }
     }
