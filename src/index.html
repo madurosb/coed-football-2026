@@ -1366,6 +1366,30 @@
           <div>Final <span style="color:#BA7517;font-weight:500;">exact=20pts · result=10pts</span></div>
         </div>
       </div>
+
+      <div style="background:linear-gradient(135deg,#FAEEDA,#FDE8B3);border-radius:10px;padding:0.75rem 1rem;margin-top:0.75rem;border:1px solid #BA7517;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:#633806;">🃏 Joker card — once per tournament</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12px;color:#7C4A0A;">
+          <div>✅ Correct result</div><div style="font-weight:600;">all match pts ×2</div>
+          <div>❌ Wrong result</div><div style="font-weight:600;">0 pts — no penalty</div>
+        </div>
+        <div style="font-size:11px;color:#92400E;margin-top:6px;">Doubles everything: result + exact score + first scorer</div>
+      </div>
+
+      <div style="background:linear-gradient(135deg,#F5F3FF,#EDE9FE);border-radius:10px;padding:0.75rem 1rem;margin-top:0.75rem;border:1px solid #7C3AED;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:#5B21B6;">🎰 Double or Nothing — once per week</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12px;color:#6D28D9;">
+          <div>✅ Correct result</div><div style="font-weight:600;">result + exact pts ×2</div>
+          <div>❌ Wrong result</div><div style="font-weight:600;">−1 pt × stage (from total)</div>
+          <div>⚽ First scorer</div><div style="font-weight:600;">always safe either way</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;font-size:11px;color:#7C3AED;margin-top:8px;text-align:center;">
+          <div style="background:rgba(124,58,237,0.08);border-radius:6px;padding:4px;">Group<br><strong>−1</strong></div>
+          <div style="background:rgba(124,58,237,0.08);border-radius:6px;padding:4px;">R16<br><strong>−2</strong></div>
+          <div style="background:rgba(124,58,237,0.08);border-radius:6px;padding:4px;">QF<br><strong>−3</strong></div>
+          <div style="background:rgba(124,58,237,0.08);border-radius:6px;padding:4px;">SF<br><strong>−4</strong></div>
+        </div>
+      </div>
     </div>
     <div class="rules-card">
       <h2>Prediction rules</h2>
@@ -2328,6 +2352,7 @@
     const existing = document.getElementById('music-tooltip');
     if (existing) return;
     const btn = document.getElementById('music-btn');
+    if (!btn) return;
     const rect = btn.getBoundingClientRect();
     const tip = document.createElement('div');
     tip.id = 'music-tooltip';
@@ -2491,18 +2516,18 @@
     setTimeout(checkFirstTimeUser, 3000);
     // Check for bold prediction award
     setTimeout(checkBoldPredictionPopup, 4000);
-    // Start music on first click or tap (browsers only allow audio after real user gesture)
+    // Start music on first click or tap — capture:true catches ALL clicks even if stopPropagation is called
     let musicStarted = false;
     const startOnInteraction = () => {
       if (musicStarted) return;
       musicStarted = true;
       startMusic();
-      document.removeEventListener('click', startOnInteraction);
-      document.removeEventListener('touchstart', startOnInteraction);
+      document.removeEventListener('click', startOnInteraction, true);
+      document.removeEventListener('touchstart', startOnInteraction, true);
       setTimeout(showMusicTooltip, 1200);
     };
-    document.addEventListener('click', startOnInteraction);
-    document.addEventListener('touchstart', startOnInteraction);
+    document.addEventListener('click', startOnInteraction, true);
+    document.addEventListener('touchstart', startOnInteraction, true);
   }
 
   // SIGN IN
