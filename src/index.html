@@ -427,11 +427,12 @@
       <button class="nav-btn" data-page="leaderboard" onclick="showPage('leaderboard')">Standings</button>
       <button class="nav-btn" data-page="stats" onclick="showPage('stats')">My Stats</button>
       <button class="nav-btn" data-page="tips" onclick="showPage('tips')">Tips</button>
-      <button class="nav-btn" data-page="watch" onclick="showPage('watch')">📺 Watch Together</button>
-      <button class="nav-btn" data-page="trash" onclick="showPage('trash')">💬 Trash Talk</button>
+      <button class="nav-btn" data-page="grouppred" onclick="showPage('grouppred')">Group predictions</button>
+      <button class="nav-btn" data-page="watch" onclick="showPage('watch')">Watch Together</button>
+      <button class="nav-btn" data-page="trash" onclick="showPage('trash')">Trash Talk</button>
       <button class="nav-btn" data-page="highlights" onclick="showPage('highlights')">Highlights</button>
       <button class="nav-btn" data-page="rules" onclick="showPage('rules')">Rules</button>
-      <button class="nav-btn" data-page="dummies" onclick="showPage('dummies')">🎓 How to play</button>
+      <button class="nav-btn" data-page="dummies" onclick="showPage('dummies')">How to play</button>
       <button class="nav-btn" data-page="admin" id="admin-nav-btn" style="display:none;" onclick="showPage('admin')">Admin</button>
     </div>
     <div class="nav-user">
@@ -453,11 +454,12 @@
     <button class="mobile-menu-btn" data-page="leaderboard" onclick="mobileNav('leaderboard')">🏆 &nbsp; Standings</button>
     <button class="mobile-menu-btn" data-page="stats" onclick="mobileNav('stats')">📊 &nbsp; My Stats</button>
     <button class="mobile-menu-btn" data-page="tips" onclick="mobileNav('tips')">💡 &nbsp; Tips</button>
-    <button class="mobile-menu-btn" data-page="watch" onclick="mobileNav('watch')">📺 &nbsp; Watch Together</button>
-    <button class="mobile-menu-btn" data-page="trash" onclick="mobileNav('trash')">💬 &nbsp; Trash Talk</button>
+    <button class="mobile-menu-btn" data-page="grouppred" onclick="mobileNav('grouppred')">🏅 &nbsp; Group predictions</button>
+    <button class="mobile-menu-btn" data-page="watch" onclick="mobileNav('watch')">Watch Together</button>
+    <button class="mobile-menu-btn" data-page="trash" onclick="mobileNav('trash')">Trash Talk</button>
     <button class="mobile-menu-btn" data-page="highlights" onclick="mobileNav('highlights')">🎬 &nbsp; Highlights</button>
     <button class="mobile-menu-btn" data-page="rules" onclick="mobileNav('rules')">📋 &nbsp; Rules</button>
-    <button class="mobile-menu-btn" data-page="dummies" onclick="mobileNav('dummies')">🎓 &nbsp; How to play</button>
+    <button class="mobile-menu-btn" data-page="dummies" onclick="mobileNav('dummies')">How to play</button>
     <button class="mobile-menu-btn" data-page="admin" id="admin-menu-btn" style="display:none;" onclick="mobileNav('admin')">⚙️ &nbsp; Admin</button>
   </div>
 
@@ -1376,6 +1378,18 @@
       <h2>🎮 Special features</h2>
       <div class="rule-row">
         <div>
+          <div class="rule-name">🏅 Group prediction</div>
+          <div class="rule-desc">Before June 10, vote on which player from the group will finish first and last. Votes are secret until the deadline. Winner bragging rights included.</div>
+        </div>
+      </div>
+      <div class="rule-row">
+        <div>
+          <div class="rule-name">🐂 Bold prediction badge</div>
+          <div class="rule-desc">If you predict a result that nobody else dared to predict and you nail it, the admin can award you the legendary 🐂 badge. Wear it with pride.</div>
+        </div>
+      </div>
+      <div class="rule-row">
+        <div>
           <div class="rule-name">🃏 Joker card</div>
           <div class="rule-desc">Once per tournament, you can activate a Joker on any match before deadline. If your prediction is correct, all points from that match are doubled. If wrong, you still lose nothing extra - the Joker just has no effect.</div>
         </div>
@@ -1431,6 +1445,16 @@
       <div id="live-match-list" style="font-size:13px;color:var(--text-muted);text-align:center;padding:1rem;">Loading matches...</div>
     </div>
     <div id="live-content" style="display:none;"></div>
+  </div>
+
+  <!-- GROUP PREDICTIONS -->
+  <div class="page" id="page-grouppred">
+    <p class="section-title" style="margin-bottom:0.25rem;">🏅 Group predictions</p>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:1.25rem;">Who from the group will finish first and last? One vote per person. Results revealed after the tournament! Deadline: June 10.</p>
+
+    <div id="grouppred-content">
+      <div style="text-align:center;padding:2rem;font-size:13px;color:var(--text-muted);">Loading...</div>
+    </div>
   </div>
 
   <!-- WATCH TOGETHER -->
@@ -1675,16 +1699,35 @@
 
   <!-- TRASH TALK -->
   <div class="page" id="page-trash">
-    <p class="section-title" style="margin-bottom:0.25rem;">💬 Trash Talk Wall</p>
-    <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Talk smack. Make predictions. Taunt your friends. All in good fun 😄</p>
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:0.75rem;margin-bottom:1rem;">
-      <textarea id="trash-input" placeholder="e.g. Messi is going to destroy everyone 🐐" maxlength="140"
-        style="width:100%;border:none;background:none;color:var(--text);font-size:13px;resize:none;height:60px;outline:none;font-family:inherit;"></textarea>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.25rem;">
+      <p class="section-title" style="margin-bottom:0;">Trash Talk Wall</p>
+      <span style="font-size:11px;color:var(--text-muted);" id="trash-online-count"></span>
+    </div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Talk smack. Taunt your friends. All in good fun 😄</p>
+
+    <!-- INPUT BOX -->
+    <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:0.75rem 1rem;margin-bottom:1rem;transition:border-color 0.15s;" id="trash-input-box"
+      onfocusin="this.style.borderColor='var(--green)'" onfocusout="this.style.borderColor='var(--border)'">
+      <textarea id="trash-input" placeholder="💬 Say something bold... or just trash talk 🐂" maxlength="140"
+        style="width:100%;border:none;background:none;color:var(--text);font-size:13px;resize:none;height:52px;outline:none;font-family:inherit;line-height:1.5;"></textarea>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
-        <span id="trash-char-count" style="font-size:11px;color:var(--text-muted);">0/140</span>
-        <button onclick="sendTrashTalk()" style="background:var(--green);color:white;border:none;padding:6px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;">Send 🔥</button>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="trash-char-count" style="font-size:11px;color:var(--text-muted);">0/140</span>
+          <!-- Quick emoji insert -->
+          <div style="display:flex;gap:4px;">
+            <button onclick="insertEmoji('🔥')" style="background:none;border:none;font-size:16px;cursor:pointer;padding:0 2px;">🔥</button>
+            <button onclick="insertEmoji('😂')" style="background:none;border:none;font-size:16px;cursor:pointer;padding:0 2px;">😂</button>
+            <button onclick="insertEmoji('🐐')" style="background:none;border:none;font-size:16px;cursor:pointer;padding:0 2px;">🐐</button>
+            <button onclick="insertEmoji('💀')" style="background:none;border:none;font-size:16px;cursor:pointer;padding:0 2px;">💀</button>
+            <button onclick="insertEmoji('🏆')" style="background:none;border:none;font-size:16px;cursor:pointer;padding:0 2px;">🏆</button>
+          </div>
+        </div>
+        <button onclick="sendTrashTalk()" style="background:var(--green);color:white;border:none;padding:7px 18px;border-radius:99px;font-size:13px;font-weight:500;cursor:pointer;transition:transform 0.1s;active:transform:scale(0.95);">
+          Send 🚀
+        </button>
       </div>
     </div>
+
     <div id="trash-feed">
       <div style="text-align:center;padding:2rem;font-size:13px;color:var(--text-muted);">Loading...</div>
     </div>
@@ -1755,6 +1798,9 @@
         <div class="admin-card" onclick="showAdminSub('predictions-backup')"><div class="icon">📦</div><div class="title">Predictions backup</div><div class="desc">Full snapshot of all player predictions before the tournament starts. Use this to manually verify or restore predictions.</div></div>
         <div class="admin-card" onclick="showAdminSub('members')"><div class="icon">🆕</div><div class="title">New members log</div><div class="desc">See who joined and when, with a full activity log including registration date and actions taken.</div></div>
         <div class="admin-card" onclick="showAdminSub('watch-admin')"><div class="icon">📺</div><div class="title">Watch Together</div><div class="desc">Add location options for matches that reached 4+ viewers. Players will then vote on where to meet.</div></div>
+        <div class="admin-card" onclick="showAdminSub('bold-pred')"><div class="icon">🐂</div><div class="title">Bold predictions</div><div class="desc">Award the 🐂 badge to players who made a brave prediction and nailed it.</div></div>
+        <div class="admin-card" onclick="showAdminSub('trash-admin')"><div class="icon">🧹</div><div class="title">Trash Talk reset</div><div class="desc">Delete all messages or messages older than a chosen number of days.</div></div>
+        <div class="admin-card" onclick="showAdminSub('double-admin')"><div class="icon">🎰</div><div class="title">Double or Nothing</div><div class="desc">Set this week's special match for Double or Nothing. Users opt in from their match card.</div></div>
       </div>
     </div>
     <div id="admin-results" class="admin-sub">
@@ -1833,6 +1879,44 @@
       </div>
     </div>
 
+    <div id="admin-trash-admin" class="admin-sub">
+      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
+      <div class="form-card">
+        <h2>🧹 Trash Talk reset</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Delete messages from the Trash Talk wall.</p>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <button onclick="resetTrashTalk(0)" style="padding:10px;border-radius:8px;border:0.5px solid #E24B4A;background:none;color:#E24B4A;font-size:13px;cursor:pointer;">🗑 Delete ALL messages</button>
+          <button onclick="resetTrashTalk(2)" style="padding:10px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text);font-size:13px;cursor:pointer;">Delete messages older than 2 days</button>
+          <button onclick="resetTrashTalk(3)" style="padding:10px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text);font-size:13px;cursor:pointer;">Delete messages older than 3 days</button>
+          <button onclick="resetTrashTalk(5)" style="padding:10px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text);font-size:13px;cursor:pointer;">Delete messages older than 5 days</button>
+          <button onclick="resetTrashTalk(7)" style="padding:10px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text);font-size:13px;cursor:pointer;">Delete messages older than 7 days</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="admin-double-admin" class="admin-sub">
+      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
+      <div class="form-card">
+        <h2>🎰 Double or Nothing</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Select the special match for this week. A 🎰 button will appear on that match card for all users to opt in.</p>
+        <select id="don-match-select" style="width:100%;margin-bottom:10px;padding:8px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text);">
+          <option value="">Loading matches...</option>
+        </select>
+        <button onclick="saveDoubleOrNothing()" style="width:100%;padding:10px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">Set this match as Double or Nothing</button>
+        <button onclick="saveDoubleOrNothing('')" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;cursor:pointer;margin-top:8px;">Clear Double or Nothing</button>
+        <div id="don-current" style="font-size:12px;color:var(--text-muted);margin-top:10px;"></div>
+      </div>
+    </div>
+
+    <div id="admin-bold-pred" class="admin-sub">
+      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
+      <div class="form-card">
+        <h2>🐂 Bold predictions</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Award the 🐂 "Big balls prediction" badge to a player who made a brave call and got it right. They'll wear it proudly in the leaderboard!</p>
+        <div id="bold-pred-users"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div></div>
+      </div>
+    </div>
+
     <div id="admin-watch-admin" class="admin-sub">
       <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
       <div class="form-card">
@@ -1867,6 +1951,97 @@
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
   import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
   import { getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, updateDoc, deleteDoc, query, orderBy, where, limit, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+
+  window.resetTrashTalk = async (days) => {
+    const msg = days === 0 ? 'Delete ALL messages?' : `Delete messages older than ${days} days?`;
+    if (!confirm(msg)) return;
+    const snap = await getDocs(collection(db, 'trashTalk'));
+    const cutoff = days === 0 ? new Date() : new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    let count = 0;
+    for (const d of snap.docs) {
+      const t = d.data().createdAt?.toDate?.();
+      if (days === 0 || (t && t < cutoff)) { await deleteDoc(d.ref); count++; }
+    }
+    showAdminNotif(`✅ Deleted ${count} message${count !== 1 ? 's' : ''}`);
+  };
+
+  async function loadDoubleOrNothingAdmin() {
+    const sel = document.getElementById('don-match-select');
+    const cur = document.getElementById('don-current');
+    if (!sel) return;
+    const [matchesSnap, donSnap] = await Promise.all([
+      getDocs(query(collection(db, 'matches'), orderBy('kickoff'))),
+      getDocs(collection(db, 'doubleOrNothing'))
+    ]);
+    sel.innerHTML = '<option value="">Select a match...</option>';
+    matchesSnap.forEach(d => {
+      const m = d.data();
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = `${m.homeTeam} vs ${m.awayTeam}`;
+      sel.appendChild(opt);
+    });
+    let currentMatchId = null;
+    donSnap.forEach(d => { currentMatchId = d.data().matchId; });
+    if (cur) cur.textContent = currentMatchId ? `Current: Match ID ${currentMatchId}` : 'No Double or Nothing active';
+  }
+
+  window.saveDoubleOrNothing = async (matchId) => {
+    const val = matchId !== undefined ? matchId : document.getElementById('don-match-select')?.value;
+    if (val === undefined) return;
+    await setDoc(doc(db, 'doubleOrNothing', 'current'), { matchId: val || null, updatedAt: serverTimestamp() });
+    showAdminNotif(val ? `🎰 Double or Nothing set!` : '🎰 Double or Nothing cleared');
+    loadDoubleOrNothingAdmin();
+  };
+
+  // Load Double or Nothing on matches page
+  let donMatchId = null;
+  async function loadDONStatus() {
+    const snap = await getDocs(collection(db, 'doubleOrNothing'));
+    snap.forEach(d => { donMatchId = d.data().matchId; });
+    const donOptSnap = await getDocs(query(collection(db, 'donOptIns'), where('userId', '==', currentUser.uid)));
+    const myDonMatch = donOptSnap.empty ? null : donOptSnap.docs[0].data().matchId;
+    // Update DON button on the relevant match card
+    if (donMatchId) {
+      const btn = document.getElementById(`don-btn-${donMatchId}`);
+      if (btn && myDonMatch === donMatchId) { btn.style.background = '#FAEEDA'; btn.textContent = '🎰 Opted in!'; }
+    }
+  }
+
+  window.toggleDON = async (matchId) => {
+    const ref = doc(db, 'donOptIns', `${currentUser.uid}_${matchId}`);
+    const existing = await getDoc(ref);
+    if (existing.exists()) {
+      await deleteDoc(ref);
+      const btn = document.getElementById(`don-btn-${matchId}`);
+      if (btn) { btn.style.background = 'none'; btn.textContent = '🎰 Double or Nothing'; }
+    } else {
+      await setDoc(ref, { userId: currentUser.uid, matchId, nickname: currentUserData?.nickname, createdAt: serverTimestamp() });
+      const btn = document.getElementById(`don-btn-${matchId}`);
+      if (btn) { btn.style.background = '#FAEEDA'; btn.textContent = '🎰 Opted in!'; }
+    }
+  };
+
+  async function loadBoldPredAdmin() {
+    const container = document.getElementById('bold-pred-users');
+    const usersSnap = await getDocs(collection(db, 'users'));
+    const users = [];
+    usersSnap.forEach(d => users.push(d.data()));
+    container.innerHTML = users.map(u => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--border);">
+        <div style="font-size:13px;font-weight:500;">${u.nickname||u.displayName} ${u.boldPrediction ? '🐂' : ''}</div>
+        <button onclick="toggleBoldPred('${u.uid}', ${!u.boldPrediction})"
+          style="padding:5px 12px;border-radius:8px;border:0.5px solid ${u.boldPrediction?'#E24B4A':'#BA7517'};background:none;color:${u.boldPrediction?'#E24B4A':'#BA7517'};font-size:12px;cursor:pointer;">
+          ${u.boldPrediction ? 'Remove 🐂' : 'Award 🐂'}
+        </button>
+      </div>`).join('');
+  }
+
+  window.toggleBoldPred = async (uid, award) => {
+    await updateDoc(doc(db, 'users', uid), { boldPrediction: award });
+    showAdminNotif(award ? '🐂 Badge awarded!' : '🐂 Badge removed');
+    loadBoldPredAdmin();
+  };
 
   async function loadWatchAdmin() {
     const container = document.getElementById('watch-admin-content');
@@ -2347,57 +2522,221 @@
     if (id === 'live') loadLivePage();
     if (id === 'watch') loadWatchPage();
     if (id === 'trash') loadTrashTalk();
+    if (id === 'grouppred') loadGroupPredictions();
+
+  // ========== GROUP PREDICTIONS ==========
+  async function loadGroupPredictions() {
+    const container = document.getElementById('grouppred-content');
+    if (!container) return;
+
+    const deadline = new Date('2026-06-10T19:00:00Z');
+    const isPast = new Date() >= deadline;
+    const tournamentDone = new Date() >= new Date('2026-07-20T00:00:00Z'); // approx end
+
+    const [usersSnap, votesSnap] = await Promise.all([
+      getDocs(collection(db, 'users')),
+      getDocs(collection(db, 'groupPredVotes'))
+    ]);
+
+    const users = [];
+    usersSnap.forEach(d => { if (!d.data().isAdmin) users.push(d.data()); });
+    users.sort((a,b) => (a.nickname||'').localeCompare(b.nickname||''));
+
+    const myVote = {};
+    votesSnap.forEach(d => {
+      if (d.data().userId === currentUser.uid) {
+        myVote[d.data().type] = d.data().targetUid;
+      }
+    });
+
+    // Count votes for display (only shown after deadline)
+    const voteCount = { first: {}, last: {} };
+    if (isPast) {
+      votesSnap.forEach(d => {
+        const v = d.data();
+        if (!voteCount[v.type][v.targetUid]) voteCount[v.type][v.targetUid] = 0;
+        voteCount[v.type][v.targetUid]++;
+      });
+    }
+
+    const renderUserRow = (u, type) => {
+      const selected = myVote[type] === u.uid;
+      const av = getAvatarById(u.avatar);
+      const avatarHTML = av
+        ? `<div style="width:28px;height:28px;border-radius:50%;overflow:hidden;flex-shrink:0;">${makeAvatarSVG(av, 28)}</div>`
+        : `<div style="width:28px;height:28px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0;">${(u.nickname||'?').substring(0,2).toUpperCase()}</div>`;
+      const votes = isPast ? (voteCount[type][u.uid] || 0) : 0;
+      return `
+        <div onclick="${isPast ? '' : `voteGroupPred('${type}','${u.uid}')`}"
+          style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;border:1.5px solid ${selected?'var(--green)':'var(--border)'};background:${selected?'var(--green-light)':'none'};margin-bottom:6px;cursor:${isPast?'default':'pointer'};transition:all 0.15s;">
+          ${avatarHTML}
+          <div style="flex:1;font-size:13px;font-weight:${selected?'500':'400'};">${u.nickname||u.displayName}</div>
+          ${selected ? '<span style="font-size:13px;">✅</span>' : ''}
+          ${isPast && votes > 0 ? `<span style="font-size:12px;color:var(--text-muted);">${votes} vote${votes>1?'s':''}</span>` : ''}
+        </div>`;
+    };
+
+    container.innerHTML = `
+      ${isPast ? `<div style="background:#E1F5EE;border-radius:10px;padding:10px 14px;margin-bottom:1rem;font-size:13px;color:#085041;">
+        🔒 Voting closed! Results ${tournamentDone ? 'are in 👇' : 'will be revealed when the tournament ends.'}</div>` : ''}
+
+      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
+        <div style="font-size:14px;font-weight:500;margin-bottom:0.5rem;">🥇 Who will finish FIRST?</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">The player with the most points at the end of the tournament.</div>
+        ${users.map(u => renderUserRow(u, 'first')).join('')}
+      </div>
+
+      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
+        <div style="font-size:14px;font-weight:500;margin-bottom:0.5rem;">💀 Who will finish LAST?</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">The player with the fewest points. Be honest 😄</div>
+        ${users.map(u => renderUserRow(u, 'last')).join('')}
+      </div>
+
+      ${!isPast ? `<div style="font-size:12px;color:var(--text-muted);text-align:center;">Votes are secret until June 10 🤫</div>` : ''}`;
+  }
+
+  window.voteGroupPred = async (type, targetUid) => {
+    const deadline = new Date('2026-06-10T19:00:00Z');
+    if (new Date() >= deadline) return alert('Voting is closed!');
+    const targetUser = await getDoc(doc(db, 'users', targetUid));
+    await setDoc(doc(db, 'groupPredVotes', `${currentUser.uid}_${type}`), {
+      userId: currentUser.uid,
+      targetUid,
+      targetName: targetUser.data()?.nickname || '',
+      type,
+      updatedAt: serverTimestamp()
+    });
+    loadGroupPredictions();
+  };
+
+  // ========== BOLD PREDICTION BADGE ==========
+  // Checks if a user predicted a result where odds were heavily against it
+  // e.g. predicted a small team to beat a big team AND got it right
+  // Tracked via boldPredictions collection set by admin or auto-detected
+  async function checkBoldPredictions(userId) {
+    // A "bold" prediction = predicting the away team wins when they were clear underdogs
+    // For now, flagged manually by admin OR if exact score was unusual (e.g. 3-0 away win)
+    const snap = await getDocs(query(collection(db, 'boldPredictions'), where('userId', '==', userId)));
+    return !snap.empty;
+  }
 
   // ========== TRASH TALK ==========
-  let trashUnsubscribe = null;
+  const TRASH_REACTIONS = ['❤️','👍','💩','😡','👀'];
 
   async function loadTrashTalk() {
-    const feed = document.getElementById('trash-feed');
     const input = document.getElementById('trash-input');
     if (input) {
       input.oninput = () => {
         const cc = document.getElementById('trash-char-count');
-        if (cc) cc.textContent = `${input.value.length}/140`;
+        if (cc) {
+          const len = input.value.length;
+          cc.textContent = `${len}/140`;
+          cc.style.color = len > 120 ? '#E24B4A' : 'var(--text-muted)';
+        }
       };
     }
+    const feed = document.getElementById('trash-feed');
     if (!feed) return;
-    const snap = await getDocs(query(collection(db, 'trashTalk'), orderBy('createdAt', 'desc'), limit(50)));
-    renderTrashFeed(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    const snap = await getDocs(query(collection(db, 'trashTalk'), orderBy('createdAt', 'desc'), limit(60)));
+    const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Fetch reactions
+    const reactSnap = await getDocs(collection(db, 'trashReactions'));
+    const reactions = {};
+    reactSnap.forEach(d => {
+      const r = d.data();
+      if (!reactions[r.msgId]) reactions[r.msgId] = {};
+      if (!reactions[r.msgId][r.emoji]) reactions[r.msgId][r.emoji] = [];
+      reactions[r.msgId][r.emoji].push(r.userId);
+    });
+    const onlineEl = document.getElementById('trash-online-count');
+    if (onlineEl) onlineEl.textContent = `${msgs.length} message${msgs.length !== 1 ? 's' : ''}`;
+    renderTrashFeed(msgs, reactions);
   }
 
-  function renderTrashFeed(msgs) {
+  function renderTrashFeed(msgs, reactions) {
     const feed = document.getElementById('trash-feed');
     if (!feed) return;
     if (msgs.length === 0) {
-      feed.innerHTML = `<div style="text-align:center;padding:2rem;font-size:13px;color:var(--text-muted);">No messages yet. Be the first to talk trash! 🔥</div>`;
+      feed.innerHTML = `<div style="text-align:center;padding:3rem 1rem;">
+        <div style="font-size:36px;margin-bottom:8px;">🤐</div>
+        <div style="font-size:14px;font-weight:500;margin-bottom:4px;">Dead silent in here</div>
+        <div style="font-size:13px;color:var(--text-muted);">Be the first to talk trash! 🔥</div>
+      </div>`;
       return;
     }
     feed.innerHTML = msgs.map(m => {
-      const time = m.createdAt?.toDate ? m.createdAt.toDate().toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
       const isMe = m.userId === currentUser?.uid;
-      return `<div style="display:flex;gap:10px;margin-bottom:12px;${isMe?'flex-direction:row-reverse;':''}">
-        <div style="width:32px;height:32px;border-radius:50%;background:${isMe?'var(--green-light)':'var(--surface2)'};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;color:${isMe?'var(--green-dark)':'var(--text-muted)'};">
+      const time = m.createdAt?.toDate ? m.createdAt.toDate().toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+      const av = getAvatarById(currentUserData?.avatar);
+
+      // Reactions summary
+      const msgReactions = reactions?.[m.id] || {};
+      const reactionsHTML = TRASH_REACTIONS.map(emoji => {
+        const users = msgReactions[emoji] || [];
+        if (users.length === 0) return '';
+        const iReacted = users.includes(currentUser.uid);
+        return `<button onclick="toggleReaction('${m.id}','${emoji}')"
+          style="background:${iReacted?'var(--green-light)':'var(--surface2)'};border:1px solid ${iReacted?'var(--green)':'var(--border)'};border-radius:99px;padding:2px 7px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:3px;">
+          ${emoji}<span style="font-size:11px;color:var(--text-muted);">${users.length}</span>
+        </button>`;
+      }).filter(Boolean).join('');
+
+      // Reaction picker
+      const pickerHTML = `<div class="reaction-picker" id="picker-${m.id}" style="display:none;position:absolute;${isMe?'right:0;':'left:0;'}bottom:calc(100% + 4px);background:var(--surface);border:0.5px solid var(--border);border-radius:99px;padding:4px 8px;display:none;gap:4px;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,0.12);">
+        ${TRASH_REACTIONS.map(e => `<button onclick="toggleReaction('${m.id}','${e}');hidePicker('${m.id}')" style="background:none;border:none;font-size:18px;cursor:pointer;padding:2px;border-radius:6px;transition:transform 0.1s;" onmouseover="this.style.transform='scale(1.3)'" onmouseout="this.style.transform='scale(1)'">${e}</button>`).join('')}
+      </div>`;
+
+      return `<div style="display:flex;gap:10px;margin-bottom:14px;${isMe?'flex-direction:row-reverse;':''}align-items:flex-end;">
+        <div style="width:30px;height:30px;border-radius:50%;flex-shrink:0;overflow:hidden;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--text-muted);">
           ${(m.nickname||'?').substring(0,2).toUpperCase()}
         </div>
-        <div style="max-width:75%;">
-          <div style="display:flex;align-items:baseline;gap:6px;${isMe?'justify-content:flex-end;':''}">
-            <span style="font-size:12px;font-weight:500;">${m.nickname}</span>
-            <span style="font-size:10px;color:var(--text-muted);">${time}</span>
+        <div style="max-width:78%;position:relative;">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;${isMe?'text-align:right;':''}">
+            ${isMe ? 'You' : m.nickname} · ${time}
           </div>
-          <div style="background:${isMe?'var(--green)':'var(--surface)'};color:${isMe?'white':'var(--text)'};border:${isMe?'none':'0.5px solid var(--border)'};border-radius:${isMe?'12px 12px 2px 12px':'12px 12px 12px 2px'};padding:8px 12px;font-size:13px;margin-top:3px;line-height:1.5;">
-            ${m.text}
+          <div style="position:relative;">
+            <div style="background:${isMe?'var(--green)':'var(--surface)'};color:${isMe?'white':'var(--text)'};border:${isMe?'none':'0.5px solid var(--border)'};border-radius:${isMe?'14px 14px 2px 14px':'14px 14px 14px 2px'};padding:9px 13px;font-size:13px;line-height:1.5;word-break:break-word;">
+              ${m.text}
+            </div>
+            ${pickerHTML}
           </div>
-          ${isMe ? `<div style="text-align:right;"><button onclick="deleteTrashMsg('${m.id}')" style="background:none;border:none;font-size:10px;color:var(--text-muted);cursor:pointer;padding:2px 0;">delete</button></div>` : ''}
+          ${reactionsHTML ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;${isMe?'justify-content:flex-end;':''}">${reactionsHTML}</div>` : ''}
+          <div style="display:flex;align-items:center;gap:6px;margin-top:3px;${isMe?'justify-content:flex-end;':''}">
+            <button onclick="showPicker('${m.id}')" style="background:none;border:none;font-size:12px;color:var(--text-muted);cursor:pointer;padding:0;">😊</button>
+            ${isMe ? `<button onclick="deleteTrashMsg('${m.id}')" style="background:none;border:none;font-size:11px;color:var(--text-muted);cursor:pointer;padding:0;">delete</button>` : ''}
+          </div>
         </div>
       </div>`;
     }).join('');
   }
+
+  window.showPicker = (msgId) => {
+    document.querySelectorAll('[id^="picker-"]').forEach(p => p.style.display = 'none');
+    const p = document.getElementById(`picker-${msgId}`);
+    if (p) p.style.display = 'flex';
+    setTimeout(() => { if (p) p.style.display = 'none'; }, 4000);
+  };
+  window.hidePicker = (msgId) => {
+    const p = document.getElementById(`picker-${msgId}`);
+    if (p) p.style.display = 'none';
+  };
+
+  window.toggleReaction = async (msgId, emoji) => {
+    const docId = `${currentUser.uid}_${msgId}_${emoji}`;
+    const ref = doc(db, 'trashReactions', docId);
+    const existing = await getDoc(ref);
+    if (existing.exists()) await deleteDoc(ref);
+    else await setDoc(ref, { msgId, emoji, userId: currentUser.uid, nickname: currentUserData?.nickname || currentUser.displayName });
+    loadTrashTalk();
+  };
 
   window.sendTrashTalk = async () => {
     const input = document.getElementById('trash-input');
     const text = input?.value.trim();
     if (!text) return;
     if (text.length > 140) return alert('Max 140 characters!');
+    const btn = document.querySelector('[onclick="sendTrashTalk()"]');
+    if (btn) { btn.disabled = true; btn.textContent = '...'; }
     input.value = '';
     const cc = document.getElementById('trash-char-count');
     if (cc) cc.textContent = '0/140';
@@ -2406,12 +2745,23 @@
       nickname: currentUserData?.nickname || currentUser.displayName,
       createdAt: serverTimestamp()
     });
+    if (btn) { btn.disabled = false; btn.textContent = 'Send 🚀'; }
     loadTrashTalk();
   };
 
   window.deleteTrashMsg = async (id) => {
     await deleteDoc(doc(db, 'trashTalk', id));
     loadTrashTalk();
+  };
+
+  window.insertEmoji = (emoji) => {
+    const input = document.getElementById('trash-input');
+    if (!input) return;
+    const pos = input.selectionStart || input.value.length;
+    input.value = input.value.slice(0, pos) + emoji + input.value.slice(pos);
+    input.focus();
+    const cc = document.getElementById('trash-char-count');
+    if (cc) cc.textContent = `${input.value.length}/140`;
   };
 
   // ========== JOKER CARD ==========
@@ -2690,7 +3040,7 @@
     if (i === 1 && pts > 0) badges.push({ emoji: '🥈', text: 'So close', bg: '#E6F1FB', color: '#0C447C' });
     if (i === 2 && pts > 0) badges.push({ emoji: '🥉', text: 'Podium chaser', bg: '#FAEEDA', color: '#633806' });
     if (pts > 50 && i > 2) badges.push({ emoji: '🚀', text: 'Dark horse', bg: '#EDE9FE', color: '#5B21B6' });
-    if (u.tournamentWinner && pts > 0) badges.push({ emoji: '🔮', text: 'Oracle', bg: '#E0F2FE', color: '#0369A1' });
+    if (u.boldPrediction) badges.push({ emoji: '🐂', text: 'Big balls prediction', bg: '#FFF0E0', color: '#92400E' });
 
     return badges.length > 0 ? badges[0] : null; // return top badge only in leaderboard
   }
@@ -3213,6 +3563,12 @@
               <button id="joker-btn-${d.id}" onclick="activateJoker('${d.id}')" title="Double your points for this match!"
                 style="padding:8px 12px;border-radius:8px;border:0.5px solid #BA7517;background:none;color:#BA7517;font-size:13px;cursor:pointer;white-space:nowrap;transition:all 0.15s;"
                 onmouseover="this.style.background='#FAEEDA'" onmouseout="this.style.background='none'">🃏</button>
+            </div>
+            <div id="don-row-${d.id}" style="display:none;margin-top:6px;">
+              <button id="don-btn-${d.id}" onclick="toggleDON('${d.id}')"
+                style="width:100%;padding:7px;border-radius:8px;border:1.5px dashed #BA7517;background:none;color:#BA7517;font-size:12px;font-weight:500;cursor:pointer;">
+                🎰 Double or Nothing — opt in to double your points (or lose them!)
+              </button>
             </div>` : `<p style="font-size:12px;color:var(--text-muted);margin-top:0.75rem;text-align:center;">${isFinished ? '✅ Match finished' : '🔒 Deadline passed - predictions locked'}</p>`}
           ${finishedResult}
           <div id="result-${d.id}"></div>
@@ -3234,6 +3590,13 @@
     }
 
     loadExistingPredictions(matchesSnap);
+    setTimeout(async () => {
+      await loadDONStatus();
+      if (donMatchId) {
+        const row = document.getElementById(`don-row-${donMatchId}`);
+        if (row) row.style.display = 'block';
+      }
+    }, 500);
   }
 
   async function loadExistingPredictions(matchesSnap) {
@@ -3440,6 +3803,9 @@
     if (id === 'players') loadMatchesForPlayerAdmin();
     if (id === 'members') loadMembersLog();
     if (id === 'watch-admin') loadWatchAdmin();
+    if (id === 'bold-pred') loadBoldPredAdmin();
+    if (id === 'trash-admin') {};
+    if (id === 'double-admin') loadDoubleOrNothingAdmin();
   };
 
   async function loadMembersLog() {
