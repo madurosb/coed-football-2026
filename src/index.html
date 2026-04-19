@@ -1409,7 +1409,7 @@
       <div class="rule-row">
         <div>
           <div class="rule-name">🎰 Double or Nothing</div>
-          <div class="rule-desc">On any match, once per week, you can go Double or Nothing. Correct = points for that match are doubled. Wrong = those same points are deducted from your total score. Real stakes, real drama.</div>
+          <div class="rule-desc">Once per week, pick any match and go Double or Nothing. Correct = your result and exact score points for that match are doubled. Wrong = those same points are deducted from your total. First scorer points are always safe either way.</div>
         </div>
       </div>
       <div class="rule-row">
@@ -1662,7 +1662,7 @@
           </div>
           <div style="background:linear-gradient(135deg,#F5F3FF,#EDE9FE);border-radius:10px;padding:10px 12px;border:1px solid #7C3AED;">
             <div style="font-size:13px;font-weight:600;margin-bottom:2px;color:#5B21B6;">🎰 Double or Nothing</div>
-            <div style="font-size:12px;color:#6D28D9;">Once per week, go Double or Nothing on any match. Correct = points doubled. Wrong = those points get deducted from your total score. Your call - no pressure. (Lots of pressure.)</div>
+            <div style="font-size:12px;color:#6D28D9;">Once per week, pick any match and go Double or Nothing. Correct = result and exact score points doubled. Wrong = those same points get deducted from your total. Your first scorer pick is always safe either way. No pressure. (Lots of pressure.)</div>
           </div>
           <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;">
             <div style="font-size:13px;font-weight:600;margin-bottom:2px;">🔥 Streak Bonus</div>
@@ -2051,7 +2051,7 @@
       await deleteDoc(ref);
       myDonMatches.delete(matchId);
       const btn = document.getElementById(`don-btn-${matchId}`);
-      if (btn) { btn.style.background = 'none'; btn.style.borderColor = '#BA7517'; btn.innerHTML = `<span style="font-size:24px;line-height:1;flex-shrink:0;">🎰</span><div style="text-align:left;"><div style="font-size:12px;font-weight:700;letter-spacing:0.03em;">DOUBLE OR NOTHING</div><div style="font-size:10px;font-weight:400;opacity:0.7;margin-top:1px;">Correct = x2 pts · Wrong = lose pts from your total · Once/week</div></div>`; }
+      if (btn) { btn.style.background = 'none'; btn.style.borderColor = '#BA7517'; btn.innerHTML = `<span style="font-size:24px;line-height:1;flex-shrink:0;">🎰</span><div style="text-align:left;"><div style="font-size:12px;font-weight:700;letter-spacing:0.03em;">DOUBLE OR NOTHING</div><div style="font-size:10px;font-weight:400;opacity:0.7;margin-top:1px;">Correct = x2 result pts · Wrong = those pts deducted · First scorer always safe</div></div>`; }
       return;
     }
     // Strict server-side weekly check
@@ -2078,7 +2078,7 @@
     if (btn) { btn.style.background = '#FAEEDA'; btn.innerHTML = `<span style="font-size:24px;line-height:1;flex-shrink:0;">🎰</span><div style="text-align:left;"><div style="font-size:12px;font-weight:700;">DOUBLE OR NOTHING</div><div style="font-size:10px;opacity:0.7;margin-top:1px;">Opted in! ✅ Points doubled if correct</div></div>`;btn.style.cssText += 'background:linear-gradient(135deg,#5B21B6,#7C3AED);color:white;border-color:#5B21B6;'; }
     const t = document.createElement('div');
     t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#BA7517;color:#fff;font-size:13px;padding:10px 16px;border-radius:10px;z-index:9999;';
-    t.textContent = '🎰 You\'re in! Double if correct, deducted if wrong!';
+    t.textContent = '🎰 You\'re in! x2 result pts if correct, deducted if wrong!';
     document.body.appendChild(t);
     setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.5s'; setTimeout(()=>t.remove(),500); }, 3000);
   };
@@ -3749,7 +3749,7 @@
                 <span style="font-size:24px;line-height:1;flex-shrink:0;">🎰</span>
                 <div style="text-align:left;">
                   <div style="font-size:12px;font-weight:700;letter-spacing:0.03em;">DOUBLE OR NOTHING</div>
-                  <div style="font-size:10px;font-weight:400;opacity:0.7;margin-top:1px;">Correct = x2 pts · Wrong = lose pts from your total · Once/week</div>
+                  <div style="font-size:10px;font-weight:400;opacity:0.7;margin-top:1px;">Correct = x2 result pts · Wrong = those pts deducted · First scorer always safe</div>
                 </div>
               </button>
             </div>` : `<p style="font-size:12px;color:var(--text-muted);margin-top:0.75rem;text-align:center;">${isFinished ? '✅ Match finished' : '🔒 Deadline passed - predictions locked'}</p>`}
@@ -4182,18 +4182,22 @@
         const jokerSnap = await getDocs(query(collection(db, 'jokerCards'), where('matchId', '==', matchId), where('userId', '==', pred.data.userId)));
         if (!jokerSnap.empty) pts *= 2;
 
-        // Double or Nothing — if opted in: correct = double, wrong = lose those points from total
+        // Double or Nothing — affects ONLY result+exact pts, not first scorer
         const donSnap = await getDocs(query(collection(db, 'donOptIns'), where('matchId', '==', matchId), where('userId', '==', pred.data.userId)));
         if (!donSnap.empty) {
-          const actualResult = homeScore > awayScore ? 'H' : homeScore < awayScore ? 'A' : 'D';
-          const predResult = pred.data.homeScore > pred.data.awayScore ? 'H' : pred.data.homeScore < pred.data.awayScore ? 'A' : 'D';
-          const isCorrect = actualResult === predResult;
+          const actualResultDON = homeScore > awayScore ? 'H' : homeScore < awayScore ? 'A' : 'D';
+          const predResultDON = pred.data.homeScore > pred.data.awayScore ? 'H' : pred.data.homeScore < pred.data.awayScore ? 'A' : 'D';
+          const isCorrect = actualResultDON === predResultDON;
+          // Isolate scorer pts (stays safe either way)
+          const scorerPts = (firstScorer && pred.data.firstScorer === firstScorer) ? 2 * multiplier : 0;
+          const resultPts = pts - scorerPts;
           if (isCorrect) {
-            pts *= 2; // double the points earned this match
+            // Double the result+exact pts, first scorer unchanged
+            pts = (resultPts * 2) + scorerPts;
           } else {
-            // Version B: deduct the base points they would have earned from their total
-            const basePenalty = isFinal ? 10 : (1 + 3) * multiplier; // rough base penalty
-            pts = -basePenalty; // override pts to negative
+            // Penalty = what you would have won on result (min 1 pt * multiplier)
+            const penalty = isFinal ? 10 : Math.max(1 * multiplier, Math.abs(resultPts) > 0 ? Math.abs(resultPts) : 1 * multiplier);
+            pts = scorerPts - penalty;
           }
         }
 
@@ -5653,7 +5657,7 @@
           <div style="font-size:24px;margin-bottom:4px;">🎰</div>
           <div style="font-size:12px;font-weight:600;color:#5B21B6;margin-bottom:2px;">Double or Nothing</div>
           <div style="font-size:13px;font-weight:700;color:#7C3AED;">Once/week</div>
-          <div style="font-size:10px;color:#6D28D9;margin-top:2px;">x2 if correct · -pts if wrong · resets weekly</div>
+          <div style="font-size:10px;color:#6D28D9;margin-top:2px;">x2 if correct · result pts deducted if wrong</div>
         </div>
         <div style="background:${(user.currentStreak||0)>=3?'linear-gradient(135deg,#FFF0E0,#FEE2C0)':'var(--surface2)'};border-radius:12px;padding:1rem;border:1px solid ${(user.currentStreak||0)>=3?'#F59E0B':'var(--border)'};text-align:center;">
           <div style="font-size:24px;margin-bottom:4px;">🔥</div>
