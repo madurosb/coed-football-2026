@@ -399,6 +399,24 @@
   </div>
 </div>
 
+<!-- WELCOME POPUP -->
+<div id="welcome-popup" class="modal-overlay" style="display:none;transition:opacity 0.3s;">
+  <div class="modal" style="max-width:360px;text-align:center;">
+    <div style="font-size:48px;margin-bottom:0.75rem;">⚽🏆</div>
+    <h2 style="margin-bottom:0.5rem;">Welcome to COED&FOOTBALL!</h2>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:1.25rem;line-height:1.6;">
+      First time here? Check the Rules page to see how scoring works, how to pick your tournament player, and all the bonuses you can earn!
+    </p>
+    <div style="background:var(--green-light);border-radius:10px;padding:10px 14px;margin-bottom:1.25rem;font-size:13px;color:var(--green-dark);">
+      🎯 Predict scores · ⚽ Pick a tournament player · 🏆 Pick the winner
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="closeWelcomePopup(false)" style="flex:1;padding:10px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text);font-size:13px;cursor:pointer;">Skip</button>
+      <button onclick="closeWelcomePopup('dummies')" style="flex:1;padding:10px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">🎓 How to play!</button>
+    </div>
+  </div>
+</div>
+
 <!-- MAIN APP -->
 <div id="view-app" style="display:none;">
   <nav class="nav">
@@ -412,6 +430,7 @@
       <button class="nav-btn" data-page="watch" onclick="showPage('watch')">📺 Watch Together</button>
       <button class="nav-btn" data-page="highlights" onclick="showPage('highlights')">Highlights</button>
       <button class="nav-btn" data-page="rules" onclick="showPage('rules')">Rules</button>
+      <button class="nav-btn" data-page="dummies" onclick="showPage('dummies')">🎓 How to play</button>
       <button class="nav-btn" data-page="admin" id="admin-nav-btn" style="display:none;" onclick="showPage('admin')">Admin</button>
     </div>
     <div class="nav-user">
@@ -420,7 +439,7 @@
       <button class="hamburger" id="hamburger-btn" onclick="toggleMobileMenu()">
         <span></span><span></span><span></span>
       </button>
-      <div class="avatar" id="user-avatar">?</div>
+      <div class="avatar" id="user-avatar" onclick="showPage('stats')" style="cursor:pointer;" title="My Stats"></div>
       <span id="user-handle" style="font-size:13px; color: var(--text-muted);"></span>
     </div>
   </nav>
@@ -436,6 +455,7 @@
     <button class="mobile-menu-btn" data-page="watch" onclick="mobileNav('watch')">📺 &nbsp; Watch Together</button>
     <button class="mobile-menu-btn" data-page="highlights" onclick="mobileNav('highlights')">🎬 &nbsp; Highlights</button>
     <button class="mobile-menu-btn" data-page="rules" onclick="mobileNav('rules')">📋 &nbsp; Rules</button>
+    <button class="mobile-menu-btn" data-page="dummies" onclick="mobileNav('dummies')">🎓 &nbsp; How to play</button>
     <button class="mobile-menu-btn" data-page="admin" id="admin-menu-btn" style="display:none;" onclick="mobileNav('admin')">⚙️ &nbsp; Admin</button>
   </div>
 
@@ -1290,14 +1310,25 @@
   <!-- RULES -->
   <div class="page" id="page-rules">
 
-    <div style="border-radius:16px;overflow:hidden;margin-bottom:1.25rem;background:#000;position:relative;padding-top:56.25%;">
-      <iframe
-        id="rules-video"
-        src="https://www.youtube.com/embed/ZCPAnc-oae4?autoplay=1&loop=1&playlist=ZCPAnc-oae4&mute=1&controls=1&modestbranding=1&rel=0&enablejsapi=1"
-        style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"
-        allow="autoplay; encrypted-media"
-        allowfullscreen>
-      </iframe>
+    <!-- VIDEO CAROUSEL -->
+    <div style="margin-bottom:1.25rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <button onclick="prevVideo()" style="width:36px;height:36px;border-radius:50%;border:0.5px solid var(--border);background:var(--surface);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">‹</button>
+        <div style="text-align:center;flex:1;">
+          <div id="video-title" style="font-size:13px;font-weight:500;margin-bottom:4px;">🎬 Watch the tutorial</div>
+          <div id="video-dots" style="display:flex;gap:6px;justify-content:center;"></div>
+        </div>
+        <button onclick="nextVideo()" style="width:36px;height:36px;border-radius:50%;border:0.5px solid var(--border);background:var(--surface);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">›</button>
+      </div>
+      <div style="border-radius:16px;overflow:hidden;background:#000;position:relative;padding-top:56.25%;">
+        <iframe
+          id="rules-video"
+          src="https://www.youtube.com/embed/ZCPAnc-oae4?autoplay=1&loop=1&playlist=ZCPAnc-oae4&mute=1&controls=1&modestbranding=1&rel=0&enablejsapi=1"
+          style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"
+          allow="autoplay; encrypted-media"
+          allowfullscreen>
+        </iframe>
+      </div>
     </div>
     <div class="rules-card">
       <h2>Scoring system</h2>
@@ -1382,6 +1413,193 @@
         <div style="font-size:40px;margin-bottom:1rem;">🔴</div>
         <div style="font-size:15px;color:var(--text-muted);">Loading live matches...</div>
       </div>
+    </div>
+  </div>
+
+  <!-- HOW TO BET FOR DUMMIES -->
+  <div class="page" id="page-dummies">
+    <p class="section-title" style="margin-bottom:0.25rem;">🎓 How to play — for dummies</p>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:1.5rem;">Everything you need to know to play. Step by step.</p>
+
+    <!-- STEP 1 -->
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;display:flex;gap:14px;align-items:flex-start;">
+      <div style="flex-shrink:0;">
+        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+          <circle cx="28" cy="28" r="28" fill="#E1F5EE"/>
+          <text x="28" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#085041">STEP</text>
+          <text x="28" y="38" text-anchor="middle" font-size="20" font-weight="700" fill="#1D9E75">1</text>
+        </svg>
+      </div>
+      <div>
+        <div style="font-size:15px;font-weight:600;margin-bottom:4px;">Sign in with Google 🔐</div>
+        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">On the login screen, tap <strong>Sign in with Google</strong> and choose your Gmail account. Only approved members can join — contact the admin if you can't get in.</div>
+        <div style="margin-top:10px;">
+          <svg width="100%" height="52" viewBox="0 0 260 52">
+            <rect width="260" height="52" rx="10" fill="#f8f8f8" stroke="#e0e0e0" stroke-width="1"/>
+            <circle cx="26" cy="26" r="14" fill="#4285F4"/>
+            <text x="26" y="30" text-anchor="middle" font-size="14" fill="white">G</text>
+            <text x="52" y="21" font-size="11" fill="#333" font-weight="500">Sign in with Google</text>
+            <text x="52" y="35" font-size="10" fill="#888">Use your Gmail account</text>
+            <rect x="210" y="16" width="36" height="20" rx="5" fill="#4285F4"/>
+            <text x="228" y="30" text-anchor="middle" font-size="10" fill="white" font-weight="600">Sign in</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;display:flex;gap:14px;align-items:flex-start;">
+      <div style="flex-shrink:0;">
+        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+          <circle cx="28" cy="28" r="28" fill="#E6F1FB"/>
+          <text x="28" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#0C447C">STEP</text>
+          <text x="28" y="38" text-anchor="middle" font-size="20" font-weight="700" fill="#185FA5">2</text>
+        </svg>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:600;margin-bottom:4px;">Choose your nickname & avatar 😎</div>
+        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Pick a nickname (how you'll appear on the leaderboard) and choose one of 20 fun avatars. This is how everyone will see you!</div>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+          ${['#1D9E75','#E24B4A','#BA7517','#6366f1','#ec4899','#f97316'].map((c,i) => `
+            <div style="width:32px;height:32px;border-radius:50%;background:${c}20;border:2px solid ${c};display:flex;align-items:center;justify-content:center;font-size:14px;">
+              ${['🧟','🧛','🤖','🤡','🧙','🥷'][i]}
+            </div>`).join('')}
+          <div style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;">...and 14 more!</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;display:flex;gap:14px;align-items:flex-start;">
+      <div style="flex-shrink:0;">
+        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+          <circle cx="28" cy="28" r="28" fill="#FAEEDA"/>
+          <text x="28" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#633806">STEP</text>
+          <text x="28" y="38" text-anchor="middle" font-size="20" font-weight="700" fill="#BA7517">3</text>
+        </svg>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:600;margin-bottom:4px;">Predict match scores ⚽</div>
+        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Go to the <strong>Matches</strong> page. For each match, use the <strong>+ / −</strong> buttons to set your predicted score for both teams. Hit <strong>Save prediction</strong> before the deadline!</div>
+        <div style="margin-top:10px;background:var(--surface2);border-radius:10px;padding:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <div style="font-size:12px;font-weight:500;text-align:center;flex:1;">🇦🇷 Argentina</div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <div style="width:24px;height:24px;border-radius:50%;border:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text-muted);">−</div>
+              <div style="width:36px;height:36px;border-radius:8px;border:1px solid var(--green);background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;">2</div>
+              <div style="font-size:14px;color:var(--text-muted);">-</div>
+              <div style="width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;">0</div>
+              <div style="width:24px;height:24px;border-radius:50%;border:1px solid var(--green);background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--green);">+</div>
+            </div>
+            <div style="font-size:12px;font-weight:500;text-align:center;flex:1;">France 🇫🇷</div>
+          </div>
+        </div>
+        <div style="margin-top:8px;font-size:12px;background:#E1F5EE;border-radius:8px;padding:8px 10px;color:#085041;">
+          ⏰ <strong>Deadline:</strong> 24 hours before kickoff. After that, predictions are locked!
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;display:flex;gap:14px;align-items:flex-start;">
+      <div style="flex-shrink:0;">
+        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+          <circle cx="28" cy="28" r="28" fill="#E1F5EE"/>
+          <text x="28" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#085041">STEP</text>
+          <text x="28" y="38" text-anchor="middle" font-size="20" font-weight="700" fill="#1D9E75">4</text>
+        </svg>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:600;margin-bottom:4px;">Pick the first goalscorer 🎯</div>
+        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Under each match there's a dropdown to pick who you think will score <strong>first</strong> in that game. Get it right = <strong>+2 points!</strong></div>
+        <div style="margin-top:10px;background:var(--surface2);border-radius:10px;padding:8px 10px;">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">First goalscorer</div>
+          <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;display:flex;justify-content:space-between;align-items:center;">
+            <span>Lionel Messi (Argentina)</span>
+            <span style="font-size:10px;color:var(--text-muted);">▼</span>
+          </div>
+          <div style="font-size:11px;color:var(--green);margin-top:4px;font-weight:500;">✅ Auto-saved!</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;display:flex;gap:14px;align-items:flex-start;">
+      <div style="flex-shrink:0;">
+        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+          <circle cx="28" cy="28" r="28" fill="#FAEEDA"/>
+          <text x="28" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#633806">STEP</text>
+          <text x="28" y="38" text-anchor="middle" font-size="20" font-weight="700" fill="#BA7517">5</text>
+        </svg>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:600;margin-bottom:4px;">Pick your tournament player ⭐</div>
+        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Choose <strong>one player</strong> who you think will have a great tournament. Every goal = <strong>+2 pts</strong>, every assist = <strong>+1 pt</strong>. But if they get a red card = <strong>−1 pt!</strong> Must be locked in before June 10.</div>
+        <div style="margin-top:10px;background:var(--surface2);border-radius:10px;padding:8px 10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-size:12px;font-weight:500;">⭐ Erling Haaland</div>
+              <div style="font-size:10px;color:var(--text-muted);">Norway · 6 goals expected</div>
+            </div>
+            <div style="display:flex;gap:8px;font-size:11px;">
+              <span style="background:#E1F5EE;color:#085041;padding:2px 6px;border-radius:99px;">⚽ +2pts</span>
+              <span style="background:#E6F1FB;color:#0C447C;padding:2px 6px;border-radius:99px;">🎯 +1pt</span>
+              <span style="background:#FCEBEB;color:#791F1F;padding:2px 6px;border-radius:99px;">🟥 -1pt</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 6 -->
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;display:flex;gap:14px;align-items:flex-start;">
+      <div style="flex-shrink:0;">
+        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+          <circle cx="28" cy="28" r="28" fill="#EDE9FE"/>
+          <text x="28" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#5B21B6">STEP</text>
+          <text x="28" y="38" text-anchor="middle" font-size="20" font-weight="700" fill="#7C3AED">6</text>
+        </svg>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:600;margin-bottom:4px;">Pick the World Cup winner 🏆</div>
+        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">One prediction for the whole tournament — which team wins it all? Get it right = <strong>+15 bonus points!</strong> Lock it in before June 10.</div>
+        <div style="margin-top:10px;background:var(--surface2);border-radius:10px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-size:13px;font-weight:500;">🇦🇷 Argentina</div>
+          <div style="background:#7C3AED;color:white;font-size:11px;padding:3px 10px;border-radius:99px;font-weight:500;">+15 pts if correct</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCORING QUICK GUIDE -->
+    <div style="background:var(--surface);border:0.5px solid var(--green);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
+      <div style="font-size:14px;font-weight:600;margin-bottom:10px;">📊 Points at a glance</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
+        <div style="background:#E1F5EE;border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>✅ Correct result</span><strong style="color:var(--green);">+1 pt</strong></div>
+        <div style="background:#E1F5EE;border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>🎯 Exact score</span><strong style="color:var(--green);">+3 pts</strong></div>
+        <div style="background:#E1F5EE;border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>⚽ 1st scorer</span><strong style="color:var(--green);">+2 pts</strong></div>
+        <div style="background:#FAEEDA;border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>🔥 Round of 16</span><strong style="color:#BA7517;">×2 pts</strong></div>
+        <div style="background:#FAEEDA;border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>🔥 Quarter-final</span><strong style="color:#BA7517;">×3 pts</strong></div>
+        <div style="background:#FAEEDA;border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>🔥 Semi-final</span><strong style="color:#BA7517;">×4 pts</strong></div>
+        <div style="background:#FCEBEB;border-radius:8px;padding:8px;display:flex;justify-content:space-between;grid-column:span 2;"><span>🏆 Final — exact</span><strong style="color:#E24B4A;">20 pts</strong></div>
+      </div>
+    </div>
+
+    <!-- TIPS BOX -->
+    <div style="background:#0a1f0a;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
+      <div style="font-size:13px;font-weight:600;color:#4ade80;margin-bottom:8px;">💡 Pro tips</div>
+      <div style="font-size:12px;color:#86efac;line-height:1.8;">
+        • Check the <strong>Tips</strong> page for AI-powered predictions<br>
+        • The later the stage, the more points are worth — don't give up!<br>
+        • Pick a tournament player who plays every game (not injury-prone)<br>
+        • Predict draws for teams known to draw — check Tips page for stats<br>
+        • You can change predictions anytime before the 24h deadline
+      </div>
+    </div>
+
+    <div style="text-align:center;padding:0.5rem 0 1rem;">
+      <button onclick="showPage('matches')" style="background:var(--green);color:white;border:none;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;">
+        ⚽ Start predicting now!
+      </button>
     </div>
   </div>
 
@@ -1647,7 +1865,40 @@
     setTimeout(() => bar.remove(), 10000);
   }
 
-  // ========== MOBILE MENU ==========
+  // ========== VIDEO CAROUSEL ==========
+  // Add more videos here when ready: { id: 'YOUTUBE_ID', title: 'Title' }
+  const RULE_VIDEOS = [
+    { id: 'ZCPAnc-oae4', title: '🎬 Full tutorial' },
+    // { id: 'YOUR_VIDEO_ID_2', title: '⚽ How to predict scores' },
+    // { id: 'YOUR_VIDEO_ID_3', title: '🏆 Tournament player explained' },
+  ];
+  let currentVideoIdx = 0;
+
+  function renderVideoDots() {
+    const dots = document.getElementById('video-dots');
+    if (!dots || RULE_VIDEOS.length <= 1) return;
+    dots.innerHTML = RULE_VIDEOS.map((_, i) => `
+      <div onclick="goToVideo(${i})" style="width:${i===currentVideoIdx?'20px':'8px'};height:8px;border-radius:99px;background:${i===currentVideoIdx?'var(--green)':'var(--border)'};cursor:pointer;transition:all 0.2s;"></div>
+    `).join('');
+  }
+
+  function goToVideo(idx) {
+    currentVideoIdx = idx;
+    const v = RULE_VIDEOS[idx];
+    const iframe = document.getElementById('rules-video');
+    const title = document.getElementById('video-title');
+    if (iframe) iframe.src = `https://www.youtube.com/embed/${v.id}?autoplay=1&mute=1&controls=1&modestbranding=1&rel=0&enablejsapi=1`;
+    if (title) title.textContent = v.title;
+    renderVideoDots();
+  }
+
+  window.prevVideo = () => { currentVideoIdx = (currentVideoIdx - 1 + RULE_VIDEOS.length) % RULE_VIDEOS.length; goToVideo(currentVideoIdx); };
+  window.nextVideo = () => { currentVideoIdx = (currentVideoIdx + 1) % RULE_VIDEOS.length; goToVideo(currentVideoIdx); };
+
+  // Init dots on load
+  setTimeout(renderVideoDots, 500);
+
+  // ========== FIRST-TIME USER POPUP ==========
   window.toggleMobileMenu = () => {
     const menu = document.getElementById('mobile-menu');
     const overlay = document.getElementById('menu-overlay');
@@ -1664,6 +1915,22 @@
     document.getElementById('mobile-menu').classList.remove('open');
     document.getElementById('menu-overlay').classList.remove('open');
   };
+  // ========== FIRST-TIME USER POPUP ==========
+  function checkFirstTimeUser() {
+    if (localStorage.getItem('seenWelcome')) return;
+    setTimeout(() => {
+      const popup = document.getElementById('welcome-popup');
+      if (popup) popup.style.display = 'flex';
+    }, 1500);
+  }
+
+  window.closeWelcomePopup = (goPage) => {
+    const popup = document.getElementById('welcome-popup');
+    if (popup) { popup.style.opacity='0'; setTimeout(()=>popup.style.display='none',300); }
+    localStorage.setItem('seenWelcome', '1');
+    if (goPage && goPage !== false) showPage(goPage);
+  };
+
   window.mobileNav = (id) => {
     closeMobileMenu();
     showPage(id);
@@ -1888,6 +2155,8 @@
     setTimeout(showDyk, 1500);
     // Show hamburger tooltip on mobile (first time only)
     setTimeout(showHamburgerTooltip, 2000);
+    // First-time user welcome popup
+    setTimeout(checkFirstTimeUser, 3000);
     // Start music on first user interaction - click or touch (iOS)
     const startOnInteraction = () => {
       startMusic();
@@ -1993,9 +2262,13 @@
     const vid = document.getElementById('rules-video');
     if (vid) {
       if (id === 'rules') {
+        // Mute background music when rules video plays
+        if (musicPlaying && ap) { ap.volume = 0; }
         vid.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
         vid.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
       } else {
+        // Restore music when leaving rules
+        if (musicPlaying && ap) { ap.volume = 0.6; }
         vid.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
       }
     }
@@ -2166,21 +2439,52 @@
 
     // Only show during tournament (after June 11)
     const started = new Date() >= new Date('2026-06-11T19:00:00Z');
-
     if (!started) return null;
 
-    // Priority order - first match wins
-    if (i === 0 && pts > 0) return { emoji: '👑', text: 'King of the table', bg: '#FAEEDA', color: '#633806' };
-    if (i === total - 1 && pts === 0) return { emoji: '💀', text: 'Wooden spoon candidate', bg: '#FCEBEB', color: '#791F1F' };
-    if (exactRate >= 0.3 && exact >= 3) return { emoji: '🎯', text: 'Sniper', bg: '#E1F5EE', color: '#085041' };
-    if (bonus >= 4) return { emoji: '⚡', text: 'Scorer hunter', bg: '#E1F5EE', color: '#085041' };
-    if (drawCount >= 5 && predCount > 5) return { emoji: '🤝', text: 'Mr. Draw', bg: '#E6F1FB', color: '#0C447C' };
-    if (predCount === 0) return { emoji: '😴', text: 'Just watching', bg: '#F1EFE8', color: '#444441' };
-    if (predCount >= 30) return { emoji: '📋', text: 'Prediction machine', bg: '#E6F1FB', color: '#0C447C' };
-    if (pts === 0 && predCount > 3) return { emoji: '🫠', text: 'Confidently wrong', bg: '#FCEBEB', color: '#791F1F' };
-    if (i === 1) return { emoji: '🥈', text: 'So close', bg: '#E6F1FB', color: '#0C447C' };
-    if (i === 2) return { emoji: '🥉', text: 'Podium chaser', bg: '#FAEEDA', color: '#633806' };
-    return null;
+    // Multiple badges possible - return array
+    const badges = [];
+
+    if (i === 0 && pts > 0) badges.push({ emoji: '👑', text: 'El Rey', bg: '#FAEEDA', color: '#633806' });
+    if (i === total - 1) badges.push({ emoji: '🥄', text: 'Wooden spoon', bg: '#FCEBEB', color: '#791F1F' });
+    if (exactRate >= 0.35 && exact >= 4) badges.push({ emoji: '🎯', text: 'Sniper', bg: '#E1F5EE', color: '#085041' });
+    if (exactRate >= 0.5 && exact >= 6) badges.push({ emoji: '🔥', text: 'On fire', bg: '#FFF0E0', color: '#B45309' });
+    if (bonus >= 5) badges.push({ emoji: '⚡', text: 'Scorer hunter', bg: '#E1F5EE', color: '#085041' });
+    if (drawCount >= 5 && predCount > 8) badges.push({ emoji: '🤝', text: 'Mr. Draw', bg: '#E6F1FB', color: '#0C447C' });
+    if (predCount === 0) badges.push({ emoji: '😴', text: 'Just watching', bg: '#F1EFE8', color: '#666' });
+    if (predCount >= 40) badges.push({ emoji: '📋', text: 'Prediction machine', bg: '#E6F1FB', color: '#0C447C' });
+    if (pts === 0 && predCount > 5) badges.push({ emoji: '🫠', text: 'Confidently wrong', bg: '#FCEBEB', color: '#791F1F' });
+    if (i === 1 && pts > 0) badges.push({ emoji: '🥈', text: 'So close', bg: '#E6F1FB', color: '#0C447C' });
+    if (i === 2 && pts > 0) badges.push({ emoji: '🥉', text: 'Podium chaser', bg: '#FAEEDA', color: '#633806' });
+    if (pts > 50 && i > 2) badges.push({ emoji: '🚀', text: 'Dark horse', bg: '#EDE9FE', color: '#5B21B6' });
+    if (u.tournamentWinner && pts > 0) badges.push({ emoji: '🔮', text: 'Oracle', bg: '#E0F2FE', color: '#0369A1' });
+
+    return badges.length > 0 ? badges[0] : null; // return top badge only in leaderboard
+  }
+
+  function getAllBadges(u, i, allUsers, predStats) {
+    // Same logic but returns all badges for detailed views
+    const pts = u.points || 0;
+    const exact = u.exactScores || 0;
+    const bonus = u.bonusPoints || 0;
+    const total = allUsers.length;
+    const preds = predStats?.[u.uid] || {};
+    const drawCount = preds.draws || 0;
+    const predCount = preds.total || 0;
+    const exactRate = predCount > 0 ? exact / predCount : 0;
+    const started = new Date() >= new Date('2026-06-11T19:00:00Z');
+    if (!started) return [];
+    const b = [];
+    if (i === 0 && pts > 0) b.push('👑 El Rey');
+    if (i === total-1) b.push('🥄 Wooden spoon');
+    if (exactRate >= 0.35 && exact >= 4) b.push('🎯 Sniper');
+    if (exactRate >= 0.5 && exact >= 6) b.push('🔥 On fire');
+    if (bonus >= 5) b.push('⚡ Scorer hunter');
+    if (drawCount >= 5) b.push('🤝 Mr. Draw');
+    if (predCount === 0) b.push('😴 Just watching');
+    if (predCount >= 40) b.push('📋 Machine');
+    if (pts === 0 && predCount > 5) b.push('🫠 Confidently wrong');
+    if (u.tournamentWinner && pts > 0) b.push('🔮 Oracle');
+    return b;
   }
 
   function renderLeaderboard(containerId, users, predStats) {
@@ -2208,7 +2512,7 @@
         ? `${u.nickname||u.displayName} <span style="font-size:10px;background:#00ff41;color:#000;padding:1px 5px;border-radius:99px;font-weight:700;">ADMIN</span>`
         : `${u.nickname||u.displayName}${badgeHTML}`;
       return `
-      <div class="lb-row">
+      <div class="lb-row" ${i === 0 && (u.points||0) > 0 ? 'style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border-left:3px solid #F59E0B;"' : ''}>
         <div class="lb-rank ${medals[i] || ''}">${i + 1}</div>
         <div class="lb-user">
           ${avatarHTML}
