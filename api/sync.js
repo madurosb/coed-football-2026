@@ -250,15 +250,17 @@ async function calculatePoints(db, matchId, homeScore, awayScore, firstScorer) {
     const jokerSnap = await db.collection('jokerCards').where('matchId','==',matchId).where('userId','==',pred.userId).get();
     if (!jokerSnap.empty) pts *= 2;
 
-    // Double or Nothing Version B — correct = x2, wrong = lose points from total
+    // Double or Nothing Version B — affects ONLY result+exact pts, not first scorer
     const donSnap = await db.collection('donOptIns').where('matchId','==',matchId).where('userId','==',pred.userId).get();
     if (!donSnap.empty) {
       const isCorrect = actualResult === predResult;
+      const scorerPts = (firstScorer && pred.firstScorer === firstScorer) ? 2 * multiplier : 0;
+      const resultPts = pts - scorerPts;
       if (isCorrect) {
-        pts *= 2;
+        pts = (resultPts * 2) + scorerPts;
       } else {
-        const basePenalty = isFinal ? 10 : (1 + 3) * multiplier;
-        pts = -basePenalty;
+        const penalty = isFinal ? 10 : Math.max(1 * multiplier, Math.abs(resultPts) > 0 ? Math.abs(resultPts) : 1 * multiplier);
+        pts = scorerPts - penalty;
       }
     }
 
