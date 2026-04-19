@@ -399,6 +399,18 @@
   </div>
 </div>
 
+<!-- BOLD PREDICTION POPUP -->
+<div id="bold-popup" class="modal-overlay" style="display:none;transition:opacity 0.3s;">
+  <div class="modal" style="max-width:340px;text-align:center;">
+    <div style="font-size:52px;margin-bottom:0.5rem;">🐂</div>
+    <h2 style="margin-bottom:0.5rem;">Big Balls Prediction!</h2>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:0.75rem;line-height:1.6;">You just earned the legendary 🐂 badge!</p>
+    <div style="background:#FFF0E0;border-radius:10px;padding:10px 14px;margin-bottom:1.25rem;font-size:13px;color:#92400E;" id="bold-popup-reason"></div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:1.25rem;">This badge appears next to your name in the leaderboard. Wear it with pride 🏆</p>
+    <button onclick="closeBoldPopup()" style="width:100%;padding:10px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">Hell yeah! 🐂</button>
+  </div>
+</div>
+
 <!-- WELCOME POPUP -->
 <div id="welcome-popup" class="modal-overlay" style="display:none;transition:opacity 0.3s;">
   <div class="modal" style="max-width:360px;text-align:center;">
@@ -427,7 +439,7 @@
       <button class="nav-btn" data-page="leaderboard" onclick="showPage('leaderboard')">Standings</button>
       <button class="nav-btn" data-page="stats" onclick="showPage('stats')">My Stats</button>
       <button class="nav-btn" data-page="tips" onclick="showPage('tips')">Tips</button>
-      <button class="nav-btn" data-page="grouppred" onclick="showPage('grouppred')">Group predictions</button>
+      <button class="nav-btn" data-page="grouppred" onclick="showPage('grouppred')">Inner Circle Bets</button>
       <button class="nav-btn" data-page="watch" onclick="showPage('watch')">Watch Together</button>
       <button class="nav-btn" data-page="trash" onclick="showPage('trash')">Trash Talk</button>
       <button class="nav-btn" data-page="highlights" onclick="showPage('highlights')">Highlights</button>
@@ -454,7 +466,7 @@
     <button class="mobile-menu-btn" data-page="leaderboard" onclick="mobileNav('leaderboard')">🏆 &nbsp; Standings</button>
     <button class="mobile-menu-btn" data-page="stats" onclick="mobileNav('stats')">📊 &nbsp; My Stats</button>
     <button class="mobile-menu-btn" data-page="tips" onclick="mobileNav('tips')">💡 &nbsp; Tips</button>
-    <button class="mobile-menu-btn" data-page="grouppred" onclick="mobileNav('grouppred')">🏅 &nbsp; Group predictions</button>
+    <button class="mobile-menu-btn" data-page="grouppred" onclick="mobileNav('grouppred')">🏅 &nbsp; Inner Circle Bets</button>
     <button class="mobile-menu-btn" data-page="watch" onclick="mobileNav('watch')">Watch Together</button>
     <button class="mobile-menu-btn" data-page="trash" onclick="mobileNav('trash')">Trash Talk</button>
     <button class="mobile-menu-btn" data-page="highlights" onclick="mobileNav('highlights')">🎬 &nbsp; Highlights</button>
@@ -1449,8 +1461,8 @@
 
   <!-- GROUP PREDICTIONS -->
   <div class="page" id="page-grouppred">
-    <p class="section-title" style="margin-bottom:0.25rem;">🏅 Group predictions</p>
-    <p style="font-size:13px;color:var(--text-muted);margin-bottom:1.25rem;">Who from the group will finish first and last? One vote per person. Results revealed after the tournament! Deadline: June 10.</p>
+    <p class="section-title" style="margin-bottom:0.25rem;">🏅 Inner Circle Bets</p>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:1.25rem;">Bet on your friends — not the tournament! Who from your group will finish first, and who will crash out last? Votes are secret until June 10. Deadline: June 10.</p>
 
     <div id="grouppred-content">
       <div style="text-align:center;padding:2rem;font-size:13px;color:var(--text-muted);">Loading...</div>
@@ -1994,18 +2006,30 @@
     loadDoubleOrNothingAdmin();
   };
 
-  // Load Double or Nothing on matches page
+  // Double or Nothing - user picks once per week
   let donMatchId = null;
+  let myDonMatches = new Set();
+
+  function getWeekKey() {
+    const d = new Date();
+    const jan1 = new Date(d.getFullYear(), 0, 1);
+    const week = Math.ceil(((d - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+    return `${d.getFullYear()}-W${week}`;
+  }
+
   async function loadDONStatus() {
-    const snap = await getDocs(collection(db, 'doubleOrNothing'));
-    snap.forEach(d => { donMatchId = d.data().matchId; });
     const donOptSnap = await getDocs(query(collection(db, 'donOptIns'), where('userId', '==', currentUser.uid)));
-    const myDonMatch = donOptSnap.empty ? null : donOptSnap.docs[0].data().matchId;
-    // Update DON button on the relevant match card
-    if (donMatchId) {
-      const btn = document.getElementById(`don-btn-${donMatchId}`);
-      if (btn && myDonMatch === donMatchId) { btn.style.background = '#FAEEDA'; btn.textContent = '🎰 Opted in!'; }
-    }
+    myDonMatches.clear();
+    donOptSnap.forEach(d => { myDonMatches.add(d.data().matchId); });
+    // Update all DON buttons
+    myDonMatches.forEach(matchId => {
+      const btn = document.getElementById(`don-btn-${matchId}`);
+      if (btn) {
+        btn.style.background = '#FAEEDA';
+        btn.style.borderColor = '#BA7517';
+        btn.innerHTML = '🎰 Double or Nothing — <strong>Opted in!</strong> ✅';
+      }
+    });
   }
 
   window.toggleDON = async (matchId) => {
@@ -2013,13 +2037,31 @@
     const existing = await getDoc(ref);
     if (existing.exists()) {
       await deleteDoc(ref);
+      myDonMatches.delete(matchId);
       const btn = document.getElementById(`don-btn-${matchId}`);
-      if (btn) { btn.style.background = 'none'; btn.textContent = '🎰 Double or Nothing'; }
-    } else {
-      await setDoc(ref, { userId: currentUser.uid, matchId, nickname: currentUserData?.nickname, createdAt: serverTimestamp() });
-      const btn = document.getElementById(`don-btn-${matchId}`);
-      if (btn) { btn.style.background = '#FAEEDA'; btn.textContent = '🎰 Opted in!'; }
+      if (btn) { btn.style.background = 'none'; btn.style.borderColor = '#BA7517'; btn.innerHTML = '🎰 Double or Nothing — tap to double your points (or lose them!)'; }
+      return;
     }
+    // Check weekly limit
+    const week = getWeekKey();
+    const weekSnap = await getDocs(query(collection(db, 'donOptIns'), where('userId', '==', currentUser.uid), where('week', '==', week)));
+    if (!weekSnap.empty) {
+      return alert('🎰 You already used your Double or Nothing this week! Come back next week.');
+    }
+    await setDoc(ref, {
+      userId: currentUser.uid, matchId, week,
+      nickname: currentUserData?.nickname || currentUser.displayName,
+      createdAt: serverTimestamp()
+    });
+    myDonMatches.add(matchId);
+    const btn = document.getElementById(`don-btn-${matchId}`);
+    if (btn) { btn.style.background = '#FAEEDA'; btn.innerHTML = '🎰 Double or Nothing — <strong>Opted in!</strong> ✅'; }
+    // Toast
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#BA7517;color:#fff;font-size:13px;padding:10px 16px;border-radius:10px;z-index:9999;';
+    t.textContent = '🎰 You\'re in! Points doubled if correct this match!';
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.5s'; setTimeout(()=>t.remove(),500); }, 3000);
   };
 
   async function loadBoldPredAdmin() {
@@ -2419,6 +2461,8 @@
     setTimeout(showHamburgerTooltip, 2000);
     // First-time user welcome popup
     setTimeout(checkFirstTimeUser, 3000);
+    // Check for bold prediction award
+    setTimeout(checkBoldPredictionPopup, 4000);
     // Start music on first user interaction - click or touch (iOS)
     const startOnInteraction = () => {
       startMusic();
@@ -2609,16 +2653,65 @@
     loadGroupPredictions();
   };
 
-  // ========== BOLD PREDICTION BADGE ==========
-  // Checks if a user predicted a result where odds were heavily against it
-  // e.g. predicted a small team to beat a big team AND got it right
-  // Tracked via boldPredictions collection set by admin or auto-detected
-  async function checkBoldPredictions(userId) {
-    // A "bold" prediction = predicting the away team wins when they were clear underdogs
-    // For now, flagged manually by admin OR if exact score was unusual (e.g. 3-0 away win)
-    const snap = await getDocs(query(collection(db, 'boldPredictions'), where('userId', '==', userId)));
-    return !snap.empty;
+  // ========== BOLD PREDICTION — AUTO DETECTION ==========
+  async function checkAndAwardBoldPredictions(matchId, homeScore, awayScore, firstScorer) {
+    const totalGoals = homeScore + awayScore;
+    const bigScore = totalGoals >= 5; // 5+ goals is unusual
+    const bigWin = Math.abs(homeScore - awayScore) >= 3; // 3+ goal margin
+    const isUpset = awayScore > homeScore; // away team won (slight upset proxy)
+    if (!bigScore && !bigWin) return; // Only flag unusual results
+
+    const predsSnap = await getDocs(query(collection(db, 'predictions'), where('matchId', '==', matchId)));
+    const matchSnap = await getDoc(doc(db, 'matches', matchId));
+    const matchData = matchSnap.data();
+
+    for (const predDoc of predsSnap.docs) {
+      const p = predDoc.data();
+      const exactMatch = p.homeScore === homeScore && p.awayScore === awayScore;
+      if (!exactMatch) continue;
+
+      // How many others predicted this exact score?
+      let sameCount = 0;
+      predsSnap.forEach(d => {
+        if (d.data().homeScore === homeScore && d.data().awayScore === awayScore) sameCount++;
+      });
+      const isUnique = sameCount <= 2; // Only 1-2 people predicted this exact bold score
+
+      if (isUnique || (bigScore && exactMatch)) {
+        // Award bold prediction badge
+        const reason = `Exact score ${homeScore}-${awayScore} in ${matchData?.homeTeam} vs ${matchData?.awayTeam}${sameCount === 1 ? ' — the ONLY one who got it!' : ''}`;
+        await setDoc(doc(db, 'boldPredictions', `${p.userId}_${matchId}`), {
+          userId: p.userId, matchId,
+          homeTeam: matchData?.homeTeam, awayTeam: matchData?.awayTeam,
+          score: `${homeScore}-${awayScore}`, reason,
+          awardedAt: serverTimestamp(), seen: false
+        });
+        // Also flag on user doc
+        await updateDoc(doc(db, 'users', p.userId), { boldPrediction: true });
+      }
+    }
   }
+
+  // Check for unseen bold prediction on login
+  async function checkBoldPredictionPopup() {
+    const boldSnap = await getDocs(query(collection(db, 'boldPredictions'),
+      where('userId', '==', currentUser.uid),
+      where('seen', '==', false)
+    ));
+    if (boldSnap.empty) return;
+    const pred = boldSnap.docs[0].data();
+    const popupEl = document.getElementById('bold-popup');
+    const reasonEl = document.getElementById('bold-popup-reason');
+    if (reasonEl) reasonEl.textContent = pred.reason;
+    if (popupEl) popupEl.style.display = 'flex';
+    // Mark as seen
+    await updateDoc(boldSnap.docs[0].ref, { seen: true });
+  }
+
+  window.closeBoldPopup = () => {
+    const p = document.getElementById('bold-popup');
+    if (p) { p.style.opacity = '0'; setTimeout(() => p.style.display = 'none', 300); }
+  };
 
   // ========== TRASH TALK ==========
   const TRASH_REACTIONS = ['❤️','👍','💩','😡','👀'];
@@ -2639,7 +2732,6 @@
     if (!feed) return;
     const snap = await getDocs(query(collection(db, 'trashTalk'), orderBy('createdAt', 'desc'), limit(60)));
     const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    // Fetch reactions
     const reactSnap = await getDocs(collection(db, 'trashReactions'));
     const reactions = {};
     reactSnap.forEach(d => {
@@ -2658,63 +2750,66 @@
     if (!feed) return;
     if (msgs.length === 0) {
       feed.innerHTML = `<div style="text-align:center;padding:3rem 1rem;">
-        <div style="font-size:36px;margin-bottom:8px;">🤐</div>
+        <div style="font-size:40px;margin-bottom:8px;">🤐</div>
         <div style="font-size:14px;font-weight:500;margin-bottom:4px;">Dead silent in here</div>
         <div style="font-size:13px;color:var(--text-muted);">Be the first to talk trash! 🔥</div>
       </div>`;
       return;
     }
+    // Build user avatar map
     feed.innerHTML = msgs.map(m => {
       const isMe = m.userId === currentUser?.uid;
       const time = m.createdAt?.toDate ? m.createdAt.toDate().toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
-      const av = getAvatarById(currentUserData?.avatar);
 
-      // Reactions summary
+      // Reactions row — shows only reactions that exist
       const msgReactions = reactions?.[m.id] || {};
-      const reactionsHTML = TRASH_REACTIONS.map(emoji => {
+      const reactionBubbles = TRASH_REACTIONS.map(emoji => {
         const users = msgReactions[emoji] || [];
-        if (users.length === 0) return '';
+        if (!users.length) return '';
         const iReacted = users.includes(currentUser.uid);
         return `<button onclick="toggleReaction('${m.id}','${emoji}')"
-          style="background:${iReacted?'var(--green-light)':'var(--surface2)'};border:1px solid ${iReacted?'var(--green)':'var(--border)'};border-radius:99px;padding:2px 7px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:3px;">
-          ${emoji}<span style="font-size:11px;color:var(--text-muted);">${users.length}</span>
+          style="background:${iReacted?'#E1F5EE':'var(--surface2)'};border:1px solid ${iReacted?'#1D9E75':'var(--border)'};border-radius:99px;padding:2px 8px;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:3px;line-height:1.4;">
+          ${emoji} <span style="font-size:11px;color:${iReacted?'var(--green)':'var(--text-muted)'};">${users.length}</span>
         </button>`;
       }).filter(Boolean).join('');
 
-      // Reaction picker
-      const pickerHTML = `<div class="reaction-picker" id="picker-${m.id}" style="display:none;position:absolute;${isMe?'right:0;':'left:0;'}bottom:calc(100% + 4px);background:var(--surface);border:0.5px solid var(--border);border-radius:99px;padding:4px 8px;display:none;gap:4px;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,0.12);">
-        ${TRASH_REACTIONS.map(e => `<button onclick="toggleReaction('${m.id}','${e}');hidePicker('${m.id}')" style="background:none;border:none;font-size:18px;cursor:pointer;padding:2px;border-radius:6px;transition:transform 0.1s;" onmouseover="this.style.transform='scale(1.3)'" onmouseout="this.style.transform='scale(1)'">${e}</button>`).join('')}
+      // Reaction picker — tap 😊 to open
+      const picker = `<div id="picker-${m.id}" style="display:none;position:absolute;${isMe?'right:0;':'left:0;'}bottom:calc(100% + 6px);background:var(--surface);border:0.5px solid var(--border);border-radius:99px;padding:5px 10px;gap:6px;z-index:20;box-shadow:0 4px 20px rgba(0,0,0,0.15);white-space:nowrap;">
+        ${TRASH_REACTIONS.map(e => `<button onclick="toggleReaction('${m.id}','${e}');hidePicker('${m.id}')"
+          style="background:none;border:none;font-size:22px;cursor:pointer;padding:0 2px;transition:transform 0.1s;"
+          onmouseover="this.style.transform='scale(1.3)'" onmouseout="this.style.transform='scale(1)'">${e}</button>`).join('')}
       </div>`;
 
-      return `<div style="display:flex;gap:10px;margin-bottom:14px;${isMe?'flex-direction:row-reverse;':''}align-items:flex-end;">
-        <div style="width:30px;height:30px;border-radius:50%;flex-shrink:0;overflow:hidden;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--text-muted);">
-          ${(m.nickname||'?').substring(0,2).toUpperCase()}
-        </div>
-        <div style="max-width:78%;position:relative;">
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;${isMe?'text-align:right;':''}">
-            ${isMe ? 'You' : m.nickname} · ${time}
+      const initials = (m.nickname||'?').substring(0,2).toUpperCase();
+      const avatarDiv = `<div style="width:34px;height:34px;border-radius:50%;background:${isMe?'#1D9E75':'var(--surface2)'};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:${isMe?'white':'var(--text-muted)'};flex-shrink:0;border:2px solid ${isMe?'#085041':'var(--border)'};">${initials}</div>`;
+
+      return `
+      <div style="display:flex;align-items:flex-end;gap:8px;margin-bottom:16px;${isMe?'flex-direction:row-reverse;':''}">
+        ${avatarDiv}
+        <div style="max-width:72%;min-width:80px;">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;${isMe?'text-align:right;':''}">
+            ${isMe ? '<span style="color:var(--green);font-weight:500;">You</span>' : `<strong>${m.nickname}</strong>`} · ${time}
           </div>
           <div style="position:relative;">
-            <div style="background:${isMe?'var(--green)':'var(--surface)'};color:${isMe?'white':'var(--text)'};border:${isMe?'none':'0.5px solid var(--border)'};border-radius:${isMe?'14px 14px 2px 14px':'14px 14px 14px 2px'};padding:9px 13px;font-size:13px;line-height:1.5;word-break:break-word;">
+            <div style="background:${isMe?'var(--green)':'var(--surface)'};color:${isMe?'white':'var(--text)'};border:${isMe?'none':'0.5px solid var(--border)'};border-radius:${isMe?'16px 16px 4px 16px':'16px 16px 16px 4px'};padding:10px 14px;font-size:13px;line-height:1.55;word-break:break-word;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
               ${m.text}
             </div>
-            ${pickerHTML}
+            ${picker}
+            <button onclick="showPicker('${m.id}')"
+              style="position:absolute;${isMe?'left:-28px;':'right:-28px;'}bottom:2px;background:none;border:none;font-size:16px;cursor:pointer;opacity:0.5;padding:0;transition:opacity 0.15s;"
+              onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">😊</button>
           </div>
-          ${reactionsHTML ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;${isMe?'justify-content:flex-end;':''}">${reactionsHTML}</div>` : ''}
-          <div style="display:flex;align-items:center;gap:6px;margin-top:3px;${isMe?'justify-content:flex-end;':''}">
-            <button onclick="showPicker('${m.id}')" style="background:none;border:none;font-size:12px;color:var(--text-muted);cursor:pointer;padding:0;">😊</button>
-            ${isMe ? `<button onclick="deleteTrashMsg('${m.id}')" style="background:none;border:none;font-size:11px;color:var(--text-muted);cursor:pointer;padding:0;">delete</button>` : ''}
-          </div>
+          ${reactionBubbles ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:5px;${isMe?'justify-content:flex-end;':''}">${reactionBubbles}</div>` : ''}
+          ${isMe ? `<div style="text-align:right;margin-top:2px;"><button onclick="deleteTrashMsg('${m.id}')" style="background:none;border:none;font-size:10px;color:var(--text-muted);cursor:pointer;padding:0;opacity:0.6;">delete</button></div>` : ''}
         </div>
       </div>`;
     }).join('');
   }
 
   window.showPicker = (msgId) => {
-    document.querySelectorAll('[id^="picker-"]').forEach(p => p.style.display = 'none');
+    document.querySelectorAll('[id^="picker-"]').forEach(p => { p.style.display = 'none'; });
     const p = document.getElementById(`picker-${msgId}`);
-    if (p) p.style.display = 'flex';
-    setTimeout(() => { if (p) p.style.display = 'none'; }, 4000);
+    if (p) { p.style.display = 'flex'; setTimeout(() => { p.style.display = 'none'; }, 5000); }
   };
   window.hidePicker = (msgId) => {
     const p = document.getElementById(`picker-${msgId}`);
@@ -2722,7 +2817,7 @@
   };
 
   window.toggleReaction = async (msgId, emoji) => {
-    const docId = `${currentUser.uid}_${msgId}_${emoji}`;
+    const docId = `${currentUser.uid}_${msgId}_${encodeURIComponent(emoji)}`;
     const ref = doc(db, 'trashReactions', docId);
     const existing = await getDoc(ref);
     if (existing.exists()) await deleteDoc(ref);
@@ -3564,11 +3659,12 @@
                 style="padding:8px 12px;border-radius:8px;border:0.5px solid #BA7517;background:none;color:#BA7517;font-size:13px;cursor:pointer;white-space:nowrap;transition:all 0.15s;"
                 onmouseover="this.style.background='#FAEEDA'" onmouseout="this.style.background='none'">🃏</button>
             </div>
-            <div id="don-row-${d.id}" style="display:none;margin-top:6px;">
+            <div id="don-row-${d.id}" style="margin-top:6px;">
               <button id="don-btn-${d.id}" onclick="toggleDON('${d.id}')"
-                style="width:100%;padding:7px;border-radius:8px;border:1.5px dashed #BA7517;background:none;color:#BA7517;font-size:12px;font-weight:500;cursor:pointer;">
-                🎰 Double or Nothing — opt in to double your points (or lose them!)
+                style="width:100%;padding:7px;border-radius:8px;border:1.5px dashed #BA7517;background:none;color:#BA7517;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.15s;">
+                🎰 Double or Nothing — tap to double your points (or lose them!)
               </button>
+              <div style="font-size:10px;color:var(--text-muted);text-align:center;margin-top:3px;">Once per week · Your call!</div>
             </div>` : `<p style="font-size:12px;color:var(--text-muted);margin-top:0.75rem;text-align:center;">${isFinished ? '✅ Match finished' : '🔒 Deadline passed - predictions locked'}</p>`}
           ${finishedResult}
           <div id="result-${d.id}"></div>
@@ -3590,13 +3686,7 @@
     }
 
     loadExistingPredictions(matchesSnap);
-    setTimeout(async () => {
-      await loadDONStatus();
-      if (donMatchId) {
-        const row = document.getElementById(`don-row-${donMatchId}`);
-        if (row) row.style.display = 'block';
-      }
-    }, 500);
+    setTimeout(loadDONStatus, 500);
   }
 
   async function loadExistingPredictions(matchesSnap) {
@@ -4021,6 +4111,10 @@
         btn.textContent = 'Submit results and calculate points';
         btn.disabled = false;
       }, 2000);
+
+      // Auto-check for bold predictions
+      await checkAndAwardBoldPredictions(matchId, homeScore, awayScore, firstScorer);
+
       alert(`Results saved! Points calculated for ${batch.length} prediction(s).`);
     } catch(e) {
       console.error('submitResult error:', e);
