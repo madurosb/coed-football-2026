@@ -1656,21 +1656,33 @@
       <div style="flex:1;">
         <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Special game features 🎮</div>
         <div style="display:flex;flex-direction:column;gap:8px;">
-          <div style="background:var(--surface2);border-radius:8px;padding:8px 10px;">
-            <div style="font-size:13px;font-weight:500;margin-bottom:2px;">🃏 Joker Card</div>
-            <div style="font-size:12px;color:var(--text-muted);">Tap 🃏 next to any match before deadline. Use it once - if correct, your points for that match are <strong>doubled!</strong></div>
+          <div style="background:linear-gradient(135deg,#FAEEDA,#FDE8B3);border-radius:10px;padding:10px 12px;border:1px solid #BA7517;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;color:#633806;">🃏 Joker Card</div>
+            <div style="font-size:12px;color:#7C4A0A;">Once per tournament - tap the JOKER button on any match before the deadline. If your prediction is correct, all points for that match are doubled. You only get one!</div>
           </div>
-          <div style="background:var(--surface2);border-radius:8px;padding:8px 10px;">
-            <div style="font-size:13px;font-weight:500;margin-bottom:2px;">🔥 Streak Bonus</div>
-            <div style="font-size:12px;color:var(--text-muted);">Get 3+ correct predictions in a row and earn a <strong>🔥 streak badge</strong> on the leaderboard. Keep it going!</div>
+          <div style="background:linear-gradient(135deg,#F5F3FF,#EDE9FE);border-radius:10px;padding:10px 12px;border:1px solid #7C3AED;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;color:#5B21B6;">🎰 Double or Nothing</div>
+            <div style="font-size:12px;color:#6D28D9;">Once per week, opt in on any match you feel confident about. Correct = points doubled. Wrong = you lose those points. Your choice, your risk!</div>
           </div>
-          <div style="background:var(--surface2);border-radius:8px;padding:8px 10px;">
-            <div style="font-size:13px;font-weight:500;margin-bottom:2px;">💬 Trash Talk Wall</div>
-            <div style="font-size:12px;color:var(--text-muted);">Send short messages to the whole group. Brag, taunt, trash talk - keep it fun! Find it in the menu.</div>
+          <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">🔥 Streak Bonus</div>
+            <div style="font-size:12px;color:var(--text-muted);">Get 3+ correct predictions in a row and earn a streak badge on the leaderboard. Keep it going for bigger streaks!</div>
           </div>
-          <div style="background:var(--surface2);border-radius:8px;padding:8px 10px;">
-            <div style="font-size:13px;font-weight:500;margin-bottom:2px;">🎰 Double or Nothing</div>
-            <div style="font-size:12px;color:var(--text-muted);">Each week the admin marks one special match. Opt in - correct = double points, wrong = lose those points!</div>
+          <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">🐂 Bold Prediction</div>
+            <div style="font-size:12px;color:var(--text-muted);">Predict something wild - like a big upset or a crazy score - and if you nail it, you automatically earn the legendary 🐂 badge. A popup will appear to tell you!</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">💬 Trash Talk Wall</div>
+            <div style="font-size:12px;color:var(--text-muted);">Send short messages to the whole group. React with ❤️ 👍 💩 😡 👀 to other people's messages. Keep it fun!</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">🏅 Inner Circle Bets</div>
+            <div style="font-size:12px;color:var(--text-muted);">Vote on who from your group will finish first and who will finish last. Secret until June 10, then revealed. Just for fun!</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">🎯 Sniper of the Week</div>
+            <div style="font-size:12px;color:var(--text-muted);">Each round, the player with the best exact score accuracy earns a special badge. Rotates each round.</div>
           </div>
         </div>
       </div>
@@ -2027,7 +2039,7 @@
       if (btn) {
         btn.style.background = '#FAEEDA';
         btn.style.borderColor = '#BA7517';
-        btn.innerHTML = '🎰 Double or Nothing — <strong>Opted in!</strong> ✅';
+        btn.innerHTML = `<span style="font-size:24px;line-height:1;flex-shrink:0;">🎰</span><div style="text-align:left;"><div style="font-size:12px;font-weight:700;">DOUBLE OR NOTHING</div><div style="font-size:10px;opacity:0.7;margin-top:1px;">Opted in! ✅ Points doubled if correct</div></div>`;btn.style.cssText += 'background:linear-gradient(135deg,#5B21B6,#7C3AED);color:white;border-color:#5B21B6;';
       }
     });
   }
@@ -2039,7 +2051,7 @@
       await deleteDoc(ref);
       myDonMatches.delete(matchId);
       const btn = document.getElementById(`don-btn-${matchId}`);
-      if (btn) { btn.style.background = 'none'; btn.style.borderColor = '#BA7517'; btn.innerHTML = '🎰 Double or Nothing - tap to double your points (or lose them!)'; }
+      if (btn) { btn.style.background = 'none'; btn.style.borderColor = '#BA7517'; btn.innerHTML = `<span style="font-size:24px;line-height:1;flex-shrink:0;">🎰</span><div style="text-align:left;"><div style="font-size:12px;font-weight:700;letter-spacing:0.03em;">DOUBLE OR NOTHING</div><div style="font-size:10px;font-weight:400;opacity:0.7;margin-top:1px;">Correct = x2 pts · Wrong = -pts · Once per week</div></div>`; }
       return;
     }
     // Strict server-side weekly check
@@ -2063,7 +2075,7 @@
     });
     myDonMatches.add(matchId);
     const btn = document.getElementById(`don-btn-${matchId}`);
-    if (btn) { btn.style.background = '#FAEEDA'; btn.innerHTML = '🎰 Double or Nothing - <strong>Opted in!</strong> ✅'; }
+    if (btn) { btn.style.background = '#FAEEDA'; btn.innerHTML = `<span style="font-size:24px;line-height:1;flex-shrink:0;">🎰</span><div style="text-align:left;"><div style="font-size:12px;font-weight:700;">DOUBLE OR NOTHING</div><div style="font-size:10px;opacity:0.7;margin-top:1px;">Opted in! ✅ Points doubled if correct</div></div>`;btn.style.cssText += 'background:linear-gradient(135deg,#5B21B6,#7C3AED);color:white;border-color:#5B21B6;'; }
     const t = document.createElement('div');
     t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#BA7517;color:#fff;font-size:13px;padding:10px 16px;border-radius:10px;z-index:9999;';
     t.textContent = '🎰 You\'re in! Points doubled if correct this match!';
@@ -2485,14 +2497,14 @@
       if (musicStarted) return;
       musicStarted = true;
       startMusic();
-      document.removeEventListener('click', startOnInteraction, true);
-      document.removeEventListener('touchstart', startOnInteraction, true);
-      document.removeEventListener('keydown', startOnInteraction, true);
+      ['click','touchstart','touchmove','scroll','keydown','mousemove'].forEach(e =>
+        document.removeEventListener(e, startOnInteraction, true)
+      );
       setTimeout(showMusicTooltip, 1200);
     };
-    document.addEventListener('click', startOnInteraction, true);
-    document.addEventListener('touchstart', startOnInteraction, true);
-    document.addEventListener('keydown', startOnInteraction, true);
+    ['click','touchstart','touchmove','scroll','keydown','mousemove'].forEach(e =>
+      document.addEventListener(e, startOnInteraction, true)
+    );
   }
 
   // SIGN IN
@@ -2942,7 +2954,12 @@
     jokerUsed = true;
     jokerMatchId = matchId;
     const btn = document.getElementById(`joker-btn-${matchId}`);
-    if (btn) { btn.textContent = '🃏 Active!'; btn.style.background = '#FAEEDA'; btn.disabled = true; }
+    if (btn) {
+      btn.innerHTML = '<span style="font-size:20px;line-height:1.1;">🃏</span><span style="font-size:9px;letter-spacing:0.04em;">ACTIVE ✅</span>';
+      btn.style.background = 'linear-gradient(135deg,#BA7517,#F59E0B)';
+      btn.style.color = 'white';
+      btn.disabled = true;
+    }
     // Show toast
     const tip = document.createElement('div');
     tip.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#BA7517;color:#fff;font-size:13px;padding:10px 16px;border-radius:10px;z-index:9999;white-space:nowrap;';
@@ -3696,16 +3713,23 @@
           ${!isPast ? `
             <div style="display:flex;gap:8px;align-items:center;margin-top:0.75rem;">
               <button class="save-btn" style="flex:1;" onclick="savePrediction('${d.id}', '${m.homeTeam}', '${m.awayTeam}')">Save prediction</button>
-              <button id="joker-btn-${d.id}" onclick="activateJoker('${d.id}')" title="Double your points for this match!"
-                style="padding:8px 12px;border-radius:8px;border:0.5px solid #BA7517;background:none;color:#BA7517;font-size:13px;cursor:pointer;white-space:nowrap;transition:all 0.15s;"
-                onmouseover="this.style.background='#FAEEDA'" onmouseout="this.style.background='none'">🃏</button>
-            </div>
-            <div id="don-row-${d.id}" style="margin-top:6px;">
-              <button id="don-btn-${d.id}" onclick="toggleDON('${d.id}')"
-                style="width:100%;padding:7px;border-radius:8px;border:1.5px dashed #BA7517;background:none;color:#BA7517;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.15s;">
-                🎰 Double or Nothing — tap to double your points (or lose them!)
+              <button id="joker-btn-${d.id}" onclick="activateJoker('${d.id}')" title="Use your Joker - double your points if correct!"
+                style="padding:6px 10px;border-radius:10px;border:1.5px solid #BA7517;background:linear-gradient(135deg,#FAEEDA,#FDE8B3);color:#633806;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:52px;box-shadow:0 2px 6px rgba(186,117,23,0.25);"
+                onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
+                <span style="font-size:20px;line-height:1.1;">🃏</span>
+                <span style="font-size:9px;letter-spacing:0.04em;">JOKER</span>
               </button>
-              <div style="font-size:10px;color:var(--text-muted);text-align:center;margin-top:3px;">Once per week · Your call!</div>
+            </div>
+            <div id="don-row-${d.id}" style="margin-top:8px;">
+              <button id="don-btn-${d.id}" onclick="toggleDON('${d.id}')"
+                style="width:100%;padding:10px 14px;border-radius:12px;border:1.5px dashed #7C3AED;background:linear-gradient(135deg,#F5F3FF,#EDE9FE);color:#5B21B6;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(124,58,237,0.12);"
+                onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'">
+                <span style="font-size:24px;line-height:1;flex-shrink:0;">🎰</span>
+                <div style="text-align:left;">
+                  <div style="font-size:12px;font-weight:700;letter-spacing:0.03em;">DOUBLE OR NOTHING</div>
+                  <div style="font-size:10px;font-weight:400;opacity:0.7;margin-top:1px;">Correct = x2 pts · Wrong = -pts · Once per week</div>
+                </div>
+              </button>
             </div>` : `<p style="font-size:12px;color:var(--text-muted);margin-top:0.75rem;text-align:center;">${isFinished ? '✅ Match finished' : '🔒 Deadline passed - predictions locked'}</p>`}
           ${finishedResult}
           <div id="result-${d.id}"></div>
@@ -5498,6 +5522,8 @@
           <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">Rank #${rank} of ${totalPlayers} players &nbsp;·&nbsp; ${user.tournamentPlayer || 'No tournament player set'}</div>
           <div style="display:flex;flex-wrap:wrap;gap:6px;">
             ${badges.map(b => `<span style="font-size:11px;padding:2px 8px;border-radius:99px;font-weight:500;background:var(--surface2);color:var(--text-muted);">${b.label}</span>`).join('')}
+            ${(user.currentStreak||0) >= 3 ? `<span style="font-size:11px;padding:2px 8px;border-radius:99px;font-weight:500;background:#FFF0E0;color:#B45309;">🔥 ${user.currentStreak} streak</span>` : ''}
+            ${user.boldPrediction ? `<span style="font-size:11px;padding:2px 8px;border-radius:99px;font-weight:500;background:#FFF0E0;color:#92400E;">🐂 Bold call</span>` : ''}
           </div>
         </div>
       </div>
@@ -5575,6 +5601,53 @@
       <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:8px;">
         <div style="font-size:13px;font-weight:500;margin-bottom:3px;">💸 Money at stake</div>
         <div style="font-size:13px;color:var(--text-muted);">You paid 50 ILS to enter. First prize is worth way more. ${rank === 1 ? 'You might actually win. Breathe.' : `You need to overtake ${rank-1} player${rank-1>1?'s':''} to take 1st. Easy.`}</div>
+      </div>
+
+      <div style="font-size:11px;font-weight:500;letter-spacing:0.08em;color:var(--text-muted);text-transform:uppercase;margin:1.25rem 0 0.5rem;">🎮 Your game features</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem;">
+        <div style="background:linear-gradient(135deg,#FAEEDA,#FDE8B3);border-radius:12px;padding:1rem;border:1px solid #BA7517;text-align:center;">
+          <div style="font-size:24px;margin-bottom:4px;">🃏</div>
+          <div style="font-size:12px;font-weight:600;color:#633806;margin-bottom:2px;">Joker card</div>
+          <div style="font-size:13px;font-weight:700;color:#BA7517;">${user.jokerMatchId ? '🔒 Used!' : '✅ Available'}</div>
+          <div style="font-size:10px;color:#92400E;margin-top:2px;">${user.jokerMatchId ? 'Already played this tournament' : 'Once per tournament'}</div>
+        </div>
+        <div style="background:linear-gradient(135deg,#F5F3FF,#EDE9FE);border-radius:12px;padding:1rem;border:1px solid #7C3AED;text-align:center;">
+          <div style="font-size:24px;margin-bottom:4px;">🎰</div>
+          <div style="font-size:12px;font-weight:600;color:#5B21B6;margin-bottom:2px;">Double or Nothing</div>
+          <div style="font-size:13px;font-weight:700;color:#7C3AED;">Once/week</div>
+          <div style="font-size:10px;color:#6D28D9;margin-top:2px;">Available each new week</div>
+        </div>
+        <div style="background:${(user.currentStreak||0)>=3?'linear-gradient(135deg,#FFF0E0,#FEE2C0)':'var(--surface2)'};border-radius:12px;padding:1rem;border:1px solid ${(user.currentStreak||0)>=3?'#F59E0B':'var(--border)'};text-align:center;">
+          <div style="font-size:24px;margin-bottom:4px;">🔥</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:2px;">Current streak</div>
+          <div style="font-size:20px;font-weight:700;color:${(user.currentStreak||0)>=3?'#B45309':'var(--text-muted)'};">${user.currentStreak||0}</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${(user.currentStreak||0)>=6?'On fire!!':(user.currentStreak||0)>=3?'Nice streak!':'in a row correct'}</div>
+        </div>
+        <div style="background:${user.boldPrediction?'linear-gradient(135deg,#FFF0E0,#FEE2C0)':'var(--surface2)'};border-radius:12px;padding:1rem;border:1px solid ${user.boldPrediction?'#B45309':'var(--border)'};text-align:center;">
+          <div style="font-size:24px;margin-bottom:4px;">🐂</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:2px;">Bold prediction</div>
+          <div style="font-size:13px;font-weight:700;color:${user.boldPrediction?'#92400E':'var(--text-muted)'};">${user.boldPrediction?'Earned! 🏆':'Not yet'}</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${user.boldPrediction?'You called a wild one!':'Predict a big upset or crazy score'}</div>
+        </div>
+      </div>
+
+      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:8px;">
+        <div style="font-size:13px;font-weight:500;margin-bottom:6px;">🏆 Your tournament picks</div>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-muted);">
+          <div style="display:flex;justify-content:space-between;">
+            <span>⭐ Tournament player</span>
+            <strong style="color:var(--text);">${user.tournamentPlayer || 'Not set'}</strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span>🏆 World Cup winner pick</span>
+            <strong style="color:var(--text);">${user.tournamentWinner || 'Not set'}</strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span>⚽ Scorer bonus points</span>
+            <strong style="color:var(--green);">+${user.bonusPoints||0} pts</strong>
+          </div>
+        </div>
       </div>
 
       <div style="font-size:11px;font-weight:500;letter-spacing:0.08em;color:var(--text-muted);text-transform:uppercase;margin:1.25rem 0 0.5rem;">📈 Points progression</div>
