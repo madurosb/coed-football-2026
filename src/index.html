@@ -1462,7 +1462,7 @@
   <!-- GROUP PREDICTIONS -->
   <div class="page" id="page-grouppred">
     <p class="section-title" style="margin-bottom:0.25rem;">🏅 Inner Circle Bets</p>
-    <p style="font-size:13px;color:var(--text-muted);margin-bottom:1.25rem;">Bet on your friends — not the tournament! Who from your group will finish first, and who will crash out last? Votes are secret until June 10. Deadline: June 10.</p>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:1.25rem;">Vote on who from your group will finish top and who will finish bottom. Just for fun! Votes are secret until June 10.</p>
 
     <div id="grouppred-content">
       <div style="text-align:center;padding:2rem;font-size:13px;color:var(--text-muted);">Loading...</div>
@@ -1812,7 +1812,7 @@
         <div class="admin-card" onclick="showAdminSub('watch-admin')"><div class="icon">📺</div><div class="title">Watch Together</div><div class="desc">Add location options for matches that reached 4+ viewers. Players will then vote on where to meet.</div></div>
         <div class="admin-card" onclick="showAdminSub('bold-pred')"><div class="icon">🐂</div><div class="title">Bold predictions</div><div class="desc">Award the 🐂 badge to players who made a brave prediction and nailed it.</div></div>
         <div class="admin-card" onclick="showAdminSub('trash-admin')"><div class="icon">🧹</div><div class="title">Trash Talk reset</div><div class="desc">Delete all messages or messages older than a chosen number of days.</div></div>
-        <div class="admin-card" onclick="showAdminSub('double-admin')"><div class="icon">🎰</div><div class="title">Double or Nothing</div><div class="desc">Set this week's special match for Double or Nothing. Users opt in from their match card.</div></div>
+
       </div>
     </div>
     <div id="admin-results" class="admin-sub">
@@ -2039,24 +2039,31 @@
       await deleteDoc(ref);
       myDonMatches.delete(matchId);
       const btn = document.getElementById(`don-btn-${matchId}`);
-      if (btn) { btn.style.background = 'none'; btn.style.borderColor = '#BA7517'; btn.innerHTML = '🎰 Double or Nothing — tap to double your points (or lose them!)'; }
+      if (btn) { btn.style.background = 'none'; btn.style.borderColor = '#BA7517'; btn.innerHTML = '🎰 Double or Nothing - tap to double your points (or lose them!)'; }
       return;
     }
-    // Check weekly limit
+    // Strict server-side weekly check
     const week = getWeekKey();
     const weekSnap = await getDocs(query(collection(db, 'donOptIns'), where('userId', '==', currentUser.uid), where('week', '==', week)));
-    if (!weekSnap.empty) {
-      return alert('🎰 You already used your Double or Nothing this week! Come back next week.');
+    const otherOptIns = weekSnap.docs.filter(d => d.data().matchId !== matchId);
+    if (otherOptIns.length > 0) {
+      const used = otherOptIns[0].data();
+      return alert('🎰 Already used Double or Nothing this week on ' + (used.matchTeams || 'another match') + '!\n\nCome back next week.');
     }
+    // Check deadline
+    const matchSnap = await getDoc(doc(db, 'matches', matchId));
+    const kickoff = matchSnap.data()?.kickoff?.toDate?.();
+    if (kickoff && new Date() >= new Date(kickoff.getTime() - 24*60*60*1000)) return alert('Deadline passed for this match!');
+    const matchData = matchSnap.data();
     await setDoc(ref, {
       userId: currentUser.uid, matchId, week,
+      matchTeams: `${matchData?.homeTeam} vs ${matchData?.awayTeam}`,
       nickname: currentUserData?.nickname || currentUser.displayName,
       createdAt: serverTimestamp()
     });
     myDonMatches.add(matchId);
     const btn = document.getElementById(`don-btn-${matchId}`);
-    if (btn) { btn.style.background = '#FAEEDA'; btn.innerHTML = '🎰 Double or Nothing — <strong>Opted in!</strong> ✅'; }
-    // Toast
+    if (btn) { btn.style.background = '#FAEEDA'; btn.innerHTML = '🎰 Double or Nothing - <strong>Opted in!</strong> ✅'; }
     const t = document.createElement('div');
     t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#BA7517;color:#fff;font-size:13px;padding:10px 16px;border-radius:10px;z-index:9999;';
     t.textContent = '🎰 You\'re in! Points doubled if correct this match!';
@@ -2641,7 +2648,7 @@
 
   window.voteGroupPred = async (type, targetUid) => {
     const deadline = new Date('2026-06-10T19:00:00Z');
-    if (new Date() >= deadline) return alert('Voting is closed!');
+    if (new Date() >= deadline) return alert('Voting is closed! Results will be revealed at the end of the tournament.');
     const targetUser = await getDoc(doc(db, 'users', targetUid));
     await setDoc(doc(db, 'groupPredVotes', `${currentUser.uid}_${type}`), {
       userId: currentUser.uid,
@@ -2655,38 +2662,44 @@
 
   // ========== BOLD PREDICTION — AUTO DETECTION ==========
   async function checkAndAwardBoldPredictions(matchId, homeScore, awayScore, firstScorer) {
-    const totalGoals = homeScore + awayScore;
-    const bigScore = totalGoals >= 5; // 5+ goals is unusual
-    const bigWin = Math.abs(homeScore - awayScore) >= 3; // 3+ goal margin
-    const isUpset = awayScore > homeScore; // away team won (slight upset proxy)
-    if (!bigScore && !bigWin) return; // Only flag unusual results
-
     const predsSnap = await getDocs(query(collection(db, 'predictions'), where('matchId', '==', matchId)));
     const matchSnap = await getDoc(doc(db, 'matches', matchId));
     const matchData = matchSnap.data();
-
+    const totalGoals = homeScore + awayScore;
+    const bigScore = totalGoals >= 5;
+    const bigWin = Math.abs(homeScore - awayScore) >= 3;
+    const awayWon = awayScore > homeScore;
+    let sameExactCount = 0, sameResultCount = 0, totalPreds = 0;
+    predsSnap.forEach(d => {
+      const p = d.data(); totalPreds++;
+      const ar = homeScore > awayScore ? 'H' : homeScore < awayScore ? 'A' : 'D';
+      const pr = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
+      if (pr === ar) sameResultCount++;
+      if (p.homeScore === homeScore && p.awayScore === awayScore) sameExactCount++;
+    });
+    const isUpset = awayWon && sameResultCount <= Math.ceil(totalPreds * 0.3);
     for (const predDoc of predsSnap.docs) {
       const p = predDoc.data();
       const exactMatch = p.homeScore === homeScore && p.awayScore === awayScore;
-      if (!exactMatch) continue;
-
-      // How many others predicted this exact score?
-      let sameCount = 0;
-      predsSnap.forEach(d => {
-        if (d.data().homeScore === homeScore && d.data().awayScore === awayScore) sameCount++;
-      });
-      const isUnique = sameCount <= 2; // Only 1-2 people predicted this exact bold score
-
-      if (isUnique || (bigScore && exactMatch)) {
-        // Award bold prediction badge
-        const reason = `Exact score ${homeScore}-${awayScore} in ${matchData?.homeTeam} vs ${matchData?.awayTeam}${sameCount === 1 ? ' — the ONLY one who got it!' : ''}`;
+      const predAway = p.awayScore > p.homeScore;
+      const ar = homeScore > awayScore ? 'H' : homeScore < awayScore ? 'A' : 'D';
+      const pr = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
+      let isBold = false, reason = '';
+      if (exactMatch && sameExactCount <= 2 && (bigScore || bigWin)) {
+        isBold = true;
+        reason = `Exact score ${homeScore}-${awayScore} in ${matchData?.homeTeam} vs ${matchData?.awayTeam}${sameExactCount === 1 ? ' - the ONLY one who called it!' : ' - one of only 2!'}`;
+      } else if (isUpset && predAway && pr === ar && sameResultCount === 1) {
+        isBold = true;
+        reason = `The ONLY one who predicted ${matchData?.awayTeam} would beat ${matchData?.homeTeam}. Legendary call!`;
+      } else if (isUpset && exactMatch && predAway) {
+        isBold = true;
+        reason = `Called the upset - ${matchData?.awayTeam} beating ${matchData?.homeTeam} when most didn't believe it!`;
+      }
+      if (isBold) {
         await setDoc(doc(db, 'boldPredictions', `${p.userId}_${matchId}`), {
-          userId: p.userId, matchId,
-          homeTeam: matchData?.homeTeam, awayTeam: matchData?.awayTeam,
-          score: `${homeScore}-${awayScore}`, reason,
-          awardedAt: serverTimestamp(), seen: false
+          userId: p.userId, matchId, homeTeam: matchData?.homeTeam, awayTeam: matchData?.awayTeam,
+          score: `${homeScore}-${awayScore}`, reason, awardedAt: serverTimestamp(), seen: false
         });
-        // Also flag on user doc
         await updateDoc(doc(db, 'users', p.userId), { boldPrediction: true });
       }
     }
@@ -2793,6 +2806,7 @@
           <div style="position:relative;">
             <div style="background:${isMe?'var(--green)':'var(--surface)'};color:${isMe?'white':'var(--text)'};border:${isMe?'none':'0.5px solid var(--border)'};border-radius:${isMe?'16px 16px 4px 16px':'16px 16px 16px 4px'};padding:10px 14px;font-size:13px;line-height:1.55;word-break:break-word;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
               ${m.text}
+              <div style="font-size:10px;opacity:0.55;margin-top:4px;text-align:${isMe?'left':'right'};">tap 😊 to react</div>
             </div>
             ${picker}
             <button onclick="showPicker('${m.id}')"
@@ -2817,11 +2831,24 @@
   };
 
   window.toggleReaction = async (msgId, emoji) => {
-    const docId = `${currentUser.uid}_${msgId}_${encodeURIComponent(emoji)}`;
-    const ref = doc(db, 'trashReactions', docId);
-    const existing = await getDoc(ref);
-    if (existing.exists()) await deleteDoc(ref);
-    else await setDoc(ref, { msgId, emoji, userId: currentUser.uid, nickname: currentUserData?.nickname || currentUser.displayName });
+    // One reaction per user per message - remove any existing reaction first
+    const existingSnap = await getDocs(
+      query(collection(db, 'trashReactions'),
+        where('msgId', '==', msgId),
+        where('userId', '==', currentUser.uid)
+      )
+    );
+    // If clicking same emoji they already reacted with - remove it
+    const sameEmoji = existingSnap.docs.find(d => d.data().emoji === emoji);
+    if (sameEmoji) { await deleteDoc(sameEmoji.ref); loadTrashTalk(); return; }
+    // Remove any other reaction they had on this message
+    for (const d of existingSnap.docs) await deleteDoc(d.ref);
+    // Add new reaction
+    const docId = `${currentUser.uid}_${msgId}`;
+    await setDoc(doc(db, 'trashReactions', docId), {
+      msgId, emoji, userId: currentUser.uid,
+      nickname: currentUserData?.nickname || currentUser.displayName
+    });
     loadTrashTalk();
   };
 
