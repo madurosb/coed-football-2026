@@ -2624,6 +2624,20 @@
     if (id === 'trash') loadTrashTalk();
     if (id === 'grouppred') loadGroupPredictions();
 
+    // Mute background music on Rules page, restore on exit
+    const vid = document.getElementById('rules-video');
+    if (vid) {
+      if (id === 'rules') {
+        if (ap && musicPlaying) ap.volume = 0;
+        vid.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
+        vid.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+      } else {
+        if (ap && musicPlaying) ap.volume = 0.4;
+        vid.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+      }
+    }
+  };
+
   // ========== GROUP PREDICTIONS ==========
   async function loadGroupPredictions() {
     const container = document.getElementById('grouppred-content');
@@ -3018,21 +3032,6 @@
   }
 
   // Show streak in leaderboard - added to renderLeaderboard via user.currentStreak
-
-    const vid = document.getElementById('rules-video');
-    if (vid) {
-      if (id === 'rules') {
-        if (!ap) ap = document.getElementById('audio-player');
-        if (ap && musicPlaying) ap.volume = 0;
-        vid.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
-        vid.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-      } else {
-        if (!ap) ap = document.getElementById('audio-player');
-        if (ap && musicPlaying) ap.volume = 0.4;
-        vid.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
-      }
-    }
-  };
 
   // LOAD HOME DATA
   async function loadHomeData() {
