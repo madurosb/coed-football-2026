@@ -2301,14 +2301,32 @@
     currentTrack = Math.floor(Math.random() * TRACKS.length);
     ap.src = TRACKS[currentTrack];
     ap.volume = 0.4;
-    ap.play().then(() => {
-      musicPlaying = true;
-      if (mb) mb.textContent = '🔊';
-    }).catch(() => {});
+    ap.loop = false;
+    const playPromise = ap.play();
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        musicPlaying = true;
+        if (mb) mb.textContent = '🔊';
+      }).catch(err => {
+        // If blocked, retry once on next real click
+        console.log('Music autoplay blocked, will retry on click:', err.message);
+        musicPlaying = false;
+        const retry = () => {
+          ap.play().then(() => {
+            musicPlaying = true;
+            if (mb) mb.textContent = '🔊';
+          }).catch(() => {});
+          document.removeEventListener('click', retry);
+          document.removeEventListener('touchstart', retry);
+        };
+        document.addEventListener('click', retry);
+        document.addEventListener('touchstart', retry);
+      });
+    }
     ap.onended = () => {
       currentTrack = (currentTrack + 1) % TRACKS.length;
       ap.src = TRACKS[currentTrack];
-      ap.play();
+      ap.play().catch(() => {});
     };
   }
 
@@ -2493,18 +2511,22 @@
     setTimeout(checkBoldPredictionPopup, 4000);
     // Start music on first user interaction (browser requires gesture)
     let musicStarted = false;
-    const startOnInteraction = () => {
+    const startOnInteraction = (e) => {
+      // Skip passive mousemove until a real gesture happens
+      if (e.type === 'mousemove' && e.buttons === 0) return;
       if (musicStarted) return;
       musicStarted = true;
       startMusic();
-      ['click','touchstart','touchmove','scroll','keydown','mousemove'].forEach(e =>
-        document.removeEventListener(e, startOnInteraction, true)
+      ['click','touchstart','touchmove','scroll','keydown','mousemove'].forEach(ev =>
+        document.removeEventListener(ev, startOnInteraction, true)
       );
       setTimeout(showMusicTooltip, 1200);
     };
-    ['click','touchstart','touchmove','scroll','keydown','mousemove'].forEach(e =>
+    ['click','touchstart','touchmove','scroll','keydown'].forEach(e =>
       document.addEventListener(e, startOnInteraction, true)
     );
+    // mousemove only on desktop after a delay (avoids false triggers)
+    setTimeout(() => document.addEventListener('mousemove', startOnInteraction, true), 2000);
   }
 
   // SIGN IN
