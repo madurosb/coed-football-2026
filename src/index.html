@@ -428,6 +428,7 @@
       <button class="nav-btn" data-page="stats" onclick="showPage('stats')">My Stats</button>
       <button class="nav-btn" data-page="tips" onclick="showPage('tips')">Tips</button>
       <button class="nav-btn" data-page="watch" onclick="showPage('watch')">📺 Watch Together</button>
+      <button class="nav-btn" data-page="trash" onclick="showPage('trash')">💬 Trash Talk</button>
       <button class="nav-btn" data-page="highlights" onclick="showPage('highlights')">Highlights</button>
       <button class="nav-btn" data-page="rules" onclick="showPage('rules')">Rules</button>
       <button class="nav-btn" data-page="dummies" onclick="showPage('dummies')">🎓 How to play</button>
@@ -453,6 +454,7 @@
     <button class="mobile-menu-btn" data-page="stats" onclick="mobileNav('stats')">📊 &nbsp; My Stats</button>
     <button class="mobile-menu-btn" data-page="tips" onclick="mobileNav('tips')">💡 &nbsp; Tips</button>
     <button class="mobile-menu-btn" data-page="watch" onclick="mobileNav('watch')">📺 &nbsp; Watch Together</button>
+    <button class="mobile-menu-btn" data-page="trash" onclick="mobileNav('trash')">💬 &nbsp; Trash Talk</button>
     <button class="mobile-menu-btn" data-page="highlights" onclick="mobileNav('highlights')">🎬 &nbsp; Highlights</button>
     <button class="mobile-menu-btn" data-page="rules" onclick="mobileNav('rules')">📋 &nbsp; Rules</button>
     <button class="mobile-menu-btn" data-page="dummies" onclick="mobileNav('dummies')">🎓 &nbsp; How to play</button>
@@ -1369,6 +1371,40 @@
       <h2>The Sniper award</h2>
       <div style="font-size:14px; color:var(--text-muted); line-height:1.7;">The Sniper award goes to the player with the highest prediction accuracy - most exact scores guessed correctly as a percentage of total predictions submitted. If the winner is already in the top 3, the award passes to the next most accurate player not already holding a prize.</div>
     </div>
+
+    <div class="rules-card">
+      <h2>🎮 Special features</h2>
+      <div class="rule-row">
+        <div>
+          <div class="rule-name">🃏 Joker card</div>
+          <div class="rule-desc">Once per tournament, you can activate a Joker on any match before deadline. If your prediction is correct, all points from that match are doubled. If wrong, you still lose nothing extra — the Joker just has no effect.</div>
+        </div>
+      </div>
+      <div class="rule-row">
+        <div>
+          <div class="rule-name">🎰 Double or Nothing</div>
+          <div class="rule-desc">Each week the admin designates one special match. You can opt in to Double or Nothing — if your prediction is correct you earn double points, but if you're wrong you lose the same number of points.</div>
+        </div>
+      </div>
+      <div class="rule-row">
+        <div>
+          <div class="rule-name">🔥 Streak bonus</div>
+          <div class="rule-desc">Get correct predictions in a row and earn a streak bonus! A streak of 3+ correct results earns +1 bonus point per match. A streak of 6+ earns +2 per match. Keep the momentum going!</div>
+        </div>
+      </div>
+      <div class="rule-row">
+        <div>
+          <div class="rule-name">🎯 Sniper of the Week</div>
+          <div class="rule-desc">Each round, the player with the highest exact score accuracy earns the special "🎯 Sniper of the Week" badge on their profile. The badge rotates each round.</div>
+        </div>
+      </div>
+      <div class="rule-row" style="border-bottom:none;">
+        <div>
+          <div class="rule-name">💬 Trash Talk Wall</div>
+          <div class="rule-desc">Send short messages to the whole group — brag, taunt, or trash talk. Keep it fun and friendly! Messages are visible to all players.</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- STATS -->
@@ -1459,12 +1495,14 @@
       <div style="flex:1;">
         <div style="font-size:15px;font-weight:600;margin-bottom:4px;">Choose your nickname & avatar 😎</div>
         <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Pick a nickname (how you'll appear on the leaderboard) and choose one of 20 fun avatars. This is how everyone will see you!</div>
-        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
-          ${['#1D9E75','#E24B4A','#BA7517','#6366f1','#ec4899','#f97316'].map((c,i) => `
-            <div style="width:32px;height:32px;border-radius:50%;background:${c}20;border:2px solid ${c};display:flex;align-items:center;justify-content:center;font-size:14px;">
-              ${['🧟','🧛','🤖','🤡','🧙','🥷'][i]}
-            </div>`).join('')}
-          <div style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;">...and 14 more!</div>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <div style="width:32px;height:32px;border-radius:50%;background:#1D9E7520;border:2px solid #1D9E75;display:flex;align-items:center;justify-content:center;font-size:15px;">🧟</div>
+          <div style="width:32px;height:32px;border-radius:50%;background:#E24B4A20;border:2px solid #E24B4A;display:flex;align-items:center;justify-content:center;font-size:15px;">🧛</div>
+          <div style="width:32px;height:32px;border-radius:50%;background:#BA751720;border:2px solid #BA7517;display:flex;align-items:center;justify-content:center;font-size:15px;">🤖</div>
+          <div style="width:32px;height:32px;border-radius:50%;background:#6366f120;border:2px solid #6366f1;display:flex;align-items:center;justify-content:center;font-size:15px;">🤡</div>
+          <div style="width:32px;height:32px;border-radius:50%;background:#ec489920;border:2px solid #ec4899;display:flex;align-items:center;justify-content:center;font-size:15px;">🧙</div>
+          <div style="width:32px;height:32px;border-radius:50%;background:#f9731620;border:2px solid #f97316;display:flex;align-items:center;justify-content:center;font-size:15px;">🥷</div>
+          <div style="font-size:11px;color:var(--text-muted);">...and 14 more!</div>
         </div>
       </div>
     </div>
@@ -1570,6 +1608,38 @@
       </div>
     </div>
 
+    <!-- STEP 7 - SPECIAL FEATURES -->
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;display:flex;gap:14px;align-items:flex-start;">
+      <div style="flex-shrink:0;">
+        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+          <circle cx="28" cy="28" r="28" fill="#EDE9FE"/>
+          <text x="28" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#5B21B6">STEP</text>
+          <text x="28" y="38" text-anchor="middle" font-size="20" font-weight="700" fill="#7C3AED">7</text>
+        </svg>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Special game features 🎮</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="background:var(--surface2);border-radius:8px;padding:8px 10px;">
+            <div style="font-size:13px;font-weight:500;margin-bottom:2px;">🃏 Joker Card</div>
+            <div style="font-size:12px;color:var(--text-muted);">Tap 🃏 next to any match before deadline. Use it once — if correct, your points for that match are <strong>doubled!</strong></div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:8px 10px;">
+            <div style="font-size:13px;font-weight:500;margin-bottom:2px;">🔥 Streak Bonus</div>
+            <div style="font-size:12px;color:var(--text-muted);">Get 3+ correct predictions in a row and earn a <strong>🔥 streak badge</strong> on the leaderboard. Keep it going!</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:8px 10px;">
+            <div style="font-size:13px;font-weight:500;margin-bottom:2px;">💬 Trash Talk Wall</div>
+            <div style="font-size:12px;color:var(--text-muted);">Send short messages to the whole group. Brag, taunt, trash talk — keep it fun! Find it in the menu.</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:8px 10px;">
+            <div style="font-size:13px;font-weight:500;margin-bottom:2px;">🎰 Double or Nothing</div>
+            <div style="font-size:12px;color:var(--text-muted);">Each week the admin marks one special match. Opt in — correct = double points, wrong = lose those points!</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- SCORING QUICK GUIDE -->
     <div style="background:var(--surface);border:0.5px solid var(--green);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
       <div style="font-size:14px;font-weight:600;margin-bottom:10px;">📊 Points at a glance</div>
@@ -1600,6 +1670,23 @@
       <button onclick="showPage('matches')" style="background:var(--green);color:white;border:none;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;">
         ⚽ Start predicting now!
       </button>
+    </div>
+  </div>
+
+  <!-- TRASH TALK -->
+  <div class="page" id="page-trash">
+    <p class="section-title" style="margin-bottom:0.25rem;">💬 Trash Talk Wall</p>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Talk smack. Make predictions. Taunt your friends. All in good fun 😄</p>
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:0.75rem;margin-bottom:1rem;">
+      <textarea id="trash-input" placeholder="e.g. Messi is going to destroy everyone 🐐" maxlength="140"
+        style="width:100%;border:none;background:none;color:var(--text);font-size:13px;resize:none;height:60px;outline:none;font-family:inherit;"></textarea>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+        <span id="trash-char-count" style="font-size:11px;color:var(--text-muted);">0/140</span>
+        <button onclick="sendTrashTalk()" style="background:var(--green);color:white;border:none;padding:6px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;">Send 🔥</button>
+      </div>
+    </div>
+    <div id="trash-feed">
+      <div style="text-align:center;padding:2rem;font-size:13px;color:var(--text-muted);">Loading...</div>
     </div>
   </div>
 
@@ -1779,7 +1866,7 @@
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
   import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
-  import { getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, updateDoc, deleteDoc, query, orderBy, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+  import { getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, updateDoc, deleteDoc, query, orderBy, where, limit, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 
   async function loadWatchAdmin() {
     const container = document.getElementById('watch-admin-content');
@@ -2248,6 +2335,7 @@
     if (id === 'matches') {
       document.addEventListener('touchmove', preventZoom, { passive: false });
       document.addEventListener('gesturestart', preventZoom, { passive: false });
+      setTimeout(loadJokerStatus, 800);
     } else {
       document.removeEventListener('touchmove', preventZoom);
       document.removeEventListener('gesturestart', preventZoom);
@@ -2258,6 +2346,152 @@
     if (id === 'tips') loadTipsPage();
     if (id === 'live') loadLivePage();
     if (id === 'watch') loadWatchPage();
+    if (id === 'trash') loadTrashTalk();
+
+  // ========== TRASH TALK ==========
+  let trashUnsubscribe = null;
+
+  async function loadTrashTalk() {
+    const feed = document.getElementById('trash-feed');
+    const input = document.getElementById('trash-input');
+    if (input) {
+      input.oninput = () => {
+        const cc = document.getElementById('trash-char-count');
+        if (cc) cc.textContent = `${input.value.length}/140`;
+      };
+    }
+    if (!feed) return;
+    const snap = await getDocs(query(collection(db, 'trashTalk'), orderBy('createdAt', 'desc'), limit(50)));
+    renderTrashFeed(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+  }
+
+  function renderTrashFeed(msgs) {
+    const feed = document.getElementById('trash-feed');
+    if (!feed) return;
+    if (msgs.length === 0) {
+      feed.innerHTML = `<div style="text-align:center;padding:2rem;font-size:13px;color:var(--text-muted);">No messages yet. Be the first to talk trash! 🔥</div>`;
+      return;
+    }
+    feed.innerHTML = msgs.map(m => {
+      const time = m.createdAt?.toDate ? m.createdAt.toDate().toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+      const isMe = m.userId === currentUser?.uid;
+      return `<div style="display:flex;gap:10px;margin-bottom:12px;${isMe?'flex-direction:row-reverse;':''}">
+        <div style="width:32px;height:32px;border-radius:50%;background:${isMe?'var(--green-light)':'var(--surface2)'};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;color:${isMe?'var(--green-dark)':'var(--text-muted)'};">
+          ${(m.nickname||'?').substring(0,2).toUpperCase()}
+        </div>
+        <div style="max-width:75%;">
+          <div style="display:flex;align-items:baseline;gap:6px;${isMe?'justify-content:flex-end;':''}">
+            <span style="font-size:12px;font-weight:500;">${m.nickname}</span>
+            <span style="font-size:10px;color:var(--text-muted);">${time}</span>
+          </div>
+          <div style="background:${isMe?'var(--green)':'var(--surface)'};color:${isMe?'white':'var(--text)'};border:${isMe?'none':'0.5px solid var(--border)'};border-radius:${isMe?'12px 12px 2px 12px':'12px 12px 12px 2px'};padding:8px 12px;font-size:13px;margin-top:3px;line-height:1.5;">
+            ${m.text}
+          </div>
+          ${isMe ? `<div style="text-align:right;"><button onclick="deleteTrashMsg('${m.id}')" style="background:none;border:none;font-size:10px;color:var(--text-muted);cursor:pointer;padding:2px 0;">delete</button></div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  window.sendTrashTalk = async () => {
+    const input = document.getElementById('trash-input');
+    const text = input?.value.trim();
+    if (!text) return;
+    if (text.length > 140) return alert('Max 140 characters!');
+    input.value = '';
+    const cc = document.getElementById('trash-char-count');
+    if (cc) cc.textContent = '0/140';
+    await addDoc(collection(db, 'trashTalk'), {
+      text, userId: currentUser.uid,
+      nickname: currentUserData?.nickname || currentUser.displayName,
+      createdAt: serverTimestamp()
+    });
+    loadTrashTalk();
+  };
+
+  window.deleteTrashMsg = async (id) => {
+    await deleteDoc(doc(db, 'trashTalk', id));
+    loadTrashTalk();
+  };
+
+  // ========== JOKER CARD ==========
+  let jokerUsed = false;
+  let jokerMatchId = null;
+
+  async function loadJokerStatus() {
+    const snap = await getDocs(query(collection(db, 'jokerCards'), where('userId', '==', currentUser.uid)));
+    snap.forEach(d => {
+      jokerMatchId = d.data().matchId;
+      jokerUsed = true;
+    });
+    // Update all joker buttons
+    document.querySelectorAll('[id^="joker-btn-"]').forEach(btn => {
+      const matchId = btn.id.replace('joker-btn-','');
+      if (jokerUsed && jokerMatchId === matchId) {
+        btn.textContent = '🃏 Active!';
+        btn.style.background = '#FAEEDA';
+        btn.style.borderColor = '#BA7517';
+        btn.disabled = true;
+      } else if (jokerUsed) {
+        btn.textContent = '🃏';
+        btn.style.opacity = '0.3';
+        btn.disabled = true;
+        btn.title = 'Joker already used on another match';
+      }
+    });
+  }
+
+  window.activateJoker = async (matchId) => {
+    if (jokerUsed) return alert('You already used your Joker card this tournament!');
+    const deadline = new Date((await getDoc(doc(db, 'matches', matchId))).data()?.kickoff?.toDate?.() || 0);
+    deadline.setHours(deadline.getHours() - 24);
+    if (new Date() >= deadline) return alert('Deadline passed — can\'t activate Joker on this match.');
+    if (!confirm(`🃏 Activate Joker on this match?\n\nIf your prediction is correct, all points are DOUBLED.\nYou only get one Joker for the whole tournament!`)) return;
+    await setDoc(doc(db, 'jokerCards', `${currentUser.uid}`), {
+      userId: currentUser.uid,
+      matchId,
+      nickname: currentUserData?.nickname || currentUser.displayName,
+      activatedAt: serverTimestamp()
+    });
+    jokerUsed = true;
+    jokerMatchId = matchId;
+    const btn = document.getElementById(`joker-btn-${matchId}`);
+    if (btn) { btn.textContent = '🃏 Active!'; btn.style.background = '#FAEEDA'; btn.disabled = true; }
+    // Show toast
+    const tip = document.createElement('div');
+    tip.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#BA7517;color:#fff;font-size:13px;padding:10px 16px;border-radius:10px;z-index:9999;white-space:nowrap;';
+    tip.textContent = '🃏 Joker activated! Points doubled if correct!';
+    document.body.appendChild(tip);
+    setTimeout(() => { tip.style.transition='opacity 0.5s'; tip.style.opacity='0'; setTimeout(()=>tip.remove(),500); }, 3000);
+  };
+
+  // ========== STREAK ==========
+  async function updateStreak(userId) {
+    const predsSnap = await getDocs(query(collection(db, 'predictions'), where('userId', '==', userId)));
+    const matchesSnap = await getDocs(collection(db, 'matches'));
+    const matches = {};
+    matchesSnap.forEach(d => matches[d.id] = d.data());
+    const finished = [];
+    predsSnap.forEach(d => {
+      const p = d.data();
+      const m = matches[p.matchId];
+      if (!m || m.status !== 'FINISHED' || m.homeScore === null) return;
+      const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
+      const pred = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
+      const kickoff = m.kickoff?.toDate?.() || new Date(0);
+      finished.push({ correct: actual === pred, kickoff });
+    });
+    finished.sort((a, b) => b.kickoff - a.kickoff);
+    let streak = 0;
+    for (const f of finished) {
+      if (f.correct) streak++;
+      else break;
+    }
+    await updateDoc(doc(db, 'users', userId), { currentStreak: streak });
+    return streak;
+  }
+
+  // Show streak in leaderboard - added to renderLeaderboard via user.currentStreak
 
     const vid = document.getElementById('rules-video');
     if (vid) {
@@ -2508,9 +2742,12 @@
       const badgeHTML = badge
         ? `<span style="font-size:10px;padding:1px 6px;border-radius:99px;background:${badge.bg};color:${badge.color};font-weight:500;margin-left:4px;">${badge.emoji} ${badge.text}</span>`
         : '';
+      const streak = u.currentStreak || 0;
+      const streakHTML = streak >= 3 ? `<span style="font-size:10px;padding:1px 6px;border-radius:99px;background:#FFF0E0;color:#B45309;font-weight:500;margin-left:4px;">🔥 ${streak}</span>` : '';
+      const jokerHTML = u.jokerMatchId ? `<span style="font-size:10px;padding:1px 6px;border-radius:99px;background:#FAEEDA;color:#633806;font-weight:500;margin-left:4px;">🃏</span>` : '';
       const nameHTML = u.isAdmin
         ? `${u.nickname||u.displayName} <span style="font-size:10px;background:#00ff41;color:#000;padding:1px 5px;border-radius:99px;font-weight:700;">ADMIN</span>`
-        : `${u.nickname||u.displayName}${badgeHTML}`;
+        : `${u.nickname||u.displayName}${badgeHTML}${streakHTML}${jokerHTML}`;
       return `
       <div class="lb-row" ${i === 0 && (u.points||0) > 0 ? 'style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border-left:3px solid #F59E0B;"' : ''}>
         <div class="lb-rank ${medals[i] || ''}">${i + 1}</div>
@@ -2970,7 +3207,13 @@
               </select>
             </div>
           </div>
-          ${!isPast ? `<button class="save-btn" onclick="savePrediction('${d.id}', '${m.homeTeam}', '${m.awayTeam}')">Save prediction</button>` : `<p style="font-size:12px;color:var(--text-muted);margin-top:0.75rem;text-align:center;">${isFinished ? '✅ Match finished' : '🔒 Deadline passed - predictions locked'}</p>`}
+          ${!isPast ? `
+            <div style="display:flex;gap:8px;align-items:center;margin-top:0.75rem;">
+              <button class="save-btn" style="flex:1;" onclick="savePrediction('${d.id}', '${m.homeTeam}', '${m.awayTeam}')">Save prediction</button>
+              <button id="joker-btn-${d.id}" onclick="activateJoker('${d.id}')" title="Double your points for this match!"
+                style="padding:8px 12px;border-radius:8px;border:0.5px solid #BA7517;background:none;color:#BA7517;font-size:13px;cursor:pointer;white-space:nowrap;transition:all 0.15s;"
+                onmouseover="this.style.background='#FAEEDA'" onmouseout="this.style.background='none'">🃏</button>
+            </div>` : `<p style="font-size:12px;color:var(--text-muted);margin-top:0.75rem;text-align:center;">${isFinished ? '✅ Match finished' : '🔒 Deadline passed - predictions locked'}</p>`}
           ${finishedResult}
           <div id="result-${d.id}"></div>
         </div>`;
@@ -3391,6 +3634,10 @@
           pts += tpPts;
           bonus += goals + assists; // track in bonusPoints for display
         }
+
+        // Joker card — double points if activated for this match
+        const jokerSnap = await getDocs(query(collection(db, 'jokerCards'), where('matchId', '==', matchId), where('userId', '==', pred.data.userId)));
+        if (!jokerSnap.empty) pts *= 2;
 
         const userRef = doc(db, 'users', pred.data.userId);
         const userSnap = await getDoc(userRef);
