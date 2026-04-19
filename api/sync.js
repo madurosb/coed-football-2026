@@ -259,7 +259,7 @@ async function calculatePoints(db, matchId, homeScore, awayScore, firstScorer) {
       if (isCorrect) {
         pts = (resultPts * 2) + scorerPts;
       } else {
-        const penalty = isFinal ? 10 : Math.max(1 * multiplier, Math.abs(resultPts) > 0 ? Math.abs(resultPts) : 1 * multiplier);
+        const penalty = isFinal ? 10 : 1 * multiplier;
         pts = scorerPts - penalty;
       }
     }
