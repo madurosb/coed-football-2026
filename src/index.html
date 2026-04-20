@@ -215,9 +215,11 @@
       .match-teams { gap: 4px; }
       .score-inputs { gap: 4px; }
 
-      /* Leaderboard */
-      .lb-row { grid-template-columns: 32px 1fr 50px; }
-      .lb-row .lb-pts.muted { display: none; }
+      /* Leaderboard — hide Exact and Bonus columns on mobile */
+      .lb-row { grid-template-columns: 32px 1fr 50px !important; }
+      .lb-row .lb-pts.muted { display: none !important; }
+      .lb-row.header div:nth-child(4),
+      .lb-row.header div:nth-child(5) { display: none; }
 
       /* Grids */
       .admin-grid { grid-template-columns: 1fr; }
@@ -1374,8 +1376,8 @@
         <button onclick="window.goToVideo(1)" id="vtab-1" style="flex-shrink:0;padding:5px 11px;border-radius:99px;font-size:11px;font-weight:500;border:1.5px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;transition:all 0.2s;white-space:nowrap;">🔥 Multipliers</button>
         <button onclick="window.goToVideo(2)" id="vtab-2" style="flex-shrink:0;padding:5px 11px;border-radius:99px;font-size:11px;font-weight:500;border:1.5px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;transition:all 0.2s;white-space:nowrap;">📋 Prediction rules</button>
         <button onclick="window.goToVideo(3)" id="vtab-3" style="flex-shrink:0;padding:5px 11px;border-radius:99px;font-size:11px;font-weight:500;border:1.5px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;transition:all 0.2s;white-space:nowrap;">🏆 Prizes</button>
-        <button onclick="window.goToVideo(4)" id="vtab-4" style="flex-shrink:0;padding:5px 11px;border-radius:99px;font-size:11px;font-weight:500;border:1.5px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;transition:all 0.2s;white-space:nowrap;">🎮 Special features</button>
-        <button onclick="window.goToVideo(5)" id="vtab-5" style="flex-shrink:0;padding:5px 11px;border-radius:99px;font-size:11px;font-weight:500;border:1.5px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;transition:all 0.2s;white-space:nowrap;">🎬 Full tutorial</button>
+        <button onclick="window.goToVideo(4)" id="vtab-4" style="flex-shrink:0;padding:5px 11px;border-radius:99px;font-size:11px;font-weight:500;border:1.5px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;transition:all 0.2s;white-space:nowrap;">🎯 The Sniper</button>
+        <button onclick="window.goToVideo(5)" id="vtab-5" style="flex-shrink:0;padding:5px 11px;border-radius:99px;font-size:11px;font-weight:500;border:1.5px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;transition:all 0.2s;white-space:nowrap;">🎮 Special features</button>
       </div>
 
       <!-- Video player -->
@@ -1487,7 +1489,7 @@
     </div>
 
     <div class="rules-card">
-      <h2>🎮 Special features</h2>
+      <h2>🎯 The Sniper</h2>
       <div class="rule-row">
         <div>
           <div class="rule-name">🏅 Group prediction</div>
@@ -2322,8 +2324,8 @@
     { id: '_-cpzyMYURw', title: '🔥 Multipliers, Joker & Double or Nothing', duration: 19 },
     { id: 'R42tNFedrG8', title: '📋 Prediction rules',                       duration: 19 },
     { id: 'aZ-UWYsqdys', title: '🏆 Prizes',                                 duration: 19 },
-    { id: '3ZKY-TNJP0U', title: '🎮 Special features',                       duration: 19 },
-    { id: 'b05KIiyr9dQ', title: '🎬 Full tutorial',                           duration: 19 },
+    { id: '3ZKY-TNJP0U', title: '🎯 The Sniper',                       duration: 19 },
+    { id: 'b05KIiyr9dQ', title: '🎮 Special features',                           duration: 19 },
   ];
   let currentVideoIdx = 0;
 
@@ -2373,7 +2375,7 @@
     startVideoTimer(v.duration);
     // Remove overlay on mobile so users can interact
     const overlay = document.getElementById('video-overlay');
-    if (overlay) overlay.style.display = isMobile ? 'none' : 'block';
+    if (overlay) overlay.style.display = 'block'; // always block clicks on video
   };
 
   window.prevVideo = () => window.goToVideo((currentVideoIdx - 1 + RULE_VIDEOS.length) % RULE_VIDEOS.length);
@@ -2460,10 +2462,8 @@
 
   // Init on load
   setTimeout(() => {
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    // Remove overlay on mobile so users can interact with video if needed
     const overlay = document.getElementById('video-overlay');
-    if (overlay) overlay.style.display = isMobile ? 'none' : 'block';
+    if (overlay) overlay.style.display = 'block';
     renderVideoDots();
     updateVideoTabs();
     initVideoSwipe();
@@ -3309,6 +3309,10 @@
       const days = Math.floor(diff / (1000 * 60 * 60 * 24));
       const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       if (noticeEl) noticeEl.innerHTML = `⏰ Deadline: 10 Jun 22:00 (Israel time) &nbsp;·&nbsp; ${days}d ${hours}h left`;
+      // Restore existing pick into the select
+      if (playerSelect && currentUserData.tournamentPlayer) {
+        playerSelect.value = currentUserData.tournamentPlayer;
+      }
     }
 
     // Winner pick setup
