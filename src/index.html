@@ -2450,12 +2450,10 @@
   window.toggleVideoMute = function() {
     const btn = document.getElementById('video-mute-btn');
     videoMuted = !videoMuted;
-    // Rebuild src with/without mute — reliable on both iOS and Android
     const iframe = document.getElementById('rules-video');
-    if (iframe && iframe.src && iframe.src.includes('youtube')) {
-      const v = RULE_VIDEOS[currentVideoIdx];
-      const muteParam = videoMuted ? '&mute=1' : '';
-      iframe.src = `https://www.youtube.com/embed/${v.id}?autoplay=1${muteParam}&controls=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`;
+    if (iframe?.contentWindow) {
+      const cmd = videoMuted ? 'mute' : 'unMute';
+      iframe.contentWindow.postMessage(JSON.stringify({event:'command',func:cmd,args:''}), '*');
     }
     if (btn) btn.innerHTML = videoMuted ? '🔊 Unmute video' : '🔇 Mute video';
   };
