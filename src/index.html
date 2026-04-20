@@ -1403,13 +1403,22 @@
         <div id="video-progress-bar" style="height:100%;width:0%;background:var(--green);border-radius:99px;"></div>
       </div>
 
-      <!-- Title + arrows + dots all in one row -->
+      <!-- Title + arrows + dots + controls all together -->
       <div style="margin-top:10px;">
         <div id="video-title" style="font-size:13px;font-weight:500;text-align:center;margin-bottom:8px;">⚽ Scoring basics</div>
         <div style="display:flex;align-items:center;justify-content:center;gap:10px;">
           <button onclick="window.prevVideo()" style="width:30px;height:30px;border-radius:50%;border:0.5px solid var(--border);background:var(--surface);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">‹</button>
           <div id="video-dots" style="display:flex;gap:5px;align-items:center;"></div>
           <button onclick="window.nextVideo()" style="width:30px;height:30px;border-radius:50%;border:0.5px solid var(--border);background:var(--surface);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">›</button>
+        </div>
+        <!-- Mute + Pause controls -->
+        <div style="display:flex;justify-content:center;gap:8px;margin-top:8px;">
+          <button id="video-pause-btn" onclick="window.toggleVideoPause()" style="padding:5px 14px;border-radius:99px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all 0.15s;">
+            ⏸ Pause slideshow
+          </button>
+          <button id="video-mute-btn" onclick="window.toggleVideoMute()" style="padding:5px 14px;border-radius:99px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all 0.15s;">
+            🔇 Mute video
+          </button>
         </div>
       </div>
     </div>
@@ -2309,12 +2318,12 @@
 
   // ========== VIDEO CAROUSEL ==========
   const RULE_VIDEOS = [
-    { id: 'LPduWfgqK2E', title: '⚽ Scoring basics',                        duration: 16 },
-    { id: '_-cpzyMYURw', title: '🔥 Multipliers, Joker & Double or Nothing', duration: 16 },
-    { id: 'R42tNFedrG8', title: '📋 Prediction rules',                       duration: 16 },
-    { id: 'aZ-UWYsqdys', title: '🏆 Prizes',                                 duration: 16 },
-    { id: '3ZKY-TNJP0U', title: '🎮 Special features',                       duration: 16 },
-    { id: 'b05KIiyr9dQ', title: '🎬 Full tutorial',                           duration: 16 },
+    { id: 'LPduWfgqK2E', title: '⚽ Scoring basics',                        duration: 19 },
+    { id: '_-cpzyMYURw', title: '🔥 Multipliers, Joker & Double or Nothing', duration: 19 },
+    { id: 'R42tNFedrG8', title: '📋 Prediction rules',                       duration: 19 },
+    { id: 'aZ-UWYsqdys', title: '🏆 Prizes',                                 duration: 19 },
+    { id: '3ZKY-TNJP0U', title: '🎮 Special features',                       duration: 19 },
+    { id: 'b05KIiyr9dQ', title: '🎬 Full tutorial',                           duration: 19 },
   ];
   let currentVideoIdx = 0;
 
@@ -2345,6 +2354,10 @@
     const title = document.getElementById('video-title');
     if (iframe) iframe.src = `https://www.youtube.com/embed/${v.id}?autoplay=1&controls=1&modestbranding=1&rel=0&enablejsapi=1`;
     if (title) title.textContent = v.title;
+    // Reset pause state
+    videoPaused = false;
+    const pauseBtn = document.getElementById('video-pause-btn');
+    if (pauseBtn) { pauseBtn.innerHTML = '⏸ Pause slideshow'; pauseBtn.style.borderColor = 'var(--border)'; pauseBtn.style.color = 'var(--text)'; }
     renderVideoDots();
     updateVideoTabs();
     startVideoTimer(v.duration);
@@ -2385,6 +2398,50 @@
       if (Math.abs(diff) > 40) diff > 0 ? window.nextVideo() : window.prevVideo();
     }, { passive: true });
   }
+
+  let videoPaused = false;
+  let videoMuted = false;
+
+  window.toggleVideoPause = function() {
+    const btn = document.getElementById('video-pause-btn');
+    const bar = document.getElementById('video-progress-bar');
+    videoPaused = !videoPaused;
+    if (videoPaused) {
+      // Pause the timer
+      if (videoTimer) { clearTimeout(videoTimer); videoTimer = null; }
+      if (bar) bar.style.animationPlayState = 'paused';
+      // Freeze progress bar width
+      if (bar) {
+        const computed = getComputedStyle(bar).width;
+        const parent = bar.parentElement;
+        const pct = parent ? (parseFloat(computed) / parent.offsetWidth * 100) : 0;
+        bar.style.transition = 'none';
+        bar.style.width = pct + '%';
+      }
+      // Tell YouTube to pause via postMessage
+      const iframe = document.getElementById('rules-video');
+      if (iframe?.contentWindow) iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+      if (btn) { btn.innerHTML = '▶️ Resume slideshow'; btn.style.borderColor = 'var(--green)'; btn.style.color = 'var(--green)'; }
+    } else {
+      // Resume — restart timer with remaining duration (approx full duration from now)
+      const v = RULE_VIDEOS[currentVideoIdx];
+      startVideoTimer(v.duration);
+      const iframe = document.getElementById('rules-video');
+      if (iframe?.contentWindow) iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+      if (btn) { btn.innerHTML = '⏸ Pause slideshow'; btn.style.borderColor = 'var(--border)'; btn.style.color = 'var(--text)'; }
+    }
+  };
+
+  window.toggleVideoMute = function() {
+    const btn = document.getElementById('video-mute-btn');
+    videoMuted = !videoMuted;
+    const iframe = document.getElementById('rules-video');
+    if (iframe?.contentWindow) {
+      const cmd = videoMuted ? 'mute' : 'unMute';
+      iframe.contentWindow.postMessage(`{"event":"command","func":"${cmd}","args":""}`, '*');
+    }
+    if (btn) { btn.innerHTML = videoMuted ? '🔊 Unmute video' : '🔇 Mute video'; }
+  };
 
   // Init on load
   setTimeout(() => {
