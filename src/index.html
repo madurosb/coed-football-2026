@@ -1382,7 +1382,7 @@
       <div style="border-radius:16px;overflow:hidden;background:#000;position:relative;padding-top:56.25%;box-shadow:0 4px 24px rgba(0,0,0,0.18);" id="video-wrapper">
         <iframe
           id="rules-video"
-          src="https://www.youtube.com/embed/LPduWfgqK2E?controls=1&modestbranding=1&rel=0&enablejsapi=1&origin=https://www.coedworldcup.me"
+          src="https://www.youtube.com/embed/LPduWfgqK2E?autoplay=1&mute=1&controls=1&modestbranding=1&rel=0&enablejsapi=1"
           style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"
           allow="autoplay; encrypted-media"
           allowfullscreen>
@@ -1410,7 +1410,7 @@
             ⏸ Pause slideshow
           </button>
           <button id="video-mute-btn" onclick="window.toggleVideoMute()" style="padding:5px 14px;border-radius:99px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all 0.15s;">
-            🔇 Mute video
+            🔊 Unmute video
           </button>
         </div>
       </div>
@@ -2345,8 +2345,13 @@
     const v = RULE_VIDEOS[idx];
     const iframe = document.getElementById('rules-video');
     const title = document.getElementById('video-title');
-    if (iframe) iframe.src = `https://www.youtube.com/embed/${v.id}?autoplay=1&controls=1&modestbranding=1&rel=0&enablejsapi=1`;
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    // Always mute=1 so autoplay works on mobile. User can unmute via button.
+    if (iframe) iframe.src = `https://www.youtube.com/embed/${v.id}?autoplay=1&mute=1&controls=1&modestbranding=1&rel=0&enablejsapi=1`;
     if (title) title.textContent = v.title;
+    videoMuted = true;
+    const muteBtn = document.getElementById('video-mute-btn');
+    if (muteBtn) muteBtn.innerHTML = '🔊 Unmute video';
     // Reset pause state
     videoPaused = false;
     const pauseBtn = document.getElementById('video-pause-btn');
@@ -2354,6 +2359,9 @@
     renderVideoDots();
     updateVideoTabs();
     startVideoTimer(v.duration);
+    // On mobile, remove overlay so user can tap to interact if needed
+    const overlay = document.getElementById('video-overlay');
+    if (overlay) overlay.style.display = isMobile ? 'none' : 'block';
   };
 
   window.prevVideo = () => window.goToVideo((currentVideoIdx - 1 + RULE_VIDEOS.length) % RULE_VIDEOS.length);
@@ -2393,7 +2401,7 @@
   }
 
   let videoPaused = false;
-  let videoMuted = false;
+  let videoMuted = true; // start muted so autoplay works on mobile
 
   window.toggleVideoPause = function() {
     const btn = document.getElementById('video-pause-btn');
@@ -2428,16 +2436,22 @@
   window.toggleVideoMute = function() {
     const btn = document.getElementById('video-mute-btn');
     videoMuted = !videoMuted;
+    // Rebuild src with/without mute — reliable on both iOS and Android
     const iframe = document.getElementById('rules-video');
-    if (iframe?.contentWindow) {
-      const cmd = videoMuted ? 'mute' : 'unMute';
-      iframe.contentWindow.postMessage(`{"event":"command","func":"${cmd}","args":""}`, '*');
+    if (iframe && iframe.src && iframe.src.includes('youtube')) {
+      const v = RULE_VIDEOS[currentVideoIdx];
+      const muteParam = videoMuted ? '&mute=1' : '';
+      iframe.src = `https://www.youtube.com/embed/${v.id}?autoplay=1${muteParam}&controls=1&modestbranding=1&rel=0&enablejsapi=1`;
     }
-    if (btn) { btn.innerHTML = videoMuted ? '🔊 Unmute video' : '🔇 Mute video'; }
+    if (btn) btn.innerHTML = videoMuted ? '🔊 Unmute video' : '🔇 Mute video';
   };
 
   // Init on load
   setTimeout(() => {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    // Remove overlay on mobile so users can interact with video if needed
+    const overlay = document.getElementById('video-overlay');
+    if (overlay) overlay.style.display = isMobile ? 'none' : 'block';
     renderVideoDots();
     updateVideoTabs();
     initVideoSwipe();
