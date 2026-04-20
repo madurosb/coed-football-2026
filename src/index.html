@@ -240,6 +240,43 @@
       .player-pick { padding: 1rem; }
       .player-pick > div { flex-direction: column; }
       #tournament-lock-btn { width: 100%; margin-top: 8px; }
+
+      /* DON button — stack text nicely on narrow screens */
+      #don-btn-\\* { flex-direction: column; text-align: center; }
+
+      /* Stats page gamification grid — 1 col on very small screens */
+      @media (max-width: 380px) {
+        .stat-grid { grid-template-columns: 1fr; }
+      }
+
+      /* Trash Talk — wider bubbles on mobile */
+      .trash-bubble { max-width: 88% !important; }
+
+      /* Live page tabs — equal width */
+      #ltab-participants, #ltab-stats, #ltab-scorers { font-size: 11px; padding: 6px 4px; }
+
+      /* Standings tabs — 3 tabs fit on mobile */
+      #tab-standings, #tab-groups, #tab-scorers { font-size: 11px; padding: 7px 4px; }
+
+      /* How to Play steps — tighter on mobile */
+      #page-dummies .step-num { width: 44px !important; height: 44px !important; }
+
+      /* Inner Circle Bets vote rows */
+      #grouppred-content [style*="grid-template-columns:1fr 80px"] {
+        grid-template-columns: 1fr 60px !important;
+        font-size: 12px;
+      }
+
+      /* Rules Joker/DON tables */
+      .rules-card [style*="grid-template-columns:repeat(4"] {
+        grid-template-columns: repeat(4, 1fr) !important;
+        font-size: 10px;
+      }
+
+      /* My Stats gamification grid */
+      #stats-content [style*="grid-template-columns:1fr 1fr"] {
+        grid-template-columns: 1fr 1fr;
+      }
     }
 
     /* Bottom nav - hidden on desktop */
@@ -1848,6 +1885,7 @@
         <div class="admin-card" onclick="showAdminSub('watch-admin')"><div class="icon">📺</div><div class="title">Watch Together</div><div class="desc">Add location options for matches that reached 4+ viewers. Players will then vote on where to meet.</div></div>
         <div class="admin-card" onclick="showAdminSub('bold-pred')"><div class="icon">🐂</div><div class="title">Bold predictions</div><div class="desc">Award the 🐂 badge to players who made a brave prediction and nailed it.</div></div>
         <div class="admin-card" onclick="showAdminSub('trash-admin')"><div class="icon">🧹</div><div class="title">Trash Talk reset</div><div class="desc">Delete all messages or messages older than a chosen number of days.</div></div>
+        <div class="admin-card" onclick="showAdminSub('innercircle-admin')"><div class="icon">🏅</div><div class="title">Inner Circle Bets</div><div class="desc">Enable or disable the Inner Circle Bets page. Open it once the final player count is confirmed.</div></div>
 
       </div>
     </div>
@@ -1924,6 +1962,19 @@
           <div class="stat-big"><div class="num" id="stat-accuracy">-</div><div class="lbl">Avg accuracy</div></div>
         </div>
         <div id="admin-stats-detail" style="font-size:13px;color:var(--text-muted);">Loading statistics...</div>
+      </div>
+    </div>
+
+    <div id="admin-innercircle-admin" class="admin-sub">
+      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
+      <div class="form-card">
+        <h2>🏅 Inner Circle Bets</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1.25rem;">Control whether the Inner Circle Bets page is visible to players. Open it once you have the final player count confirmed.</p>
+        <div id="innercircle-status" style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Loading...</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <button onclick="setInnerCircle(true)" style="padding:12px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">✅ Enable Inner Circle Bets</button>
+          <button onclick="setInnerCircle(false)" style="padding:12px;border-radius:8px;border:0.5px solid #E24B4A;background:none;color:#E24B4A;font-size:13px;cursor:pointer;">🔒 Disable (show coming soon message)</button>
+        </div>
       </div>
     </div>
 
@@ -2105,6 +2156,20 @@
     t.textContent = '🎰 You\'re in! x2 result pts if correct, deducted if wrong!';
     document.body.appendChild(t);
     setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.5s'; setTimeout(()=>t.remove(),500); }, 3000);
+  };
+
+  async function loadInnerCircleAdmin() {
+    const statusEl = document.getElementById('innercircle-status');
+    if (!statusEl) return;
+    const snap = await getDoc(doc(db, 'settings', 'innerCircle'));
+    const enabled = snap.exists() ? snap.data().enabled : false;
+    statusEl.innerHTML = `Current status: <strong style="color:${enabled?'var(--green)':'#E24B4A'}">${enabled ? '✅ Enabled — players can vote' : '🔒 Disabled — showing coming soon'}</strong>`;
+  }
+
+  window.setInnerCircle = async (enabled) => {
+    await setDoc(doc(db, 'settings', 'innerCircle'), { enabled, updatedAt: serverTimestamp() });
+    showAdminNotif(enabled ? '✅ Inner Circle Bets enabled!' : '🔒 Inner Circle Bets disabled');
+    loadInnerCircleAdmin();
   };
 
   async function loadBoldPredAdmin() {
@@ -2642,6 +2707,20 @@
   async function loadGroupPredictions() {
     const container = document.getElementById('grouppred-content');
     if (!container) return;
+
+    // Check if admin has enabled this feature
+    const settingSnap = await getDoc(doc(db, 'settings', 'innerCircle'));
+    const enabled = settingSnap.exists() ? settingSnap.data().enabled : false;
+
+    if (!enabled) {
+      container.innerHTML = `
+        <div style="text-align:center;padding:3rem 1rem;">
+          <div style="font-size:48px;margin-bottom:12px;">🔒</div>
+          <div style="font-size:16px;font-weight:500;margin-bottom:8px;">Coming soon!</div>
+          <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Inner Circle Bets will open once the final player count is confirmed.<br>Stay tuned!</div>
+        </div>`;
+      return;
+    }
 
     const deadline = new Date('2026-06-10T19:00:00Z');
     const isPast = new Date() >= deadline;
@@ -3981,6 +4060,7 @@
     if (id === 'members') loadMembersLog();
     if (id === 'watch-admin') loadWatchAdmin();
     if (id === 'bold-pred') loadBoldPredAdmin();
+    if (id === 'innercircle-admin') loadInnerCircleAdmin();
     if (id === 'trash-admin') {};
     if (id === 'double-admin') loadDoubleOrNothingAdmin();
   };
