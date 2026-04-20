@@ -1409,9 +1409,9 @@
       <div style="margin-top:10px;">
         <div id="video-title" style="font-size:13px;font-weight:500;text-align:center;margin-bottom:8px;">⚽ Scoring basics</div>
         <div style="display:flex;align-items:center;justify-content:center;gap:10px;">
-          <button onclick="window.prevVideo()" style="width:30px;height:30px;border-radius:50%;border:0.5px solid var(--border);background:var(--surface);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">‹</button>
+          <button onclick="window.prevVideo()" style="width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:18px;font-weight:300;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;">←</button>
           <div id="video-dots" style="display:flex;gap:5px;align-items:center;"></div>
-          <button onclick="window.nextVideo()" style="width:30px;height:30px;border-radius:50%;border:0.5px solid var(--border);background:var(--surface);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">›</button>
+          <button onclick="window.nextVideo()" style="width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:18px;font-weight:300;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;">→</button>
         </div>
         <!-- Mute + Pause controls -->
         <div style="display:flex;justify-content:center;gap:8px;margin-top:8px;">
@@ -2363,6 +2363,12 @@
       iframe.contentWindow.postMessage(JSON.stringify({
         event: 'command', func: 'loadVideoById', args: [v.id]
       }), '*');
+      // Ensure playback starts (some mobile browsers need explicit play after load)
+      setTimeout(() => {
+        if (iframe?.contentWindow) {
+          iframe.contentWindow.postMessage(JSON.stringify({event:'command',func:'playVideo',args:''}), '*');
+        }
+      }, 500);
       // Hide thumb after short delay
       const thumb = document.getElementById('video-thumb');
       if (thumb) setTimeout(() => { thumb.style.opacity='0'; setTimeout(()=>thumb.style.display='none',400); }, 800);
@@ -6131,7 +6137,7 @@
   function applyDarkMode(dark) {
     document.body.classList.toggle('dark-mode', dark);
     document.getElementById('darkmode-btn').textContent = dark ? '☀️' : '🌙';
-    localStorage.setItem('darkMode', dark ? '1' : '0');
+
   }
 
   window.toggleDarkMode = () => {
@@ -6139,16 +6145,25 @@
     applyDarkMode(!isDark);
   };
 
-  // Auto dark mode 19:00 - 07:00, unless user has manually set preference
+  // Auto dark mode 19:00 - 07:00
+  // Only respects manual override if user explicitly toggled
   function checkAutoDarkMode() {
-    const saved = localStorage.getItem('darkMode');
-    if (saved !== null) {
-      applyDarkMode(saved === '1');
+    const manual = localStorage.getItem('darkModeManual');
+    if (manual !== null) {
+      applyDarkMode(manual === '1');
       return;
     }
     const hour = new Date().getHours();
     applyDarkMode(hour >= 19 || hour < 7);
   }
+
+  // When user manually toggles - save as manual preference
+  window.toggleDarkMode = () => {
+    const isDark = document.body.classList.contains('dark-mode');
+    applyDarkMode(!isDark);
+    localStorage.setItem('darkModeManual', !isDark ? '1' : '0');
+  };
+
   checkAutoDarkMode();
   setInterval(checkAutoDarkMode, 60 * 1000);
 
