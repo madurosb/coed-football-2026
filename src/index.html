@@ -1378,16 +1378,23 @@
         <button onclick="window.goToVideo(5)" id="vtab-5" style="flex-shrink:0;padding:5px 11px;border-radius:99px;font-size:11px;font-weight:500;border:1.5px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;transition:all 0.2s;white-space:nowrap;">🎬 Full tutorial</button>
       </div>
 
-      <!-- Video player — no side arrows -->
+      <!-- Video player -->
       <div style="border-radius:16px;overflow:hidden;background:#000;position:relative;padding-top:56.25%;box-shadow:0 4px 24px rgba(0,0,0,0.18);" id="video-wrapper">
+        <!-- Loading placeholder — hides black flash between videos -->
+        <div id="video-thumb" style="position:absolute;inset:0;background:#111;display:flex;align-items:center;justify-content:center;z-index:2;transition:opacity 0.5s;">
+          <div style="text-align:center;color:rgba(255,255,255,0.35);">
+            <div style="font-size:28px;margin-bottom:4px;">🎬</div>
+            <div style="font-size:11px;letter-spacing:0.05em;">Loading...</div>
+          </div>
+        </div>
         <iframe
           id="rules-video"
-          src="https://www.youtube.com/embed/LPduWfgqK2E?autoplay=1&mute=1&controls=1&modestbranding=1&rel=0&enablejsapi=1"
+          src="https://www.youtube.com/embed/LPduWfgqK2E?autoplay=1&mute=1&controls=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1"
           style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"
           allow="autoplay; encrypted-media"
-          allowfullscreen>
+          allowfullscreen
+          onload="const t=document.getElementById('video-thumb');if(t){t.style.opacity='0';setTimeout(()=>t.style.display='none',500);}">
         </iframe>
-        <!-- Overlay blocks hover UI and clicks on the video itself -->
         <div id="video-overlay" style="position:absolute;inset:0;z-index:1;cursor:default;"></div>
       </div>
 
@@ -2346,12 +2353,17 @@
     const iframe = document.getElementById('rules-video');
     const title = document.getElementById('video-title');
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    // Always mute=1 so autoplay works on mobile. User can unmute via button.
-    if (iframe) iframe.src = `https://www.youtube.com/embed/${v.id}?autoplay=1&mute=1&controls=1&modestbranding=1&rel=0&enablejsapi=1`;
+    // Show loading placeholder while new video loads
+    const thumb = document.getElementById('video-thumb');
+    if (thumb) { thumb.style.display = 'flex'; thumb.style.opacity = '1'; }
+    // Build URL: keep user's mute preference, playsinline for iOS
+    const muteParam = videoMuted ? '&mute=1' : '';
+    const url = `https://www.youtube.com/embed/${v.id}?autoplay=1${muteParam}&controls=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`;
+    if (iframe) iframe.src = url;
     if (title) title.textContent = v.title;
-    videoMuted = true;
+    // Update mute button to reflect current state
     const muteBtn = document.getElementById('video-mute-btn');
-    if (muteBtn) muteBtn.innerHTML = '🔊 Unmute video';
+    if (muteBtn) muteBtn.innerHTML = videoMuted ? '🔊 Unmute video' : '🔇 Mute video';
     // Reset pause state
     videoPaused = false;
     const pauseBtn = document.getElementById('video-pause-btn');
@@ -2359,7 +2371,7 @@
     renderVideoDots();
     updateVideoTabs();
     startVideoTimer(v.duration);
-    // On mobile, remove overlay so user can tap to interact if needed
+    // Remove overlay on mobile so users can interact
     const overlay = document.getElementById('video-overlay');
     if (overlay) overlay.style.display = isMobile ? 'none' : 'block';
   };
@@ -2441,7 +2453,7 @@
     if (iframe && iframe.src && iframe.src.includes('youtube')) {
       const v = RULE_VIDEOS[currentVideoIdx];
       const muteParam = videoMuted ? '&mute=1' : '';
-      iframe.src = `https://www.youtube.com/embed/${v.id}?autoplay=1${muteParam}&controls=1&modestbranding=1&rel=0&enablejsapi=1`;
+      iframe.src = `https://www.youtube.com/embed/${v.id}?autoplay=1${muteParam}&controls=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`;
     }
     if (btn) btn.innerHTML = videoMuted ? '🔊 Unmute video' : '🔇 Mute video';
   };
@@ -2843,7 +2855,7 @@
       if (ap && musicPlaying) ap.volume = 0;
       // Restart from current video when entering Rules
       const v = RULE_VIDEOS[currentVideoIdx];
-      if (vid) vid.src = `https://www.youtube.com/embed/${v.id}?autoplay=1&controls=1&modestbranding=1&rel=0&enablejsapi=1`;
+      if (vid) vid.src = `https://www.youtube.com/embed/${v.id}?autoplay=1&mute=1&controls=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`;
       setTimeout(() => startVideoTimer(v.duration), 800);
     } else {
       if (ap && musicPlaying) ap.volume = 0.4;
