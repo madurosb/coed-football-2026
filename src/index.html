@@ -241,42 +241,37 @@
       .player-pick > div { flex-direction: column; }
       #tournament-lock-btn { width: 100%; margin-top: 8px; }
 
-      /* DON button — stack text nicely on narrow screens */
-      #don-btn-\\* { flex-direction: column; text-align: center; }
+      /* Video carousel — tabs scroll horizontally, no overflow */
+      #video-tabs { -webkit-overflow-scrolling: touch; }
+      #video-tabs button { font-size: 10px !important; padding: 4px 9px !important; }
 
-      /* Stats page gamification grid — 1 col on very small screens */
-      @media (max-width: 380px) {
-        .stat-grid { grid-template-columns: 1fr; }
-      }
-
-      /* Trash Talk — wider bubbles on mobile */
-      .trash-bubble { max-width: 88% !important; }
-
-      /* Live page tabs — equal width */
+      /* Live page tabs */
       #ltab-participants, #ltab-stats, #ltab-scorers { font-size: 11px; padding: 6px 4px; }
 
-      /* Standings tabs — 3 tabs fit on mobile */
-      #tab-standings, #tab-groups, #tab-scorers { font-size: 11px; padding: 7px 4px; }
-
-      /* How to Play steps — tighter on mobile */
-      #page-dummies .step-num { width: 44px !important; height: 44px !important; }
-
-      /* Inner Circle Bets vote rows */
-      #grouppred-content [style*="grid-template-columns:1fr 80px"] {
-        grid-template-columns: 1fr 60px !important;
-        font-size: 12px;
+      /* Live participants table — hide points col on very small screens */
+      @media (max-width: 360px) {
+        #ltab-content-participants .lb-pts { display: none; }
       }
 
-      /* Rules Joker/DON tables */
-      .rules-card [style*="grid-template-columns:repeat(4"] {
-        grid-template-columns: repeat(4, 1fr) !important;
-        font-size: 10px;
-      }
+      /* Standings tabs */
+      #tab-standings, #tab-groups, #tab-scorers { font-size: 11px !important; padding: 7px 4px !important; }
 
-      /* My Stats gamification grid */
-      #stats-content [style*="grid-template-columns:1fr 1fr"] {
-        grid-template-columns: 1fr 1fr;
-      }
+      /* Stats gamification grid */
+      #stats-content [style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr 1fr; }
+
+      /* Rules Joker/DON grids on mobile */
+      .rules-card [style*="grid-template-columns:repeat(4"] { font-size: 10px; }
+
+      /* Trash talk bubbles wider on mobile */
+      #trash-feed > div > div:last-child { max-width: 85% !important; }
+
+      /* Winner pick select full width */
+      #winner-pick-select { font-size: 13px; }
+
+      /* How to play steps */
+      #page-dummies [style*="display:flex;gap:14px"] { gap: 10px; }
+    }
+
     }
 
     /* Bottom nav - hidden on desktop */
@@ -504,11 +499,11 @@
     <button class="mobile-menu-btn" data-page="stats" onclick="mobileNav('stats')">📊 &nbsp; My Stats</button>
     <button class="mobile-menu-btn" data-page="tips" onclick="mobileNav('tips')">💡 &nbsp; Tips</button>
     <button class="mobile-menu-btn" data-page="grouppred" onclick="mobileNav('grouppred')">🏅 &nbsp; Inner Circle Bets</button>
-    <button class="mobile-menu-btn" data-page="watch" onclick="mobileNav('watch')">Watch Together</button>
-    <button class="mobile-menu-btn" data-page="trash" onclick="mobileNav('trash')">Trash Talk</button>
+    <button class="mobile-menu-btn" data-page="watch" onclick="mobileNav('watch')">📺 &nbsp; Watch Together</button>
+    <button class="mobile-menu-btn" data-page="trash" onclick="mobileNav('trash')">💬 &nbsp; Trash Talk</button>
     <button class="mobile-menu-btn" data-page="highlights" onclick="mobileNav('highlights')">🎬 &nbsp; Highlights</button>
     <button class="mobile-menu-btn" data-page="rules" onclick="mobileNav('rules')">📋 &nbsp; Rules</button>
-    <button class="mobile-menu-btn" data-page="dummies" onclick="mobileNav('dummies')">How to play</button>
+    <button class="mobile-menu-btn" data-page="dummies" onclick="mobileNav('dummies')">🎓 &nbsp; How to play</button>
     <button class="mobile-menu-btn" data-page="admin" id="admin-menu-btn" style="display:none;" onclick="mobileNav('admin')">⚙️ &nbsp; Admin</button>
   </div>
 
@@ -2832,17 +2827,32 @@
 
     // Mute background music on Rules page, restore on exit
     const vid = document.getElementById('rules-video');
-    if (vid) {
-      if (id === 'rules') {
-        if (ap && musicPlaying) ap.volume = 0;
-        vid.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
-        vid.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-      } else {
-        if (ap && musicPlaying) ap.volume = 0.4;
-        vid.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
-      }
+    if (id === 'rules') {
+      if (ap && musicPlaying) ap.volume = 0;
+      // Restart from current video when entering Rules
+      const v = RULE_VIDEOS[currentVideoIdx];
+      if (vid) vid.src = `https://www.youtube.com/embed/${v.id}?autoplay=1&controls=1&modestbranding=1&rel=0&enablejsapi=1`;
+      setTimeout(() => startVideoTimer(v.duration), 800);
+    } else {
+      if (ap && musicPlaying) ap.volume = 0.4;
+      // TRULY stop video — clear the src entirely (postMessage pause is unreliable)
+      if (vid) vid.src = '';
+      if (videoTimer) { clearTimeout(videoTimer); videoTimer = null; }
+      const bar = document.getElementById('video-progress-bar');
+      if (bar) { bar.style.transition = 'none'; bar.style.width = '0%'; }
     }
   };
+
+  // Stop YouTube video when user switches browser tab
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      const vid = document.getElementById('rules-video');
+      if (vid && vid.src) {
+        vid.src = '';
+        if (videoTimer) { clearTimeout(videoTimer); videoTimer = null; }
+      }
+    }
+  });
 
   // ========== GROUP PREDICTIONS ==========
   async function loadGroupPredictions() {
