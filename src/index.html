@@ -1364,23 +1364,39 @@
   <div class="page" id="page-rules">
 
     <!-- VIDEO CAROUSEL -->
-    <div style="margin-bottom:1.25rem;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-        <button onclick="prevVideo()" style="width:36px;height:36px;border-radius:50%;border:0.5px solid var(--border);background:var(--surface);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">‹</button>
-        <div style="text-align:center;flex:1;">
-          <div id="video-title" style="font-size:13px;font-weight:500;margin-bottom:4px;">🎬 Watch the tutorial</div>
-          <div id="video-dots" style="display:flex;gap:6px;justify-content:center;"></div>
-        </div>
-        <button onclick="nextVideo()" style="width:36px;height:36px;border-radius:50%;border:0.5px solid var(--border);background:var(--surface);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">›</button>
+    <div style="margin-bottom:1.5rem;">
+
+      <!-- Category tabs -->
+      <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:10px;scrollbar-width:none;" id="video-tabs">
+        <button onclick="goToVideo(0)" id="vtab-0" style="flex-shrink:0;padding:5px 11px;border-radius:99px;font-size:11px;font-weight:500;border:1.5px solid var(--green);background:var(--green);color:white;cursor:pointer;transition:all 0.2s;white-space:nowrap;">⚽ Scoring basics</button>
+        <button onclick="goToVideo(1)" id="vtab-1" style="flex-shrink:0;padding:5px 11px;border-radius:99px;font-size:11px;font-weight:500;border:1.5px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;transition:all 0.2s;white-space:nowrap;">🔥 Multipliers</button>
+        <button onclick="goToVideo(2)" id="vtab-2" style="flex-shrink:0;padding:5px 11px;border-radius:99px;font-size:11px;font-weight:500;border:1.5px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;transition:all 0.2s;white-space:nowrap;">📋 Prediction rules</button>
+        <button onclick="goToVideo(3)" id="vtab-3" style="flex-shrink:0;padding:5px 11px;border-radius:99px;font-size:11px;font-weight:500;border:1.5px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;transition:all 0.2s;white-space:nowrap;">🏆 Prizes</button>
+        <button onclick="goToVideo(4)" id="vtab-4" style="flex-shrink:0;padding:5px 11px;border-radius:99px;font-size:11px;font-weight:500;border:1.5px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;transition:all 0.2s;white-space:nowrap;">🎮 Special features</button>
+        <button onclick="goToVideo(5)" id="vtab-5" style="flex-shrink:0;padding:5px 11px;border-radius:99px;font-size:11px;font-weight:500;border:1.5px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;transition:all 0.2s;white-space:nowrap;">🎬 Full tutorial</button>
       </div>
-      <div style="border-radius:16px;overflow:hidden;background:#000;position:relative;padding-top:56.25%;">
-        <iframe
-          id="rules-video"
-          src="https://www.youtube.com/embed/ZCPAnc-oae4?autoplay=1&loop=1&playlist=ZCPAnc-oae4&mute=1&controls=1&modestbranding=1&rel=0&enablejsapi=1"
-          style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"
-          allow="autoplay; encrypted-media"
-          allowfullscreen>
-        </iframe>
+
+      <!-- Video player -->
+      <div style="position:relative;">
+        <div style="border-radius:16px;overflow:hidden;background:#000;position:relative;padding-top:56.25%;box-shadow:0 4px 24px rgba(0,0,0,0.18);">
+          <iframe
+            id="rules-video"
+            src="https://www.youtube.com/embed/LPduWfgqK2E?controls=1&modestbranding=1&rel=0&enablejsapi=1"
+            style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"
+            allow="autoplay; encrypted-media"
+            allowfullscreen>
+          </iframe>
+        </div>
+
+        <!-- Prev / Next arrows -->
+        <button onclick="prevVideo()" style="position:absolute;left:-14px;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;border:0.5px solid var(--border);background:var(--surface);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.12);z-index:2;">‹</button>
+        <button onclick="nextVideo()" style="position:absolute;right:-14px;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;border:0.5px solid var(--border);background:var(--surface);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.12);z-index:2;">›</button>
+      </div>
+
+      <!-- Title + dots -->
+      <div style="text-align:center;margin-top:10px;">
+        <div id="video-title" style="font-size:13px;font-weight:500;margin-bottom:6px;">⚽ Scoring basics</div>
+        <div id="video-dots" style="display:flex;gap:5px;justify-content:center;align-items:center;"></div>
       </div>
     </div>
     <div class="rules-card">
@@ -2278,20 +2294,34 @@
   }
 
   // ========== VIDEO CAROUSEL ==========
-  // Add more videos here when ready: { id: 'YOUTUBE_ID', title: 'Title' }
   const RULE_VIDEOS = [
-    { id: 'ZCPAnc-oae4', title: '🎬 Full tutorial' },
-    // { id: 'YOUR_VIDEO_ID_2', title: '⚽ How to predict scores' },
-    // { id: 'YOUR_VIDEO_ID_3', title: '🏆 Tournament player explained' },
+    { id: 'LPduWfgqK2E', title: '⚽ Scoring basics' },
+    { id: '_-cpzyMYURw', title: '🔥 Multipliers, Joker & Double or Nothing' },
+    { id: 'R42tNFedrG8', title: '📋 Prediction rules' },
+    { id: 'aZ-UWYsqdys', title: '🏆 Prizes' },
+    { id: '3ZKY-TNJP0U', title: '🎮 Special features' },
+    { id: 'b05KIiyr9dQ', title: '🎬 Full tutorial' },
   ];
   let currentVideoIdx = 0;
 
   function renderVideoDots() {
     const dots = document.getElementById('video-dots');
-    if (!dots || RULE_VIDEOS.length <= 1) return;
+    if (!dots) return;
     dots.innerHTML = RULE_VIDEOS.map((_, i) => `
-      <div onclick="goToVideo(${i})" style="width:${i===currentVideoIdx?'20px':'8px'};height:8px;border-radius:99px;background:${i===currentVideoIdx?'var(--green)':'var(--border)'};cursor:pointer;transition:all 0.2s;"></div>
+      <div onclick="goToVideo(${i})" style="width:${i===currentVideoIdx?'22px':'8px'};height:8px;border-radius:99px;background:${i===currentVideoIdx?'var(--green)':'var(--border)'};cursor:pointer;transition:all 0.25s;"></div>
     `).join('');
+  }
+
+  function updateVideoTabs() {
+    RULE_VIDEOS.forEach((_, i) => {
+      const tab = document.getElementById(`vtab-${i}`);
+      if (!tab) return;
+      const active = i === currentVideoIdx;
+      tab.style.background = active ? 'var(--green)' : 'none';
+      tab.style.color = active ? 'white' : 'var(--text-muted)';
+      tab.style.borderColor = active ? 'var(--green)' : 'var(--border)';
+      if (active) tab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    });
   }
 
   function goToVideo(idx) {
@@ -2299,16 +2329,29 @@
     const v = RULE_VIDEOS[idx];
     const iframe = document.getElementById('rules-video');
     const title = document.getElementById('video-title');
-    if (iframe) iframe.src = `https://www.youtube.com/embed/${v.id}?autoplay=1&mute=1&controls=1&modestbranding=1&rel=0&enablejsapi=1`;
+    if (iframe) iframe.src = `https://www.youtube.com/embed/${v.id}?controls=1&modestbranding=1&rel=0&enablejsapi=1`;
     if (title) title.textContent = v.title;
     renderVideoDots();
+    updateVideoTabs();
   }
 
-  window.prevVideo = () => { currentVideoIdx = (currentVideoIdx - 1 + RULE_VIDEOS.length) % RULE_VIDEOS.length; goToVideo(currentVideoIdx); };
-  window.nextVideo = () => { currentVideoIdx = (currentVideoIdx + 1) % RULE_VIDEOS.length; goToVideo(currentVideoIdx); };
+  window.prevVideo = () => { goToVideo((currentVideoIdx - 1 + RULE_VIDEOS.length) % RULE_VIDEOS.length); };
+  window.nextVideo = () => { goToVideo((currentVideoIdx + 1) % RULE_VIDEOS.length); };
 
-  // Init dots on load
-  setTimeout(renderVideoDots, 500);
+  // Swipe support for video carousel
+  function initVideoSwipe() {
+    const container = document.getElementById('rules-video')?.parentElement;
+    if (!container) return;
+    let startX = 0;
+    container.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, { passive: true });
+    container.addEventListener('touchend', e => {
+      const diff = startX - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 40) diff > 0 ? window.nextVideo() : window.prevVideo();
+    }, { passive: true });
+  }
+
+  // Init dots + swipe on load
+  setTimeout(() => { renderVideoDots(); updateVideoTabs(); initVideoSwipe(); }, 600);
 
   // ========== FIRST-TIME USER POPUP ==========
   window.toggleMobileMenu = () => {
