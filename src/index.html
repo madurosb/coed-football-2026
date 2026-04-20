@@ -512,9 +512,6 @@
     <button class="mobile-menu-btn" data-page="admin" id="admin-menu-btn" style="display:none;" onclick="mobileNav('admin')">⚙️ &nbsp; Admin</button>
   </div>
 
-  <!-- YouTube IFrame API for auto-advance -->
-  <script src="https://www.youtube.com/iframe_api"></script>
-
   <!-- AUDIO TRACKS -->
   <audio id="audio-player" loop style="display:none;"></audio>
 
@@ -1367,6 +1364,15 @@
   <div class="page" id="page-rules">
 
     <!-- VIDEO CAROUSEL -->
+    <div style="background:linear-gradient(135deg,#0a1f0a,#1a3a1a);border-radius:14px;padding:1rem 1.25rem 0.75rem;margin-bottom:1rem;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+        <span style="font-size:22px;">🎬</span>
+        <div>
+          <div style="font-size:14px;font-weight:600;color:#4ade80;">Video explainers</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.55);">Tap a category below to jump to that video</div>
+        </div>
+      </div>
+    </div>
     <div style="margin-bottom:1.5rem;">
 
       <!-- Category tabs -->
@@ -1390,6 +1396,11 @@
         </iframe>
         <!-- Overlay blocks hover UI and clicks on the video itself -->
         <div id="video-overlay" style="position:absolute;inset:0;z-index:1;cursor:default;"></div>
+      </div>
+
+      <!-- Progress bar showing time until next video -->
+      <div style="height:3px;background:var(--border);border-radius:99px;margin-top:6px;overflow:hidden;">
+        <div id="video-progress-bar" style="height:100%;width:0%;background:var(--green);border-radius:99px;"></div>
       </div>
 
       <!-- Title + arrows + dots all in one row -->
@@ -2298,12 +2309,12 @@
 
   // ========== VIDEO CAROUSEL ==========
   const RULE_VIDEOS = [
-    { id: 'LPduWfgqK2E', title: '⚽ Scoring basics' },
-    { id: '_-cpzyMYURw', title: '🔥 Multipliers, Joker & Double or Nothing' },
-    { id: 'R42tNFedrG8', title: '📋 Prediction rules' },
-    { id: 'aZ-UWYsqdys', title: '🏆 Prizes' },
-    { id: '3ZKY-TNJP0U', title: '🎮 Special features' },
-    { id: 'b05KIiyr9dQ', title: '🎬 Full tutorial' },
+    { id: 'LPduWfgqK2E', title: '⚽ Scoring basics',                        duration: 16 },
+    { id: '_-cpzyMYURw', title: '🔥 Multipliers, Joker & Double or Nothing', duration: 16 },
+    { id: 'R42tNFedrG8', title: '📋 Prediction rules',                       duration: 16 },
+    { id: 'aZ-UWYsqdys', title: '🏆 Prizes',                                 duration: 16 },
+    { id: '3ZKY-TNJP0U', title: '🎮 Special features',                       duration: 16 },
+    { id: 'b05KIiyr9dQ', title: '🎬 Full tutorial',                           duration: 16 },
   ];
   let currentVideoIdx = 0;
 
@@ -2332,36 +2343,36 @@
     const v = RULE_VIDEOS[idx];
     const iframe = document.getElementById('rules-video');
     const title = document.getElementById('video-title');
-    if (iframe) iframe.src = `https://www.youtube.com/embed/${v.id}?autoplay=1&controls=1&modestbranding=1&rel=0&enablejsapi=1&origin=${encodeURIComponent(location.origin)}`;
+    if (iframe) iframe.src = `https://www.youtube.com/embed/${v.id}?autoplay=1&controls=1&modestbranding=1&rel=0&enablejsapi=1`;
     if (title) title.textContent = v.title;
     renderVideoDots();
     updateVideoTabs();
+    startVideoTimer(v.duration);
   };
 
   window.prevVideo = () => window.goToVideo((currentVideoIdx - 1 + RULE_VIDEOS.length) % RULE_VIDEOS.length);
   window.nextVideo = () => window.goToVideo((currentVideoIdx + 1) % RULE_VIDEOS.length);
 
-  // YouTube postMessage auto-advance — handles multiple message formats YouTube uses
-  window.addEventListener('message', e => {
-    try {
-      const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-      // YouTube sends state 0 = ended, works with enablejsapi=1
-      if ((data.event === 'onStateChange' || data.type === 'stateChange') &&
-          (data.info === 0 || data.data === 0)) {
-        setTimeout(() => window.nextVideo(), 800);
-      }
-    } catch(err) {}
-  });
+  // Timer-based auto-advance — 100% reliable, no YouTube API needed
+  let videoTimer = null;
+  let videoProgressInterval = null;
 
-  // Fallback: also listen for infoDelivery which some YouTube builds use
-  window.addEventListener('message', e => {
-    try {
-      const str = typeof e.data === 'string' ? e.data : JSON.stringify(e.data);
-      if (str.includes('"playerState":0') || str.includes('"state":0')) {
-        setTimeout(() => window.nextVideo(), 800);
+  function startVideoTimer(duration) {
+    if (videoTimer) clearTimeout(videoTimer);
+    if (videoProgressInterval) clearInterval(videoProgressInterval);
+    const bar = document.getElementById('video-progress-bar');
+    if (bar) { bar.style.width = '0%'; bar.style.transition = 'none'; }
+    // Small delay so browser registers the reset before animating
+    setTimeout(() => {
+      if (bar) {
+        bar.style.transition = `width ${duration}s linear`;
+        bar.style.width = '100%';
       }
-    } catch(err) {}
-  });
+    }, 100);
+    videoTimer = setTimeout(() => {
+      window.nextVideo();
+    }, (duration + 0.8) * 1000); // slight buffer after duration
+  }
 
   // Swipe support
   function initVideoSwipe() {
@@ -2376,7 +2387,12 @@
   }
 
   // Init on load
-  setTimeout(() => { renderVideoDots(); updateVideoTabs(); initVideoSwipe(); }, 600);
+  setTimeout(() => {
+    renderVideoDots();
+    updateVideoTabs();
+    initVideoSwipe();
+    startVideoTimer(RULE_VIDEOS[0].duration);
+  }, 800);
 
   // ========== FIRST-TIME USER POPUP ==========
   window.toggleMobileMenu = () => {
