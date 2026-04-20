@@ -1419,7 +1419,7 @@
             ⏸ Pause slideshow
           </button>
           <button id="video-mute-btn" onclick="window.toggleVideoMute()" style="padding:5px 14px;border-radius:99px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all 0.15s;">
-            🔊 Unmute video
+            🔇 Mute video
           </button>
         </div>
       </div>
@@ -2349,21 +2349,32 @@
     });
   }
 
+  let videoPlayerReady = false;
+
   window.goToVideo = function(idx) {
     currentVideoIdx = idx;
     const v = RULE_VIDEOS[idx];
     const iframe = document.getElementById('rules-video');
     const title = document.getElementById('video-title');
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    // Show loading placeholder while new video loads
-    const thumb = document.getElementById('video-thumb');
-    if (thumb) { thumb.style.display = 'flex'; thumb.style.opacity = '1'; }
-    // Build URL: keep user's mute preference, playsinline for iOS
-    const muteParam = videoMuted ? '&mute=1' : '';
-    const url = `https://www.youtube.com/embed/${v.id}?autoplay=1${muteParam}&controls=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`;
-    if (iframe) iframe.src = url;
     if (title) title.textContent = v.title;
-    // Update mute button to reflect current state
+
+    if (videoPlayerReady && iframe?.contentWindow) {
+      // Player already loaded — switch video without reloading iframe (works on mobile!)
+      iframe.contentWindow.postMessage(JSON.stringify({
+        event: 'command', func: 'loadVideoById', args: [v.id]
+      }), '*');
+      // Hide thumb after short delay
+      const thumb = document.getElementById('video-thumb');
+      if (thumb) setTimeout(() => { thumb.style.opacity='0'; setTimeout(()=>thumb.style.display='none',400); }, 800);
+    } else {
+      // First load — build full src
+      const muteParam = videoMuted ? '&mute=1' : '';
+      const url = `https://www.youtube.com/embed/${v.id}?autoplay=1${muteParam}&controls=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`;
+      if (iframe) iframe.src = url;
+      videoPlayerReady = true;
+    }
+
+    // Update mute button
     const muteBtn = document.getElementById('video-mute-btn');
     if (muteBtn) muteBtn.innerHTML = videoMuted ? '🔊 Unmute video' : '🔇 Mute video';
     // Reset pause state
@@ -2373,9 +2384,8 @@
     renderVideoDots();
     updateVideoTabs();
     startVideoTimer(v.duration);
-    // Remove overlay on mobile so users can interact
     const overlay = document.getElementById('video-overlay');
-    if (overlay) overlay.style.display = 'block'; // always block clicks on video
+    if (overlay) overlay.style.display = 'block';
   };
 
   window.prevVideo = () => window.goToVideo((currentVideoIdx - 1 + RULE_VIDEOS.length) % RULE_VIDEOS.length);
@@ -2415,7 +2425,7 @@
   }
 
   let videoPaused = false;
-  let videoMuted = true; // start muted so autoplay works on mobile
+  let videoMuted = false; // start with sound on
 
   window.toggleVideoPause = function() {
     const btn = document.getElementById('video-pause-btn');
@@ -2859,6 +2869,7 @@
       if (ap && musicPlaying) ap.volume = 0.4;
       // TRULY stop video — clear the src entirely (postMessage pause is unreliable)
       if (vid) vid.src = '';
+      videoPlayerReady = false;
       if (videoTimer) { clearTimeout(videoTimer); videoTimer = null; }
       const bar = document.getElementById('video-progress-bar');
       if (bar) { bar.style.transition = 'none'; bar.style.width = '0%'; }
