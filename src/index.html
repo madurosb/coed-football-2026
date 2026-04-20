@@ -1388,6 +1388,8 @@
           allow="autoplay; encrypted-media"
           allowfullscreen>
         </iframe>
+        <!-- Overlay blocks hover UI and clicks on the video itself -->
+        <div id="video-overlay" style="position:absolute;inset:0;z-index:1;cursor:default;"></div>
       </div>
 
       <!-- Title + arrows + dots all in one row -->
@@ -2330,8 +2332,7 @@
     const v = RULE_VIDEOS[idx];
     const iframe = document.getElementById('rules-video');
     const title = document.getElementById('video-title');
-    // autoplay=1 so it plays immediately on switch
-    if (iframe) iframe.src = `https://www.youtube.com/embed/${v.id}?autoplay=1&controls=1&modestbranding=1&rel=0&enablejsapi=1`;
+    if (iframe) iframe.src = `https://www.youtube.com/embed/${v.id}?autoplay=1&controls=1&modestbranding=1&rel=0&enablejsapi=1&origin=${encodeURIComponent(location.origin)}`;
     if (title) title.textContent = v.title;
     renderVideoDots();
     updateVideoTabs();
@@ -2340,14 +2341,24 @@
   window.prevVideo = () => window.goToVideo((currentVideoIdx - 1 + RULE_VIDEOS.length) % RULE_VIDEOS.length);
   window.nextVideo = () => window.goToVideo((currentVideoIdx + 1) % RULE_VIDEOS.length);
 
-  // YouTube API — auto-advance when video ends
-  window.onYouTubeIframeAPIReady = function() {};
+  // YouTube postMessage auto-advance — handles multiple message formats YouTube uses
   window.addEventListener('message', e => {
     try {
-      const data = JSON.parse(e.data);
-      // YouTube sends playerState -1=unstarted, 0=ended, 1=playing, 2=paused
-      if (data.event === 'onStateChange' && data.info === 0) {
-        window.nextVideo();
+      const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+      // YouTube sends state 0 = ended, works with enablejsapi=1
+      if ((data.event === 'onStateChange' || data.type === 'stateChange') &&
+          (data.info === 0 || data.data === 0)) {
+        setTimeout(() => window.nextVideo(), 800);
+      }
+    } catch(err) {}
+  });
+
+  // Fallback: also listen for infoDelivery which some YouTube builds use
+  window.addEventListener('message', e => {
+    try {
+      const str = typeof e.data === 'string' ? e.data : JSON.stringify(e.data);
+      if (str.includes('"playerState":0') || str.includes('"state":0')) {
+        setTimeout(() => window.nextVideo(), 800);
       }
     } catch(err) {}
   });
