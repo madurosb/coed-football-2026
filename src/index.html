@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
   <title>COED&FOOTBALL Mundial 2026</title>
   <link rel="icon" href="https://coed-football-2026.vercel.app/logo-icon.png" type="image/png">
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
     :root {
       --green: #1D9E75; --green-dark: #085041; --green-light: #E1F5EE;
       --gold: #EF9F27; --gold-light: #FAEEDA;
@@ -1391,7 +1391,7 @@
         </div>
         <iframe
           id="rules-video"
-          src="https://www.youtube.com/embed/LPduWfgqK2E?autoplay=1&mute=1&controls=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1"
+          src="https://www.youtube.com/embed/LPduWfgqK2E?autoplay=1&controls=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1"
           style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"
           allow="autoplay; encrypted-media"
           allowfullscreen
@@ -1419,7 +1419,7 @@
             ⏸ Pause slideshow
           </button>
           <button id="video-mute-btn" onclick="window.toggleVideoMute()" style="padding:5px 14px;border-radius:99px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all 0.15s;">
-            🔇 Mute video
+            🔇 Mute
           </button>
         </div>
       </div>
@@ -2425,7 +2425,7 @@
   }
 
   let videoPaused = false;
-  let videoMuted = false; // start with sound on
+  let videoMuted = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent); // muted on mobile (browser policy), sound on desktop
 
   window.toggleVideoPause = function() {
     const btn = document.getElementById('video-pause-btn');
@@ -2472,6 +2472,9 @@
   setTimeout(() => {
     const overlay = document.getElementById('video-overlay');
     if (overlay) overlay.style.display = 'block';
+    // Set mute button label based on device
+    const muteBtn = document.getElementById('video-mute-btn');
+    if (muteBtn) muteBtn.innerHTML = videoMuted ? '🔊 Unmute' : '🔇 Mute';
     renderVideoDots();
     updateVideoTabs();
     initVideoSwipe();
@@ -2863,8 +2866,9 @@
       if (ap && musicPlaying) ap.volume = 0;
       // Restart from current video when entering Rules
       const v = RULE_VIDEOS[currentVideoIdx];
-      if (vid) vid.src = `https://www.youtube.com/embed/${v.id}?autoplay=1&mute=1&controls=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`;
-      setTimeout(() => startVideoTimer(v.duration), 800);
+      const muteParam = videoMuted ? '&mute=1' : '';
+      if (vid) vid.src = `https://www.youtube.com/embed/${v.id}?autoplay=1${muteParam}&controls=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`;
+      videoPlayerReady = true;
     } else {
       if (ap && musicPlaying) ap.volume = 0.4;
       // TRULY stop video — clear the src entirely (postMessage pause is unreliable)
@@ -6135,7 +6139,7 @@
     applyDarkMode(!isDark);
   };
 
-  // Auto dark mode 20:00 - 06:00, unless user has manually set preference
+  // Auto dark mode 19:00 - 07:00, unless user has manually set preference
   function checkAutoDarkMode() {
     const saved = localStorage.getItem('darkMode');
     if (saved !== null) {
@@ -6143,7 +6147,7 @@
       return;
     }
     const hour = new Date().getHours();
-    applyDarkMode(hour >= 20 || hour < 6);
+    applyDarkMode(hour >= 19 || hour < 7);
   }
   checkAutoDarkMode();
   setInterval(checkAutoDarkMode, 60 * 1000);
