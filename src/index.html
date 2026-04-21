@@ -1409,9 +1409,9 @@
       <div style="margin-top:10px;">
         <div id="video-title" style="font-size:13px;font-weight:500;text-align:center;margin-bottom:8px;">⚽ Scoring basics</div>
         <div style="display:flex;align-items:center;justify-content:center;gap:10px;">
-          <button onclick="window.prevVideo()" style="width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:18px;font-weight:300;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;">←</button>
+          <button onclick="window.prevVideo()" style="width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;font-size:18px;font-weight:300;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;">←</button>
           <div id="video-dots" style="display:flex;gap:5px;align-items:center;"></div>
-          <button onclick="window.nextVideo()" style="width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-size:18px;font-weight:300;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;">→</button>
+          <button onclick="window.nextVideo()" style="width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;font-size:18px;font-weight:300;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;">→</button>
         </div>
         <!-- Mute + Pause controls -->
         <div style="display:flex;justify-content:center;gap:8px;margin-top:8px;">
@@ -2919,11 +2919,21 @@
 
   // Stop YouTube video when user switches browser tab
   document.addEventListener('visibilitychange', () => {
+    const vid = document.getElementById('rules-video');
     if (document.hidden) {
-      const vid = document.getElementById('rules-video');
-      if (vid && vid.src) {
-        vid.src = '';
-        if (videoTimer) { clearTimeout(videoTimer); videoTimer = null; }
+      // Tab hidden — stop video and timer completely
+      if (vid) vid.src = '';
+      videoPlayerReady = false;
+      if (videoTimer) { clearTimeout(videoTimer); videoTimer = null; }
+    } else {
+      // Tab visible again — only restart if user is currently on Rules page
+      const rulesPage = document.getElementById('page-rules');
+      if (rulesPage && rulesPage.classList.contains('active') && vid) {
+        const v = RULE_VIDEOS[currentVideoIdx];
+        const muteParam = videoMuted ? '&mute=1' : '';
+        vid.src = `https://www.youtube.com/embed/${v.id}?autoplay=1${muteParam}&controls=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`;
+        videoPlayerReady = true;
+        setTimeout(() => startVideoTimer(v.duration), 800);
       }
     }
   });
@@ -3889,7 +3899,7 @@
     const knockoutSnap = await getDoc(doc(db, 'settings', 'knockout'));
     const knockoutEnabled = knockoutSnap.exists() ? knockoutSnap.data().enabled : false;
     window._knockoutEnabled = knockoutEnabled;
-    const KNOCKOUT_START = new Date('2026-06-29T00:00:00Z');
+    const KNOCKOUT_START = new Date('2026-06-28T00:00:00Z');
 
     matchesSnap.forEach(d => {
       const kickoff = d.data().kickoff?.toDate?.() || new Date(d.data().kickoff);
@@ -3973,7 +3983,7 @@
     const deadlineSoonMatches = [];
     const liveMatches = [];
     let visibleCount = 0;
-    const KNOCKOUT_START_R = new Date('2026-06-29T00:00:00Z');
+    const KNOCKOUT_START_R = new Date('2026-06-28T00:00:00Z');
     matchesSnap.forEach(d => {
       const m = d.data();
       const kickoff = m.kickoff?.toDate?.() || new Date(m.kickoff);
@@ -6209,28 +6219,16 @@
 
   }
 
-  window.toggleDarkMode = () => {
-    const isDark = document.body.classList.contains('dark-mode');
-    applyDarkMode(!isDark);
-  };
-
-  // Auto dark mode 19:00 - 07:00
-  // Only respects manual override if user explicitly toggled
+  // Auto dark mode 07:00-19:00 light, 19:00-07:00 dark
   function checkAutoDarkMode() {
-    const manual = localStorage.getItem('darkModeManual');
-    if (manual !== null) {
-      applyDarkMode(manual === '1');
-      return;
-    }
     const hour = new Date().getHours();
     applyDarkMode(hour >= 19 || hour < 7);
   }
 
-  // When user manually toggles - save as manual preference
+  // Manual toggle — just flips for the session, auto resets next minute
   window.toggleDarkMode = () => {
     const isDark = document.body.classList.contains('dark-mode');
     applyDarkMode(!isDark);
-    localStorage.setItem('darkModeManual', !isDark ? '1' : '0');
   };
 
   checkAutoDarkMode();
