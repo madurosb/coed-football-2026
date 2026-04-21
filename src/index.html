@@ -3929,7 +3929,7 @@
       // Add locked notice if knockout not yet enabled
       let lockedNotice = '';
       if (!knockoutEnabled) {
-        lockedNotice = `<div style="font-size:11px;color:var(--text-muted);padding:4px 10px;display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0;">🔒 Knockout stages locked</div>`;
+        lockedNotice = `<div style="font-size:11px;color:var(--text-muted);padding:4px 10px;display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0;border-left:2px solid var(--border);margin-left:4px;">🔒 June 28+ locked</div>`;
       }
 
       tabsEl.innerHTML = ['All', ...dates].map(d => `
@@ -3956,21 +3956,36 @@
   function renderMatches(matchesSnap, filterDate) {
     const container = document.getElementById('matches-list');
     const TEAM_FLAGS = {
-      'Mexico':'mx','South Africa':'za','USA':'us','United States':'us','Canada':'ca',
-      'Argentina':'ar','Brazil':'br','France':'fr','Germany':'de','Spain':'es',
-      'Portugal':'pt','England':'gb-eng','Netherlands':'nl','Belgium':'be','Croatia':'hr',
-      'Japan':'jp','South Korea':'kr','Australia':'au','Morocco':'ma','Senegal':'sn',
-      'Nigeria':'ng','Ghana':'gh',"Côte d'Ivoire":'ci','Ivory Coast':'ci','Egypt':'eg',
-      'Saudi Arabia':'sa','Iran':'ir','Qatar':'qa','Uruguay':'uy','Colombia':'co',
-      'Ecuador':'ec','Switzerland':'ch','Norway':'no','Czech Republic':'cz','Czechia':'cz',
+      // North/Central America & Caribbean
+      'Mexico':'mx','USA':'us','United States':'us','US':'us','Canada':'ca',
+      'Honduras':'hn','Costa Rica':'cr','Panama':'pa','Jamaica':'jm',
+      'El Salvador':'sv','Haiti':'ht','Cuba':'cu','Guatemala':'gt',
+      // South America
+      'Argentina':'ar','Brazil':'br','Uruguay':'uy','Colombia':'co',
+      'Ecuador':'ec','Paraguay':'py','Venezuela':'ve','Bolivia':'bo',
+      'Peru':'pe','Chile':'cl',
+      // Europe
+      'France':'fr','Germany':'de','Spain':'es','Portugal':'pt','England':'gb-eng',
+      'Netherlands':'nl','Belgium':'be','Croatia':'hr','Switzerland':'ch',
       'Austria':'at','Turkey':'tr','Türkiye':'tr','Ukraine':'ua','Scotland':'gb-sct',
-      'Sweden':'se','Bosnia and Herzegovina':'ba','Bosnia & Herzegovina':'ba','Bosnia-Herzegovina':'ba',
-      'Cape Verde':'cv','Curacao':'cw','Curaçao':'cw','Haiti':'ht','Panama':'pa',
-      'Iraq':'iq','DR Congo':'cd','New Zealand':'nz','Uzbekistan':'uz','Jordan':'jo',
-      'Algeria':'dz','Tunisia':'tn','Paraguay':'py','Venezuela':'ve','Bolivia':'bo',
-      'Peru':'pe','Chile':'cl','Guatemala':'gt','Honduras':'hn','Serbia':'rs',
-      'Poland':'pl','Denmark':'dk','Romania':'ro','Slovakia':'sk','Slovenia':'si',
-      'Georgia':'ge','Jamaica':'jm','Costa Rica':'cr','El Salvador':'sv',
+      'Norway':'no','Sweden':'se','Denmark':'dk','Poland':'pl','Serbia':'rs',
+      'Czech Republic':'cz','Czechia':'cz','Romania':'ro','Slovakia':'sk',
+      'Slovenia':'si','Georgia':'ge','Albania':'al','Hungary':'hu','Greece':'gr',
+      'Bosnia and Herzegovina':'ba','Bosnia & Herzegovina':'ba','Bosnia-Herzegovina':'ba',
+      'Wales':'gb-wls','Ireland':'ie','Finland':'fi','Iceland':'is',
+      // Africa
+      'Morocco':'ma','Senegal':'sn','Nigeria':'ng','Ghana':'gh',
+      "Côte d'Ivoire":'ci','Ivory Coast':'ci','Egypt':'eg','Algeria':'dz',
+      'Tunisia':'tn','Cameroon':'cm','South Africa':'za','Mali':'ml',
+      'DR Congo':'cd','Democratic Republic of Congo':'cd','Zambia':'zm',
+      'Cape Verde':'cv','Cabo Verde':'cv',
+      // Asia/Oceania
+      'Japan':'jp','South Korea':'kr','Korea Republic':'kr','Australia':'au',
+      'Saudi Arabia':'sa','Iran':'ir','Iraq':'iq','Qatar':'qa',
+      'Uzbekistan':'uz','New Zealand':'nz','Jordan':'jo','Kuwait':'kw',
+      'Bahrain':'bh','Palestine':'ps','Indonesia':'id','Thailand':'th',
+      // Caribbean
+      'Curacao':'cw','Curaçao':'cw','Trinidad and Tobago':'tt',
     };
     const teamFlag = name => {
       const code = TEAM_FLAGS[name];
