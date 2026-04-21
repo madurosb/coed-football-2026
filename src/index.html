@@ -1927,6 +1927,7 @@
         <div class="admin-card" onclick="showAdminSub('bold-pred')"><div class="icon">🐂</div><div class="title">Bold predictions</div><div class="desc">Award the 🐂 badge to players who made a brave prediction and nailed it.</div></div>
         <div class="admin-card" onclick="showAdminSub('trash-admin')"><div class="icon">🧹</div><div class="title">Trash Talk reset</div><div class="desc">Delete all messages or messages older than a chosen number of days.</div></div>
         <div class="admin-card" onclick="showAdminSub('innercircle-admin')"><div class="icon">🏅</div><div class="title">Inner Circle Bets</div><div class="desc">Enable or disable the Inner Circle Bets page. Open it once the final player count is confirmed.</div></div>
+        <div class="admin-card" onclick="showAdminSub('knockout-admin')"><div class="icon">⚡</div><div class="title">Knockout stages</div><div class="desc">Enable predictions for Round of 16, Quarter-finals, Semi-finals and Final once the group stage is done.</div></div>
 
       </div>
     </div>
@@ -2003,6 +2004,19 @@
           <div class="stat-big"><div class="num" id="stat-accuracy">-</div><div class="lbl">Avg accuracy</div></div>
         </div>
         <div id="admin-stats-detail" style="font-size:13px;color:var(--text-muted);">Loading statistics...</div>
+      </div>
+    </div>
+
+    <div id="admin-knockout-admin" class="admin-sub">
+      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
+      <div class="form-card">
+        <h2>⚡ Knockout stages</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1.25rem;">Control whether predictions for the knockout stages (June 29 onwards) are visible. Enable this once the group stage is complete and teams are confirmed.</p>
+        <div id="knockout-status" style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Loading...</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <button onclick="setKnockout(true)" style="padding:12px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">⚡ Enable knockout stage predictions</button>
+          <button onclick="setKnockout(false)" style="padding:12px;border-radius:8px;border:0.5px solid #E24B4A;background:none;color:#E24B4A;font-size:13px;cursor:pointer;">🔒 Lock knockout stages</button>
+        </div>
       </div>
     </div>
 
@@ -2197,6 +2211,23 @@
     t.textContent = '🎰 You\'re in! x2 result pts if correct, deducted if wrong!';
     document.body.appendChild(t);
     setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.5s'; setTimeout(()=>t.remove(),500); }, 3000);
+  };
+
+  async function loadKnockoutAdmin() {
+    const statusEl = document.getElementById('knockout-status');
+    if (!statusEl) return;
+    const snap = await getDoc(doc(db, 'settings', 'knockout'));
+    const enabled = snap.exists() ? snap.data().enabled : false;
+    statusEl.innerHTML = `Current status: <strong style="color:${enabled?'var(--green)':'#E24B4A'}">${enabled ? '⚡ Enabled — players can predict knockout matches' : '🔒 Locked — knockout matches hidden from players'}</strong>`;
+  }
+
+  window.setKnockout = async (enabled) => {
+    await setDoc(doc(db, 'settings', 'knockout'), { enabled, updatedAt: serverTimestamp() });
+    window._knockoutEnabled = enabled;
+    showAdminNotif(enabled ? '⚡ Knockout stages unlocked!' : '🔒 Knockout stages locked');
+    loadKnockoutAdmin();
+    // Reload matches to reflect change
+    loadMatches();
   };
 
   async function loadInnerCircleAdmin() {
@@ -3854,8 +3885,16 @@
 
     // Build date tabs
     const dateSet = new Set();
+    // Load knockout setting
+    const knockoutSnap = await getDoc(doc(db, 'settings', 'knockout'));
+    const knockoutEnabled = knockoutSnap.exists() ? knockoutSnap.data().enabled : false;
+    window._knockoutEnabled = knockoutEnabled;
+    const KNOCKOUT_START = new Date('2026-06-29T00:00:00Z');
+
     matchesSnap.forEach(d => {
       const kickoff = d.data().kickoff?.toDate?.() || new Date(d.data().kickoff);
+      // Hide knockout dates unless admin has enabled them
+      if (kickoff >= KNOCKOUT_START && !knockoutEnabled) return;
       const dateKey = kickoff.toLocaleDateString('en-GB', { day:'2-digit', month:'short', timeZone:'Asia/Jerusalem' });
       dateSet.add(dateKey);
     });
@@ -3876,11 +3915,18 @@
         }
       }
       activeMatchDate = defaultDate;
+
+      // Add locked notice if knockout not yet enabled
+      let lockedNotice = '';
+      if (!knockoutEnabled) {
+        lockedNotice = `<div style="font-size:11px;color:var(--text-muted);padding:4px 10px;display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0;">🔒 Knockout stages locked</div>`;
+      }
+
       tabsEl.innerHTML = ['All', ...dates].map(d => `
         <button onclick="filterMatchesByDate('${d}')" id="date-tab-${d.replace(/ /g,'_')}"
           style="flex-shrink:0;padding:5px 12px;border-radius:99px;border:0.5px solid ${d===defaultDate||d==='All'&&!defaultDate?'var(--green)':'var(--border)'};background:${d===defaultDate?'var(--green)':'none'};color:${d===defaultDate?'white':'var(--text-muted)'};font-size:12px;cursor:pointer;white-space:nowrap;">
           ${d}
-        </button>`).join('');
+        </button>`).join('') + lockedNotice;
     }
 
     renderMatches(matchesSnap, activeMatchDate);
@@ -3927,9 +3973,12 @@
     const deadlineSoonMatches = [];
     const liveMatches = [];
     let visibleCount = 0;
+    const KNOCKOUT_START_R = new Date('2026-06-29T00:00:00Z');
     matchesSnap.forEach(d => {
       const m = d.data();
       const kickoff = m.kickoff?.toDate?.() || new Date(m.kickoff);
+      // Hide knockout matches if not enabled
+      if (kickoff >= KNOCKOUT_START_R && !window._knockoutEnabled) return;
       // Filter by date tab
       if (filterDate) {
         const dateKey = kickoff.toLocaleDateString('en-GB', { day:'2-digit', month:'short', timeZone:'Asia/Jerusalem' });
@@ -4259,6 +4308,7 @@
     if (id === 'watch-admin') loadWatchAdmin();
     if (id === 'bold-pred') loadBoldPredAdmin();
     if (id === 'innercircle-admin') loadInnerCircleAdmin();
+    if (id === 'knockout-admin') loadKnockoutAdmin();
     if (id === 'trash-admin') {};
     if (id === 'double-admin') loadDoubleOrNothingAdmin();
   };
