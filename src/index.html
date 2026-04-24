@@ -431,6 +431,21 @@
   </div>
 </div>
 
+<!-- NOTIFICATION PANEL -->
+<div id="notif-panel" style="display:none;position:fixed;top:54px;right:0;width:min(380px,100vw);max-height:70vh;overflow-y:auto;background:var(--surface);border-left:0.5px solid var(--border);border-bottom:0.5px solid var(--border);border-radius:0 0 0 14px;z-index:999;box-shadow:-4px 4px 24px rgba(0,0,0,0.12);">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:0.5px solid var(--border);position:sticky;top:0;background:var(--surface);">
+    <div style="font-size:14px;font-weight:600;">🔔 Notifications</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button onclick="markAllNotifsRead()" style="font-size:11px;color:var(--green);background:none;border:none;cursor:pointer;padding:0;">Mark all read</button>
+      <button onclick="toggleNotifPanel()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-muted);padding:0;">×</button>
+    </div>
+  </div>
+  <div id="notif-list" style="padding:0;">
+    <div style="text-align:center;padding:2rem;font-size:13px;color:var(--text-muted);">Loading...</div>
+  </div>
+</div>
+<div id="notif-overlay" onclick="toggleNotifPanel()" style="display:none;position:fixed;inset:0;z-index:998;"></div>
+
 <!-- BOLD PREDICTION POPUP -->
 <div id="bold-popup" class="modal-overlay" style="display:none;transition:opacity 0.3s;">
   <div class="modal" style="max-width:340px;text-align:center;">
@@ -482,6 +497,11 @@
     <div class="nav-user">
       <button id="darkmode-btn" onclick="toggleDarkMode()" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px 6px;border-radius:8px;transition:background 0.15s;" title="Toggle dark mode">🌙</button>
       <button id="music-btn" onclick="toggleMusic()" style="background:none;border:none;cursor:pointer;font-size:20px;padding:4px 8px;border-radius:8px;transition:background 0.15s;" title="Play/Stop music">🔇</button>
+      <!-- Notification bell -->
+      <button id="notif-btn" onclick="toggleNotifPanel()" style="background:none;border:none;cursor:pointer;font-size:20px;padding:4px 8px;border-radius:8px;transition:background 0.15s;position:relative;" title="Notifications">
+        🔔
+        <span id="notif-badge" style="display:none;position:absolute;top:2px;right:2px;background:#E24B4A;color:white;font-size:9px;font-weight:700;border-radius:99px;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 3px;">0</span>
+      </button>
       <button class="hamburger" id="hamburger-btn" onclick="toggleMobileMenu()">
         <span></span><span></span><span></span>
       </button>
@@ -2397,6 +2417,19 @@
   window.setInnerCircle = async (enabled) => {
     await setDoc(doc(db, 'settings', 'innerCircle'), { enabled, updatedAt: serverTimestamp() });
     showAdminNotif(enabled ? '✅ Inner Circle Bets enabled!' : '🔒 Inner Circle Bets disabled');
+    // Notify all players
+    if (enabled) {
+      const usersSnap = await getDocs(collection(db, 'users'));
+      for (const d of usersSnap.docs) {
+        if (!d.data().isAdmin) {
+          await addDoc(collection(db, 'notifications'), {
+            toUserId: d.id, type: 'innercircle',
+            text: '🏅 Inner Circle Bets are now open! Vote on who finishes first and last before June 10.',
+            seen: false, createdAt: serverTimestamp()
+          });
+        }
+      }
+    }
     loadInnerCircleAdmin();
   };
 
@@ -2949,8 +2982,8 @@
     setTimeout(checkFirstTimeUser, 3000);
     // Check for bold prediction award
     setTimeout(checkBoldPredictionPopup, 4000);
-    // Check for reaction notifications
-    setTimeout(checkReactionNotifications, 5000);
+    // Run all notification checks
+    setTimeout(runNotificationChecks, 2000);
     // Start music on first click or tap — capture:true catches ALL clicks even if stopPropagation is called
     let musicStarted = false;
     const startOnInteraction = () => {
@@ -3017,6 +3050,9 @@
         });
       }
     } catch(e) { console.log('Email notification skipped:', e.message); }
+
+    // Notify all existing users about new member
+    try { await notifyAllNewUser(nick); } catch(e) {}
 
     showApp();
   };
@@ -3241,6 +3277,12 @@
           score: `${homeScore}-${awayScore}`, reason, awardedAt: serverTimestamp(), seen: false
         });
         await updateDoc(doc(db, 'users', p.userId), { boldPrediction: true });
+        // Notify the user
+        await addDoc(collection(db, 'notifications'), {
+          toUserId: p.userId, type: 'bold',
+          text: `🐂 Bold prediction badge earned! ${reason}`,
+          seen: false, createdAt: serverTimestamp()
+        });
       }
     }
   }
@@ -4054,6 +4096,8 @@
     });
 
     renderLeaderboard('full-leaderboard', users, predStats);
+    // Check leaderboard changes for notifications
+    setTimeout(() => checkLeaderboardChange(users), 500);
   }
 
   // LOAD MATCHES
@@ -6418,26 +6462,211 @@
     }
   }
 
-  async function checkReactionNotifications() {
-    const notifSnap = await getDocs(query(
+  // ========== NOTIFICATION SYSTEM ==========
+
+  // Helper to create a notification
+  async function createNotif(toUserId, type, text, extra = {}) {
+    if (!toUserId || toUserId === currentUser?.uid) return; // don't notify yourself
+    await addDoc(collection(db, 'notifications'), {
+      toUserId, type, text, seen: false,
+      createdAt: serverTimestamp(), ...extra
+    });
+    // If recipient is viewing same session, refresh their bell
+  }
+
+  // Load and display notifications
+  async function loadNotifications() {
+    if (!currentUser) return;
+    const snap = await getDocs(query(
+      collection(db, 'notifications'),
+      where('toUserId', '==', currentUser.uid),
+      orderBy('createdAt', 'desc'),
+      limit(30)
+    ));
+    const notifs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const unseen = notifs.filter(n => !n.seen).length;
+
+    // Update badge
+    const badge = document.getElementById('notif-badge');
+    if (badge) {
+      badge.style.display = unseen > 0 ? 'block' : 'none';
+      badge.textContent = unseen > 9 ? '9+' : unseen;
+    }
+
+    renderNotifList(notifs, snap.docs);
+  }
+
+  function renderNotifList(notifs, docs) {
+    const list = document.getElementById('notif-list');
+    if (!list) return;
+    if (notifs.length === 0) {
+      list.innerHTML = `<div style="text-align:center;padding:2rem;font-size:13px;color:var(--text-muted);">
+        <div style="font-size:32px;margin-bottom:8px;">🔕</div>No notifications yet
+      </div>`;
+      return;
+    }
+    const typeIcon = { reaction:'💬', badge:'🏅', leaderboard:'🏆', overtaken:'😅',
+      deadline:'⏰', result:'✅', exact:'🎯', joker:'🃏', don:'🎰',
+      bold:'🐂', newuser:'👥', innercircle:'🏅' };
+    list.innerHTML = notifs.map((n, i) => {
+      const icon = typeIcon[n.type] || '🔔';
+      const time = n.createdAt?.toDate ? n.createdAt.toDate().toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+      return `<div onclick="markNotifRead('${n.id}', ${i})"
+        style="display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border-bottom:0.5px solid var(--border);background:${n.seen?'none':'var(--green-light)'};cursor:pointer;transition:background 0.15s;"
+        onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='${n.seen?'none':'var(--green-light)'}'">
+        <div style="font-size:22px;flex-shrink:0;margin-top:2px;">${icon}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;line-height:1.4;${n.seen?'':'font-weight:500;'}">${n.text}</div>
+          ${n.msgPreview ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">"${n.msgPreview}..."</div>` : ''}
+          <div style="font-size:10px;color:var(--text-muted);margin-top:3px;">${time}</div>
+        </div>
+        ${!n.seen ? '<div style="width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;margin-top:6px;"></div>' : ''}
+      </div>`;
+    }).join('');
+  }
+
+  window.toggleNotifPanel = async () => {
+    const panel = document.getElementById('notif-panel');
+    const overlay = document.getElementById('notif-overlay');
+    const open = panel.style.display !== 'none';
+    panel.style.display = open ? 'none' : 'block';
+    if (overlay) overlay.style.display = open ? 'none' : 'block';
+    if (!open) await loadNotifications();
+  };
+
+  window.markNotifRead = async (id) => {
+    await updateDoc(doc(db, 'notifications', id), { seen: true });
+    loadNotifications();
+  };
+
+  window.markAllNotifsRead = async () => {
+    const snap = await getDocs(query(
       collection(db, 'notifications'),
       where('toUserId', '==', currentUser.uid),
       where('seen', '==', false)
     ));
-    if (notifSnap.empty) return;
-    const notifs = notifSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    // Show stacked toast for each notification
-    notifs.forEach((n, idx) => {
-      setTimeout(() => {
-        const t = document.createElement('div');
-        t.style.cssText = `position:fixed;bottom:${80 + idx * 52}px;left:50%;transform:translateX(-50%);background:var(--surface);border:0.5px solid var(--border);color:var(--text);font-size:12px;padding:8px 16px;border-radius:10px;z-index:9000;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-width:280px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;`;
-        t.textContent = `💬 ${n.text}`;
-        document.body.appendChild(t);
-        setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.4s'; setTimeout(()=>t.remove(),400); }, 4000);
-      }, idx * 500);
-      // Mark as seen
-      updateDoc(doc(db, 'notifications', n.id), { seen: true });
+    for (const d of snap.docs) await updateDoc(d.ref, { seen: true });
+    loadNotifications();
+  };
+
+  // ===== NOTIFICATION TRIGGERS =====
+
+  // 1. Reaction on Trash Talk (already in toggleReaction)
+  // Override the old checkReactionNotifications with new bell-based system
+  async function checkReactionNotifications() {
+    await loadNotifications(); // just refresh the bell
+  }
+
+  // 2. Points earned after result submitted
+  async function notifyPointsEarned(userId, matchName, pts, exact) {
+    if (pts <= 0) return;
+    const text = exact
+      ? `🎯 Exact score on ${matchName}! +${pts} pts`
+      : `✅ Correct result on ${matchName}! +${pts} pts`;
+    await addDoc(collection(db, 'notifications'), {
+      toUserId: userId, type: exact ? 'exact' : 'result', text, seen: false, createdAt: serverTimestamp()
     });
+  }
+
+  // 3. Leaderboard overtaken notification
+  async function checkLeaderboardChange(users) {
+    if (!currentUser) return;
+    const me = users.find(u => u.uid === currentUser.uid);
+    if (!me) return;
+    const myRank = users.indexOf(me);
+    const prevRankKey = `prevRank_${currentUser.uid}`;
+    const prev = parseInt(localStorage.getItem(prevRankKey) || '99');
+    if (myRank < prev - 1 && prev !== 99) {
+      // I moved up — notify people I passed
+      for (let i = myRank + 1; i <= Math.min(prev - 1, myRank + 3); i++) {
+        const passed = users[i];
+        if (passed && passed.uid !== currentUser.uid) {
+          createNotif(passed.uid, 'overtaken', `${me.nickname || 'Someone'} just overtook you in the standings! 😅`);
+        }
+      }
+    }
+    localStorage.setItem(prevRankKey, myRank.toString());
+  }
+
+  // 4. New user joined
+  async function notifyAllNewUser(newUserName) {
+    const usersSnap = await getDocs(collection(db, 'users'));
+    usersSnap.forEach(d => {
+      if (d.id !== currentUser.uid) {
+        createNotif(d.id, 'newuser', `👥 ${newUserName} just joined the tournament!`);
+      }
+    });
+  }
+
+  // 5. Joker reminder — check if user hasn't used joker yet, remind on Mondays
+  async function checkJokerReminder() {
+    const jokerSnap = await getDocs(query(collection(db, 'jokerCards'), where('userId', '==', currentUser.uid)));
+    if (jokerSnap.empty) {
+      const day = new Date().getDay(); // 1 = Monday
+      const lastReminder = localStorage.getItem('jokerReminderDate');
+      const today = new Date().toDateString();
+      if (day === 1 && lastReminder !== today) {
+        await addDoc(collection(db, 'notifications'), {
+          toUserId: currentUser.uid, type: 'joker',
+          text: `🃏 Reminder: you still haven't used your Joker card! Pick the right match and double your points.`,
+          seen: false, createdAt: serverTimestamp()
+        });
+        localStorage.setItem('jokerReminderDate', today);
+      }
+    }
+  }
+
+  // 6. DON reminder — check if user hasn't used DON this week
+  async function checkDONReminder() {
+    const week = getWeekKey();
+    const donSnap = await getDocs(query(collection(db, 'donOptIns'), where('userId', '==', currentUser.uid), where('week', '==', week)));
+    if (donSnap.empty) {
+      const lastReminder = localStorage.getItem('donReminderWeek');
+      if (lastReminder !== week) {
+        await addDoc(collection(db, 'notifications'), {
+          toUserId: currentUser.uid, type: 'don',
+          text: `🎰 You haven't used Double or Nothing this week! Pick a match and risk it all.`,
+          seen: false, createdAt: serverTimestamp()
+        });
+        localStorage.setItem('donReminderWeek', week);
+      }
+    }
+  }
+
+  // 7. Deadline reminder — 24h before next unpredicted match
+  async function checkDeadlineReminders() {
+    const matchesSnap = await getDocs(query(collection(db, 'matches'), orderBy('kickoff')));
+    const predsSnap = await getDocs(query(collection(db, 'predictions'), where('userId', '==', currentUser.uid)));
+    const predictedMatchIds = new Set();
+    predsSnap.forEach(d => predictedMatchIds.add(d.data().matchId));
+    const now = new Date();
+    const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    let count = 0;
+    matchesSnap.forEach(d => {
+      const m = d.data();
+      const kickoff = m.kickoff?.toDate?.() || new Date(m.kickoff);
+      if (kickoff > now && kickoff <= in24h && !predictedMatchIds.has(d.id)) count++;
+    });
+    if (count > 0) {
+      const lastReminder = localStorage.getItem('deadlineReminderDate');
+      const today = new Date().toDateString();
+      if (lastReminder !== today) {
+        await addDoc(collection(db, 'notifications'), {
+          toUserId: currentUser.uid, type: 'deadline',
+          text: `⏰ ${count} match${count > 1 ? 'es' : ''} kicking off in under 24 hours — don't forget to predict!`,
+          seen: false, createdAt: serverTimestamp()
+        });
+        localStorage.setItem('deadlineReminderDate', today);
+      }
+    }
+  }
+
+  // Run all reminders on login
+  async function runNotificationChecks() {
+    await loadNotifications();
+    setTimeout(checkJokerReminder, 2000);
+    setTimeout(checkDONReminder, 3000);
+    setTimeout(checkDeadlineReminders, 4000);
   }
 
   // ========== PREVENT ALL ZOOM ==========
