@@ -2268,34 +2268,42 @@
     container.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div>';
     const usersSnap = await getDocs(collection(db, 'users'));
     const users = [];
-    usersSnap.forEach(d => { if (!d.data().isAdmin) users.push({ uid: d.id, ...d.data() }); });
+    // Show ALL users including admin
+    usersSnap.forEach(d => users.push({ uid: d.id, ...d.data() }));
     users.sort((a, b) => (a.nickname || '').localeCompare(b.nickname || ''));
+
+    if (users.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">No users registered yet.</div>';
+      return;
+    }
 
     const noPlayer = users.filter(u => !u.tournamentPlayer);
     const noWinner = users.filter(u => !u.tournamentWinner);
 
     let html = '';
-    if (noPlayer.length > 0 || noWinner.length > 0) {
-      html += `<div style="background:#FCEBEB;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#791F1F;">
-        ⚠️ ${noPlayer.length} player(s) missing tournament player · ${noWinner.length} missing World Cup winner pick
-      </div>`;
+    if (noPlayer.length === 0 && noWinner.length === 0) {
+      html += `<div style="background:#E1F5EE;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#085041;">✅ All ${users.length} user(s) have submitted both picks!</div>`;
     } else {
-      html += `<div style="background:#E1F5EE;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#085041;">✅ Everyone has submitted both picks!</div>`;
+      html += `<div style="background:#FCEBEB;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#791F1F;">
+        ⚠️ ${noPlayer.length} missing tournament player · ${noWinner.length} missing WC winner (${users.length} total users)
+      </div>`;
     }
 
-    html += `<div style="background:var(--surface2);border-radius:10px;overflow:hidden;">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;font-size:11px;color:var(--text-muted);text-transform:uppercase;padding:6px 10px;font-weight:500;">
-        <div>Player</div><div>⭐ Tournament player</div><div>🏆 WC Winner pick</div>
+    html += `<div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">${users.length} registered user${users.length !== 1 ? 's' : ''}</div>
+    <div style="background:var(--surface2);border-radius:10px;overflow:hidden;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;font-size:11px;color:var(--text-muted);text-transform:uppercase;padding:6px 10px;font-weight:500;border-bottom:0.5px solid var(--border);">
+        <div>Player</div><div>⭐ Tournament</div><div>🏆 WC Winner</div>
       </div>
       ${users.map(u => `
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;padding:7px 10px;border-top:0.5px solid var(--border);font-size:12px;align-items:center;">
-          <div style="font-weight:500;">${u.nickname || u.displayName || u.uid}</div>
-          <div style="${!u.tournamentPlayer ? 'color:#E24B4A;' : 'color:var(--green);'}">${u.tournamentPlayer || '❌ Missing'}</div>
-          <div style="${!u.tournamentWinner ? 'color:#E24B4A;' : 'color:var(--text-muted);'}">${u.tournamentWinner || '❌ Missing'}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;padding:8px 10px;border-top:0.5px solid var(--border);font-size:12px;align-items:center;${!u.tournamentPlayer || !u.tournamentWinner ? 'background:#FCEBEB33;' : ''}">
+          <div style="font-weight:500;">${u.nickname || u.displayName || u.uid.substring(0,8)}${u.isAdmin ? ' 👑' : ''}</div>
+          <div style="color:${u.tournamentPlayer ? 'var(--green)' : '#E24B4A'};">${u.tournamentPlayer || '❌ Missing'}</div>
+          <div style="color:${u.tournamentWinner ? 'var(--text-muted)' : '#E24B4A'};">${u.tournamentWinner || '❌ Missing'}</div>
         </div>`).join('')}
     </div>`;
     container.innerHTML = html;
   }
+
 
   async function loadScoreVerification() {
     const container = document.getElementById('score-verify-content');
@@ -6477,23 +6485,29 @@
   // Load and display notifications
   async function loadNotifications() {
     if (!currentUser) return;
-    const snap = await getDocs(query(
-      collection(db, 'notifications'),
-      where('toUserId', '==', currentUser.uid),
-      orderBy('createdAt', 'desc'),
-      limit(30)
-    ));
-    const notifs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const unseen = notifs.filter(n => !n.seen).length;
+    try {
+      // Simple query without orderBy to avoid needing a composite Firestore index
+      const snap = await getDocs(query(
+        collection(db, 'notifications'),
+        where('toUserId', '==', currentUser.uid),
+        limit(30)
+      ));
+      const notifs = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 
-    // Update badge
-    const badge = document.getElementById('notif-badge');
-    if (badge) {
-      badge.style.display = unseen > 0 ? 'block' : 'none';
-      badge.textContent = unseen > 9 ? '9+' : unseen;
+      const unseen = notifs.filter(n => !n.seen).length;
+      const badge = document.getElementById('notif-badge');
+      if (badge) {
+        badge.style.display = unseen > 0 ? 'block' : 'none';
+        badge.textContent = unseen > 9 ? '9+' : unseen;
+      }
+      renderNotifList(notifs, snap.docs);
+    } catch(e) {
+      console.log('Notifications error:', e.message);
+      const list = document.getElementById('notif-list');
+      if (list) list.innerHTML = `<div style="text-align:center;padding:1.5rem;font-size:13px;color:var(--text-muted);">No notifications yet 🔕</div>`;
     }
-
-    renderNotifList(notifs, snap.docs);
   }
 
   function renderNotifList(notifs, docs) {
@@ -6542,19 +6556,18 @@
   window.markAllNotifsRead = async () => {
     const snap = await getDocs(query(
       collection(db, 'notifications'),
-      where('toUserId', '==', currentUser.uid),
-      where('seen', '==', false)
+      where('toUserId', '==', currentUser.uid)
     ));
-    for (const d of snap.docs) await updateDoc(d.ref, { seen: true });
+    for (const d of snap.docs) {
+      if (!d.data().seen) await updateDoc(d.ref, { seen: true });
+    }
     loadNotifications();
   };
 
   // ===== NOTIFICATION TRIGGERS =====
 
-  // 1. Reaction on Trash Talk (already in toggleReaction)
-  // Override the old checkReactionNotifications with new bell-based system
   async function checkReactionNotifications() {
-    await loadNotifications(); // just refresh the bell
+    await loadNotifications();
   }
 
   // 2. Points earned after result submitted
