@@ -1932,6 +1932,7 @@
         <div class="admin-card" onclick="showAdminSub('trash-admin')"><div class="icon">🧹</div><div class="title">Trash Talk reset</div><div class="desc">Delete all messages or messages older than a chosen number of days.</div></div>
         <div class="admin-card" onclick="showAdminSub('innercircle-admin')"><div class="icon">🏅</div><div class="title">Inner Circle Bets</div><div class="desc">Enable or disable the Inner Circle Bets page. Open it once the final player count is confirmed.</div></div>
         <div class="admin-card" onclick="showAdminSub('knockout-admin')"><div class="icon">⚡</div><div class="title">Knockout stages</div><div class="desc">Enable predictions for Round of 16, Quarter-finals, Semi-finals and Final once the group stage is done.</div></div>
+        <div class="admin-card" onclick="showAdminSub('score-verify')"><div class="icon">🔍</div><div class="title">Score verification</div><div class="desc">Check that all points are calculated correctly. Compare predicted vs actual results and audit per player.</div></div>
 
       </div>
     </div>
@@ -2008,6 +2009,18 @@
           <div class="stat-big"><div class="num" id="stat-accuracy">-</div><div class="lbl">Avg accuracy</div></div>
         </div>
         <div id="admin-stats-detail" style="font-size:13px;color:var(--text-muted);">Loading statistics...</div>
+      </div>
+    </div>
+
+    <div id="admin-score-verify" class="admin-sub">
+      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
+      <div class="form-card">
+        <h2>🔍 Score verification</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;">
+          <button onclick="loadScoreVerification()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">🔄 Refresh</button>
+          <button onclick="verifyAllScores()" style="padding:8px 14px;border-radius:8px;border:none;background:#185FA5;color:white;font-size:13px;font-weight:500;cursor:pointer;">✅ Run full check</button>
+        </div>
+        <div id="score-verify-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Click Refresh to load.</div></div>
       </div>
     </div>
 
@@ -2216,6 +2229,98 @@
     document.body.appendChild(t);
     setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.5s'; setTimeout(()=>t.remove(),500); }, 3000);
   };
+
+  async function loadScoreVerification() {
+    const container = document.getElementById('score-verify-content');
+    if (!container) return;
+    container.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div>';
+
+    const [usersSnap, matchesSnap, predsSnap] = await Promise.all([
+      getDocs(collection(db, 'users')),
+      getDocs(collection(db, 'matches')),
+      getDocs(collection(db, 'predictions'))
+    ]);
+
+    const users = {}, matches = {}, userPreds = {};
+    usersSnap.forEach(d => { users[d.id] = d.data(); });
+    matchesSnap.forEach(d => { matches[d.id] = d.data(); });
+
+    // Group predictions by user
+    predsSnap.forEach(d => {
+      const p = d.data();
+      if (!userPreds[p.userId]) userPreds[p.userId] = [];
+      userPreds[p.userId].push(p);
+    });
+
+    let html = `
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">
+        Shows stored points vs recalculated points. ⚠️ = mismatch found.
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;overflow:hidden;">
+        <div style="display:grid;grid-template-columns:1fr 60px 60px 40px;font-size:11px;color:var(--text-muted);text-transform:uppercase;padding:6px 10px;font-weight:500;">
+          <div>Player</div><div style="text-align:center">Stored</div><div style="text-align:center">Calc.</div><div style="text-align:center">Status</div>
+        </div>`;
+
+    let anyMismatch = false;
+
+    for (const uid of Object.keys(users)) {
+      const u = users[uid];
+      const preds = userPreds[uid] || [];
+      let calcPts = 0;
+
+      for (const pred of preds) {
+        const m = matches[pred.matchId];
+        if (!m || m.homeScore === null || m.homeScore === undefined) continue;
+        if (m.status !== 'FINISHED') continue;
+
+        const grp = (m.group || '').toUpperCase();
+        const isFinal = grp.includes('FINAL') && !grp.includes('QUARTER') && !grp.includes('SEMI');
+        const isSemi = grp.includes('SEMI');
+        const isQuarter = grp.includes('QUARTER');
+        const isR16 = grp.includes('16') || grp.includes('ROUND_OF_16') || grp.includes('32');
+        const multiplier = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
+
+        const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
+        const predicted = pred.homeScore > pred.awayScore ? 'H' : pred.homeScore < pred.awayScore ? 'A' : 'D';
+        let pts = 0;
+        if (isFinal) {
+          if (pred.homeScore === m.homeScore && pred.awayScore === m.awayScore) pts = 20;
+          else if (actual === predicted) pts = 10;
+        } else {
+          if (actual === predicted) pts += 1 * multiplier;
+          if (pred.homeScore === m.homeScore && pred.awayScore === m.awayScore) pts += 3 * multiplier;
+        }
+        if (m.firstGoalscorer && pred.firstScorer === m.firstGoalscorer) pts += 2 * multiplier;
+        calcPts += pts;
+      }
+      // Add bonus points (tournament player goals/assists etc)
+      calcPts += (u.bonusPoints || 0);
+
+      const stored = u.points || 0;
+      const diff = stored - calcPts;
+      const ok = Math.abs(diff) <= 1; // allow 1pt tolerance for joker/DON adjustments
+      if (!ok) anyMismatch = true;
+
+      html += `<div style="display:grid;grid-template-columns:1fr 60px 60px 40px;align-items:center;padding:7px 10px;border-top:0.5px solid var(--border);background:${ok?'none':'#FCEBEB'};">
+        <div style="font-size:12px;font-weight:500;">${u.nickname||u.displayName||uid}</div>
+        <div style="text-align:center;font-size:13px;font-weight:600;">${stored}</div>
+        <div style="text-align:center;font-size:13px;color:${ok?'var(--text-muted)':'#E24B4A'};font-weight:${ok?'400':'600'};">${calcPts}</div>
+        <div style="text-align:center;font-size:15px;">${ok ? '✅' : '⚠️'}</div>
+      </div>`;
+    }
+
+    html += `</div>`;
+
+    if (!anyMismatch) {
+      html += `<div style="background:#E1F5EE;border-radius:8px;padding:10px 12px;margin-top:10px;font-size:13px;color:#085041;font-weight:500;">✅ All scores look correct!</div>`;
+    } else {
+      html += `<div style="background:#FCEBEB;border-radius:8px;padding:10px 12px;margin-top:10px;font-size:13px;color:#791F1F;">⚠️ Mismatches found. These may be due to Joker/Double or Nothing bonuses — check manually.</div>`;
+    }
+
+    container.innerHTML = html;
+  }
+
+  window.verifyAllScores = loadScoreVerification;
 
   async function loadKnockoutAdmin() {
     const statusEl = document.getElementById('knockout-status');
@@ -2779,7 +2884,11 @@
     loadMatches();
     loadPrizes();
     // Auto-refresh every 15 minutes
-    setTimeout(() => location.reload(), 15 * 60 * 1000);
+    setTimeout(() => {
+      const vid = document.getElementById('rules-video');
+      if (vid) vid.src = '';
+      location.reload();
+    }, 15 * 60 * 1000);
 
     // Admin-only: watch for new members
     if (currentUser.email === ADMIN_EMAIL) {
@@ -2869,7 +2978,10 @@
     if (e.type === 'gesturestart') e.preventDefault();
   }
 
+  let currentPage = 'home';
+
   window.showPage = (id) => {
+    currentPage = id;
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('active'));
@@ -2925,14 +3037,12 @@
   document.addEventListener('visibilitychange', () => {
     const vid = document.getElementById('rules-video');
     if (document.hidden) {
-      // Tab hidden — stop video and timer completely
       if (vid) vid.src = '';
       videoPlayerReady = false;
       if (videoTimer) { clearTimeout(videoTimer); videoTimer = null; }
     } else {
-      // Tab visible again — only restart if user is currently on Rules page
-      const rulesPage = document.getElementById('page-rules');
-      if (rulesPage && rulesPage.classList.contains('active') && vid) {
+      // Only restart if user is ACTIVELY on Rules page
+      if (currentPage === 'rules' && vid) {
         const v = RULE_VIDEOS[currentVideoIdx];
         const muteParam = videoMuted ? '&mute=1' : '';
         vid.src = `https://www.youtube.com/embed/${v.id}?autoplay=1${muteParam}&controls=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`;
@@ -3936,14 +4046,27 @@
         lockedNotice = `<div style="font-size:11px;color:var(--text-muted);padding:4px 10px;display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0;border-left:2px solid var(--border);margin-left:4px;">🔒 Knockout stages locked</div>`;
       }
 
-      tabsEl.innerHTML = ['All', ...dates].map(d => `
-        <button onclick="filterMatchesByDate('${d}')" id="date-tab-${d.replace(/ /g,'_')}"
-          style="flex-shrink:0;padding:5px 12px;border-radius:99px;border:0.5px solid ${d===defaultDate||d==='All'&&!defaultDate?'var(--green)':'var(--border)'};background:${d===defaultDate?'var(--green)':'none'};color:${d===defaultDate?'white':'var(--text-muted)'};font-size:12px;cursor:pointer;white-space:nowrap;">
-          ${d}
-        </button>`).join('') + lockedNotice;
+      tabsEl.innerHTML = ['All', ...dates].map(d => {
+        const isJune28 = d === '28 Jun';
+        const label = isJune28 ? '28 Jun 🌙' : d;
+        const title = isJune28 ? 'Night of Jun 27→28 (Israel time)' : '';
+        return `<button onclick="filterMatchesByDate('${d}')" id="date-tab-${d.replace(/ /g,'_')}"
+          title="${title}"
+          style="flex-shrink:0;padding:5px 12px;border-radius:99px;border:0.5px solid ${d===defaultDate?'var(--green)':'var(--border)'};background:${d===defaultDate?'var(--green)':'none'};color:${d===defaultDate?'white':'var(--text-muted)'};font-size:12px;cursor:pointer;white-space:nowrap;">
+          ${label}
+        </button>`;
+      }).join('') + lockedNotice;
     }
 
     renderMatches(matchesSnap, activeMatchDate);
+
+    // Show note if June 28 tab exists (last group stage matches played late Jun 27 Israel time)
+    if (dates.includes('28 Jun')) {
+      const note = document.createElement('div');
+      note.style.cssText = 'font-size:11px;color:var(--text-muted);margin-bottom:0.75rem;padding:0 2px;';
+      note.textContent = '🌙 Jun 28 = matches played on the night of Jun 27→28 (Israel time)';
+      document.getElementById('matches-date-tabs')?.parentElement?.after(note);
+    }
   }
 
   window.scrollDateTabs = (dir) => {
@@ -4343,6 +4466,7 @@
     if (id === 'bold-pred') loadBoldPredAdmin();
     if (id === 'innercircle-admin') loadInnerCircleAdmin();
     if (id === 'knockout-admin') loadKnockoutAdmin();
+    if (id === 'score-verify') loadScoreVerification();
     if (id === 'trash-admin') {};
     if (id === 'double-admin') loadDoubleOrNothingAdmin();
   };
