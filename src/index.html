@@ -1301,7 +1301,7 @@
       <div id="winner-pick-notice" style="font-size:12px;color:var(--text-muted);margin-top:6px;"></div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
-      <p class="section-title" style="margin-bottom:0;">Group stage predictions — June 11-27 · Knockout stages open after group results ⚡</p>
+      <p class="section-title" style="margin-bottom:0;">Group stage predictions — June 11-27 · Round of 32 unlocks after group results ⚡</p>
       <div style="display:flex;gap:8px;">
         <button onclick="showPage('live')" id="live-matches-btn" style="display:none;font-size:12px;color:white;background:#E24B4A;border:none;padding:5px 12px;border-radius:8px;cursor:pointer;animation:pulse 1.5s infinite;">🔴 Live now!</button>
         <button onclick="confirmResetPredictions()" style="font-size:12px;color:#E24B4A;background:none;border:0.5px solid #E24B4A;padding:5px 12px;border-radius:8px;cursor:pointer;">🗑 Reset all</button>
@@ -3899,7 +3899,7 @@
     const knockoutSnap = await getDoc(doc(db, 'settings', 'knockout'));
     const knockoutEnabled = knockoutSnap.exists() ? knockoutSnap.data().enabled : false;
     window._knockoutEnabled = knockoutEnabled;
-    const KNOCKOUT_START = new Date('2026-06-27T21:01:00Z'); // After last group stage match
+    const KNOCKOUT_START = new Date('2026-06-28T00:00:00Z'); // Round of 32 starts June 28
 
     matchesSnap.forEach(d => {
       const kickoff = d.data().kickoff?.toDate?.() || new Date(d.data().kickoff);
@@ -3929,7 +3929,7 @@
       // Add locked notice if knockout not yet enabled
       let lockedNotice = '';
       if (!knockoutEnabled) {
-        lockedNotice = `<div style="font-size:11px;color:var(--text-muted);padding:4px 10px;display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0;border-left:2px solid var(--border);margin-left:4px;">🔒 June 28+ locked</div>`;
+        lockedNotice = `<div style="font-size:11px;color:var(--text-muted);padding:4px 10px;display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0;border-left:2px solid var(--border);margin-left:4px;">🔒 Knockout stages locked</div>`;
       }
 
       tabsEl.innerHTML = ['All', ...dates].map(d => `
@@ -3998,7 +3998,7 @@
     const deadlineSoonMatches = [];
     const liveMatches = [];
     let visibleCount = 0;
-    const KNOCKOUT_START_R = new Date('2026-06-27T21:01:00Z'); // After last group stage match
+    const KNOCKOUT_START_R = new Date('2026-06-28T00:00:00Z'); // Round of 32 starts June 28
     matchesSnap.forEach(d => {
       const m = d.data();
       const kickoff = m.kickoff?.toDate?.() || new Date(m.kickoff);
