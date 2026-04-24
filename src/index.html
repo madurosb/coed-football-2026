@@ -1307,7 +1307,11 @@
         <button onclick="confirmResetPredictions()" style="font-size:12px;color:#E24B4A;background:none;border:0.5px solid #E24B4A;padding:5px 12px;border-radius:8px;cursor:pointer;">🗑 Reset all</button>
       </div>
     </div>
-    <div id="matches-date-tabs" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:0.75rem;scrollbar-width:none;"></div>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:0.75rem;">
+      <button onclick="scrollDateTabs(-1)" style="flex-shrink:0;width:28px;height:28px;border-radius:50%;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">‹</button>
+      <div id="matches-date-tabs" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;flex:1;"></div>
+      <button onclick="scrollDateTabs(1)" style="flex-shrink:0;width:28px;height:28px;border-radius:50%;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">›</button>
+    </div>
     <div class="matches" id="matches-list">
       <div style="padding:1rem; text-align:center; font-size:13px; color:var(--text-muted);">Loading matches...</div>
     </div>
@@ -3941,6 +3945,11 @@
 
     renderMatches(matchesSnap, activeMatchDate);
   }
+
+  window.scrollDateTabs = (dir) => {
+    const el = document.getElementById('matches-date-tabs');
+    if (el) el.scrollBy({ left: dir * 120, behavior: 'smooth' });
+  };
 
   window.filterMatchesByDate = (date) => {
     activeMatchDate = date === 'All' ? null : date;
