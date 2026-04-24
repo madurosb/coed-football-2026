@@ -2765,7 +2765,7 @@
       targetId: null, // center screen
       action: () => {},
       btnText: 'Got it →',
-      extraBtn: { text: '📖 How to play', fn: () => { skipOnboarding(); showPage('dummies'); } }
+      extraBtn: { text: '📖 How to play', fn: () => { showPage('dummies'); setTimeout(() => { onboardingStep = 1; showOnboardingStep(1); }, 400); } }
     },
     {
       icon: '🔊',
@@ -3137,7 +3137,7 @@
     // Auto-refresh every 15 minutes
     setTimeout(() => {
       const vid = document.getElementById('rules-video');
-      if (vid) vid.src = '';
+      if (vid) { try { vid.contentWindow?.postMessage('{"event":"command","func":"stopVideo","args":""}', '*'); } catch(e) {} vid.src = 'about:blank'; setTimeout(() => { if(vid) vid.src=''; }, 100); }
       location.reload();
     }, 15 * 60 * 1000);
 
@@ -3280,8 +3280,12 @@
       videoPlayerReady = true;
     } else {
       if (ap && musicPlaying) ap.volume = 0.4;
-      // TRULY stop video — clear the src entirely (postMessage pause is unreliable)
-      if (vid) vid.src = '';
+      // Completely destroy iframe to stop audio in ALL browsers (Firefox fix)
+      if (vid) {
+        try { vid.contentWindow?.postMessage('{"event":"command","func":"stopVideo","args":""}', '*'); } catch(e) {}
+        vid.src = 'about:blank';
+        setTimeout(() => { if (vid) vid.src = ''; }, 100);
+      }
       videoPlayerReady = false;
       if (videoTimer) { clearTimeout(videoTimer); videoTimer = null; }
       const bar = document.getElementById('video-progress-bar');
@@ -3293,7 +3297,11 @@
   document.addEventListener('visibilitychange', () => {
     const vid = document.getElementById('rules-video');
     if (document.hidden) {
-      if (vid) vid.src = '';
+      if (vid) {
+        try { vid.contentWindow?.postMessage('{"event":"command","func":"stopVideo","args":""}', '*'); } catch(e) {}
+        vid.src = 'about:blank';
+        setTimeout(() => { if (vid) vid.src = ''; }, 100);
+      }
       videoPlayerReady = false;
       if (videoTimer) { clearTimeout(videoTimer); videoTimer = null; }
     } else {
