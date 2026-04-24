@@ -458,6 +458,29 @@
   </div>
 </div>
 
+<!-- ONBOARDING TOUR -->
+<div id="onboarding-overlay" style="display:none;position:fixed;inset:0;z-index:10000;pointer-events:none;">
+  <!-- Dark backdrop with hole -->
+  <div id="onboarding-backdrop" style="position:absolute;inset:0;background:rgba(0,0,0,0.6);pointer-events:all;" onclick="nextOnboardingStep()"></div>
+  <!-- Tooltip card -->
+  <div id="onboarding-card" style="position:absolute;background:var(--surface);border-radius:14px;padding:1.25rem 1.25rem 1rem;max-width:300px;box-shadow:0 8px 32px rgba(0,0,0,0.3);pointer-events:all;transition:all 0.3s ease;z-index:10001;">
+    <!-- Arrow pointer -->
+    <div id="onboarding-arrow" style="position:absolute;width:12px;height:12px;background:var(--surface);transform:rotate(45deg);"></div>
+    <!-- Step dots -->
+    <div style="display:flex;gap:5px;margin-bottom:10px;" id="onboarding-dots"></div>
+    <!-- Content -->
+    <div id="onboarding-icon" style="font-size:28px;margin-bottom:6px;"></div>
+    <div id="onboarding-title" style="font-size:15px;font-weight:600;margin-bottom:5px;"></div>
+    <div id="onboarding-text" style="font-size:13px;color:var(--text-muted);line-height:1.55;margin-bottom:12px;"></div>
+    <!-- Buttons -->
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button onclick="skipOnboarding()" style="font-size:12px;color:var(--text-muted);background:none;border:none;cursor:pointer;padding:0;">Skip all</button>
+      <div style="flex:1;"></div>
+      <button id="onboarding-btn" onclick="nextOnboardingStep()" style="padding:8px 18px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">Next →</button>
+    </div>
+  </div>
+</div>
+
 <!-- WELCOME POPUP -->
 <div id="welcome-popup" class="modal-overlay" style="display:none;transition:opacity 0.3s;">
   <div class="modal" style="max-width:360px;text-align:center;">
@@ -2733,21 +2756,161 @@
     document.getElementById('menu-overlay').classList.remove('open');
   };
   // ========== FIRST-TIME USER POPUP ==========
+  // ========== 4-STEP ONBOARDING TOUR ==========
+  const ONBOARDING_STEPS = [
+    {
+      icon: '🎓',
+      title: 'Welcome to COED&FOOTBALL! 👋',
+      text: 'Before you start predicting, check out the How to Play and Rules pages — everything is explained there in detail.',
+      targetId: null, // center screen
+      action: () => {},
+      btnText: 'Got it →',
+      extraBtn: { text: '📖 How to play', fn: () => { skipOnboarding(); showPage('dummies'); } }
+    },
+    {
+      icon: '🔊',
+      title: 'Background music',
+      text: 'There\'s music playing in the background. Tap the 🔊 button in the top bar anytime to mute or unmute it.',
+      targetId: 'music-btn',
+      action: () => {},
+      btnText: 'Next →'
+    },
+    {
+      icon: '🌙',
+      title: 'Dark & Light mode',
+      text: 'The site switches automatically — Light mode from 07:00 to 19:00, Dark mode from 19:00 to 07:00. You can also toggle it manually anytime with the 🌙 button.',
+      targetId: 'darkmode-btn',
+      action: () => {},
+      btnText: 'Next →'
+    },
+    {
+      icon: '🔔',
+      title: 'Notifications',
+      text: 'Tap the 🔔 bell to see your notifications — match results, badges, reactions to your Trash Talk messages, and more.',
+      targetId: 'notif-btn',
+      action: () => {},
+      btnText: 'Let\'s go! 🚀',
+      isLast: true
+    }
+  ];
+
+  let onboardingStep = 0;
+
   function checkFirstTimeUser() {
     if (localStorage.getItem('seenWelcome')) return;
-    // Only show if user has no predictions yet (truly new)
-    setTimeout(() => {
-      const popup = document.getElementById('welcome-popup');
-      if (popup) {
-        popup.style.display = 'flex';
-        popup.style.opacity = '0';
-        requestAnimationFrame(() => {
-          popup.style.transition = 'opacity 0.4s';
-          popup.style.opacity = '1';
-        });
-      }
-    }, 2500);
+    setTimeout(startOnboarding, 2000);
   }
+
+  function startOnboarding() {
+    onboardingStep = 0;
+    showOnboardingStep(0);
+  }
+
+  function showOnboardingStep(idx) {
+    const step = ONBOARDING_STEPS[idx];
+    if (!step) { skipOnboarding(); return; }
+
+    const overlay = document.getElementById('onboarding-overlay');
+    const card = document.getElementById('onboarding-card');
+    const backdrop = document.getElementById('onboarding-backdrop');
+    overlay.style.display = 'block';
+
+    // Update content
+    document.getElementById('onboarding-icon').textContent = step.icon;
+    document.getElementById('onboarding-title').textContent = step.title;
+    document.getElementById('onboarding-text').textContent = step.text;
+
+    const btn = document.getElementById('onboarding-btn');
+    btn.textContent = step.btnText || 'Next →';
+    if (step.isLast) { btn.style.background = 'var(--green)'; }
+
+    // Dots
+    const dots = document.getElementById('onboarding-dots');
+    dots.innerHTML = ONBOARDING_STEPS.map((_, i) =>
+      `<div style="width:${i===idx?'20px':'7px'};height:7px;border-radius:99px;background:${i===idx?'var(--green)':'var(--border)'};transition:all 0.2s;cursor:pointer;" onclick="showOnboardingStep(${i})"></div>`
+    ).join('');
+
+    // Extra button (step 1 only)
+    let extraBtnEl = document.getElementById('onboarding-extra-btn');
+    if (extraBtnEl) extraBtnEl.remove();
+    if (step.extraBtn) {
+      const eb = document.createElement('button');
+      eb.id = 'onboarding-extra-btn';
+      eb.textContent = step.extraBtn.text;
+      eb.style.cssText = 'padding:8px 14px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text);font-size:13px;cursor:pointer;';
+      eb.onclick = step.extraBtn.fn;
+      btn.parentElement.insertBefore(eb, btn);
+    }
+
+    // Position card relative to target element
+    setTimeout(() => positionOnboardingCard(step.targetId, card), 50);
+  }
+
+  function positionOnboardingCard(targetId, card) {
+    const arrow = document.getElementById('onboarding-arrow');
+    if (!targetId) {
+      // Center screen
+      card.style.top = '50%';
+      card.style.left = '50%';
+      card.style.transform = 'translate(-50%, -50%)';
+      if (arrow) arrow.style.display = 'none';
+      return;
+    }
+    const target = document.getElementById(targetId);
+    if (!target) {
+      card.style.top = '50%'; card.style.left = '50%'; card.style.transform = 'translate(-50%, -50%)';
+      if (arrow) arrow.style.display = 'none';
+      return;
+    }
+    const rect = target.getBoundingClientRect();
+    const cw = 300, ch = 200;
+    if (arrow) arrow.style.display = 'block';
+
+    // Position below the target
+    const spaceBelow = window.innerHeight - rect.bottom;
+    if (spaceBelow > ch + 20) {
+      card.style.top = (rect.bottom + 12) + 'px';
+      card.style.left = Math.min(Math.max(rect.left - 10, 8), window.innerWidth - cw - 8) + 'px';
+      card.style.transform = 'none';
+      if (arrow) { arrow.style.top = '-6px'; arrow.style.left = Math.min(rect.left - parseInt(card.style.left) + rect.width/2 - 6, cw - 20) + 'px'; arrow.style.bottom = ''; }
+    } else {
+      // Position above
+      card.style.top = (rect.top - ch - 12) + 'px';
+      card.style.left = Math.min(Math.max(rect.left - 10, 8), window.innerWidth - cw - 8) + 'px';
+      card.style.transform = 'none';
+      if (arrow) { arrow.style.bottom = '-6px'; arrow.style.top = ''; arrow.style.left = '20px'; }
+    }
+
+    // Highlight target
+    target.style.position = 'relative';
+    target.style.zIndex = '10002';
+    target.style.boxShadow = '0 0 0 4px var(--green), 0 0 0 8px rgba(29,158,117,0.2)';
+    target.style.borderRadius = '8px';
+    target.style.transition = 'box-shadow 0.3s';
+  }
+
+  function clearHighlight() {
+    ONBOARDING_STEPS.forEach(s => {
+      if (s.targetId) {
+        const el = document.getElementById(s.targetId);
+        if (el) { el.style.boxShadow = ''; el.style.zIndex = ''; }
+      }
+    });
+  }
+
+  window.nextOnboardingStep = () => {
+    clearHighlight();
+    onboardingStep++;
+    if (onboardingStep >= ONBOARDING_STEPS.length) { skipOnboarding(); return; }
+    showOnboardingStep(onboardingStep);
+  };
+
+  window.skipOnboarding = () => {
+    clearHighlight();
+    const overlay = document.getElementById('onboarding-overlay');
+    if (overlay) { overlay.style.opacity = '0'; overlay.style.transition = 'opacity 0.3s'; setTimeout(() => { overlay.style.display = 'none'; overlay.style.opacity = '1'; }, 300); }
+    localStorage.setItem('seenWelcome', '1');
+  };
 
   window.closeWelcomePopup = (goPage) => {
     const popup = document.getElementById('welcome-popup');
