@@ -1798,13 +1798,13 @@
     <div style="background:var(--surface);border:0.5px solid var(--green);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
       <div style="font-size:14px;font-weight:600;margin-bottom:10px;">📊 Points at a glance</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
-        <div style="background:#E1F5EE;border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>✅ Correct result</span><strong style="color:var(--green);">+1 pt</strong></div>
-        <div style="background:#E1F5EE;border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>🎯 Exact score</span><strong style="color:var(--green);">+3 pts</strong></div>
-        <div style="background:#E1F5EE;border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>⚽ 1st scorer</span><strong style="color:var(--green);">+2 pts</strong></div>
-        <div style="background:#FAEEDA;border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>🔥 Round of 16</span><strong style="color:#BA7517;">×2 pts</strong></div>
-        <div style="background:#FAEEDA;border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>🔥 Quarter-final</span><strong style="color:#BA7517;">×3 pts</strong></div>
-        <div style="background:#FAEEDA;border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>🔥 Semi-final</span><strong style="color:#BA7517;">×4 pts</strong></div>
-        <div style="background:#FCEBEB;border-radius:8px;padding:8px;display:flex;justify-content:space-between;grid-column:span 2;"><span>🏆 Final - exact</span><strong style="color:#E24B4A;">20 pts</strong></div>
+        <div style="background:var(--surface2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>✅ Correct result</span><strong style="color:var(--green);">+1 pt</strong></div>
+        <div style="background:var(--surface2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>🎯 Exact score</span><strong style="color:var(--green);">+3 pts</strong></div>
+        <div style="background:var(--surface2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>⚽ 1st scorer</span><strong style="color:var(--green);">+2 pts</strong></div>
+        <div style="background:var(--surface2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>🔥 Round of 16</span><strong style="color:#BA7517;">×2 pts</strong></div>
+        <div style="background:var(--surface2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>🔥 Quarter-final</span><strong style="color:#BA7517;">×3 pts</strong></div>
+        <div style="background:var(--surface2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>🔥 Semi-final</span><strong style="color:#BA7517;">×4 pts</strong></div>
+        <div style="background:var(--surface2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;grid-column:span 2;"><span>🏆 Final - exact</span><strong style="color:#E24B4A;">20 pts</strong></div>
       </div>
     </div>
 
@@ -1933,6 +1933,7 @@
         <div class="admin-card" onclick="showAdminSub('innercircle-admin')"><div class="icon">🏅</div><div class="title">Inner Circle Bets</div><div class="desc">Enable or disable the Inner Circle Bets page. Open it once the final player count is confirmed.</div></div>
         <div class="admin-card" onclick="showAdminSub('knockout-admin')"><div class="icon">⚡</div><div class="title">Knockout stages</div><div class="desc">Enable predictions for Round of 16, Quarter-finals, Semi-finals and Final once the group stage is done.</div></div>
         <div class="admin-card" onclick="showAdminSub('score-verify')"><div class="icon">🔍</div><div class="title">Score verification</div><div class="desc">Check that all points are calculated correctly. Compare predicted vs actual results and audit per player.</div></div>
+        <div class="admin-card" onclick="showAdminSub('picks-overview')"><div class="icon">📋</div><div class="title">Picks overview</div><div class="desc">See who picked which tournament player and World Cup winner. Verify everyone submitted before June 10.</div></div>
 
       </div>
     </div>
@@ -2009,6 +2010,17 @@
           <div class="stat-big"><div class="num" id="stat-accuracy">-</div><div class="lbl">Avg accuracy</div></div>
         </div>
         <div id="admin-stats-detail" style="font-size:13px;color:var(--text-muted);">Loading statistics...</div>
+      </div>
+    </div>
+
+    <div id="admin-picks-overview" class="admin-sub">
+      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
+      <div class="form-card">
+        <h2>📋 Picks overview</h2>
+        <div style="display:flex;gap:8px;margin-bottom:1rem;">
+          <button onclick="loadPicksOverview()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">🔄 Refresh</button>
+        </div>
+        <div id="picks-overview-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Click Refresh to load.</div></div>
       </div>
     </div>
 
@@ -2229,6 +2241,41 @@
     document.body.appendChild(t);
     setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.5s'; setTimeout(()=>t.remove(),500); }, 3000);
   };
+
+  async function loadPicksOverview() {
+    const container = document.getElementById('picks-overview-content');
+    if (!container) return;
+    container.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div>';
+    const usersSnap = await getDocs(collection(db, 'users'));
+    const users = [];
+    usersSnap.forEach(d => { if (!d.data().isAdmin) users.push({ uid: d.id, ...d.data() }); });
+    users.sort((a, b) => (a.nickname || '').localeCompare(b.nickname || ''));
+
+    const noPlayer = users.filter(u => !u.tournamentPlayer);
+    const noWinner = users.filter(u => !u.tournamentWinner);
+
+    let html = '';
+    if (noPlayer.length > 0 || noWinner.length > 0) {
+      html += `<div style="background:#FCEBEB;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#791F1F;">
+        ⚠️ ${noPlayer.length} player(s) missing tournament player · ${noWinner.length} missing World Cup winner pick
+      </div>`;
+    } else {
+      html += `<div style="background:#E1F5EE;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#085041;">✅ Everyone has submitted both picks!</div>`;
+    }
+
+    html += `<div style="background:var(--surface2);border-radius:10px;overflow:hidden;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;font-size:11px;color:var(--text-muted);text-transform:uppercase;padding:6px 10px;font-weight:500;">
+        <div>Player</div><div>⭐ Tournament player</div><div>🏆 WC Winner pick</div>
+      </div>
+      ${users.map(u => `
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;padding:7px 10px;border-top:0.5px solid var(--border);font-size:12px;align-items:center;">
+          <div style="font-weight:500;">${u.nickname || u.displayName || u.uid}</div>
+          <div style="${!u.tournamentPlayer ? 'color:#E24B4A;' : 'color:var(--green);'}">${u.tournamentPlayer || '❌ Missing'}</div>
+          <div style="${!u.tournamentWinner ? 'color:#E24B4A;' : 'color:var(--text-muted);'}">${u.tournamentWinner || '❌ Missing'}</div>
+        </div>`).join('')}
+    </div>`;
+    container.innerHTML = html;
+  }
 
   async function loadScoreVerification() {
     const container = document.getElementById('score-verify-content');
@@ -2902,6 +2949,8 @@
     setTimeout(checkFirstTimeUser, 3000);
     // Check for bold prediction award
     setTimeout(checkBoldPredictionPopup, 4000);
+    // Check for reaction notifications
+    setTimeout(checkReactionNotifications, 5000);
     // Start music on first click or tap — capture:true catches ALL clicks even if stopPropagation is called
     let musicStarted = false;
     const startOnInteraction = () => {
@@ -3322,24 +3371,37 @@
   };
 
   window.toggleReaction = async (msgId, emoji) => {
-    // One reaction per user per message - remove any existing reaction first
+    // One reaction per user per message
     const existingSnap = await getDocs(
       query(collection(db, 'trashReactions'),
         where('msgId', '==', msgId),
         where('userId', '==', currentUser.uid)
       )
     );
-    // If clicking same emoji they already reacted with - remove it
     const sameEmoji = existingSnap.docs.find(d => d.data().emoji === emoji);
     if (sameEmoji) { await deleteDoc(sameEmoji.ref); loadTrashTalk(); return; }
-    // Remove any other reaction they had on this message
     for (const d of existingSnap.docs) await deleteDoc(d.ref);
-    // Add new reaction
     const docId = `${currentUser.uid}_${msgId}`;
     await setDoc(doc(db, 'trashReactions', docId), {
       msgId, emoji, userId: currentUser.uid,
-      nickname: currentUserData?.nickname || currentUser.displayName
+      reactorName: currentUserData?.nickname || currentUser.displayName
     });
+
+    // Notify the message owner (if it's not the current user)
+    const msgSnap = await getDoc(doc(db, 'trashTalk', msgId));
+    if (msgSnap.exists() && msgSnap.data().userId !== currentUser.uid) {
+      const reactorName = currentUserData?.nickname || currentUser.displayName || 'Someone';
+      await addDoc(collection(db, 'notifications'), {
+        toUserId: msgSnap.data().userId,
+        type: 'reaction',
+        text: `${reactorName} reacted ${emoji} to your message`,
+        msgId,
+        msgPreview: msgSnap.data().text?.substring(0, 40),
+        seen: false,
+        createdAt: serverTimestamp()
+      });
+    }
+
     loadTrashTalk();
   };
 
@@ -4428,8 +4490,7 @@
   };
 
   window.saveTournamentPlayer = async () => {
-    // Lock 24h before first match: June 11 2026 22:00 Israel time = June 10 2026 21:00 UTC (Israel is UTC+3)
-    const tournamentDeadline = new Date('2026-06-10T19:00:00Z'); // 22:00 Israel = 19:00 UTC
+    const tournamentDeadline = new Date('2026-06-10T19:00:00Z');
     const now = new Date();
     if (now >= tournamentDeadline) {
       alert('Tournament player deadline has passed! You can no longer change your pick.');
@@ -4437,9 +4498,22 @@
     }
     const player = document.getElementById('tournament-player-select').value;
     if (!player) return alert('Please select a player first!');
+    const btn = document.getElementById('tournament-lock-btn');
+    const notice = document.getElementById('tournament-deadline-notice');
+    btn.disabled = true; btn.textContent = 'Saving...';
     await updateDoc(doc(db, 'users', currentUser.uid), { tournamentPlayer: player });
-    alert('Tournament player locked in: ' + player);
+    currentUserData.tournamentPlayer = player;
     document.getElementById('home-player').textContent = player;
+    btn.textContent = '✅ Locked in!';
+    btn.style.background = 'var(--green)';
+    btn.style.color = 'white';
+    if (notice) notice.innerHTML = `<span style="color:var(--green);font-weight:500;">⭐ Your tournament player: <strong>${player}</strong></span>`;
+    setTimeout(() => {
+      btn.textContent = 'Change pick';
+      btn.disabled = false;
+      btn.style.background = '';
+      btn.style.color = '';
+    }, 3000);
   };
 
   // LOAD PRIZES
@@ -4467,6 +4541,7 @@
     if (id === 'innercircle-admin') loadInnerCircleAdmin();
     if (id === 'knockout-admin') loadKnockoutAdmin();
     if (id === 'score-verify') loadScoreVerification();
+    if (id === 'picks-overview') loadPicksOverview();
     if (id === 'trash-admin') {};
     if (id === 'double-admin') loadDoubleOrNothingAdmin();
   };
@@ -6227,7 +6302,8 @@
     if (userPreds.length === 0) {
       const ctx = canvas.getContext('2d');
       canvas.width = canvas.offsetWidth || 300;
-      ctx.fillStyle = 'var(--text-muted)';
+      const isDarkE = document.body.classList.contains('dark-mode');
+      ctx.fillStyle = isDarkE ? 'rgba(255,255,255,0.5)' : '#aaa';
       ctx.font = '13px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('Chart will appear once matches are played', canvas.width/2, 60);
@@ -6285,8 +6361,9 @@
       ctx.fill();
     });
 
-    // Labels
-    ctx.fillStyle = '#888';
+    // Labels - use dark mode aware color
+    const isDark = document.body.classList.contains('dark-mode');
+    ctx.fillStyle = isDark ? 'rgba(255,255,255,0.6)' : '#888';
     ctx.font = '10px sans-serif';
     ctx.textAlign = 'center';
     labels.forEach((l, i) => ctx.fillText(l, toX(i), H - 6));
@@ -6341,7 +6418,29 @@
     }
   }
 
-  // ========== PREVENT ALL ZOOM (pinch + double-tap) ==========
+  async function checkReactionNotifications() {
+    const notifSnap = await getDocs(query(
+      collection(db, 'notifications'),
+      where('toUserId', '==', currentUser.uid),
+      where('seen', '==', false)
+    ));
+    if (notifSnap.empty) return;
+    const notifs = notifSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Show stacked toast for each notification
+    notifs.forEach((n, idx) => {
+      setTimeout(() => {
+        const t = document.createElement('div');
+        t.style.cssText = `position:fixed;bottom:${80 + idx * 52}px;left:50%;transform:translateX(-50%);background:var(--surface);border:0.5px solid var(--border);color:var(--text);font-size:12px;padding:8px 16px;border-radius:10px;z-index:9000;box-shadow:0 4px 12px rgba(0,0,0,0.15);max-width:280px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;`;
+        t.textContent = `💬 ${n.text}`;
+        document.body.appendChild(t);
+        setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.4s'; setTimeout(()=>t.remove(),400); }, 4000);
+      }, idx * 500);
+      // Mark as seen
+      updateDoc(doc(db, 'notifications', n.id), { seen: true });
+    });
+  }
+
+  // ========== PREVENT ALL ZOOM ==========
   // Chrome ignores user-scalable=no since v55, so JS is required
   let lastTouchEnd = 0;
   // Block double-tap zoom
