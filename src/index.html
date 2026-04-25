@@ -397,7 +397,7 @@
         </svg>
         Sign in with Google
       </button>
-      <p class="login-note">Only approved members of the group can join. Contact the admin to get access.</p>
+      <p class="login-note">💡 Tip: if Google sign-in isn't working, try disabling your ad blocker or browser extensions and refresh the page.</p>
     </div>
   </div>
 </div>
@@ -410,7 +410,7 @@
     <input type="text" id="nickname-input" placeholder="e.g. verygay69" maxlength="20">
     <div style="margin-bottom:1rem;">
       <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">Pick your avatar</div>
-      <div id="avatar-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:4px;max-height:none;overflow:visible;">
+      <div id="avatar-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:4px;">
       </div>
     </div>
     <input type="hidden" id="avatar-input" value="zombie">
@@ -3208,8 +3208,8 @@
     AVATARS.forEach((av, i) => {
       const btn = document.createElement('button');
       btn.className = 'avatar-opt' + (i === 0 ? ' selected' : '');
-      btn.style.cssText = 'background:none;border:2.5px solid transparent;border-radius:50%;padding:2px;cursor:pointer;transition:border-color 0.15s,transform 0.15s;display:flex;align-items:center;justify-content:center;width:76px;height:76px;overflow:hidden;flex-shrink:0;';
-      btn.innerHTML = makeAvatarSVG(av, 72);
+      btn.style.cssText = 'background:none;border:2.5px solid transparent;border-radius:50%;padding:2px;cursor:pointer;transition:border-color 0.15s,transform 0.15s;display:flex;align-items:center;justify-content:center;width:58px;height:58px;overflow:hidden;flex-shrink:0;';
+      btn.innerHTML = makeAvatarSVG(av, 54);
       btn.title = av.label;      btn.onclick = () => {
         document.querySelectorAll('.avatar-opt').forEach(b => {
           b.style.borderColor = 'transparent';
@@ -3990,14 +3990,14 @@
     const rows = users.map((u, i) => {
       let avatarHTML;
       if (u.isAdmin) {
-        avatarHTML = `<div style="position:relative;width:36px;height:36px;flex-shrink:0;">
-          <img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid #00ff41;">
-          <span style="position:absolute;top:-6px;right:-4px;font-size:12px;">👑</span>
+        avatarHTML = `<div style="position:relative;width:44px;height:44px;flex-shrink:0;min-width:44px;">
+          <img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid #00ff41;">
+          <span style="position:absolute;top:-4px;right:-4px;font-size:11px;">👑</span>
         </div>`;
       } else {
         const av = getAvatarById(u.avatar);
         avatarHTML = av
-          ? `<div style="width:80px;height:80px;border-radius:50%;overflow:hidden;flex-shrink:0;">${makeAvatarSVG(av, 80)}</div>`
+          ? `<div style="width:44px;height:44px;border-radius:50%;overflow:hidden;flex-shrink:0;">${makeAvatarSVG(av, 44)}</div>`
           : `<div class="avatar" style="background:${['#FAEEDA','#E6F1FB','#E1F5EE'][i]||'#f0f0f0'};color:${['#633806','#0C447C','#085041'][i]||'#333'};">${(u.nickname||u.displayName||'?').substring(0,2).toUpperCase()}</div>`;
       }
       const badge = getUserBadge(u, i, users, predStats);
@@ -6354,8 +6354,8 @@
     // Avatar
     const isAdmin = user.isAdmin;
     const avatarHTML = isAdmin
-      ? `<img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #00ff41;">`
-      : (() => { const av = getAvatarById(user.avatar); return av ? makeAvatarSVG(av, 56) : `<div style="width:56px;height:56px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:500;color:var(--green-dark);">${(user.nickname||'?').substring(0,2).toUpperCase()}</div>`; })();
+      ? `<img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid #00ff41;">`
+      : (() => { const av = getAvatarById(user.avatar); return av ? makeAvatarSVG(av, 96) : `<div style="width:96px;height:96px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:500;color:var(--green-dark);">${(user.nickname||'?').substring(0,2).toUpperCase()}</div>`; })();
 
     const nameHTML = isAdmin
       ? `${user.nickname||user.displayName} <span style="font-size:10px;background:#00ff41;color:#000;padding:1px 5px;border-radius:99px;font-weight:700;margin-left:4px;">ADMIN</span>`
