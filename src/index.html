@@ -177,7 +177,7 @@
     .modal h2 { font-size: 18px; font-weight: 500; margin-bottom: 0.5rem; }
     .modal p { font-size: 13px; color: var(--text-muted); margin-bottom: 1rem; }
     .modal input { width: 100%; padding: 8px 10px; border-radius: var(--radius); border: 0.5px solid var(--border); background: var(--surface2); color: var(--text); font-size: 15px; margin-bottom: 1rem; }
-    .avatar-opt { font-size: 24px; width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--border); background: var(--surface2); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color 0.15s, transform 0.15s; }
+    .avatar-opt { border-radius: 50%; border: 2.5px solid transparent; background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color 0.15s, transform 0.15s; overflow: hidden; }
     .avatar-opt:hover { transform: scale(1.1); }
     .avatar-opt.selected { border-color: var(--green); background: var(--green-light); }
     .modal-btn { width: 100%; padding: 10px; border-radius: var(--radius); border: none; background: var(--green); color: var(--green-light); font-size: 14px; font-weight: 500; cursor: pointer; }
@@ -3208,7 +3208,7 @@
     AVATARS.forEach((av, i) => {
       const btn = document.createElement('button');
       btn.className = 'avatar-opt' + (i === 0 ? ' selected' : '');
-      btn.style.cssText = 'background:none;border:2.5px solid transparent;border-radius:50%;padding:2px;cursor:pointer;transition:border-color 0.15s,transform 0.15s;display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:1;overflow:hidden;flex-shrink:0;';
+      btn.style.cssText = 'width:100%;aspect-ratio:1/1;padding:0;';
       btn.innerHTML = makeAvatarSVG(av, 80);
       btn.title = av.label;      btn.onclick = () => {
         document.querySelectorAll('.avatar-opt').forEach(b => {
