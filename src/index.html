@@ -3060,10 +3060,7 @@
 
   function makeAvatarSVG(av, size=56) {
     if (av.img) {
-      return `<img src="${AVATAR_BASE}${av.img}" width="${size}" height="${size}"
-        style="border-radius:50%;object-fit:cover;width:${size}px;height:${size}px;"
-        alt="${av.label||''}"
-        onerror="this.style.display='none';this.parentElement.innerHTML='<svg viewBox=\\"0 0 100 100\\" width=\\"${size}\\" height=\\"${size}\\" xmlns=\\"http://www.w3.org/2000/svg\\"><circle cx=\\"50\\" cy=\\"50\\" r=\\"50\\" fill=\\"${av.accent||'#1D9E75'}\\"/><text x=\\"50\\" y=\\"60\\" text-anchor=\\"middle\\" font-size=\\"32\\" fill=\\"white\\">⚽</text></svg>';"/>`;
+      return `<img src="${AVATAR_BASE}${av.img}" width="${size}" height="${size}" style="border-radius:50%;object-fit:cover;width:${size}px;height:${size}px;display:block;" alt=""/>`;
     }
     return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50" fill="${av.bg||'#1D9E75'}"/>${av.svg||''}</svg>`;
   }
@@ -3139,7 +3136,7 @@
     } else {
       const av = getAvatarById(currentUserData.avatar);
       if (av) {
-        avatarEl.innerHTML = makeAvatarSVG(av, 30);
+        avatarEl.innerHTML = makeAvatarSVG(av, 32); avatarEl.style.cssText = "width:32px;height:32px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;";
         avatarEl.style.background = 'none';
         avatarEl.style.padding = '0';
       } else {
@@ -3209,10 +3206,9 @@
     AVATARS.forEach((av, i) => {
       const btn = document.createElement('button');
       btn.className = 'avatar-opt' + (i === 0 ? ' selected' : '');
-      btn.style.cssText = 'background:none;border:2.5px solid transparent;border-radius:50%;padding:2px;cursor:pointer;transition:border-color 0.15s,transform 0.15s;display:flex;align-items:center;justify-content:center;';
+      btn.style.cssText = 'background:none;border:2.5px solid transparent;border-radius:50%;padding:2px;cursor:pointer;transition:border-color 0.15s,transform 0.15s;display:flex;align-items:center;justify-content:center;width:76px;height:76px;overflow:hidden;flex-shrink:0;';
       btn.innerHTML = makeAvatarSVG(av, 72);
-      btn.title = av.label;
-      btn.onclick = () => {
+      btn.title = av.label;      btn.onclick = () => {
         document.querySelectorAll('.avatar-opt').forEach(b => {
           b.style.borderColor = 'transparent';
           b.classList.remove('selected');
@@ -3393,7 +3389,7 @@
       const selected = myVote[type] === u.uid;
       const av = getAvatarById(u.avatar);
       const avatarHTML = av
-        ? `<div style="width:44px;height:44px;border-radius:50%;overflow:hidden;flex-shrink:0;">${makeAvatarSVG(av, 44)}</div>`
+        ? `<div style="width:44px;height:44px;border-radius:50%;overflow:hidden;flex-shrink:0;min-width:44px;">${makeAvatarSVG(av, 44)}</div>`
         : `<div style="width:28px;height:28px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0;">${(u.nickname||'?').substring(0,2).toUpperCase()}</div>`;
       const votes = isPast ? (voteCount[type][u.uid] || 0) : 0;
       return `
