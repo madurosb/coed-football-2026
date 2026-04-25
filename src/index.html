@@ -410,7 +410,7 @@
     <input type="text" id="nickname-input" placeholder="e.g. verygay69" maxlength="20">
     <div style="margin-bottom:1rem;">
       <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">Pick your avatar</div>
-      <div id="avatar-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:4px;max-height:320px;overflow-y:auto;scrollbar-width:thin;">
+      <div id="avatar-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:4px;max-height:none;overflow:visible;">
       </div>
     </div>
     <input type="hidden" id="avatar-input" value="zombie">
@@ -518,16 +518,18 @@
       <button class="nav-btn" data-page="admin" id="admin-nav-btn" style="display:none;" onclick="showPage('admin')">Admin</button>
     </div>
     <div class="nav-user">
-      <button id="darkmode-btn" onclick="toggleDarkMode()" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px 6px;border-radius:8px;transition:background 0.15s;" title="Toggle dark mode">🌙</button>
-      <button id="music-btn" onclick="toggleMusic()" style="background:none;border:none;cursor:pointer;font-size:20px;padding:4px 8px;border-radius:8px;transition:background 0.15s;" title="Play/Stop music">🔇</button>
+      <div style="display:flex;align-items:center;gap:2px;flex-shrink:0;">
+      <button id="darkmode-btn" onclick="toggleDarkMode()" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px;border-radius:8px;transition:background 0.15s;flex-shrink:0;" title="Toggle dark mode">🌙</button>
+      <button id="music-btn" onclick="toggleMusic()" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px;border-radius:8px;transition:background 0.15s;flex-shrink:0;" title="Play/Stop music">🔇</button>
       <!-- Notification bell -->
-      <button id="notif-btn" onclick="toggleNotifPanel()" style="background:none;border:none;cursor:pointer;font-size:20px;padding:4px 8px;border-radius:8px;transition:background 0.15s;position:relative;" title="Notifications">
+      <button id="notif-btn" onclick="toggleNotifPanel()" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px;border-radius:8px;transition:background 0.15s;position:relative;flex-shrink:0;" title="Notifications">
         🔔
         <span id="notif-badge" style="display:none;position:absolute;top:2px;right:2px;background:#E24B4A;color:white;font-size:9px;font-weight:700;border-radius:99px;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 3px;">0</span>
       </button>
       <button class="hamburger" id="hamburger-btn" onclick="toggleMobileMenu()">
         <span></span><span></span><span></span>
       </button>
+      </div>
       <div class="avatar" id="user-avatar" onclick="showPage('stats')" style="cursor:pointer;" title="My Stats"></div>
       <span id="user-handle" style="font-size:13px; color: var(--text-muted);"></span>
     </div>
@@ -3389,7 +3391,7 @@
       const selected = myVote[type] === u.uid;
       const av = getAvatarById(u.avatar);
       const avatarHTML = av
-        ? `<div style="width:44px;height:44px;border-radius:50%;overflow:hidden;flex-shrink:0;min-width:44px;">${makeAvatarSVG(av, 44)}</div>`
+        ? `<div style="width:44px;height:44px;border-radius:50%;overflow:hidden;flex-shrink:0;min-width:44px;min-height:44px;">${makeAvatarSVG(av, 44)}</div>`
         : `<div style="width:28px;height:28px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0;">${(u.nickname||'?').substring(0,2).toUpperCase()}</div>`;
       const votes = isPast ? (voteCount[type][u.uid] || 0) : 0;
       return `
@@ -3989,13 +3991,13 @@
       let avatarHTML;
       if (u.isAdmin) {
         avatarHTML = `<div style="position:relative;width:36px;height:36px;flex-shrink:0;">
-          <img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #00ff41;">
+          <img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid #00ff41;">
           <span style="position:absolute;top:-6px;right:-4px;font-size:12px;">👑</span>
         </div>`;
       } else {
         const av = getAvatarById(u.avatar);
         avatarHTML = av
-          ? `<div style="width:52px;height:52px;border-radius:50%;overflow:hidden;flex-shrink:0;">${makeAvatarSVG(av, 52)}</div>`
+          ? `<div style="width:80px;height:80px;border-radius:50%;overflow:hidden;flex-shrink:0;">${makeAvatarSVG(av, 80)}</div>`
           : `<div class="avatar" style="background:${['#FAEEDA','#E6F1FB','#E1F5EE'][i]||'#f0f0f0'};color:${['#633806','#0C447C','#085041'][i]||'#333'};">${(u.nickname||u.displayName||'?').substring(0,2).toUpperCase()}</div>`;
       }
       const badge = getUserBadge(u, i, users, predStats);
@@ -4486,7 +4488,7 @@
               <div class="vs">VS</div>
               <div class="score-inputs">
                 ${isPast ? `
-                  <div style="display:flex;align-items:center;gap:4px;">
+                  <div style="display:flex;align-items:center;gap:2px;">
                     <div class="score-input" id="home-${d.id}" style="display:flex;align-items:center;justify-content:center;opacity:0.6;">0</div>
                   </div>
                   <span class="score-dash">-</span>
