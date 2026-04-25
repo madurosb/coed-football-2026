@@ -6,10 +6,6 @@
       "destination": "/api/:path*"
     },
     {
-      "source": "/avatars/:path*",
-      "destination": "/public/avatars/:path*"
-    },
-    {
       "source": "/",
       "destination": "/index.html"
     }
