@@ -1438,11 +1438,11 @@
         </div>
         <iframe
           id="rules-video"
-          src="https://www.youtube.com/embed/LPduWfgqK2E?autoplay=1&controls=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1"
+          src=""
           style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"
           allow="autoplay; encrypted-media"
           allowfullscreen
-          onload="const t=document.getElementById('video-thumb');if(t){t.style.opacity='0';setTimeout(()=>t.style.display='none',500);}">
+          onload="if(this.src&&this.src!=='about:blank'&&this.src!==''){const t=document.getElementById('video-thumb');if(t){t.style.opacity='0';setTimeout(()=>t.style.display='none',500);}}">
         </iframe>
         <div id="video-overlay" style="position:absolute;inset:0;z-index:1;cursor:default;"></div>
       </div>
@@ -3025,51 +3025,43 @@
 
   // NICKNAME
   // AVATAR GRID
+  const AVATAR_BASE = '/avatars/';
   const AVATARS = [
-    // 🇫🇷 French guy - beret, baguette, mustache
-    {id:'french', label:'Le Français', bg:'#1a237e', svg:`<ellipse cx="50" cy="56" rx="21" ry="22" fill="#f5d5b0"/><ellipse cx="50" cy="40" rx="22" ry="12" fill="#e53935"/><ellipse cx="50" cy="38" rx="20" ry="10" fill="#1a237e"/><path d="M35 58 Q50 72 65 58" fill="#e53935"/><path d="M36 60 Q50 74 64 60" stroke="#b71c1c" stroke-width="1.5" fill="none"/><ellipse cx="50" cy="68" rx="10" ry="4" fill="#f5d5b0"/><path d="M36 56 Q43 52 50 56 Q57 52 64 56" stroke="#5d4037" stroke-width="2.5" fill="none"/><circle cx="42" cy="50" r="4.5" fill="#1a237e"/><circle cx="58" cy="50" r="4.5" fill="#1a237e"/><rect x="68" y="50" width="18" height="4" rx="2" fill="#f5e6c0"/><rect x="70" y="46" width="4" height="12" rx="2" fill="#f5e6c0"/>`},
-    // 🇧🇷 Brazilian - carnival headdress, samba
-    {id:'brazilian', label:'Carnaval!', bg:'#1b5e20', svg:`<ellipse cx="50" cy="58" rx="21" ry="22" fill="#ffd54f"/><path d="M20 30 Q50 10 80 30 Q72 18 50 14 Q28 18 20 30Z" fill="#f9a825"/><circle cx="28" cy="22" r="6" fill="#e53935"/><circle cx="50" cy="14" r="6" fill="#1565c0"/><circle cx="72" cy="22" r="6" fill="#2e7d32"/><path d="M24 28 L28 16"/><path d="M50 14 L50 8"/><path d="M76 28 L72 16" stroke="#f9a825" stroke-width="2"/><circle cx="42" cy="52" r="4.5" fill="#1b5e20"/><circle cx="58" cy="52" r="4.5" fill="#1b5e20"/><path d="M38 66 Q50 76 62 66" stroke="#5d4037" stroke-width="2" fill="none"/>`},
-    // 🇬🇧 British - bowler hat, monocle, stiff upper lip
-    {id:'british', label:'Cheerio!', bg:'#0d47a1', svg:`<ellipse cx="50" cy="58" rx="21" ry="22" fill="#f5d5b0"/><rect x="30" y="34" width="40" height="10" rx="2" fill="#212121"/><ellipse cx="50" cy="34" rx="26" ry="5" fill="#212121"/><ellipse cx="50" cy="32" rx="20" ry="3" fill="#1a1a1a"/><circle cx="42" cy="52" r="4.5" fill="#1565c0"/><circle cx="58" cy="52" r="4.5" fill="#1565c0"/><circle cx="62" cy="50" r="5" fill="none" stroke="#bdbdbd" stroke-width="2"/><circle cx="62" cy="50" r="2" fill="#bdbdbd"/><path d="M36 56 Q43 53 50 56 Q57 53 64 56" stroke="#8d6e63" stroke-width="2.5" fill="none"/><path d="M38 66 Q50 70 62 66" stroke="#c62828" stroke-width="1.5" fill="none"/>`},
-    // 🇩🇪 German - lederhosen look, beer mug
-    {id:'german', label:'Proscht!', bg:'#212121', svg:`<ellipse cx="50" cy="58" rx="21" ry="22" fill="#f5d5b0"/><path d="M30 32 Q50 20 70 32 Q65 22 50 18 Q35 22 30 32Z" fill="#795548"/><path d="M36 64 Q50 74 64 64" fill="#f5c518"/><path d="M38 64 Q50 76 62 64 Q50 72 38 64Z" fill="#f9a825"/><circle cx="42" cy="52" r="4.5" fill="#3e2723"/><circle cx="58" cy="52" r="4.5" fill="#3e2723"/><path d="M36 58 Q43 54 50 58 Q57 54 64 58" stroke="#5d4037" stroke-width="2.5" fill="none"/><rect x="68" y="46" width="12" height="18" rx="3" fill="#f9a825" stroke="#f57f17" stroke-width="1.5"/><path d="M68 52 L80 52" stroke="#f57f17" stroke-width="1.5"/><circle cx="74" cy="44" r="4" fill="#f9a825"/>`},
-    // 🇦🇷 Argentine - football jersey, gaucho hat  
-    {id:'argentine', label:'¡Campeón!', bg:'#1565c0', svg:`<ellipse cx="50" cy="58" rx="21" ry="22" fill="#f5d5b0"/><path d="M29 64 Q29 44 50 40 Q71 44 71 64 L71 80 L29 80Z" fill="#1565c0"/><path d="M40 40 L40 80 M50 40 L50 80 M60 40 L60 80" stroke="white" stroke-width="3"/><path d="M30 36 Q50 24 70 36 Q65 24 50 20 Q35 24 30 36Z" fill="#5d4037"/><path d="M26 36 L74 36 L78 42 L22 42Z" fill="#4e342e"/><circle cx="42" cy="54" r="4.5" fill="#1565c0"/><circle cx="58" cy="54" r="4.5" fill="#1565c0"/><path d="M38 68 Q50 78 62 68" stroke="#f57f17" stroke-width="2.5" fill="none"/>`},
-    // 🇮🇹 Italian - chef hat, pizza mustache 
-    {id:'italian', label:'Mamma mia!', bg:'#1b5e20', svg:`<ellipse cx="50" cy="60" rx="21" ry="22" fill="#f5d5b0"/><ellipse cx="50" cy="34" rx="18" ry="20" fill="white"/><ellipse cx="50" cy="40" rx="22" ry="8" fill="white" stroke="#e0e0e0" stroke-width="1"/><path d="M36 60 Q43 55 50 60 Q57 55 64 60" stroke="#5d4037" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="38" cy="56" r="3" fill="#5d4037"/><circle cx="62" cy="56" r="3" fill="#5d4037"/><circle cx="42" cy="52" r="4.5" fill="#2e7d32"/><circle cx="58" cy="52" r="4.5" fill="#2e7d32"/><circle cx="50" cy="64" r="4" fill="#e53935"/><path d="M42 64 Q50 74 58 64" stroke="#c62828" stroke-width="1.5" fill="none"/>`},
-    // 🇯🇵 Japanese - samurai headband, rising sun
-    {id:'japanese', label:'Gambatte!', bg:'#b71c1c', svg:`<ellipse cx="50" cy="58" rx="21" ry="22" fill="#f5d5b0"/><rect x="26" y="42" width="48" height="9" fill="white"/><circle cx="50" cy="46" r="6" fill="#e53935"/><path d="M30 38 Q50 26 70 38 Q64 28 50 24 Q36 28 30 38Z" fill="#212121"/><circle cx="42" cy="54" r="4.5" fill="#212121"/><circle cx="58" cy="54" r="4.5" fill="#212121"/><path d="M38 68 Q50 78 62 68" stroke="#c62828" stroke-width="2" fill="none"/>`},
-    // 🇪🇸 Spanish - flamenco look, rose
-    {id:'spanish', label:'¡Olé!', bg:'#b71c1c', svg:`<ellipse cx="50" cy="58" rx="21" ry="22" fill="#f5d5b0"/><path d="M50 14 Q30 20 28 34 Q36 26 50 22 Q64 26 72 34 Q70 20 50 14Z" fill="#e53935"/><path d="M32 32 Q50 22 68 32 L70 40 Q55 34 50 36 Q45 34 30 40Z" fill="#c62828"/><circle cx="42" cy="52" r="4.5" fill="#b71c1c"/><circle cx="58" cy="52" r="4.5" fill="#b71c1c"/><circle cx="72" cy="44" r="5" fill="#e53935"/><circle cx="72" cy="44" r="3" fill="#c62828"/><path d="M69 42 Q72 38 75 42" stroke="#4caf50" stroke-width="2" fill="none"/><path d="M38 66 Q50 76 62 66" stroke="#e53935" stroke-width="2" fill="none"/>`},
-    // 🇲🇽 Mexican - sombrero, mustache
-    {id:'mexican', label:'¡Ándale!', bg:'#2e7d32', svg:`<ellipse cx="50" cy="60" rx="21" ry="22" fill="#f5d5b0"/><ellipse cx="50" cy="36" rx="36" ry="8" fill="#f9a825"/><ellipse cx="50" cy="32" rx="16" ry="12" fill="#f57f17"/><path d="M26 38 Q50 32 74 38" stroke="#e65100" stroke-width="2" fill="none"/><path d="M36 60 Q43 55 50 60 Q57 55 64 60" stroke="#5d4037" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="38" cy="56" r="3" fill="#5d4037"/><circle cx="62" cy="56" r="3" fill="#5d4037"/><circle cx="42" cy="52" r="4.5" fill="#2e7d32"/><circle cx="58" cy="52" r="4.5" fill="#2e7d32"/><path d="M42 68 Q50 76 58 68" stroke="#c62828" stroke-width="1.5" fill="none"/>`},
-    // 🇺🇸 American - baseball cap, hotdog
-    {id:'american', label:'USA! USA!', bg:'#0d47a1', svg:`<ellipse cx="50" cy="58" rx="21" ry="22" fill="#f5d5b0"/><ellipse cx="50" cy="38" rx="22" ry="10" fill="#e53935"/><ellipse cx="50" cy="36" rx="20" ry="8" fill="#0d47a1"/><rect x="28" y="44" width="44" height="5" rx="1" fill="#0d47a1"/><rect x="20" y="44" width="24" height="5" rx="1" fill="#1565c0"/><circle cx="42" cy="52" r="4.5" fill="#0d47a1"/><circle cx="58" cy="52" r="4.5" fill="#0d47a1"/><path d="M38 66 Q50 76 62 66" stroke="#e53935" stroke-width="2" fill="none"/><rect x="65" y="58" width="16" height="7" rx="3.5" fill="#f9a825"/><path d="M65 61.5 L81 61.5" stroke="#e53935" stroke-width="1.5"/>`},
-    // 🇵🇹 Portuguese - sailor hat, wine glass
-    {id:'portuguese', label:'Fado!', bg:'#1a237e', svg:`<ellipse cx="50" cy="58" rx="21" ry="22" fill="#f5d5b0"/><rect x="30" y="34" width="40" height="8" fill="white"/><rect x="34" y="30" width="32" height="6" rx="1" fill="#1a237e"/><path d="M30 42 L70 42" stroke="#c62828" stroke-width="2"/><circle cx="42" cy="52" r="4.5" fill="#1a237e"/><circle cx="58" cy="52" r="4.5" fill="#1a237e"/><path d="M38 66 Q50 76 62 66" stroke="#c62828" stroke-width="2" fill="none"/><path d="M68 58 L72 48 L76 58 Q74 64 72 66 Q70 64 68 58Z" fill="#c62828" stroke="#b71c1c" stroke-width="1"/>`},
-    // 🇳🇱 Dutch - tulip, wooden clog hat
-    {id:'dutch', label:'Hup Holland!', bg:'#e53935', svg:`<ellipse cx="50" cy="58" rx="21" ry="22" fill="#f5d5b0"/><path d="M30 36 Q50 28 70 36 Q60 26 50 24 Q40 26 30 36Z" fill="#ff8f00"/><path d="M28 38 Q50 32 72 38 L74 44 Q50 38 26 44Z" fill="#e65100"/><circle cx="42" cy="52" r="4.5" fill="#e53935"/><circle cx="58" cy="52" r="4.5" fill="#e53935"/><circle cx="50" cy="18" r="6" fill="#e53935"/><path d="M48 12 Q50 8 52 12" fill="#4caf50"/><path d="M46 16 L54 16" stroke="#4caf50" stroke-width="2"/><path d="M38 66 Q50 76 62 66" stroke="#ff8f00" stroke-width="2" fill="none"/>`},
-    // 🇲🇦 Moroccan - fez, lantern
-    {id:'moroccan', label:'Yallah!', bg:'#c62828', svg:`<ellipse cx="50" cy="60" rx="21" ry="22" fill="#c8a882"/><path d="M36 44 Q42 30 50 26 Q58 30 64 44Z" fill="#c62828"/><circle cx="50" cy="26" r="3" fill="#ffd54f"/><ellipse cx="50" cy="44" rx="20" ry="4" fill="#b71c1c"/><circle cx="42" cy="54" r="4.5" fill="#1a237e"/><circle cx="58" cy="54" r="4.5" fill="#1a237e"/><path d="M38 66 Q50 78 62 66" stroke="#c62828" stroke-width="2" fill="none"/><path d="M36 58 Q43 53 50 58 Q57 53 64 58" stroke="#8d6e63" stroke-width="2.5" fill="none"/>`},
-    // 🇰🇷 Korean - K-pop style, sparkles
-    {id:'korean', label:'Daebak!', bg:'#c62828', svg:`<ellipse cx="50" cy="58" rx="21" ry="22" fill="#f5d5b0"/><path d="M30 30 Q50 20 70 30 Q64 22 50 18 Q36 22 30 30Z" fill="#000"/><path d="M36 26 Q50 22 64 26 Q58 18 50 16 Q42 18 36 26Z" fill="#212121"/><circle cx="42" cy="52" r="4.5" fill="#c62828"/><circle cx="58" cy="52" r="4.5" fill="#c62828"/><path d="M36 64 Q50 76 64 64 Q50 72 36 64Z" fill="#f48fb1"/><text x="72" y="38" font-size="12" fill="#ffd54f">✦</text><text x="18" y="38" font-size="10" fill="#ffd54f">✦</text>`},
-    // 🇧🇪 Belgian - waffle, chocolate reference
-    {id:'belgian', label:'Waffle time', bg:'#f9a825', svg:`<ellipse cx="50" cy="58" rx="21" ry="22" fill="#f5d5b0"/><path d="M30 32 Q50 18 70 32 Q64 22 50 18 Q36 22 30 32Z" fill="#f57f17"/><rect x="62" y="46" width="16" height="16" rx="2" fill="#f5e6c0" stroke="#f9a825" stroke-width="1"/><line x1="66" y1="46" x2="66" y2="62" stroke="#f9a825" stroke-width="1"/><line x1="70" y1="46" x2="70" y2="62" stroke="#f9a825" stroke-width="1"/><line x1="74" y1="46" x2="74" y2="62" stroke="#f9a825" stroke-width="1"/><line x1="62" y1="50" x2="78" y2="50" stroke="#f9a825" stroke-width="1"/><line x1="62" y1="54" x2="78" y2="54" stroke="#f9a825" stroke-width="1"/><line x1="62" y1="58" x2="78" y2="58" stroke="#f9a825" stroke-width="1"/><circle cx="42" cy="52" r="4.5" fill="#5d4037"/><circle cx="58" cy="52" r="4.5" fill="#5d4037"/><path d="M38 66 Q50 76 62 66" stroke="#c62828" stroke-width="2" fill="none"/>`},
-    // 🇨🇴 Colombian - coffee cup, hat
-    {id:'colombian', label:'Café!', bg:'#fdd835', svg:`<ellipse cx="50" cy="58" rx="21" ry="22" fill="#c8a882"/><path d="M26 38 Q50 28 74 38 Q68 28 50 22 Q32 28 26 38Z" fill="#5d4037"/><path d="M24 38 Q50 34 76 38 Q50 44 24 38Z" fill="#4e342e"/><circle cx="42" cy="52" r="4.5" fill="#4e342e"/><circle cx="58" cy="52" r="4.5" fill="#4e342e"/><path d="M38 66 Q50 76 62 66" stroke="#e53935" stroke-width="2" fill="none"/><path d="M62 52 Q66 46 70 46 Q76 46 76 52 Q76 58 70 60 Q66 60 62 54Z" fill="#fafafa" stroke="#bdbdbd" stroke-width="1"/><path d="M70 44 Q72 40 74 38" stroke="#bdbdbd" stroke-width="1.5" fill="none"/>`},
-    // 🇳🇴 Norwegian - viking helmet, fjord beard
-    {id:'norwegian', label:'Skål!', bg:'#1565c0', svg:`<ellipse cx="50" cy="58" rx="21" ry="22" fill="#f5d5b0"/><path d="M30 36 Q50 22 70 36 Q64 24 50 20 Q36 24 30 36Z" fill="#9e9e9e"/><path d="M28 38 L20 30"/><path d="M72 38 L80 30" stroke="#9e9e9e" stroke-width="3"/><path d="M28 40 L18 38 L24 46" fill="#bdbdbd"/><path d="M72 40 L82 38 L76 46" fill="#bdbdbd"/><path d="M36 60 Q50 74 64 60 Q58 74 50 76 Q42 74 36 60Z" fill="#f9a825"/><circle cx="42" cy="52" r="4.5" fill="#0d47a1"/><circle cx="58" cy="52" r="4.5" fill="#0d47a1"/>`},
-    // 🇦🇺 Australian - cork hat, barbecue fork
-    {id:'australian', label:'G\'day mate!', bg:'#1b5e20', svg:`<ellipse cx="50" cy="58" rx="21" ry="22" fill="#c8a882"/><path d="M22 42 Q50 30 78 42 Q70 30 50 24 Q30 30 22 42Z" fill="#8d6e63"/><path d="M20 44 Q50 40 80 44" stroke="#6d4c41" stroke-width="2"/><circle cx="26" cy="38" r="3" fill="#8d6e63"/><circle cx="34" cy="34" r="2" fill="#8d6e63"/><circle cx="66" cy="34" r="2" fill="#8d6e63"/><circle cx="74" cy="38" r="3" fill="#8d6e63"/><circle cx="42" cy="52" r="4.5" fill="#4e342e"/><circle cx="58" cy="52" r="4.5" fill="#4e342e"/><path d="M40 66 Q50 76 60 66" stroke="#c62828" stroke-width="2" fill="none"/><path d="M38 60 Q43 55 50 60 Q57 55 62 60" stroke="#5d4037" stroke-width="2.5" fill="none"/>`},
-    // 🇸🇦 Saudi - keffiyeh, desert look
-    {id:'saudi', label:'Yalla habibi', bg:'#1b5e20', svg:`<ellipse cx="50" cy="58" rx="21" ry="22" fill="#c8a882"/><ellipse cx="50" cy="42" rx="22" ry="16" fill="white"/><path d="M28 38 Q50 30 72 38 Q72 50 50 54 Q28 50 28 38Z" fill="#f5f5f5"/><ellipse cx="50" cy="37" rx="16" ry="8" fill="white"/><rect x="28" y="50" width="44" height="5" rx="1" fill="#212121"/><circle cx="42" cy="54" r="4.5" fill="#4e342e"/><circle cx="58" cy="54" r="4.5" fill="#4e342e"/><path d="M40 68 Q50 78 60 68" stroke="#1b5e20" stroke-width="2" fill="none"/>`},
-    // 🇧🇦 Bosnian - fez hat, coffee culture
-    {id:'bosnian', label:'Merhaba!', bg:'#0d47a1', svg:`<ellipse cx="50" cy="60" rx="21" ry="22" fill="#c8a882"/><path d="M36 42 Q44 28 50 24 Q56 28 64 42Z" fill="#c62828"/><ellipse cx="50" cy="42" rx="20" ry="5" fill="#b71c1c"/><circle cx="50" cy="22" r="3" fill="#ffd54f"/><circle cx="42" cy="54" r="4.5" fill="#0d47a1"/><circle cx="58" cy="54" r="4.5" fill="#0d47a1"/><path d="M36 60 Q43 54 50 60 Q57 54 64 60" stroke="#8d6e63" stroke-width="2.5" fill="none"/><circle cx="38" cy="56" r="3" fill="#8d6e63"/><circle cx="62" cy="56" r="3" fill="#8d6e63"/><path d="M40 70 Q50 80 60 70" stroke="#c62828" stroke-width="1.5" fill="none"/>`},
+    { id: 'striker',     label: 'El Striker',    img: 'Male_football_striker_202604250708.jpeg',      accent: '#f5e642' },
+    { id: 'keeper',      label: 'The Keeper',    img: 'Chubby_bear_hybrid_202604250708.jpeg',          accent: '#00e676' },
+    { id: 'coach',       label: 'The Coach',     img: 'Middle-aged_coach_blowing_202604250708.jpeg',   accent: '#a855f7' },
+    { id: 'defender',    label: 'El Defensa',    img: 'Football_defender_portrait_202604250708.jpeg',  accent: '#94a3b8' },
+    { id: 'diez',        label: 'El Diez',       img: 'Football_player_portrait_202604250708.jpeg',    accent: '#38bdf8' },
+    { id: 'pibe',        label: 'El Pibe',       img: 'Young_South_American_202604250708.jpeg',        accent: '#78c43a' },
+    { id: 'doctor',      label: 'El Médico',     img: 'Team_doctor_portrait_202604250708.jpeg',        accent: '#22d3ee' },
+    { id: 'ultra',       label: 'Los Ultras',    img: 'Football_fan_screaming_202604250708.jpeg',      accent: '#ef4444' },
+    { id: 'hincha',      label: 'El Hincha',     img: 'Passionate_football_fan_202604250708.jpeg',     accent: '#fb923c' },
+    { id: 'ansioso',     label: 'El Ansioso',    img: 'Anxious_football_fan_202604250708.jpeg',        accent: '#ef4444' },
+    { id: 'dormillon',   label: 'El Dormilón',   img: 'Fan_slept_through_202604250708.jpeg',           accent: '#9b59b6' },
+    { id: 'jugadora',    label: 'La Jugadora',   img: 'Female_football_player_202604250708.jpeg',      accent: '#e879f9' },
+    { id: 'coed',        label: 'La Coed',       img: 'Female_coed_football_202604250708.jpeg',        accent: '#ff6b6b' },
+    { id: 'prensa',      label: 'La Prensa',     img: 'Futuristic_football_fan_202604250708.jpeg',     accent: '#e2e8f0' },
+    { id: 'ref',         label: 'The Ref',       img: 'Football_referee_holding_202604250708.jpeg',    accent: '#facc15' },
+    { id: 'blindref',    label: 'Árbitro Ciego', img: 'Blind_referee_holding_202604250708.jpeg',       accent: '#ff6600' },
+    { id: 'vip',         label: 'The VIP',       img: 'Wealthy_owner_portrait_202604250708.jpeg',      accent: '#d4af37' },
+    { id: 'pundit',      label: 'The Pundit',    img: 'TV_pundit_shouting_202604250708.jpeg',          accent: '#e94560' },
+    { id: 'analyst',     label: 'The Analyst',   img: 'Football_data_analyst_202604250708.jpeg',       accent: '#00d4ff' },
+    { id: 'influencer',  label: 'El Influencer', img: 'Football_influencer_wearing_202604250708.jpeg', accent: '#ff1493' },
+    { id: 'legend',      label: 'The Legend',    img: 'Retired_football_legend_202604250708.jpeg',     accent: '#ff9500' },
+    { id: 'abuelo',      label: 'El Abuelo',     img: 'Old_football_grandpa_202604250708.jpeg',        accent: '#f39c12' },
+    { id: 'baterista',   label: 'El Baterista',  img: 'Drum_player_with_202604250708.jpeg',            accent: '#a855f7' },
+    { id: 'mascot',      label: 'El Mascot',     img: 'Cartoon_football_mascot_202604250708.jpeg',     accent: '#ff4444' },
+    { id: 'bettor',      label: 'The Bettor',    img: 'Bettor_portrait_with_202604250708.jpeg',        accent: '#4ade80' },
+    { id: 'conspiracy',  label: 'El Conspiracy', img: 'Paranoid_theorist_wearing_202604250708.jpeg',   accent: '#39ff14' },
+    { id: 'joker',       label: 'El Joker',      img: 'Football_joker_portrait_202604250708.jpeg',     accent: '#8b5cf6' },
+    { id: 'ghost',       label: 'Ghost VAR',     img: 'Ghost_football_VAR_202604250708.jpeg',          accent: '#06b6d4' },
   ];
 
   function makeAvatarSVG(av, size=56) {
-    return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50" fill="${av.bg}"/>${av.svg}</svg>`;
+    if (av.img) {
+      return `<img src="${AVATAR_BASE}${av.img}" width="${size}" height="${size}" style="border-radius:50%;object-fit:cover;width:${size}px;height:${size}px;" alt="${av.label||''}"/>`;
+    }
+    return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="50" fill="${av.bg||'#1D9E75'}"/>${av.svg||''}</svg>`;
   }
 
   function getAvatarById(id) {
