@@ -194,6 +194,10 @@
     /* LOADING */
     .loading { display: flex; align-items: center; justify-content: center; min-height: 100vh; font-size: 14px; color: var(--text-muted); }
 
+
+    @media (max-width: 768px) {
+      #login-adblock-tip { display: none; }
+    }
     @media (max-width: 768px) {
       /* Hide desktop nav links */
       .nav-links { display: none; }
@@ -406,7 +410,7 @@
         </svg>
         Sign in with Google
       </button>
-      <p class="login-note">💡 Tip: if Google sign-in isn't working, try disabling your ad blocker or browser extensions and refresh the page.</p>
+      <p class="login-note" id="login-adblock-tip">💡 Tip: if Google sign-in isn't working, try disabling your ad blocker or browser extensions and refresh the page.</p>
     </div>
   </div>
 </div>
@@ -472,31 +476,48 @@
   <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:10px solid #1D9E75;"></div>
 </div>
 
-<!-- ANIMATED LOADING SPLASH -->
-<div id="splash-screen" style="position:fixed;inset:0;background:#080808;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;">
-  <div style="position:relative;width:90px;height:90px;">
-    <svg viewBox="0 0 90 90" width="90" height="90" style="animation:splashSpin 1.8s linear infinite;">
-      <circle cx="45" cy="45" r="40" fill="none" stroke="#1D9E75" stroke-width="3" stroke-dasharray="60 190" stroke-linecap="round"/>
-      <circle cx="45" cy="45" r="40" fill="none" stroke="#EF9F27" stroke-width="3" stroke-dasharray="30 220" stroke-dashoffset="-80" stroke-linecap="round" style="animation:splashSpin2 1.8s linear infinite;"/>
-    </svg>
-    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:36px;animation:splatBounce 1.2s ease-in-out infinite;">⚽</div>
-  </div>
+<!-- ANIMATED LOADING SPLASH — Pac-Man style -->
+<div id="splash-screen" style="position:fixed;inset:0;background:#080808;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:0 32px;">
   <div style="text-align:center;">
-    <div style="font-family:monospace;font-size:18px;font-weight:700;letter-spacing:6px;color:#1D9E75;text-transform:uppercase;">COED&FOOTBALL</div>
-    <div style="font-size:11px;color:#444;letter-spacing:3px;margin-top:4px;text-transform:uppercase;">Mundial 2026</div>
+    <div style="font-family:monospace;font-size:20px;font-weight:700;letter-spacing:6px;color:#1D9E75;text-transform:uppercase;">COED⚽FOOTBALL</div>
+    <div style="font-size:11px;color:#333;letter-spacing:3px;margin-top:4px;text-transform:uppercase;">Mundial 2026</div>
   </div>
-  <div style="display:flex;gap:6px;margin-top:8px;">
-    <div style="width:6px;height:6px;border-radius:50%;background:#1D9E75;animation:dot1 1.2s ease-in-out infinite;"></div>
-    <div style="width:6px;height:6px;border-radius:50%;background:#1D9E75;animation:dot2 1.2s ease-in-out infinite 0.2s;"></div>
-    <div style="width:6px;height:6px;border-radius:50%;background:#1D9E75;animation:dot3 1.2s ease-in-out infinite 0.4s;"></div>
+
+  <!-- Pac-Man track -->
+  <div style="width:100%;max-width:280px;position:relative;height:32px;">
+    <!-- Track dots -->
+    <div style="position:absolute;top:50%;transform:translateY(-50%);width:100%;display:flex;justify-content:space-between;padding:0 40px;">
+      <div class="pdot"></div><div class="pdot"></div><div class="pdot"></div>
+      <div class="pdot"></div><div class="pdot"></div><div class="pdot"></div>
+      <div class="pdot"></div><div class="pdot"></div>
+    </div>
+    <!-- Pac-Man -->
+    <div id="pacman" style="position:absolute;top:50%;transform:translateY(-50%);font-size:26px;animation:pacMove 2s linear infinite;">⚽</div>
   </div>
+
+  <!-- Progress bar -->
+  <div style="width:100%;max-width:280px;">
+    <div style="background:#111;border-radius:99px;height:4px;overflow:hidden;border:1px solid #1D9E75;">
+      <div id="splash-bar" style="height:100%;background:linear-gradient(90deg,#1D9E75,#EF9F27);border-radius:99px;width:0%;transition:width 0.3s ease;"></div>
+    </div>
+    <div id="splash-pct" style="font-family:monospace;font-size:11px;color:#1D9E75;text-align:center;margin-top:6px;">0%</div>
+  </div>
+
   <style>
-    @keyframes splashSpin  { to { transform: rotate(360deg); } }
-    @keyframes splashSpin2 { to { stroke-dashoffset: -250; } }
-    @keyframes splatBounce { 0%,100%{transform:scale(1);} 50%{transform:scale(1.15);} }
-    @keyframes dot1 { 0%,100%{opacity:0.2;transform:scale(0.8);} 50%{opacity:1;transform:scale(1.2);} }
-    @keyframes dot2 { 0%,100%{opacity:0.2;transform:scale(0.8);} 50%{opacity:1;transform:scale(1.2);} }
-    @keyframes dot3 { 0%,100%{opacity:0.2;transform:scale(0.8);} 50%{opacity:1;transform:scale(1.2);} }
+    .pdot { width:6px;height:6px;border-radius:50%;background:#333;animation:dotEat 2s linear infinite; }
+    .pdot:nth-child(1){animation-delay:0s} .pdot:nth-child(2){animation-delay:0.25s}
+    .pdot:nth-child(3){animation-delay:0.5s} .pdot:nth-child(4){animation-delay:0.75s}
+    .pdot:nth-child(5){animation-delay:1s}   .pdot:nth-child(6){animation-delay:1.25s}
+    .pdot:nth-child(7){animation-delay:1.5s} .pdot:nth-child(8){animation-delay:1.75s}
+    @keyframes pacMove {
+      0%   { left: 0%; }
+      100% { left: calc(100% - 30px); }
+    }
+    @keyframes dotEat {
+      0%,60%  { opacity:1; transform:scale(1); }
+      65%     { opacity:0; transform:scale(0); }
+      100%    { opacity:0; transform:scale(0); }
+    }
   </style>
 </div>
 
@@ -3284,10 +3305,23 @@
 
   const provider = new GoogleAuthProvider();
 
-  // Handle redirect result (Safari uses redirect instead of popup)
+  // Handle redirect result — Safari returns here after Google sign-in
+  // We need to handle this BEFORE onAuthStateChanged shows login screen
+  let handlingRedirect = false;
   getRedirectResult(auth).then(result => {
-    if (result?.user) console.log('✅ Redirect sign-in success');
-  }).catch(e => console.log('Redirect result error:', e.code));
+    handlingRedirect = false;
+    if (result?.user) console.log('✅ Safari redirect sign-in success');
+  }).catch(e => {
+    handlingRedirect = false;
+    console.log('Redirect result:', e.code);
+  });
+  // Check if we just came back from a redirect (URL has auth params)
+  if (window.location.href.includes('/__/auth/handler') || 
+      document.referrer.includes('accounts.google.com') ||
+      sessionStorage.getItem('pendingRedirect')) {
+    handlingRedirect = true;
+    sessionStorage.removeItem('pendingRedirect');
+  }
 
   // Safety net — if splash stays more than 8s, force show login
   setTimeout(() => {
@@ -3349,11 +3383,37 @@
         showApp();
       }
     } else {
-      document.getElementById('view-login').style.display = 'block';
+      // Small delay to let getRedirectResult complete first (Safari redirect flow)
+      setTimeout(() => {
+        if (!currentUser) {
+          const splash = document.getElementById('splash-screen');
+          if (splash) { splash.style.transition = 'opacity 0.4s'; splash.style.opacity = '0'; setTimeout(() => splash?.remove(), 400); }
+          document.getElementById('view-login').style.display = 'block';
+        }
+      }, 1500);
     }
   });
 
+  // Animate splash progress bar
+  let splashPct = 0;
+  const splashInterval = setInterval(() => {
+    const bar = document.getElementById('splash-bar');
+    const pct = document.getElementById('splash-pct');
+    const splash = document.getElementById('splash-screen');
+    if (!splash || !bar) { clearInterval(splashInterval); return; }
+    // Accelerate to 80% quickly, then slow down waiting for auth
+    splashPct = splashPct < 70 ? splashPct + 8 : splashPct < 90 ? splashPct + 1 : splashPct;
+    if (splashPct > 92) splashPct = 92; // hold at 92 until auth resolves
+    bar.style.width = splashPct + '%';
+    if (pct) pct.textContent = Math.round(splashPct) + '%';
+  }, 200);
+
   function showApp() {
+    clearInterval(splashInterval);
+    const bar = document.getElementById('splash-bar');
+    const pct = document.getElementById('splash-pct');
+    if (bar) bar.style.width = '100%';
+    if (pct) pct.textContent = '100%';
     // Hide splash screen with fade
     const splash = document.getElementById('splash-screen');
     if (splash) { splash.style.transition = 'opacity 0.5s'; splash.style.opacity = '0'; setTimeout(() => splash.remove(), 500); }
@@ -3433,6 +3493,7 @@
       const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
       if (isSafari) {
         // Safari blocks popups — use redirect instead
+        sessionStorage.setItem('pendingRedirect', '1');
         await signInWithRedirect(auth, provider);
       } else {
         await signInWithPopup(auth, provider);
