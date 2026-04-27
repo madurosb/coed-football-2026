@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
   <title>COED&FOOTBALL Mundial 2026</title>
   <link rel="icon" href="https://coed-football-2026.vercel.app/logo-icon.png" type="image/png">
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="COED⚽">
+  <meta name="theme-color" content="#1D9E75">
+  <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512.png">
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
@@ -432,6 +441,33 @@
 </div>
 
 <!-- NOTIFICATION PANEL -->
+
+<!-- PWA INSTALL BANNER -->
+<div id="pwa-banner" style="display:none;position:fixed;bottom:80px;left:12px;right:12px;background:linear-gradient(135deg,#0a1f0a,#1a3a1a);border:1px solid #1D9E75;border-radius:16px;padding:14px 16px;z-index:9998;box-shadow:0 8px 32px rgba(0,0,0,0.4);">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div style="width:44px;height:44px;background:#1D9E75;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">⚽</div>
+    <div style="flex:1;">
+      <div style="font-size:14px;font-weight:700;color:white;margin-bottom:1px;">Add to Home Screen</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.55);">Install COED&FOOTBALL as an app</div>
+    </div>
+    <button onclick="installPWA()" style="background:#1D9E75;color:white;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0;">Install</button>
+    <button onclick="dismissPWA()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:20px;cursor:pointer;padding:0;flex-shrink:0;line-height:1;">×</button>
+  </div>
+</div>
+
+<!-- iOS INSTALL HINT (Safari only) -->
+<div id="ios-banner" style="display:none;position:fixed;bottom:80px;left:12px;right:12px;background:linear-gradient(135deg,#0a1f0a,#1a3a1a);border:1px solid #1D9E75;border-radius:16px;padding:14px 16px;z-index:9998;box-shadow:0 8px 32px rgba(0,0,0,0.4);">
+  <div style="display:flex;align-items:flex-start;gap:12px;">
+    <div style="width:44px;height:44px;background:#1D9E75;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">⚽</div>
+    <div style="flex:1;">
+      <div style="font-size:14px;font-weight:700;color:white;margin-bottom:3px;">Install on iPhone</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.65);line-height:1.6;">Tap <strong style="color:white;">Share</strong> <span style="font-size:14px;">⬆️</span> then <strong style="color:white;">"Add to Home Screen"</strong> for the full app experience</div>
+    </div>
+    <button onclick="dismissiOS()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:20px;cursor:pointer;padding:0;flex-shrink:0;line-height:1;">×</button>
+  </div>
+  <!-- Little arrow pointing down to Safari bar -->
+  <div style="position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:10px solid #1D9E75;"></div>
+</div>
 
 <!-- ANIMATED LOADING SPLASH -->
 <div id="splash-screen" style="position:fixed;inset:0;background:#080808;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;">
@@ -7272,6 +7308,65 @@
   document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
   document.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
   document.addEventListener('gestureend', e => e.preventDefault(), { passive: false });
+
+  // ========== PWA — Service Worker + Install ==========
+  let pwaInstallPrompt = null;
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(() => console.log('✅ SW registered'))
+        .catch(err => console.log('SW error:', err));
+    });
+  }
+
+  // Android/Chrome — capture the install prompt
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    pwaInstallPrompt = e;
+    if (!localStorage.getItem('pwaDismissed')) {
+      setTimeout(() => {
+        const b = document.getElementById('pwa-banner');
+        if (b && document.getElementById('view-app')?.style.display !== 'none') b.style.display = 'block';
+      }, 8000);
+    }
+  });
+
+  window.installPWA = async () => {
+    if (!pwaInstallPrompt) return;
+    pwaInstallPrompt.prompt();
+    await pwaInstallPrompt.userChoice;
+    pwaInstallPrompt = null;
+    document.getElementById('pwa-banner').style.display = 'none';
+  };
+
+  window.dismissPWA = () => {
+    document.getElementById('pwa-banner').style.display = 'none';
+    localStorage.setItem('pwaDismissed', '1');
+  };
+
+  // iOS Safari — manual install hint
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.navigator.standalone === true;
+  if (isIOS && !isStandalone && !localStorage.getItem('iosDismissed')) {
+    setTimeout(() => {
+      const b = document.getElementById('ios-banner');
+      if (b && document.getElementById('view-app')?.style.display !== 'none') b.style.display = 'block';
+    }, 10000);
+  }
+
+  window.dismissiOS = () => {
+    document.getElementById('ios-banner').style.display = 'none';
+    localStorage.setItem('iosDismissed', '1');
+  };
+
+  window.addEventListener('appinstalled', () => {
+    const b = document.getElementById('pwa-banner');
+    if (b) b.style.display = 'none';
+    localStorage.setItem('pwaDismissed', '1');
+    console.log('✅ PWA installed!');
+  });
+
   function applyDarkMode(dark) {
     document.body.classList.toggle('dark-mode', dark);
     document.getElementById('darkmode-btn').textContent = dark ? '☀️' : '🌙';
