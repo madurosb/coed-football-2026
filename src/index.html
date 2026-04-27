@@ -443,7 +443,7 @@
 <!-- NOTIFICATION PANEL -->
 
 <!-- PWA INSTALL BANNER -->
-<div id="pwa-banner" style="display:none;position:fixed;bottom:80px;left:12px;right:12px;background:linear-gradient(135deg,#0a1f0a,#1a3a1a);border:1px solid #1D9E75;border-radius:16px;padding:14px 16px;z-index:9998;box-shadow:0 8px 32px rgba(0,0,0,0.4);">
+<div id="pwa-banner" style="display:none;position:fixed;top:60px;left:12px;right:12px;background:linear-gradient(135deg,#0a1f0a,#1a3a1a);border:1px solid #1D9E75;border-radius:16px;padding:14px 16px;z-index:9998;box-shadow:0 8px 32px rgba(0,0,0,0.4);">
   <div style="display:flex;align-items:center;gap:12px;">
     <div style="width:44px;height:44px;background:#1D9E75;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">⚽</div>
     <div style="flex:1;">
@@ -456,17 +456,20 @@
 </div>
 
 <!-- iOS INSTALL HINT (Safari only) -->
-<div id="ios-banner" style="display:none;position:fixed;bottom:80px;left:12px;right:12px;background:linear-gradient(135deg,#0a1f0a,#1a3a1a);border:1px solid #1D9E75;border-radius:16px;padding:14px 16px;z-index:9998;box-shadow:0 8px 32px rgba(0,0,0,0.4);">
+<div id="ios-banner" style="display:none;position:fixed;top:60px;left:12px;right:12px;background:linear-gradient(135deg,#0a1f0a,#1a3a1a);border:1px solid #1D9E75;border-radius:16px;padding:14px 16px;z-index:9998;box-shadow:0 8px 32px rgba(0,0,0,0.4);">
   <div style="display:flex;align-items:flex-start;gap:12px;">
     <div style="width:44px;height:44px;background:#1D9E75;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">⚽</div>
     <div style="flex:1;">
       <div style="font-size:14px;font-weight:700;color:white;margin-bottom:3px;">Install on iPhone</div>
       <div style="font-size:12px;color:rgba(255,255,255,0.65);line-height:1.6;">Tap <strong style="color:white;">Share</strong> <span style="font-size:14px;">⬆️</span> then <strong style="color:white;">"Add to Home Screen"</strong> for the full app experience</div>
     </div>
-    <button onclick="dismissiOS()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:20px;cursor:pointer;padding:0;flex-shrink:0;line-height:1;">×</button>
+    <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;align-items:flex-end;">
+      <button onclick="dismissiOS()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:20px;cursor:pointer;padding:0;line-height:1;">×</button>
+      <button onclick="dismissiOS();showPage('dummies');" style="background:none;border:1px solid #4ade80;color:#4ade80;font-size:11px;font-weight:500;cursor:pointer;padding:4px 8px;border-radius:6px;white-space:nowrap;">How to install →</button>
+    </div>
   </div>
-  <!-- Little arrow pointing down to Safari bar -->
-  <div style="position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:10px solid #1D9E75;"></div>
+  <!-- Arrow pointing up toward nav bar -->
+  <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:10px solid #1D9E75;"></div>
 </div>
 
 <!-- ANIMATED LOADING SPLASH -->
@@ -1718,6 +1721,7 @@
     <div style="display:flex;gap:0;border-bottom:1.5px solid var(--border);margin-bottom:1.25rem;" id="dummies-tabs">
       <button id="dtab-guide" onclick="setDummiesTab('guide')" style="flex:1;padding:9px 4px;font-size:12px;font-weight:600;border:none;border-bottom:2.5px solid var(--green);background:none;color:var(--text);cursor:pointer;">📖 Guide</button>
       <button id="dtab-tutorial" onclick="setDummiesTab('tutorial')" style="flex:1;padding:9px 4px;font-size:12px;font-weight:600;border:none;border-bottom:2.5px solid transparent;background:none;color:var(--text-muted);cursor:pointer;">🎮 Try it out</button>
+      <button id="dtab-install" onclick="setDummiesTab('install')" style="flex:1;padding:9px 4px;font-size:12px;font-weight:600;border:none;border-bottom:2.5px solid transparent;background:none;color:var(--text-muted);cursor:pointer;">📲 Install app</button>
     </div>
 
     <!-- Guide tab (existing content) -->
@@ -2011,6 +2015,72 @@
   </div>
 
   </div><!-- end page-dummies -->
+
+  <!-- INSTALL TAB -->
+  <div id="dummies-install" style="display:none;">
+
+    <!-- iPhone -->
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;">
+        <span style="font-size:28px;">🍎</span>
+        <div>
+          <div style="font-size:15px;font-weight:600;">iPhone / iPad</div>
+          <div style="font-size:12px;color:var(--text-muted);">Using Safari browser</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:28px;height:28px;border-radius:50%;background:#E1F5EE;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#085041;flex-shrink:0;">1</div>
+          <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Open <strong style="color:var(--text);">coedworldcup.me</strong> in <strong style="color:var(--text);">Safari</strong> (not Chrome!)</div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:28px;height:28px;border-radius:50%;background:#E1F5EE;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#085041;flex-shrink:0;">2</div>
+          <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Tap the <strong style="color:var(--text);">Share button ⬆️</strong> at the bottom of the screen</div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:28px;height:28px;border-radius:50%;background:#E1F5EE;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#085041;flex-shrink:0;">3</div>
+          <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Scroll down and tap <strong style="color:var(--text);">"Add to Home Screen"</strong> 📱</div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:28px;height:28px;border-radius:50%;background:#E1F5EE;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#085041;flex-shrink:0;">4</div>
+          <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Tap <strong style="color:var(--text);">Add</strong> — done! The COED⚽ icon will appear on your home screen.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Android -->
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;">
+        <span style="font-size:28px;">🤖</span>
+        <div>
+          <div style="font-size:15px;font-weight:600;">Android</div>
+          <div style="font-size:12px;color:var(--text-muted);">Using Chrome browser</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:28px;height:28px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#0C447C;flex-shrink:0;">1</div>
+          <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Open <strong style="color:var(--text);">coedworldcup.me</strong> in <strong style="color:var(--text);">Chrome</strong></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:28px;height:28px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#0C447C;flex-shrink:0;">2</div>
+          <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">A banner will appear at the bottom: <strong style="color:var(--text);">"Add to Home Screen"</strong> — tap it</div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:28px;height:28px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#0C447C;flex-shrink:0;">3</div>
+          <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">If no banner: tap the <strong style="color:var(--text);">⋮ menu</strong> → <strong style="color:var(--text);">"Add to Home Screen"</strong></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <div style="width:28px;height:28px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#0C447C;flex-shrink:0;">4</div>
+          <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Tap <strong style="color:var(--text);">Install</strong> — the app icon will appear on your home screen ✅</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#0a1f0a;border-radius:12px;padding:12px 16px;font-size:12px;color:#86efac;line-height:1.8;">
+      💡 <strong style="color:#4ade80;">Why install it?</strong> Fullscreen experience, no browser bar, faster loading, works like a real app — and it takes 30 seconds!
+    </div>
+  </div>
 
   <!-- TRASH TALK -->
   <div class="page" id="page-trash">
@@ -7188,7 +7258,7 @@
 
   // ========== HOW TO PLAY — TABS + TUTORIAL ==========
   window.setDummiesTab = (tab) => {
-    ['guide','tutorial'].forEach(t => {
+    ['guide','tutorial','install'].forEach(t => {
       const el = document.getElementById(`dummies-${t}`);
       const btn = document.getElementById(`dtab-${t}`);
       if (el) el.style.display = t === tab ? 'block' : 'none';
