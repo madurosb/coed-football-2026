@@ -3678,8 +3678,16 @@
   };
 
   window.deleteTrashMsg = async (id) => {
-    await deleteDoc(doc(db, 'trashTalk', id));
-    loadTrashTalk();
+    try {
+      // Delete reactions for this message too
+      const reactionsSnap = await getDocs(query(collection(db, 'trashReactions'), where('msgId', '==', id)));
+      for (const r of reactionsSnap.docs) await deleteDoc(r.ref);
+      await deleteDoc(doc(db, 'trashTalk', id));
+      loadTrashTalk();
+    } catch(e) {
+      console.error('Delete failed:', e.message);
+      alert('Could not delete: ' + e.message);
+    }
   };
 
   window.insertEmoji = (emoji) => {
