@@ -433,12 +433,21 @@
 
 <!-- NOTIFICATION PANEL -->
 <div id="notif-panel" style="display:none;position:fixed;top:54px;right:0;width:min(380px,100vw);max-height:70vh;overflow-y:auto;background:var(--surface);border-left:0.5px solid var(--border);border-bottom:0.5px solid var(--border);border-radius:0 0 0 14px;z-index:999;box-shadow:-4px 4px 24px rgba(0,0,0,0.12);">
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:0.5px solid var(--border);position:sticky;top:0;background:var(--surface);">
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px;border-bottom:0.5px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:1;">
     <div style="font-size:14px;font-weight:600;">🔔 Notifications</div>
     <div style="display:flex;gap:8px;align-items:center;">
       <button onclick="markAllNotifsRead()" style="font-size:11px;color:var(--green);background:none;border:none;cursor:pointer;padding:0;">Mark all read</button>
+      <button onclick="deleteAllNotifs()" style="font-size:11px;color:#E24B4A;background:none;border:none;cursor:pointer;padding:0;">Delete all</button>
       <button onclick="toggleNotifPanel()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-muted);padding:0;">×</button>
     </div>
+  </div>
+  <!-- Category tabs -->
+  <div style="display:flex;gap:0;border-bottom:0.5px solid var(--border);position:sticky;top:45px;background:var(--surface);z-index:1;">
+    <button id="ntab-all" onclick="setNotifTab('all')" style="flex:1;padding:8px 4px;font-size:11px;font-weight:500;border:none;border-bottom:2px solid var(--green);background:none;color:var(--text);cursor:pointer;">All</button>
+    <button id="ntab-game" onclick="setNotifTab('game')" style="flex:1;padding:8px 4px;font-size:11px;font-weight:500;border:none;border-bottom:2px solid transparent;background:none;color:var(--text-muted);cursor:pointer;">⚽ Game</button>
+    <button id="ntab-social" onclick="setNotifTab('social')" style="flex:1;padding:8px 4px;font-size:11px;font-weight:500;border:none;border-bottom:2px solid transparent;background:none;color:var(--text-muted);cursor:pointer;">💬 Social</button>
+    <button id="ntab-system" onclick="setNotifTab('system')" style="flex:1;padding:8px 4px;font-size:11px;font-weight:500;border:none;border-bottom:2px solid transparent;background:none;color:var(--text-muted);cursor:pointer;">🔔 System</button>
   </div>
   <div id="notif-list" style="padding:0;">
     <div style="text-align:center;padding:2rem;font-size:13px;color:var(--text-muted);">Loading...</div>
@@ -6398,6 +6407,53 @@
         </div>
       </div>
 
+      ${user.tournamentWinner ? (() => {
+        const WINNER_FLAGS = {
+          'France':'fr','Germany':'de','Spain':'es','Brazil':'br','Argentina':'ar',
+          'England':'gb-eng','Portugal':'pt','Netherlands':'nl','Belgium':'be',
+          'Croatia':'hr','Uruguay':'uy','Colombia':'co','USA':'us','United States':'us',
+          'Mexico':'mx','Morocco':'ma','Japan':'jp','South Korea':'kr','Australia':'au',
+          'Senegal':'sn','Nigeria':'ng','Ecuador':'ec','Switzerland':'ch','Denmark':'dk',
+          'Poland':'pl','Serbia':'rs','Turkey':'tr','Türkiye':'tr','Ukraine':'ua',
+          'Austria':'at','Canada':'ca','Saudi Arabia':'sa','Iran':'ir','Qatar':'qa',
+          "Côte d'Ivoire":'ci','Ivory Coast':'ci','Egypt':'eg','Paraguay':'py',
+          'Venezuela':'ve','Chile':'cl','Peru':'pe','Bolivia':'bo','Honduras':'hn',
+          'Costa Rica':'cr','Panama':'pa','Jamaica':'jm','El Salvador':'sv',
+          'Algeria':'dz','Tunisia':'tn','Cameroon':'cm','Ghana':'gh','Mali':'ml',
+          'Cape Verde':'cv','DR Congo':'cd','Norway':'no','Sweden':'se',
+          'Scotland':'gb-sct','Georgia':'ge','Albania':'al','Romania':'ro',
+          'Slovakia':'sk','Slovenia':'si','Uzbekistan':'uz','Iraq':'iq',
+          'Indonesia':'id','New Zealand':'nz','Jordan':'jo','Bahrain':'bh',
+          'Bosnia and Herzegovina':'ba','Bosnia & Herzegovina':'ba',
+        };
+        const code = WINNER_FLAGS[user.tournamentWinner] || '';
+        const flagUrl = code ? `https://flagcdn.com/w160/${code}.png` : '';
+        return `
+        <div style="background:linear-gradient(135deg,#0a1f0a,#1a3a1a);border-radius:14px;padding:1.25rem;margin-bottom:1rem;overflow:hidden;position:relative;">
+          <div style="font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#4ade80;margin-bottom:10px;">🏆 My World Cup pick</div>
+          <div style="display:flex;align-items:center;gap:16px;">
+            ${flagUrl ? `
+            <div style="position:relative;flex-shrink:0;width:80px;height:54px;border-radius:6px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.4);">
+              <img src="${flagUrl}" alt="${user.tournamentWinner}"
+                style="width:100%;height:100%;object-fit:cover;transform-origin:left center;animation:waveflag 2.5s ease-in-out infinite;"
+              />
+            </div>` : `<div style="font-size:42px;flex-shrink:0;">🏳️</div>`}
+            <div>
+              <div style="font-size:20px;font-weight:700;color:white;line-height:1.1;">${user.tournamentWinner}</div>
+              <div style="font-size:12px;color:rgba(255,255,255,0.45);margin-top:4px;">If this wins — +15 pts 💰</div>
+            </div>
+            <div style="position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:52px;opacity:0.08;">🏆</div>
+          </div>
+        </div>
+        <style>
+          @keyframes waveflag {
+            0%,100% { transform: skewX(0deg) scaleX(1); }
+            25% { transform: skewX(-3deg) scaleX(0.97); }
+            75% { transform: skewX(3deg) scaleX(1.03); }
+          }
+        </style>`;
+      })() : ''}
+
       <div style="font-size:11px;font-weight:500;letter-spacing:0.08em;color:var(--text-muted);text-transform:uppercase;margin:1.25rem 0 0.5rem;">Prediction breakdown</div>
       <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:10px;">
         ${[
@@ -6695,7 +6751,7 @@
         badge.style.display = unseen > 0 ? 'block' : 'none';
         badge.textContent = unseen > 9 ? '9+' : unseen;
       }
-      renderNotifList(notifs, snap.docs);
+      renderNotifList(notifs);
     } catch(e) {
       console.log('Notifications error:', e.message);
       const list = document.getElementById('notif-list');
@@ -6703,46 +6759,81 @@
     }
   }
 
-  function renderNotifList(notifs, docs) {
+  // Category mapping
+  const NOTIF_CATEGORIES = {
+    game:   ['result','exact','deadline','joker','don','bold','leaderboard','overtaken'],
+    social: ['reaction','newuser','innercircle'],
+    system: ['badge']
+  };
+  let currentNotifTab = 'all';
+  let cachedNotifs = [];
+
+  window.setNotifTab = (tab) => {
+    currentNotifTab = tab;
+    ['all','game','social','system'].forEach(t => {
+      const btn = document.getElementById(`ntab-${t}`);
+      if (!btn) return;
+      btn.style.borderBottomColor = t === tab ? 'var(--green)' : 'transparent';
+      btn.style.color = t === tab ? 'var(--text)' : 'var(--text-muted)';
+      btn.style.fontWeight = t === tab ? '600' : '500';
+    });
+    renderNotifList(cachedNotifs);
+  };
+
+  function renderNotifList(notifs) {
+    cachedNotifs = notifs;
     const list = document.getElementById('notif-list');
     if (!list) return;
-    if (notifs.length === 0) {
+
+    // Filter by tab
+    const filtered = currentNotifTab === 'all' ? notifs
+      : notifs.filter(n => (NOTIF_CATEGORIES[currentNotifTab] || []).includes(n.type));
+
+    if (filtered.length === 0) {
       list.innerHTML = `<div style="text-align:center;padding:2rem;font-size:13px;color:var(--text-muted);">
-        <div style="font-size:32px;margin-bottom:8px;">🔕</div>No notifications yet
+        <div style="font-size:32px;margin-bottom:8px;">🔕</div>No notifications here
       </div>`;
       return;
     }
     const typeIcon = { reaction:'💬', badge:'🏅', leaderboard:'🏆', overtaken:'😅',
       deadline:'⏰', result:'✅', exact:'🎯', joker:'🃏', don:'🎰',
       bold:'🐂', newuser:'👥', innercircle:'🏅' };
-    list.innerHTML = notifs.map((n, i) => {
+
+    list.innerHTML = filtered.map(n => {
       const icon = typeIcon[n.type] || '🔔';
       const time = n.createdAt?.toDate ? n.createdAt.toDate().toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
-      return `<div onclick="markNotifRead('${n.id}', ${i})"
-        style="display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border-bottom:0.5px solid var(--border);background:${n.seen?'none':'var(--green-light)'};cursor:pointer;transition:background 0.15s;"
-        onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='${n.seen?'none':'var(--green-light)'}'">
-        <div style="font-size:22px;flex-shrink:0;margin-top:2px;">${icon}</div>
-        <div style="flex:1;min-width:0;">
+      return `<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 16px;border-bottom:0.5px solid var(--border);background:${n.seen?'none':'var(--green-light)'};transition:background 0.15s;">
+        <div style="font-size:20px;flex-shrink:0;margin-top:2px;">${icon}</div>
+        <div style="flex:1;min-width:0;cursor:pointer;" onclick="markNotifRead('${n.id}')">
           <div style="font-size:13px;line-height:1.4;${n.seen?'':'font-weight:500;'}">${n.text}</div>
           ${n.msgPreview ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">"${n.msgPreview}..."</div>` : ''}
-          <div style="font-size:10px;color:var(--text-muted);margin-top:3px;">${time}</div>
+          <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${time}</div>
         </div>
-        ${!n.seen ? '<div style="width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;margin-top:6px;"></div>' : ''}
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;">
+          ${!n.seen ? '<div style="width:8px;height:8px;border-radius:50%;background:var(--green);"></div>' : ''}
+          <button onclick="deleteNotif('${n.id}')" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--text-muted);padding:0;line-height:1;" title="Delete">🗑️</button>
+        </div>
       </div>`;
     }).join('');
   }
 
-  window.toggleNotifPanel = async () => {
-    const panel = document.getElementById('notif-panel');
-    const overlay = document.getElementById('notif-overlay');
-    const open = panel.style.display !== 'none';
-    panel.style.display = open ? 'none' : 'block';
-    if (overlay) overlay.style.display = open ? 'none' : 'block';
-    if (!open) await loadNotifications();
-  };
-
   window.markNotifRead = async (id) => {
     await updateDoc(doc(db, 'notifications', id), { seen: true });
+    loadNotifications();
+  };
+
+  window.deleteNotif = async (id) => {
+    await deleteDoc(doc(db, 'notifications', id));
+    loadNotifications();
+  };
+
+  window.deleteAllNotifs = async () => {
+    if (!confirm('Delete all notifications?')) return;
+    const snap = await getDocs(query(
+      collection(db, 'notifications'),
+      where('toUserId', '==', currentUser.uid)
+    ));
+    for (const d of snap.docs) await deleteDoc(d.ref);
     loadNotifications();
   };
 
