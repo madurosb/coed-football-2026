@@ -6440,16 +6440,19 @@
             </div>` : `<div style="font-size:42px;flex-shrink:0;">🏳️</div>`}
             <div>
               <div style="font-size:20px;font-weight:700;color:white;line-height:1.1;">${user.tournamentWinner}</div>
-              <div style="font-size:12px;color:rgba(255,255,255,0.45);margin-top:4px;">If this wins — +15 pts 💰</div>
+              <div style="font-size:12px;color:rgba(255,255,255,0.45);margin-top:4px;">If they win → +15 pts 💰</div>
             </div>
             <div style="position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:52px;opacity:0.08;">🏆</div>
           </div>
         </div>
         <style>
           @keyframes waveflag {
-            0%,100% { transform: skewX(0deg) scaleX(1); }
-            25% { transform: skewX(-3deg) scaleX(0.97); }
-            75% { transform: skewX(3deg) scaleX(1.03); }
+            0%   { transform: skewX(0deg) scaleX(1) scaleY(1); }
+            20%  { transform: skewX(-5deg) scaleX(0.96) scaleY(1.02); }
+            40%  { transform: skewX(5deg) scaleX(1.04) scaleY(0.98); }
+            60%  { transform: skewX(-4deg) scaleX(0.97) scaleY(1.01); }
+            80%  { transform: skewX(4deg) scaleX(1.03) scaleY(0.99); }
+            100% { transform: skewX(0deg) scaleX(1) scaleY(1); }
           }
         </style>`;
       })() : ''}
@@ -6758,6 +6761,15 @@
       if (list) list.innerHTML = `<div style="text-align:center;padding:1.5rem;font-size:13px;color:var(--text-muted);">No notifications yet 🔕</div>`;
     }
   }
+
+  window.toggleNotifPanel = async () => {
+    const panel = document.getElementById('notif-panel');
+    const overlay = document.getElementById('notif-overlay');
+    const open = panel.style.display !== 'none';
+    panel.style.display = open ? 'none' : 'block';
+    if (overlay) overlay.style.display = open ? 'none' : 'block';
+    if (!open) await loadNotifications();
+  };
 
   // Category mapping
   const NOTIF_CATEGORIES = {
