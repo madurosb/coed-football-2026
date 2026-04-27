@@ -491,8 +491,7 @@
       <div class="pdot"></div><div class="pdot"></div><div class="pdot"></div>
       <div class="pdot"></div><div class="pdot"></div>
     </div>
-    <!-- Pac-Man -->
-    <div id="pacman" style="position:absolute;top:50%;transform:translateY(-50%);font-size:26px;animation:pacMove 2s linear infinite;">⚽</div>
+
   </div>
 
   <!-- Progress bar -->
@@ -509,10 +508,7 @@
     .pdot:nth-child(3){animation-delay:0.5s} .pdot:nth-child(4){animation-delay:0.75s}
     .pdot:nth-child(5){animation-delay:1s}   .pdot:nth-child(6){animation-delay:1.25s}
     .pdot:nth-child(7){animation-delay:1.5s} .pdot:nth-child(8){animation-delay:1.75s}
-    @keyframes pacMove {
-      0%   { left: 0%; }
-      100% { left: calc(100% - 30px); }
-    }
+
     @keyframes dotEat {
       0%,60%  { opacity:1; transform:scale(1); }
       65%     { opacity:0; transform:scale(0); }
@@ -3305,22 +3301,18 @@
 
   const provider = new GoogleAuthProvider();
 
-  // Handle redirect result — Safari returns here after Google sign-in
-  // We need to handle this BEFORE onAuthStateChanged shows login screen
-  let handlingRedirect = false;
-  getRedirectResult(auth).then(result => {
-    handlingRedirect = false;
-    if (result?.user) console.log('✅ Safari redirect sign-in success');
-  }).catch(e => {
-    handlingRedirect = false;
-    console.log('Redirect result:', e.code);
-  });
-  // Check if we just came back from a redirect (URL has auth params)
-  if (window.location.href.includes('/__/auth/handler') || 
-      document.referrer.includes('accounts.google.com') ||
-      sessionStorage.getItem('pendingRedirect')) {
-    handlingRedirect = true;
+  // Handle redirect result — for Safari which uses redirect flow
+  const pendingRedirect = sessionStorage.getItem('pendingRedirect');
+  if (pendingRedirect) {
     sessionStorage.removeItem('pendingRedirect');
+    // We came back from Google — wait for getRedirectResult
+    getRedirectResult(auth).then(result => {
+      if (result?.user) {
+        console.log('✅ Safari redirect success:', result.user.email);
+      }
+    }).catch(e => {
+      console.log('Redirect error:', e.code, e.message);
+    });
   }
 
   // Safety net — if splash stays more than 8s, force show login
@@ -3383,14 +3375,15 @@
         showApp();
       }
     } else {
-      // Small delay to let getRedirectResult complete first (Safari redirect flow)
+      const fromRedirect = !!sessionStorage.getItem('pendingRedirect');
+      const delay = fromRedirect ? 3000 : 800;
       setTimeout(() => {
         if (!currentUser) {
           const splash = document.getElementById('splash-screen');
           if (splash) { splash.style.transition = 'opacity 0.4s'; splash.style.opacity = '0'; setTimeout(() => splash?.remove(), 400); }
           document.getElementById('view-login').style.display = 'block';
         }
-      }, 1500);
+      }, delay);
     }
   });
 
@@ -3490,17 +3483,17 @@
   // SIGN IN
   window.signInWithGoogle = async () => {
     try {
-      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-      if (isSafari) {
-        // Safari blocks popups — use redirect instead
+      // Try popup first — works on Chrome, Firefox, most browsers
+      await signInWithPopup(auth, provider);
+    } catch (e) {
+      if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') {
+        // Popup blocked (Safari, iOS) — fall back to redirect
         sessionStorage.setItem('pendingRedirect', '1');
         await signInWithRedirect(auth, provider);
       } else {
-        await signInWithPopup(auth, provider);
+        console.error('Sign in error:', e.code);
+        alert('Sign in failed: ' + (e.message || 'Please try again.'));
       }
-    } catch (e) {
-      console.error('Sign in error:', e);
-      alert('Sign in failed. Please try again.');
     }
   };
 
