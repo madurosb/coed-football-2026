@@ -287,7 +287,50 @@
       #page-dummies [style*="display:flex;gap:14px"] { gap: 10px; }
     }
 
-    /* Bottom nav - hidden on desktop */
+    /* ── DARK MODE OVERRIDES for hardcoded light colors ── */
+    body.dark-mode [style*="background:#E1F5EE"],
+    body.dark-mode [style*="background: #E1F5EE"] { background: #0d2e1f !important; color: #4ade80 !important; }
+    body.dark-mode [style*="background:#FAEEDA"],
+    body.dark-mode [style*="background: #FAEEDA"] { background: #2a1f0a !important; color: #fcd34d !important; }
+    body.dark-mode [style*="background:#FCEBEB"],
+    body.dark-mode [style*="background: #FCEBEB"] { background: #2a0d0d !important; color: #fca5a5 !important; }
+    body.dark-mode [style*="background:#E6F1FB"],
+    body.dark-mode [style*="background: #E6F1FB"] { background: #0d1f2e !important; color: #93c5fd !important; }
+    body.dark-mode [style*="background:#FFF0E0"],
+    body.dark-mode [style*="background: #FFF0E0"] { background: #2a1a0a !important; color: #fdba74 !important; }
+    body.dark-mode [style*="background:#f8f8f8"],
+    body.dark-mode [style*="background: #f8f8f8"] { background: var(--surface2) !important; }
+    body.dark-mode [style*="color:#633806"],
+    body.dark-mode [style*="color: #633806"] { color: #fcd34d !important; }
+    body.dark-mode [style*="color:#085041"],
+    body.dark-mode [style*="color: #085041"] { color: #4ade80 !important; }
+    body.dark-mode [style*="color:#791F1F"],
+    body.dark-mode [style*="color: #791F1F"] { color: #fca5a5 !important; }
+    body.dark-mode [style*="color:#0C447C"],
+    body.dark-mode [style*="color: #0C447C"] { color: #93c5fd !important; }
+    body.dark-mode [style*="color:#B45309"],
+    body.dark-mode [style*="color: #B45309"] { color: #fdba74 !important; }
+    body.dark-mode [style*="color:#92400E"],
+    body.dark-mode [style*="color: #92400E"] { color: #fdba74 !important; }
+    body.dark-mode [style*="color:#7C3AED"],
+    body.dark-mode [style*="color: #7C3AED"] { color: #c4b5fd !important; }
+    body.dark-mode [style*="color:#1a1a1a"],
+    body.dark-mode [style*="color: #1a1a1a"] { color: var(--text) !important; }
+    body.dark-mode [style*="color:#333"],
+    body.dark-mode [style*="color: #333"] { color: var(--text-muted) !important; }
+    /* Login card in dark mode */
+    body.dark-mode .login-screen { background: #0d0d0d !important; }
+    /* Select dropdowns */
+    body.dark-mode select { background: #1e1e1e !important; color: var(--text) !important; border-color: var(--border) !important; }
+    /* Input fields */
+    body.dark-mode input[type="text"],
+    body.dark-mode input[type="number"],
+    body.dark-mode textarea { background: #1e1e1e !important; color: var(--text) !important; }
+    /* Score inputs in match cards */
+    body.dark-mode .score-input { background: #1e1e1e !important; color: var(--text) !important; border-color: var(--border) !important; }
+    /* Tutorial mock match card */
+    body.dark-mode #dummies-tutorial select,
+    body.dark-mode #dummies-tutorial input { background: #1e1e1e !important; color: var(--text) !important; }
     .bottom-nav {
       display: none;
       position: fixed;
