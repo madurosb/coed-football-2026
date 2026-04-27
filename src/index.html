@@ -432,6 +432,35 @@
 </div>
 
 <!-- NOTIFICATION PANEL -->
+
+<!-- ANIMATED LOADING SPLASH -->
+<div id="splash-screen" style="position:fixed;inset:0;background:#080808;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;">
+  <div style="position:relative;width:90px;height:90px;">
+    <svg viewBox="0 0 90 90" width="90" height="90" style="animation:splashSpin 1.8s linear infinite;">
+      <circle cx="45" cy="45" r="40" fill="none" stroke="#1D9E75" stroke-width="3" stroke-dasharray="60 190" stroke-linecap="round"/>
+      <circle cx="45" cy="45" r="40" fill="none" stroke="#EF9F27" stroke-width="3" stroke-dasharray="30 220" stroke-dashoffset="-80" stroke-linecap="round" style="animation:splashSpin2 1.8s linear infinite;"/>
+    </svg>
+    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:36px;animation:splatBounce 1.2s ease-in-out infinite;">⚽</div>
+  </div>
+  <div style="text-align:center;">
+    <div style="font-family:monospace;font-size:18px;font-weight:700;letter-spacing:6px;color:#1D9E75;text-transform:uppercase;">COED&FOOTBALL</div>
+    <div style="font-size:11px;color:#444;letter-spacing:3px;margin-top:4px;text-transform:uppercase;">Mundial 2026</div>
+  </div>
+  <div style="display:flex;gap:6px;margin-top:8px;">
+    <div style="width:6px;height:6px;border-radius:50%;background:#1D9E75;animation:dot1 1.2s ease-in-out infinite;"></div>
+    <div style="width:6px;height:6px;border-radius:50%;background:#1D9E75;animation:dot2 1.2s ease-in-out infinite 0.2s;"></div>
+    <div style="width:6px;height:6px;border-radius:50%;background:#1D9E75;animation:dot3 1.2s ease-in-out infinite 0.4s;"></div>
+  </div>
+  <style>
+    @keyframes splashSpin  { to { transform: rotate(360deg); } }
+    @keyframes splashSpin2 { to { stroke-dashoffset: -250; } }
+    @keyframes splatBounce { 0%,100%{transform:scale(1);} 50%{transform:scale(1.15);} }
+    @keyframes dot1 { 0%,100%{opacity:0.2;transform:scale(0.8);} 50%{opacity:1;transform:scale(1.2);} }
+    @keyframes dot2 { 0%,100%{opacity:0.2;transform:scale(0.8);} 50%{opacity:1;transform:scale(1.2);} }
+    @keyframes dot3 { 0%,100%{opacity:0.2;transform:scale(0.8);} 50%{opacity:1;transform:scale(1.2);} }
+  </style>
+</div>
+
 <div id="notif-panel" style="display:none;position:fixed;top:54px;right:0;width:min(380px,100vw);max-height:70vh;overflow-y:auto;background:var(--surface);border-left:0.5px solid var(--border);border-bottom:0.5px solid var(--border);border-radius:0 0 0 14px;z-index:999;box-shadow:-4px 4px 24px rgba(0,0,0,0.12);">
   <!-- Header -->
   <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px;border-bottom:0.5px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:1;">
@@ -578,17 +607,13 @@
       <span class="bnav-icon">🏆</span>
       <span class="bnav-label">Standings</span>
     </button>
+    <button class="bnav-btn" data-page="trash" onclick="showPage('trash')">
+      <span class="bnav-icon">💬</span>
+      <span class="bnav-label">Trash Talk</span>
+    </button>
     <button class="bnav-btn" data-page="stats" onclick="showPage('stats')">
       <span class="bnav-icon">📊</span>
       <span class="bnav-label">My Stats</span>
-    </button>
-    <button class="bnav-btn" data-page="highlights" onclick="showPage('highlights')">
-      <span class="bnav-icon">🎬</span>
-      <span class="bnav-label">Highlights</span>
-    </button>
-    <button class="bnav-btn" data-page="rules" onclick="showPage('rules')">
-      <span class="bnav-icon">📋</span>
-      <span class="bnav-label">Rules</span>
     </button>
     <button class="bnav-btn" data-page="admin" id="admin-bnav-btn" style="display:none;" onclick="showPage('admin')">
       <span class="bnav-icon">⚙️</span>
@@ -1651,9 +1676,16 @@
   <!-- HOW TO BET FOR DUMMIES -->
   <div class="page" id="page-dummies">
     <p class="section-title" style="margin-bottom:0.25rem;">🎓 How to play — for dummies</p>
-    <p style="font-size:13px;color:var(--text-muted);margin-bottom:1.5rem;">Everything you need to know to play. Step by step.</p>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Everything you need to know. Step by step.</p>
 
-    <!-- STEP 1 -->
+    <!-- Tabs -->
+    <div style="display:flex;gap:0;border-bottom:1.5px solid var(--border);margin-bottom:1.25rem;" id="dummies-tabs">
+      <button id="dtab-guide" onclick="setDummiesTab('guide')" style="flex:1;padding:9px 4px;font-size:12px;font-weight:600;border:none;border-bottom:2.5px solid var(--green);background:none;color:var(--text);cursor:pointer;">📖 Guide</button>
+      <button id="dtab-tutorial" onclick="setDummiesTab('tutorial')" style="flex:1;padding:9px 4px;font-size:12px;font-weight:600;border:none;border-bottom:2.5px solid transparent;background:none;color:var(--text-muted);cursor:pointer;">🎮 Try it out</button>
+    </div>
+
+    <!-- Guide tab (existing content) -->
+    <div id="dummies-guide">
     <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;display:flex;gap:14px;align-items:flex-start;">
       <div style="flex-shrink:0;">
         <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
@@ -1879,7 +1911,70 @@
         ⚽ Start predicting now!
       </button>
     </div>
+  </div><!-- end dummies-guide -->
+
+  <!-- TUTORIAL TAB -->
+  <div id="dummies-tutorial" style="display:none;">
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
+      <div style="font-size:15px;font-weight:600;margin-bottom:4px;">🎮 Practice a prediction</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:1.25rem;">Try predicting this match. No real points — just to get the hang of it!</div>
+
+      <!-- Mock match card -->
+      <div style="background:var(--surface2);border-radius:12px;padding:1rem;margin-bottom:1rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span style="font-size:11px;color:var(--text-muted);">Group A · June 14</span>
+          <span style="font-size:11px;color:var(--text-muted);">21:00</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:1rem;">
+          <div style="flex:1;text-align:center;">
+            <div style="font-size:28px;">🇧🇷</div>
+            <div style="font-size:13px;font-weight:600;margin-top:4px;">Brazil</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input id="tut-home" type="number" min="0" max="20" value="2" oninput="updateTutorial()"
+              style="width:48px;height:48px;border-radius:10px;border:1.5px solid var(--green);background:var(--surface);text-align:center;font-size:22px;font-weight:700;">
+            <span style="font-size:18px;color:var(--text-muted);">-</span>
+            <input id="tut-away" type="number" min="0" max="20" value="1" oninput="updateTutorial()"
+              style="width:48px;height:48px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);text-align:center;font-size:22px;font-weight:700;">
+          </div>
+          <div style="flex:1;text-align:center;">
+            <div style="font-size:28px;">🇩🇪</div>
+            <div style="font-size:13px;font-weight:600;margin-top:4px;">Germany</div>
+          </div>
+        </div>
+
+        <!-- First scorer -->
+        <div style="margin-bottom:1rem;">
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">⚽ First goalscorer (optional, +2 pts)</div>
+          <select id="tut-scorer" onchange="updateTutorial()" style="width:100%;padding:8px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface);font-size:13px;">
+            <option value="">— None / not sure —</option>
+            <option value="Vinicius Jr.">Vinicius Jr. 🇧🇷</option>
+            <option value="Endrick">Endrick 🇧🇷</option>
+            <option value="Raphinha">Raphinha 🇧🇷</option>
+            <option value="Florian Wirtz">Florian Wirtz 🇩🇪</option>
+            <option value="Jamal Musiala">Jamal Musiala 🇩🇪</option>
+            <option value="Kai Havertz">Kai Havertz 🇩🇪</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Live points calculation -->
+      <div id="tut-result" style="background:linear-gradient(135deg,#0a1f0a,#1a3a1a);border-radius:12px;padding:1rem;color:white;">
+        <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">🎯 Your potential points</div>
+        <div id="tut-breakdown" style="font-size:13px;line-height:1.8;color:#86efac;"></div>
+        <div style="border-top:1px solid rgba(255,255,255,0.1);margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:13px;color:rgba(255,255,255,0.6);">If you're right:</span>
+          <span id="tut-total" style="font-size:24px;font-weight:700;color:#fbbf24;"></span>
+        </div>
+      </div>
+
+      <div style="margin-top:1rem;background:var(--surface2);border-radius:10px;padding:12px;font-size:12px;color:var(--text-muted);line-height:1.7;">
+        <strong>💡 Remember:</strong> In knockout rounds the multiplier increases — ×2 in Round of 16, ×3 in Quarter-finals, ×4 in Semi-finals. The Final is special: exact score = 20 pts, correct result = 10 pts.
+      </div>
+    </div>
   </div>
+
+  </div><!-- end page-dummies -->
 
   <!-- TRASH TALK -->
   <div class="page" id="page-trash">
@@ -3133,6 +3228,9 @@
   });
 
   function showApp() {
+    // Hide splash screen with fade
+    const splash = document.getElementById('splash-screen');
+    if (splash) { splash.style.transition = 'opacity 0.5s'; splash.style.opacity = '0'; setTimeout(() => splash.remove(), 500); }
     document.getElementById('view-login').style.display = 'none';
     document.getElementById('view-app').style.display = 'block';
     document.getElementById('user-handle').textContent = '@' + (currentUserData.nickname || currentUserData.displayName);
@@ -3188,6 +3286,7 @@
     setTimeout(checkBoldPredictionPopup, 4000);
     // Run all notification checks
     setTimeout(runNotificationChecks, 2000);
+    setTimeout(sendWeeklyDigest, 5000);
     // Start music on first click or tap — capture:true catches ALL clicks even if stopPropagation is called
     let musicStarted = false;
     const startOnInteraction = () => {
@@ -3295,6 +3394,25 @@
     if (id === 'admin') { showAdminMain(); loadAdminUsers(); loadAdminStats(); }
     if (id === 'leaderboard') { loadFullLeaderboard(); document.getElementById('wc-groups-content').dataset.loaded = ''; document.getElementById('wc-scorers-content').dataset.loaded = ''; }
     if (id === 'stats') loadStatsPage();
+    if (id === 'dummies') {
+      const seenTutorial = localStorage.getItem('seenTutorialTooltip');
+      if (!seenTutorial) {
+        setTimeout(() => {
+          const btn = document.getElementById('dtab-tutorial');
+          if (!btn) return;
+          btn.style.boxShadow = '0 0 0 3px var(--green), 0 0 0 6px rgba(29,158,117,0.3)';
+          btn.style.borderRadius = '8px 8px 0 0';
+          const tip = document.createElement('div');
+          tip.style.cssText = 'position:fixed;background:#0a1f0a;color:#4ade80;font-size:12px;font-weight:500;padding:7px 12px;border-radius:8px;z-index:9999;border:1px solid #1D9E75;pointer-events:none;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.2);';
+          tip.innerHTML = '🎮 Try the interactive demo! →';
+          document.body.appendChild(tip);
+          const rect = btn.getBoundingClientRect();
+          tip.style.top = (rect.bottom + 10) + 'px';
+          tip.style.left = Math.min(rect.left, window.innerWidth - 220) + 'px';
+          setTimeout(() => { btn.style.boxShadow = ''; btn.style.borderRadius = ''; tip.remove(); localStorage.setItem('seenTutorialTooltip','1'); }, 4500);
+        }, 700);
+      }
+    }
     if (id === 'tips') loadTipsPage();
     if (id === 'live') loadLivePage();
     if (id === 'watch') loadWatchPage();
@@ -3305,11 +3423,28 @@
     const vid = document.getElementById('rules-video');
     if (id === 'rules') {
       if (ap && musicPlaying) ap.volume = 0;
-      // Restart from current video when entering Rules
       const v = RULE_VIDEOS[currentVideoIdx];
       const muteParam = videoMuted ? '&mute=1' : '';
       if (vid) vid.src = `https://www.youtube.com/embed/${v.id}?autoplay=1${muteParam}&controls=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`;
       videoPlayerReady = true;
+      setTimeout(() => { if (currentPage === 'rules') startVideoTimer(v.duration); }, 800);
+      // Unmute hint tooltip on first visit (mobile only)
+      if (videoMuted && !localStorage.getItem('seenUnmuteHint')) {
+        setTimeout(() => {
+          const mb = document.getElementById('video-mute-btn');
+          if (!mb) return;
+          mb.style.boxShadow = '0 0 0 3px #f59e0b, 0 0 0 6px rgba(245,158,11,0.3)';
+          mb.style.borderColor = '#f59e0b';
+          const tip = document.createElement('div');
+          tip.style.cssText = 'position:fixed;background:#78350f;color:#fde68a;font-size:12px;font-weight:600;padding:7px 12px;border-radius:8px;z-index:9999;border:1px solid #f59e0b;white-space:nowrap;pointer-events:none;';
+          tip.textContent = '🔊 Tap here to unmute!';
+          document.body.appendChild(tip);
+          const rect = mb.getBoundingClientRect();
+          tip.style.top = (rect.top - 40) + 'px';
+          tip.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - 180)) + 'px';
+          setTimeout(() => { mb.style.boxShadow = ''; mb.style.borderColor = ''; tip.remove(); localStorage.setItem('seenUnmuteHint','1'); }, 5000);
+        }, 1800);
+      }
     } else {
       if (ap && musicPlaying) ap.volume = 0.4;
       // Completely destroy iframe to stop audio in ALL browsers (Firefox fix)
@@ -6358,6 +6493,16 @@
     if ((user.bonusPoints||0) >= 3) badges.push({label:'⚡ Scorer hunter', cls:'badge-amber'});
     if (predCount === 0) badges.push({label:'😴 Just watching', cls:'badge-gray'});
 
+    // Matches remaining badge — count upcoming matches without prediction
+    const now = new Date();
+    const upcomingMatches = matches.filter(m => {
+      const kickoff = m.kickoff?.toDate?.() || new Date(m.kickoff);
+      return kickoff > now && m.status !== 'FINISHED';
+    });
+    const predictedIds = new Set(myPreds.map(p => p.matchId));
+    const unpredicted = upcomingMatches.filter(m => !predictedIds.has(m.id));
+    const unpredictedCount = unpredicted.length;
+
     // Fun verdict
     const verdicts = [
       predCount === 0 ? "You haven't predicted anything yet. Brave strategy." : null,
@@ -6392,6 +6537,24 @@
           </div>
         </div>
       </div>
+
+      <!-- Matches remaining card -->
+      ${unpredictedCount > 0 ? `
+      <div onclick="showPage('matches')" style="cursor:pointer;background:linear-gradient(135deg,#fff3e0,#ffe0b2);border:1.5px solid #fb923c;border-radius:12px;padding:12px 16px;margin-bottom:1rem;display:flex;align-items:center;gap:14px;transition:transform 0.15s;" onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform=''">
+        <div style="font-size:32px;flex-shrink:0;">📋</div>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:600;color:#c2410c;">${unpredictedCount} match${unpredictedCount>1?'es':''} without a prediction!</div>
+          <div style="font-size:12px;color:#ea580c;margin-top:2px;">Don't leave points on the table → tap to predict now</div>
+        </div>
+        <div style="font-size:20px;">→</div>
+      </div>` : upcomingMatches.length === 0 ? '' : `
+      <div style="background:linear-gradient(135deg,#e1f5ee,#d1fae5);border:1.5px solid #1D9E75;border-radius:12px;padding:12px 16px;margin-bottom:1rem;display:flex;align-items:center;gap:14px;">
+        <div style="font-size:32px;flex-shrink:0;">🎉</div>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:600;color:#085041;">All matches predicted!</div>
+          <div style="font-size:12px;color:#1D9E75;margin-top:2px;">Look at you. Absolutely shameless commitment. We love it.</div>
+        </div>
+      </div>`}
 
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:1rem;">
         <div style="background:var(--surface2);border-radius:8px;padding:1rem;text-align:center;">
@@ -6985,6 +7148,108 @@
     setTimeout(checkJokerReminder, 2000);
     setTimeout(checkDONReminder, 3000);
     setTimeout(checkDeadlineReminders, 4000);
+  }
+
+  // ========== HOW TO PLAY — TABS + TUTORIAL ==========
+  window.setDummiesTab = (tab) => {
+    ['guide','tutorial'].forEach(t => {
+      const el = document.getElementById(`dummies-${t}`);
+      const btn = document.getElementById(`dtab-${t}`);
+      if (el) el.style.display = t === tab ? 'block' : 'none';
+      if (btn) {
+        btn.style.borderBottomColor = t === tab ? 'var(--green)' : 'transparent';
+        btn.style.color = t === tab ? 'var(--text)' : 'var(--text-muted)';
+      }
+    });
+    if (tab === 'tutorial') updateTutorial();
+  };
+
+  window.updateTutorial = () => {
+    const home = parseInt(document.getElementById('tut-home')?.value) || 0;
+    const away = parseInt(document.getElementById('tut-away')?.value) || 0;
+    const scorer = document.getElementById('tut-scorer')?.value || '';
+    const breakdown = document.getElementById('tut-breakdown');
+    const total = document.getElementById('tut-total');
+    if (!breakdown || !total) return;
+
+    let pts = 0;
+    const lines = [];
+
+    // Correct result (we assume they predicted correctly for the tutorial)
+    lines.push('✅ Correct result → <strong>+1 pt</strong>');
+    pts += 1;
+
+    // Exact score check simulation
+    if (home !== away) {
+      lines.push('🎯 Exact score → <strong>+3 pts</strong> (if your score is right)');
+      pts += 3;
+    } else {
+      lines.push('🎯 Exact score → <strong>+3 pts</strong> (if draw & correct goals)');
+      pts += 3;
+    }
+
+    // First scorer
+    if (scorer) {
+      lines.push(`⚽ First scorer (${scorer}) → <strong>+2 pts</strong> (if they score first)`);
+      pts += 2;
+    }
+
+    breakdown.innerHTML = lines.join('<br>');
+    total.textContent = `+${pts} pts`;
+  };
+
+  // Init tutorial on first render
+  setTimeout(() => updateTutorial(), 300);
+
+  // ========== WEEKLY DIGEST ==========
+  async function sendWeeklyDigest() {
+    if (!currentUser) return;
+    const weekKey = getWeekKey();
+    const lastDigest = localStorage.getItem('lastDigestWeek');
+    if (lastDigest === weekKey) return;
+    if (new Date().getDay() !== 1) return; // Mondays only
+
+    const [predsSnap, matchesSnap, usersSnap] = await Promise.all([
+      getDocs(query(collection(db, 'predictions'), where('userId', '==', currentUser.uid))),
+      getDocs(collection(db, 'matches')),
+      getDocs(collection(db, 'users'))
+    ]);
+
+    const allUsers = [];
+    usersSnap.forEach(d => allUsers.push({ uid: d.id, ...d.data() }));
+    allUsers.sort((a, b) => (b.points||0) - (a.points||0));
+    const myRank = allUsers.findIndex(u => u.uid === currentUser.uid) + 1;
+    const me = allUsers.find(u => u.uid === currentUser.uid);
+    const matches = {};
+    matchesSnap.forEach(d => { matches[d.id] = d.data(); });
+
+    const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - 7);
+    let weekCorrect = 0, weekPreds = 0;
+    predsSnap.forEach(d => {
+      const p = d.data(); const m = matches[p.matchId];
+      if (!m || m.status !== 'FINISHED') return;
+      const kickoff = m.kickoff?.toDate?.() || new Date(m.kickoff);
+      if (kickoff < weekStart) return;
+      weekPreds++;
+      const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
+      const pred = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
+      if (actual === pred) weekCorrect++;
+    });
+
+    const above = myRank > 1 ? allUsers[myRank-2] : null;
+    const below = myRank < allUsers.length ? allUsers[myRank] : null;
+    const ptsDiff = above ? (above.points||0) - (me?.points||0) : 0;
+
+    let text = `📊 Weekly digest — Rank #${myRank} · ${me?.points||0} pts total.`;
+    if (weekPreds > 0) text += ` This week: ${weekCorrect}/${weekPreds} correct.`;
+    if (above && ptsDiff <= 5) text += ` 🔥 ${above.nickname} is only ${ptsDiff} pts ahead!`;
+    else if (below) { const bDiff = (me?.points||0) - (below.points||0); text += ` ${below.nickname} is ${bDiff} pts behind you 👀`; }
+
+    await addDoc(collection(db, 'notifications'), {
+      toUserId: currentUser.uid, type: 'system', text, seen: false, createdAt: serverTimestamp()
+    });
+    localStorage.setItem('lastDigestWeek', weekKey);
+    loadNotifications();
   }
 
   // ========== PREVENT ALL ZOOM ==========
