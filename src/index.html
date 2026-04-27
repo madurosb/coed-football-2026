@@ -20,6 +20,12 @@
     :root {
       --green: #1D9E75; --green-dark: #085041; --green-light: #E1F5EE;
       --gold: #EF9F27; --gold-light: #FAEEDA;
+      /* Semantic badge/alert colors */
+      --badge-green-bg: #E1F5EE; --badge-green-text: #085041;
+      --badge-gold-bg: #FAEEDA;  --badge-gold-text: #633806;
+      --badge-red-bg: #FCEBEB;   --badge-red-text: #791F1F;
+      --badge-blue-bg: #E6F1FB;  --badge-blue-text: #0C447C;
+      --badge-orange-bg: #FFF0E0; --badge-orange-text: #92400E;
       --bg: #f5f5f3; --surface: #ffffff; --surface2: #f5f5f3;
       --text: #1a1a1a; --text-muted: #6b6b6b;
       --border: rgba(0,0,0,0.1);
@@ -79,14 +85,14 @@
     .lb-row:hover { background: var(--surface2); }
     .lb-row.header { background: var(--surface2); font-size: 11px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
     .lb-rank { font-size: 14px; font-weight: 500; color: var(--text-muted); text-align: center; }
-    .lb-rank.gold { color: #BA7517; } .lb-rank.silver { color: #888780; } .lb-rank.bronze { color: #854F0B; }
+    .lb-rank.gold { color:var(--badge-gold-text); } .lb-rank.silver { color: #888780; } .lb-rank.bronze { color: #854F0B; }
     .lb-user { display: flex; align-items: center; gap: 10px; }
     .lb-user .name { font-size: 14px; font-weight: 500; }
     .lb-user .handle { font-size: 12px; color: var(--text-muted); }
     .lb-pts { text-align: center; font-size: 14px; font-weight: 500; }
     .lb-pts.muted { font-size: 13px; color: var(--text-muted); font-weight: 400; }
-    .badge-sniper { background: #E1F5EE; color: #085041; font-size: 10px; padding: 2px 6px; border-radius: 99px; font-weight: 500; }
-    .badge-mvp { background: #FAEEDA; color: #633806; font-size: 10px; padding: 2px 6px; border-radius: 99px; font-weight: 500; }
+    .badge-sniper { background:var(--badge-green-bg); color:var(--badge-green-text); font-size: 10px; padding: 2px 6px; border-radius: 99px; font-weight: 500; }
+    .badge-mvp { background:var(--badge-gold-bg); color:var(--badge-gold-text); font-size: 10px; padding: 2px 6px; border-radius: 99px; font-weight: 500; }
 
     /* MATCHES */
     .matches { display: flex; flex-direction: column; gap: 12px; margin-bottom: 1.5rem; }
@@ -154,8 +160,8 @@
     .user-row { display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 0; border-bottom: 0.5px solid var(--border); }
     .user-row:last-child { border-bottom: none; }
     .status-badge { font-size: 11px; padding: 2px 8px; border-radius: 99px; font-weight: 500; }
-    .status-active { background: #E1F5EE; color: #085041; }
-    .status-pending { background: #FAEEDA; color: #633806; }
+    .status-active { background:var(--badge-green-bg); color:var(--badge-green-text); }
+    .status-pending { background:var(--badge-gold-bg); color:var(--badge-gold-text); }
     .player-list { display: flex; flex-direction: column; gap: 6px; }
     .player-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 0.5px solid var(--border); }
     .player-row:last-child { border-bottom: none; }
@@ -287,50 +293,10 @@
       #page-dummies [style*="display:flex;gap:14px"] { gap: 10px; }
     }
 
-    /* ── DARK MODE OVERRIDES for hardcoded light colors ── */
-    body.dark-mode [style*="background:#E1F5EE"],
-    body.dark-mode [style*="background: #E1F5EE"] { background: #0d2e1f !important; color: #4ade80 !important; }
-    body.dark-mode [style*="background:#FAEEDA"],
-    body.dark-mode [style*="background: #FAEEDA"] { background: #2a1f0a !important; color: #fcd34d !important; }
-    body.dark-mode [style*="background:#FCEBEB"],
-    body.dark-mode [style*="background: #FCEBEB"] { background: #2a0d0d !important; color: #fca5a5 !important; }
-    body.dark-mode [style*="background:#E6F1FB"],
-    body.dark-mode [style*="background: #E6F1FB"] { background: #0d1f2e !important; color: #93c5fd !important; }
-    body.dark-mode [style*="background:#FFF0E0"],
-    body.dark-mode [style*="background: #FFF0E0"] { background: #2a1a0a !important; color: #fdba74 !important; }
-    body.dark-mode [style*="background:#f8f8f8"],
-    body.dark-mode [style*="background: #f8f8f8"] { background: var(--surface2) !important; }
-    body.dark-mode [style*="color:#633806"],
-    body.dark-mode [style*="color: #633806"] { color: #fcd34d !important; }
-    body.dark-mode [style*="color:#085041"],
-    body.dark-mode [style*="color: #085041"] { color: #4ade80 !important; }
-    body.dark-mode [style*="color:#791F1F"],
-    body.dark-mode [style*="color: #791F1F"] { color: #fca5a5 !important; }
-    body.dark-mode [style*="color:#0C447C"],
-    body.dark-mode [style*="color: #0C447C"] { color: #93c5fd !important; }
-    body.dark-mode [style*="color:#B45309"],
-    body.dark-mode [style*="color: #B45309"] { color: #fdba74 !important; }
-    body.dark-mode [style*="color:#92400E"],
-    body.dark-mode [style*="color: #92400E"] { color: #fdba74 !important; }
-    body.dark-mode [style*="color:#7C3AED"],
-    body.dark-mode [style*="color: #7C3AED"] { color: #c4b5fd !important; }
-    body.dark-mode [style*="color:#1a1a1a"],
-    body.dark-mode [style*="color: #1a1a1a"] { color: var(--text) !important; }
-    body.dark-mode [style*="color:#333"],
-    body.dark-mode [style*="color: #333"] { color: var(--text-muted) !important; }
-    /* Login card in dark mode */
-    body.dark-mode .login-screen { background: #0d0d0d !important; }
-    /* Select dropdowns */
+    /* Select dropdowns dark mode */
     body.dark-mode select { background: #1e1e1e !important; color: var(--text) !important; border-color: var(--border) !important; }
-    /* Input fields */
-    body.dark-mode input[type="text"],
-    body.dark-mode input[type="number"],
-    body.dark-mode textarea { background: #1e1e1e !important; color: var(--text) !important; }
-    /* Score inputs in match cards */
+    body.dark-mode input[type="text"], body.dark-mode input[type="number"], body.dark-mode textarea { background: #1e1e1e !important; color: var(--text) !important; }
     body.dark-mode .score-input { background: #1e1e1e !important; color: var(--text) !important; border-color: var(--border) !important; }
-    /* Tutorial mock match card */
-    body.dark-mode #dummies-tutorial select,
-    body.dark-mode #dummies-tutorial input { background: #1e1e1e !important; color: var(--text) !important; }
     .bottom-nav {
       display: none;
       position: fixed;
@@ -589,7 +555,7 @@
     <div style="font-size:52px;margin-bottom:0.5rem;">🐂</div>
     <h2 style="margin-bottom:0.5rem;">Big Balls Prediction!</h2>
     <p style="font-size:13px;color:var(--text-muted);margin-bottom:0.75rem;line-height:1.6;">You just earned the legendary 🐂 badge!</p>
-    <div style="background:#FFF0E0;border-radius:10px;padding:10px 14px;margin-bottom:1.25rem;font-size:13px;color:#92400E;" id="bold-popup-reason"></div>
+    <div style="background:var(--badge-orange-bg);border-radius:10px;padding:10px 14px;margin-bottom:1.25rem;font-size:13px;color:var(--badge-orange-text);" id="bold-popup-reason"></div>
     <p style="font-size:12px;color:var(--text-muted);margin-bottom:1.25rem;">This badge appears next to your name in the leaderboard. Wear it with pride 🏆</p>
     <button onclick="closeBoldPopup()" style="width:100%;padding:10px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">Hell yeah! 🐂</button>
   </div>
@@ -639,7 +605,7 @@
 <!-- MAIN APP -->
 <div id="view-app" style="display:none;">
   <nav class="nav">
-    <a class="nav-logo" onclick="showPage('home')"><img src="https://coed-football-2026.vercel.app/logo-icon.png" alt="logo" style="height:32px; width:32px; object-fit:contain;"> <span>COED&FOOTBALL</span> <span class="nav-wc-text" style="font-size:11px;font-weight:600;color:#BA7517;letter-spacing:0.04em;">🏆 WORLD CUP</span> <span class="badge">2026</span></a>
+    <a class="nav-logo" onclick="showPage('home')"><img src="https://coed-football-2026.vercel.app/logo-icon.png" alt="logo" style="height:32px; width:32px; object-fit:contain;"> <span>COED&FOOTBALL</span> <span class="nav-wc-text" style="font-size:11px;font-weight:600;color:var(--badge-gold-text);letter-spacing:0.04em;">🏆 WORLD CUP</span> <span class="badge">2026</span></a>
     <div class="nav-links">
       <button class="nav-btn" data-page="home" onclick="showPage('home')">Home</button>
       <button class="nav-btn" data-page="matches" onclick="showPage('matches')">Matches</button>
@@ -1623,17 +1589,17 @@
           <div>Round of 16 <span style="color:var(--green);font-weight:500;">×2</span></div>
           <div>Quarter-finals <span style="color:var(--green);font-weight:500;">×3</span></div>
           <div>Semi-finals <span style="color:var(--green);font-weight:500;">×4</span></div>
-          <div>Final <span style="color:#BA7517;font-weight:500;">exact=20pts · result=10pts</span></div>
+          <div>Final <span style="color:var(--badge-gold-text);font-weight:500;">exact=20pts · result=10pts</span></div>
         </div>
       </div>
 
       <div style="background:linear-gradient(135deg,#FAEEDA,#FDE8B3);border-radius:10px;padding:0.75rem 1rem;margin-top:0.75rem;border:1px solid #BA7517;">
-        <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:#633806;">🃏 Joker card — once per tournament</div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--badge-gold-text);">🃏 Joker card — once per tournament</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12px;color:#7C4A0A;">
           <div>✅ Correct result</div><div style="font-weight:600;">all match pts ×2</div>
           <div>❌ Wrong result</div><div style="font-weight:600;">0 pts — no penalty</div>
         </div>
-        <div style="font-size:11px;color:#92400E;margin-top:6px;">Doubles everything: result + exact score + first scorer</div>
+        <div style="font-size:11px;color:var(--badge-orange-text);margin-top:6px;">Doubles everything: result + exact score + first scorer</div>
       </div>
 
       <div style="background:linear-gradient(135deg,#F5F3FF,#EDE9FE);border-radius:10px;padding:0.75rem 1rem;margin-top:0.75rem;border:1px solid #7C3AED;">
@@ -1643,7 +1609,7 @@
           <div>❌ Wrong result</div><div style="font-weight:600;">−1 pt × stage (from total)</div>
           <div>⚽ First scorer</div><div style="font-weight:600;">always safe either way</div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;font-size:11px;color:#7C3AED;margin-top:8px;text-align:center;">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;font-size:11px;color:#a78bfa;margin-top:8px;text-align:center;">
           <div style="background:rgba(124,58,237,0.08);border-radius:6px;padding:4px;">Group<br><strong>−1</strong></div>
           <div style="background:rgba(124,58,237,0.08);border-radius:6px;padding:4px;">R16<br><strong>−2</strong></div>
           <div style="background:rgba(124,58,237,0.08);border-radius:6px;padding:4px;">QF<br><strong>−3</strong></div>
@@ -1659,7 +1625,7 @@
     </div>
     <div class="rules-card">
       <h2>Prizes</h2>
-      <div class="prize-row"><div class="prize-place"><span style="font-size:18px;">🥇</span> 1st place <span style="font-size:11px;color:var(--text-muted);font-weight:400;">*(net of 10% tournament fee)</span></div><div class="prize-amt" id="prize-1" style="color:#BA7517;">TBD</div></div>
+      <div class="prize-row"><div class="prize-place"><span style="font-size:18px;">🥇</span> 1st place <span style="font-size:11px;color:var(--text-muted);font-weight:400;">*(net of 10% tournament fee)</span></div><div class="prize-amt" id="prize-1" style="color:var(--badge-gold-text);">TBD</div></div>
       <div class="prize-row"><div class="prize-place"><span style="font-size:18px;">🥈</span> 2nd place</div><div class="prize-amt" id="prize-2" style="color:#888780;">TBD</div></div>
       <div class="prize-row"><div class="prize-place"><span style="font-size:18px;">🥉</span> 3rd place</div><div class="prize-amt" id="prize-3" style="color:#854F0B;">TBD</div></div>
       <div class="prize-row"><div class="prize-place"><span style="font-size:16px;">🎯</span> The Sniper</div><div class="prize-amt" id="prize-sniper">TBD</div></div>
@@ -1860,7 +1826,7 @@
             <div style="font-size:12px;font-weight:500;text-align:center;flex:1;">France 🇫🇷</div>
           </div>
         </div>
-        <div style="margin-top:8px;font-size:12px;background:#E1F5EE;border-radius:8px;padding:8px 10px;color:#085041;">
+        <div style="margin-top:8px;font-size:12px;background:var(--badge-green-bg);border-radius:8px;padding:8px 10px;color:var(--badge-green-text);">
           ⏰ <strong>Deadline:</strong> 24 hours before kickoff. After that, predictions are locked!
         </div>
       </div>
@@ -1908,9 +1874,9 @@
               <div style="font-size:10px;color:var(--text-muted);">Norway · 6 goals expected</div>
             </div>
             <div style="display:flex;gap:8px;font-size:11px;">
-              <span style="background:#E1F5EE;color:#085041;padding:2px 6px;border-radius:99px;">⚽ +2pts</span>
-              <span style="background:#E6F1FB;color:#0C447C;padding:2px 6px;border-radius:99px;">🎯 +1pt</span>
-              <span style="background:#FCEBEB;color:#791F1F;padding:2px 6px;border-radius:99px;">🟥 -1pt</span>
+              <span style="background:var(--badge-green-bg);color:var(--badge-green-text);padding:2px 6px;border-radius:99px;">⚽ +2pts</span>
+              <span style="background:var(--badge-blue-bg);color:var(--badge-blue-text);padding:2px 6px;border-radius:99px;">🎯 +1pt</span>
+              <span style="background:var(--badge-red-bg);color:var(--badge-red-text);padding:2px 6px;border-radius:99px;">🟥 -1pt</span>
             </div>
           </div>
         </div>
@@ -1931,7 +1897,7 @@
         <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">One prediction for the whole tournament - which team wins it all? Get it right = <strong>+15 bonus points!</strong> Lock it in before June 10.</div>
         <div style="margin-top:10px;background:var(--surface2);border-radius:10px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;">
           <div style="font-size:13px;font-weight:500;">🇦🇷 Argentina</div>
-          <div style="background:#7C3AED;color:white;font-size:11px;padding:3px 10px;border-radius:99px;font-weight:500;">+15 pts if correct</div>
+          <div style="background:#7c3aed;color:white;font-size:11px;padding:3px 10px;border-radius:99px;font-weight:500;">+15 pts if correct</div>
         </div>
       </div>
     </div>
@@ -1949,7 +1915,7 @@
         <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Special game features 🎮</div>
         <div style="display:flex;flex-direction:column;gap:8px;">
           <div style="background:linear-gradient(135deg,#FAEEDA,#FDE8B3);border-radius:10px;padding:10px 12px;border:1px solid #BA7517;">
-            <div style="font-size:13px;font-weight:600;margin-bottom:2px;color:#633806;">🃏 Joker Card</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:2px;color:var(--badge-gold-text);">🃏 Joker Card</div>
             <div style="font-size:12px;color:#7C4A0A;">Once per tournament - tap the JOKER button on any match before the deadline. If your prediction is correct, all points for that match are doubled. You only get one!</div>
           </div>
           <div style="background:linear-gradient(135deg,#F5F3FF,#EDE9FE);border-radius:10px;padding:10px 12px;border:1px solid #7C3AED;">
@@ -1987,9 +1953,9 @@
         <div style="background:var(--surface2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>✅ Correct result</span><strong style="color:var(--green);">+1 pt</strong></div>
         <div style="background:var(--surface2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>🎯 Exact score</span><strong style="color:var(--green);">+3 pts</strong></div>
         <div style="background:var(--surface2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>⚽ 1st scorer</span><strong style="color:var(--green);">+2 pts</strong></div>
-        <div style="background:var(--surface2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>🔥 Round of 16</span><strong style="color:#BA7517;">×2 pts</strong></div>
-        <div style="background:var(--surface2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>🔥 Quarter-final</span><strong style="color:#BA7517;">×3 pts</strong></div>
-        <div style="background:var(--surface2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>🔥 Semi-final</span><strong style="color:#BA7517;">×4 pts</strong></div>
+        <div style="background:var(--surface2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>🔥 Round of 16</span><strong style="color:var(--badge-gold-text);">×2 pts</strong></div>
+        <div style="background:var(--surface2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>🔥 Quarter-final</span><strong style="color:var(--badge-gold-text);">×3 pts</strong></div>
+        <div style="background:var(--surface2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>🔥 Semi-final</span><strong style="color:var(--badge-gold-text);">×4 pts</strong></div>
         <div style="background:var(--surface2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;grid-column:span 2;"><span>🏆 Final - exact</span><strong style="color:#E24B4A;">20 pts</strong></div>
       </div>
     </div>
@@ -2090,19 +2056,19 @@
       </div>
       <div style="display:flex;flex-direction:column;gap:10px;">
         <div style="display:flex;gap:12px;align-items:flex-start;">
-          <div style="width:28px;height:28px;border-radius:50%;background:#E1F5EE;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#085041;flex-shrink:0;">1</div>
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--badge-green-bg);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--badge-green-text);flex-shrink:0;">1</div>
           <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Open <strong style="color:var(--text);">coedworldcup.me</strong> in <strong style="color:var(--text);">Safari</strong> (not Chrome!)</div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;">
-          <div style="width:28px;height:28px;border-radius:50%;background:#E1F5EE;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#085041;flex-shrink:0;">2</div>
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--badge-green-bg);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--badge-green-text);flex-shrink:0;">2</div>
           <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Tap the <strong style="color:var(--text);">Share button ⬆️</strong> at the bottom of the screen</div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;">
-          <div style="width:28px;height:28px;border-radius:50%;background:#E1F5EE;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#085041;flex-shrink:0;">3</div>
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--badge-green-bg);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--badge-green-text);flex-shrink:0;">3</div>
           <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Scroll down and tap <strong style="color:var(--text);">"Add to Home Screen"</strong> 📱</div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;">
-          <div style="width:28px;height:28px;border-radius:50%;background:#E1F5EE;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#085041;flex-shrink:0;">4</div>
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--badge-green-bg);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--badge-green-text);flex-shrink:0;">4</div>
           <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Tap <strong style="color:var(--text);">Add</strong> — done! The COED⚽ icon will appear on your home screen.</div>
         </div>
       </div>
@@ -2119,19 +2085,19 @@
       </div>
       <div style="display:flex;flex-direction:column;gap:10px;">
         <div style="display:flex;gap:12px;align-items:flex-start;">
-          <div style="width:28px;height:28px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#0C447C;flex-shrink:0;">1</div>
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--badge-blue-bg);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--badge-blue-text);flex-shrink:0;">1</div>
           <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Open <strong style="color:var(--text);">coedworldcup.me</strong> in <strong style="color:var(--text);">Chrome</strong></div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;">
-          <div style="width:28px;height:28px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#0C447C;flex-shrink:0;">2</div>
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--badge-blue-bg);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--badge-blue-text);flex-shrink:0;">2</div>
           <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">A banner will appear at the bottom: <strong style="color:var(--text);">"Add to Home Screen"</strong> — tap it</div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;">
-          <div style="width:28px;height:28px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#0C447C;flex-shrink:0;">3</div>
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--badge-blue-bg);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--badge-blue-text);flex-shrink:0;">3</div>
           <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">If no banner: tap the <strong style="color:var(--text);">⋮ menu</strong> → <strong style="color:var(--text);">"Add to Home Screen"</strong></div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;">
-          <div style="width:28px;height:28px;border-radius:50%;background:#E6F1FB;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#0C447C;flex-shrink:0;">4</div>
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--badge-blue-bg);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--badge-blue-text);flex-shrink:0;">4</div>
           <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Tap <strong style="color:var(--text);">Install</strong> — the app icon will appear on your home screen ✅</div>
         </div>
       </div>
@@ -2577,9 +2543,9 @@
 
     let html = '';
     if (noPlayer.length === 0 && noWinner.length === 0) {
-      html += `<div style="background:#E1F5EE;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#085041;">✅ All ${users.length} user(s) have submitted both picks!</div>`;
+      html += `<div style="background:var(--badge-green-bg);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:var(--badge-green-text);">✅ All ${users.length} user(s) have submitted both picks!</div>`;
     } else {
-      html += `<div style="background:#FCEBEB;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#791F1F;">
+      html += `<div style="background:var(--badge-red-bg);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:var(--badge-red-text);">
         ⚠️ ${noPlayer.length} missing tournament player · ${noWinner.length} missing WC winner (${users.length} total users)
       </div>`;
     }
@@ -2590,7 +2556,7 @@
         <div>Player</div><div>⭐ Tournament</div><div>🏆 WC Winner</div>
       </div>
       ${users.map(u => `
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;padding:8px 10px;border-top:0.5px solid var(--border);font-size:12px;align-items:center;${!u.tournamentPlayer || !u.tournamentWinner ? 'background:#FCEBEB33;' : ''}">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;padding:8px 10px;border-top:0.5px solid var(--border);font-size:12px;align-items:center;${!u.tournamentPlayer || !u.tournamentWinner ? 'background:var(--badge-red-bg);opacity:0.7;' : ''}">
           <div style="font-weight:500;">${u.nickname || u.displayName || u.uid.substring(0,8)}${u.isAdmin ? ' 👑' : ''}</div>
           <div style="color:${u.tournamentPlayer ? 'var(--green)' : '#E24B4A'};">${u.tournamentPlayer || '❌ Missing'}</div>
           <div style="color:${u.tournamentWinner ? 'var(--text-muted)' : '#E24B4A'};">${u.tournamentWinner || '❌ Missing'}</div>
@@ -2682,9 +2648,9 @@
     html += `</div>`;
 
     if (!anyMismatch) {
-      html += `<div style="background:#E1F5EE;border-radius:8px;padding:10px 12px;margin-top:10px;font-size:13px;color:#085041;font-weight:500;">✅ All scores look correct!</div>`;
+      html += `<div style="background:var(--badge-green-bg);border-radius:8px;padding:10px 12px;margin-top:10px;font-size:13px;color:var(--badge-green-text);font-weight:500;">✅ All scores look correct!</div>`;
     } else {
-      html += `<div style="background:#FCEBEB;border-radius:8px;padding:10px 12px;margin-top:10px;font-size:13px;color:#791F1F;">⚠️ Mismatches found. These may be due to Joker/Double or Nothing bonuses — check manually.</div>`;
+      html += `<div style="background:var(--badge-red-bg);border-radius:8px;padding:10px 12px;margin-top:10px;font-size:13px;color:var(--badge-red-text);">⚠️ Mismatches found. These may be due to Joker/Double or Nothing bonuses — check manually.</div>`;
     }
 
     container.innerHTML = html;
@@ -3780,7 +3746,7 @@
     };
 
     container.innerHTML = `
-      ${isPast ? `<div style="background:#E1F5EE;border-radius:10px;padding:10px 14px;margin-bottom:1rem;font-size:13px;color:#085041;">
+      ${isPast ? `<div style="background:var(--badge-green-bg);border-radius:10px;padding:10px 14px;margin-bottom:1rem;font-size:13px;color:var(--badge-green-text);">
         🔒 Voting closed! Results ${tournamentDone ? 'are in 👇' : 'will be revealed when the tournament ends.'}</div>` : ''}
 
       <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
@@ -4388,8 +4354,8 @@
         ? `<span style="font-size:10px;padding:1px 6px;border-radius:99px;background:${badge.bg};color:${badge.color};font-weight:500;margin-left:4px;">${badge.emoji} ${badge.text}</span>`
         : '';
       const streak = u.currentStreak || 0;
-      const streakHTML = streak >= 3 ? `<span style="font-size:10px;padding:1px 6px;border-radius:99px;background:#FFF0E0;color:#B45309;font-weight:500;margin-left:4px;">🔥 ${streak}</span>` : '';
-      const jokerHTML = u.jokerMatchId ? `<span style="font-size:10px;padding:1px 6px;border-radius:99px;background:#FAEEDA;color:#633806;font-weight:500;margin-left:4px;">🃏</span>` : '';
+      const streakHTML = streak >= 3 ? `<span style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--badge-orange-bg);color:var(--badge-orange-text);font-weight:500;margin-left:4px;">🔥 ${streak}</span>` : '';
+      const jokerHTML = u.jokerMatchId ? `<span style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--badge-gold-bg);color:var(--badge-gold-text);font-weight:500;margin-left:4px;">🃏</span>` : '';
       const nameHTML = u.isAdmin
         ? `${u.nickname||u.displayName} <span style="font-size:10px;background:#00ff41;color:#000;padding:1px 5px;border-radius:99px;font-weight:700;">ADMIN</span>`
         : `${u.nickname||u.displayName}${badgeHTML}${streakHTML}${jokerHTML}`;
@@ -4648,7 +4614,7 @@
                     <div style="font-size:13px;font-weight:500;">${name}</div>
                     <div style="font-size:10px;color:var(--text-muted);">Picked by: ${pickers.join(', ') || '—'}</div>
                   </div>
-                  <div style="text-align:center;font-size:15px;font-weight:700;color:#BA7517;">${pts}</div>
+                  <div style="text-align:center;font-size:15px;font-weight:700;color:var(--badge-gold-text);">${pts}</div>
                 </div>`;
               }).join('')}
             </div>`;
@@ -4909,7 +4875,7 @@
             <div style="display:flex;gap:8px;align-items:center;margin-top:0.75rem;">
               <button class="save-btn" style="flex:1;" onclick="savePrediction('${d.id}', '${m.homeTeam}', '${m.awayTeam}')">Save prediction</button>
               <button id="joker-btn-${d.id}" onclick="activateJoker('${d.id}')" title="Use your Joker - double your points if correct!"
-                style="padding:6px 10px;border-radius:10px;border:1.5px solid #BA7517;background:linear-gradient(135deg,#FAEEDA,#FDE8B3);color:#633806;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:52px;box-shadow:0 2px 6px rgba(186,117,23,0.25);"
+                style="padding:6px 10px;border-radius:10px;border:1.5px solid #BA7517;background:linear-gradient(135deg,#FAEEDA,#FDE8B3);color:var(--badge-gold-text);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:52px;box-shadow:0 2px 6px rgba(186,117,23,0.25);"
                 onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
                 <span style="font-size:20px;line-height:1.1;">🃏</span>
                 <span style="font-size:9px;letter-spacing:0.04em;">JOKER</span>
@@ -4940,7 +4906,7 @@
     if (deadlineSoonMatches.length > 0) {
       const names = deadlineSoonMatches.map(m => `${m.homeTeam} vs ${m.awayTeam}`).join(', ');
       const notif = document.createElement('div');
-      notif.style.cssText = 'background:#FAEEDA;border:0.5px solid #BA7517;border-radius:10px;padding:10px 14px;margin-bottom:1rem;font-size:13px;color:#633806;';
+      notif.style.cssText = 'background:var(--badge-gold-bg);border:0.5px solid #BA7517;border-radius:10px;padding:10px 14px;margin-bottom:1rem;font-size:13px;color:var(--badge-gold-text);';
       notif.innerHTML = `⏰ <strong>Deadline soon!</strong> Less than 6 hours left to predict: <strong>${names}</strong>`;
       container.insertBefore(notif, container.firstChild);
     }
@@ -4982,7 +4948,7 @@
         if (isExact) {
           pts += 3;
           resultLabel = '🎯 Exact score';
-          resultStyle = 'background:#E1F5EE;color:#085041;border:0.5px solid #5DCAA5;';
+          resultStyle = 'background:var(--badge-green-bg);color:var(--badge-green-text);border:0.5px solid #5DCAA5;';
         } else if (isWinner) {
           pts += 1;
           if (actualResult === 'draw') {
@@ -4991,10 +4957,10 @@
             const winnerTeam = actualResult === 'home' ? m.homeTeam : m.awayTeam;
             resultLabel = `✅ Correct winner: ${winnerTeam}`;
           }
-          resultStyle = 'background:#E6F1FB;color:#0C447C;border:0.5px solid #378ADD;';
+          resultStyle = 'background:var(--badge-blue-bg);color:var(--badge-blue-text);border:0.5px solid #378ADD;';
         } else {
           resultLabel = '❌ Wrong result';
-          resultStyle = 'background:#FCEBEB;color:#791F1F;border:0.5px solid #E24B4A;';
+          resultStyle = 'background:var(--badge-red-bg);color:var(--badge-red-text);border:0.5px solid #E24B4A;';
         }
 
         // Scorer feedback
@@ -5004,9 +4970,9 @@
           const actualScorer = resultSnap.exists() ? resultSnap.data().firstScorer : null;
           if (actualScorer && pred.firstScorer === actualScorer) {
             pts += 2;
-            scorerLabel = `<div style="font-size:12px;margin-top:4px;color:#085041;">⚽ Scorer correct: ${pred.firstScorer} +2 pts</div>`;
+            scorerLabel = `<div style="font-size:12px;margin-top:4px;color:var(--badge-green-text);">⚽ Scorer correct: ${pred.firstScorer} +2 pts</div>`;
           } else if (actualScorer) {
-            scorerLabel = `<div style="font-size:12px;margin-top:4px;color:#791F1F;">⚽ Scorer was ${actualScorer}</div>`;
+            scorerLabel = `<div style="font-size:12px;margin-top:4px;color:var(--badge-red-text);">⚽ Scorer was ${actualScorer}</div>`;
           }
         }
 
@@ -5210,11 +5176,11 @@
 
         const badges = [];
         if (isAdmin) badges.push(`<span style="font-size:10px;background:#00ff41;color:#000;padding:1px 5px;border-radius:99px;font-weight:700;">ADMIN</span>`);
-        if (preds >= 20) badges.push(`<span style="font-size:10px;background:#E6F1FB;color:#0C447C;padding:1px 5px;border-radius:99px;">📋 ${preds} predictions</span>`);
+        if (preds >= 20) badges.push(`<span style="font-size:10px;background:var(--badge-blue-bg);color:var(--badge-blue-text);padding:1px 5px;border-radius:99px;">📋 ${preds} predictions</span>`);
         else if (preds > 0) badges.push(`<span style="font-size:10px;background:var(--surface2);color:var(--text-muted);padding:1px 5px;border-radius:99px;">${preds} predictions</span>`);
-        else badges.push(`<span style="font-size:10px;background:#FCEBEB;color:#791F1F;padding:1px 5px;border-radius:99px;">😴 No predictions yet</span>`);
-        if (u.tournamentPlayer) badges.push(`<span style="font-size:10px;background:#E1F5EE;color:#085041;padding:1px 5px;border-radius:99px;">⚽ ${u.tournamentPlayer}</span>`);
-        else badges.push(`<span style="font-size:10px;background:#FAEEDA;color:#633806;padding:1px 5px;border-radius:99px;">⚠️ No tournament player</span>`);
+        else badges.push(`<span style="font-size:10px;background:var(--badge-red-bg);color:var(--badge-red-text);padding:1px 5px;border-radius:99px;">😴 No predictions yet</span>`);
+        if (u.tournamentPlayer) badges.push(`<span style="font-size:10px;background:var(--badge-green-bg);color:var(--badge-green-text);padding:1px 5px;border-radius:99px;">⚽ ${u.tournamentPlayer}</span>`);
+        else badges.push(`<span style="font-size:10px;background:var(--badge-gold-bg);color:var(--badge-gold-text);padding:1px 5px;border-radius:99px;">⚠️ No tournament player</span>`);
 
         return `<div style="display:flex;align-items:flex-start;gap:10px;padding:0.75rem 0;border-bottom:0.5px solid var(--border);">
           <div style="flex-shrink:0;margin-top:2px;">${avatarHTML}</div>
@@ -5875,7 +5841,7 @@
       : stage.includes('QUARTER') ? 6
       : stage.includes('16') || stage.includes('ROUND_OF_16') ? 4
       : 1;
-    const stageLabel = multiplier > 1 ? `<span style="font-size:11px;background:#FAEEDA;color:#BA7517;padding:2px 7px;border-radius:99px;font-weight:500;">×${multiplier} pts multiplier</span>` : '';
+    const stageLabel = multiplier > 1 ? `<span style="font-size:11px;background:var(--badge-gold-bg);color:var(--badge-gold-text);padding:2px 7px;border-radius:99px;font-weight:500;">×${multiplier} pts multiplier</span>` : '';
 
     container.innerHTML = `
       <button onclick="liveMatchId=null;loadLivePage()" style="background:none;border:none;color:var(--text-muted);font-size:13px;cursor:pointer;padding:0;margin-bottom:1rem;">← All live matches</button>
@@ -6135,7 +6101,7 @@
             <div style="font-size:11px;color:var(--text-muted);">${m.group} · ${m.date} at ${m.time}</div>
             <div style="font-size:15px;font-weight:500;margin-top:2px;">${m.home} vs ${m.away} ${m.emoji}</div>
           </div>
-          ${reached ? `<span style="font-size:11px;background:#E1F5EE;color:#085041;padding:2px 8px;border-radius:99px;font-weight:500;">✅ ${total} watching</span>`
+          ${reached ? `<span style="font-size:11px;background:var(--badge-green-bg);color:var(--badge-green-text);padding:2px 8px;border-radius:99px;font-weight:500;">✅ ${total} watching</span>`
                     : `<span style="font-size:11px;background:var(--surface2);color:var(--text-muted);padding:2px 8px;border-radius:99px;">${total > 0 ? total + ' watching' : 'No votes yet'}</span>`}
         </div>
 
@@ -6154,8 +6120,8 @@
           ${total > 0 ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px;text-align:center;">Need at least ${MIN_WATCHERS} to confirm the event</div>` : ''}
         ` : `
           <!-- MINIMUM REACHED -->
-          <div style="background:#E1F5EE;border-radius:8px;padding:10px 12px;margin-bottom:${locations.length>0?'10px':'0'};">
-            <div style="font-size:13px;font-weight:500;color:#085041;margin-bottom:2px;">🎉 Minimum reached - we're watching this one!</div>
+          <div style="background:var(--badge-green-bg);border-radius:8px;padding:10px 12px;margin-bottom:${locations.length>0?'10px':'0'};">
+            <div style="font-size:13px;font-weight:500;color:var(--badge-green-text);margin-bottom:2px;">🎉 Minimum reached - we're watching this one!</div>
             <div style="font-size:12px;color:#1D9E75;">${locations.length > 0 ? 'Now vote for the location below 👇' : 'The organiser will post a location vote soon!'}</div>
           </div>
 
@@ -6762,26 +6728,26 @@
           <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">Rank #${rank} of ${totalPlayers} players &nbsp;·&nbsp; ${user.tournamentPlayer || 'No tournament player set'}</div>
           <div style="display:flex;flex-wrap:wrap;gap:6px;">
             ${badges.map(b => `<span style="font-size:11px;padding:2px 8px;border-radius:99px;font-weight:500;background:var(--surface2);color:var(--text-muted);">${b.label}</span>`).join('')}
-            ${(user.currentStreak||0) >= 3 ? `<span style="font-size:11px;padding:2px 8px;border-radius:99px;font-weight:500;background:#FFF0E0;color:#B45309;">🔥 ${user.currentStreak} streak</span>` : ''}
-            ${user.boldPrediction ? `<span style="font-size:11px;padding:2px 8px;border-radius:99px;font-weight:500;background:#FFF0E0;color:#92400E;">🐂 Bold call</span>` : ''}
+            ${(user.currentStreak||0) >= 3 ? `<span style="font-size:11px;padding:2px 8px;border-radius:99px;font-weight:500;background:var(--badge-orange-bg);color:var(--badge-orange-text);">🔥 ${user.currentStreak} streak</span>` : ''}
+            ${user.boldPrediction ? `<span style="font-size:11px;padding:2px 8px;border-radius:99px;font-weight:500;background:var(--badge-orange-bg);color:var(--badge-orange-text);">🐂 Bold call</span>` : ''}
           </div>
         </div>
       </div>
 
       <!-- Matches remaining card -->
       ${unpredictedCount > 0 ? `
-      <div onclick="showPage('matches')" style="cursor:pointer;background:linear-gradient(135deg,#fff3e0,#ffe0b2);border:1.5px solid #fb923c;border-radius:12px;padding:12px 16px;margin-bottom:1rem;display:flex;align-items:center;gap:14px;transition:transform 0.15s;" onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform=''">
+      <div onclick="showPage('matches')" style="cursor:pointer;background:linear-gradient(135deg,#fff3e0,#ffe0b2);border:1.5px solid var(--gold);border-radius:12px;padding:12px 16px;margin-bottom:1rem;display:flex;align-items:center;gap:14px;transition:transform 0.15s;" onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform=''">
         <div style="font-size:32px;flex-shrink:0;">📋</div>
         <div style="flex:1;">
-          <div style="font-size:14px;font-weight:600;color:#c2410c;">${unpredictedCount} match${unpredictedCount>1?'es':''} without a prediction!</div>
-          <div style="font-size:12px;color:#ea580c;margin-top:2px;">Don't leave points on the table → tap to predict now</div>
+          <div style="font-size:14px;font-weight:600;color:var(--badge-orange-text);">${unpredictedCount} match${unpredictedCount>1?'es':''} without a prediction!</div>
+          <div style="font-size:12px;color:var(--badge-orange-text);margin-top:2px;">Don't leave points on the table → tap to predict now</div>
         </div>
         <div style="font-size:20px;">→</div>
       </div>` : upcomingMatches.length === 0 ? '' : `
-      <div style="background:linear-gradient(135deg,#e1f5ee,#d1fae5);border:1.5px solid #1D9E75;border-radius:12px;padding:12px 16px;margin-bottom:1rem;display:flex;align-items:center;gap:14px;">
+      <div style="background:linear-gradient(135deg,#e1f5ee,#d1fae5);border:1.5px solid var(--green);border-radius:12px;padding:12px 16px;margin-bottom:1rem;display:flex;align-items:center;gap:14px;">
         <div style="font-size:32px;flex-shrink:0;">🎉</div>
         <div style="flex:1;">
-          <div style="font-size:14px;font-weight:600;color:#085041;">All matches predicted!</div>
+          <div style="font-size:14px;font-weight:600;color:var(--badge-green-text);">All matches predicted!</div>
           <div style="font-size:12px;color:#1D9E75;margin-top:2px;">Look at you. Absolutely shameless commitment. We love it.</div>
         </div>
       </div>`}
@@ -6916,14 +6882,14 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem;">
         <div style="background:linear-gradient(135deg,#FAEEDA,#FDE8B3);border-radius:12px;padding:1rem;border:1px solid #BA7517;text-align:center;">
           <div style="font-size:24px;margin-bottom:4px;">🃏</div>
-          <div style="font-size:12px;font-weight:600;color:#633806;margin-bottom:2px;">Joker card</div>
-          <div style="font-size:13px;font-weight:700;color:#BA7517;">${user.jokerMatchId ? '🔒 Used!' : '✅ Available'}</div>
-          <div style="font-size:10px;color:#92400E;margin-top:2px;">${user.jokerMatchId ? 'Already played this tournament' : 'Once per tournament'}</div>
+          <div style="font-size:12px;font-weight:600;color:var(--badge-gold-text);margin-bottom:2px;">Joker card</div>
+          <div style="font-size:13px;font-weight:700;color:var(--badge-gold-text);">${user.jokerMatchId ? '🔒 Used!' : '✅ Available'}</div>
+          <div style="font-size:10px;color:var(--badge-orange-text);margin-top:2px;">${user.jokerMatchId ? 'Already played this tournament' : 'Once per tournament'}</div>
         </div>
         <div style="background:linear-gradient(135deg,#F5F3FF,#EDE9FE);border-radius:12px;padding:1rem;border:1px solid #7C3AED;text-align:center;">
           <div style="font-size:24px;margin-bottom:4px;">🎰</div>
           <div style="font-size:12px;font-weight:600;color:#5B21B6;margin-bottom:2px;">Double or Nothing</div>
-          <div style="font-size:13px;font-weight:700;color:#7C3AED;">Once/week</div>
+          <div style="font-size:13px;font-weight:700;color:#a78bfa;">Once/week</div>
           <div style="font-size:10px;color:#6D28D9;margin-top:2px;">x2 if correct · result pts deducted if wrong</div>
         </div>
         <div style="background:${(user.currentStreak||0)>=3?'linear-gradient(135deg,#FFF0E0,#FEE2C0)':'var(--surface2)'};border-radius:12px;padding:1rem;border:1px solid ${(user.currentStreak||0)>=3?'#F59E0B':'var(--border)'};text-align:center;">
