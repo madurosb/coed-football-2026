@@ -3138,6 +3138,7 @@
     document.getElementById('user-handle').textContent = '@' + (currentUserData.nickname || currentUserData.displayName);
     const avatarEl = document.getElementById('user-avatar');
     const isAdmin = currentUserData.isAdmin || currentUser.email === ADMIN_EMAIL;
+    window._isAdmin = isAdmin;
     if (isAdmin) {
       avatarEl.innerHTML = `<img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #00ff41;">`;
       avatarEl.style.background = 'none';
@@ -3606,7 +3607,7 @@
               onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">😊</button>
           </div>
           ${reactionBubbles ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:5px;${isMe?'justify-content:flex-end;':''}">${reactionBubbles}</div>` : ''}
-          ${isMe ? `<div style="text-align:right;margin-top:2px;"><button onclick="deleteTrashMsg('${m.id}')" style="background:none;border:none;font-size:10px;color:var(--text-muted);cursor:pointer;padding:0;opacity:0.6;">delete</button></div>` : ''}
+          ${(isMe || window._isAdmin) ? `<div style="text-align:${isMe?'right':'left'};margin-top:2px;"><button onclick="deleteTrashMsg('${m.id}')" style="background:none;border:none;font-size:10px;color:var(--text-muted);cursor:pointer;padding:0;opacity:0.6;">🗑️ delete</button></div>` : ''}
         </div>
       </div>`;
     }).join('');
