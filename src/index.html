@@ -2387,7 +2387,7 @@
 
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
-  import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
   import { getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, updateDoc, deleteDoc, query, orderBy, where, limit, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 
   window.resetTrashTalk = async (days) => {
@@ -3284,6 +3284,26 @@
 
   const provider = new GoogleAuthProvider();
 
+  // Handle redirect result (Safari uses redirect instead of popup)
+  getRedirectResult(auth).then(result => {
+    if (result?.user) console.log('✅ Redirect sign-in success');
+  }).catch(e => console.log('Redirect result error:', e.code));
+
+  // Safety net — if splash stays more than 8s, force show login
+  setTimeout(() => {
+    const splash = document.getElementById('splash-screen');
+    if (splash && splash.style.display !== 'none' && !splash.style.opacity) {
+      splash.style.transition = 'opacity 0.5s';
+      splash.style.opacity = '0';
+      setTimeout(() => { if(splash) splash.remove(); }, 500);
+      // Show login if not already showing app
+      if (document.getElementById('view-app').style.display === 'none' &&
+          document.getElementById('view-login').style.display === 'none') {
+        document.getElementById('view-login').style.display = 'flex';
+      }
+    }
+  }, 8000);
+
   // EmailJS init
   window.EMAILJS_INIT = false;
   try {
@@ -3410,8 +3430,15 @@
   // SIGN IN
   window.signInWithGoogle = async () => {
     try {
-      await signInWithPopup(auth, provider);
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      if (isSafari) {
+        // Safari blocks popups — use redirect instead
+        await signInWithRedirect(auth, provider);
+      } else {
+        await signInWithPopup(auth, provider);
+      }
     } catch (e) {
+      console.error('Sign in error:', e);
       alert('Sign in failed. Please try again.');
     }
   };
@@ -7382,11 +7409,19 @@
   // ========== PWA — Service Worker + Install ==========
   let pwaInstallPrompt = null;
 
+  // Unregister old service workers and register new one
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js')
-        .then(() => console.log('✅ SW registered'))
-        .catch(err => console.log('SW error:', err));
+    window.addEventListener('load', async () => {
+      try {
+        // First unregister ALL existing service workers to fix stale cache
+        const regs = await navigator.serviceWorker.getRegistrations();
+        for (const reg of regs) await reg.unregister();
+        // Then register fresh
+        await navigator.serviceWorker.register('/sw.js');
+        console.log('✅ SW registered fresh');
+      } catch(err) {
+        console.log('SW error:', err);
+      }
     });
   }
 
