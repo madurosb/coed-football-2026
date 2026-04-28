@@ -1593,7 +1593,7 @@
         </div>
       </div>
 
-      <div style="background:linear-gradient(135deg,#FAEEDA,#FDE8B3);border-radius:10px;padding:0.75rem 1rem;margin-top:0.75rem;border:1px solid #BA7517;">
+      <div style="background:linear-gradient(135deg,var(--badge-gold-bg),var(--badge-gold-bg));border-radius:10px;padding:0.75rem 1rem;margin-top:0.75rem;border:1px solid #BA7517;">
         <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--badge-gold-text);">🃏 Joker card — once per tournament</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12px;color:#7C4A0A;">
           <div>✅ Correct result</div><div style="font-weight:600;">all match pts ×2</div>
@@ -1602,7 +1602,7 @@
         <div style="font-size:11px;color:var(--badge-orange-text);margin-top:6px;">Doubles everything: result + exact score + first scorer</div>
       </div>
 
-      <div style="background:linear-gradient(135deg,#F5F3FF,#EDE9FE);border-radius:10px;padding:0.75rem 1rem;margin-top:0.75rem;border:1px solid #7C3AED;">
+      <div style="background:linear-gradient(135deg,var(--badge-blue-bg),var(--badge-blue-bg));border-radius:10px;padding:0.75rem 1rem;margin-top:0.75rem;border:1px solid #7C3AED;">
         <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:#5B21B6;">🎰 Double or Nothing — once per week</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12px;color:#6D28D9;">
           <div>✅ Correct result</div><div style="font-weight:600;">result + exact pts ×2</div>
@@ -1914,11 +1914,11 @@
       <div style="flex:1;">
         <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Special game features 🎮</div>
         <div style="display:flex;flex-direction:column;gap:8px;">
-          <div style="background:linear-gradient(135deg,#FAEEDA,#FDE8B3);border-radius:10px;padding:10px 12px;border:1px solid #BA7517;">
+          <div style="background:linear-gradient(135deg,var(--badge-gold-bg),var(--badge-gold-bg));border-radius:10px;padding:10px 12px;border:1px solid #BA7517;">
             <div style="font-size:13px;font-weight:600;margin-bottom:2px;color:var(--badge-gold-text);">🃏 Joker Card</div>
             <div style="font-size:12px;color:#7C4A0A;">Once per tournament - tap the JOKER button on any match before the deadline. If your prediction is correct, all points for that match are doubled. You only get one!</div>
           </div>
-          <div style="background:linear-gradient(135deg,#F5F3FF,#EDE9FE);border-radius:10px;padding:10px 12px;border:1px solid #7C3AED;">
+          <div style="background:linear-gradient(135deg,var(--badge-blue-bg),var(--badge-blue-bg));border-radius:10px;padding:10px 12px;border:1px solid #7C3AED;">
             <div style="font-size:13px;font-weight:600;margin-bottom:2px;color:#5B21B6;">🎰 Double or Nothing</div>
             <div style="font-size:12px;color:#6D28D9;">Once per week, pick any match and go Double or Nothing. Correct = result and exact score points doubled. Wrong = those same points get deducted from your total. Your first scorer pick is always safe either way. No pressure. (Lots of pressure.)</div>
           </div>
@@ -4360,7 +4360,7 @@
         ? `${u.nickname||u.displayName} <span style="font-size:10px;background:#00ff41;color:#000;padding:1px 5px;border-radius:99px;font-weight:700;">ADMIN</span>`
         : `${u.nickname||u.displayName}${badgeHTML}${streakHTML}${jokerHTML}`;
       return `
-      <div class="lb-row" ${i === 0 && (u.points||0) > 0 ? 'style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border-left:3px solid #F59E0B;"' : ''}>
+      <div class="lb-row" ${i === 0 && (u.points||0) > 0 ? 'style="background:linear-gradient(135deg,var(--badge-gold-bg),var(--badge-gold-bg));border-left:3px solid #F59E0B;"' : ''}>
         <div class="lb-rank ${medals[i] || ''}">${i + 1}</div>
         <div class="lb-user">
           ${avatarHTML}
@@ -4875,7 +4875,7 @@
             <div style="display:flex;gap:8px;align-items:center;margin-top:0.75rem;">
               <button class="save-btn" style="flex:1;" onclick="savePrediction('${d.id}', '${m.homeTeam}', '${m.awayTeam}')">Save prediction</button>
               <button id="joker-btn-${d.id}" onclick="activateJoker('${d.id}')" title="Use your Joker - double your points if correct!"
-                style="padding:6px 10px;border-radius:10px;border:1.5px solid #BA7517;background:linear-gradient(135deg,#FAEEDA,#FDE8B3);color:var(--badge-gold-text);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:52px;box-shadow:0 2px 6px rgba(186,117,23,0.25);"
+                style="padding:6px 10px;border-radius:10px;border:1.5px solid #BA7517;background:linear-gradient(135deg,var(--badge-gold-bg),var(--badge-gold-bg));color:var(--badge-gold-text);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:52px;box-shadow:0 2px 6px rgba(186,117,23,0.25);"
                 onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
                 <span style="font-size:20px;line-height:1.1;">🃏</span>
                 <span style="font-size:9px;letter-spacing:0.04em;">JOKER</span>
@@ -4883,7 +4883,7 @@
             </div>
             <div id="don-row-${d.id}" style="margin-top:8px;">
               <button id="don-btn-${d.id}" onclick="toggleDON('${d.id}')"
-                style="width:100%;padding:10px 14px;border-radius:12px;border:1.5px dashed #7C3AED;background:linear-gradient(135deg,#F5F3FF,#EDE9FE);color:#5B21B6;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(124,58,237,0.12);"
+                style="width:100%;padding:10px 14px;border-radius:12px;border:1.5px dashed #7C3AED;background:linear-gradient(135deg,var(--badge-blue-bg),var(--badge-blue-bg));color:#5B21B6;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(124,58,237,0.12);"
                 onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'">
                 <span style="font-size:24px;line-height:1;flex-shrink:0;">🎰</span>
                 <div style="text-align:left;">
@@ -6736,7 +6736,7 @@
 
       <!-- Matches remaining card -->
       ${unpredictedCount > 0 ? `
-      <div onclick="showPage('matches')" style="cursor:pointer;background:linear-gradient(135deg,#fff3e0,#ffe0b2);border:1.5px solid var(--gold);border-radius:12px;padding:12px 16px;margin-bottom:1rem;display:flex;align-items:center;gap:14px;transition:transform 0.15s;" onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform=''">
+      <div onclick="showPage('matches')" style="cursor:pointer;background:linear-gradient(135deg,var(--badge-orange-bg),var(--badge-orange-bg));border:1.5px solid var(--gold);border-radius:12px;padding:12px 16px;margin-bottom:1rem;display:flex;align-items:center;gap:14px;transition:transform 0.15s;" onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform=''">
         <div style="font-size:32px;flex-shrink:0;">📋</div>
         <div style="flex:1;">
           <div style="font-size:14px;font-weight:600;color:var(--badge-orange-text);">${unpredictedCount} match${unpredictedCount>1?'es':''} without a prediction!</div>
@@ -6744,7 +6744,7 @@
         </div>
         <div style="font-size:20px;">→</div>
       </div>` : upcomingMatches.length === 0 ? '' : `
-      <div style="background:linear-gradient(135deg,#e1f5ee,#d1fae5);border:1.5px solid var(--green);border-radius:12px;padding:12px 16px;margin-bottom:1rem;display:flex;align-items:center;gap:14px;">
+      <div style="background:linear-gradient(135deg,var(--badge-green-bg),var(--badge-green-bg));border:1.5px solid var(--green);border-radius:12px;padding:12px 16px;margin-bottom:1rem;display:flex;align-items:center;gap:14px;">
         <div style="font-size:32px;flex-shrink:0;">🎉</div>
         <div style="flex:1;">
           <div style="font-size:14px;font-weight:600;color:var(--badge-green-text);">All matches predicted!</div>
@@ -6880,13 +6880,13 @@
       <div style="font-size:11px;font-weight:500;letter-spacing:0.08em;color:var(--text-muted);text-transform:uppercase;margin:1.25rem 0 0.5rem;">🎮 Your game features</div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem;">
-        <div style="background:linear-gradient(135deg,#FAEEDA,#FDE8B3);border-radius:12px;padding:1rem;border:1px solid #BA7517;text-align:center;">
+        <div style="background:linear-gradient(135deg,var(--badge-gold-bg),var(--badge-gold-bg));border-radius:12px;padding:1rem;border:1px solid #BA7517;text-align:center;">
           <div style="font-size:24px;margin-bottom:4px;">🃏</div>
           <div style="font-size:12px;font-weight:600;color:var(--badge-gold-text);margin-bottom:2px;">Joker card</div>
           <div style="font-size:13px;font-weight:700;color:var(--badge-gold-text);">${user.jokerMatchId ? '🔒 Used!' : '✅ Available'}</div>
           <div style="font-size:10px;color:var(--badge-orange-text);margin-top:2px;">${user.jokerMatchId ? 'Already played this tournament' : 'Once per tournament'}</div>
         </div>
-        <div style="background:linear-gradient(135deg,#F5F3FF,#EDE9FE);border-radius:12px;padding:1rem;border:1px solid #7C3AED;text-align:center;">
+        <div style="background:linear-gradient(135deg,var(--badge-blue-bg),var(--badge-blue-bg));border-radius:12px;padding:1rem;border:1px solid #7C3AED;text-align:center;">
           <div style="font-size:24px;margin-bottom:4px;">🎰</div>
           <div style="font-size:12px;font-weight:600;color:#5B21B6;margin-bottom:2px;">Double or Nothing</div>
           <div style="font-size:13px;font-weight:700;color:#a78bfa;">Once/week</div>
