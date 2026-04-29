@@ -949,6 +949,15 @@
       <div id="fun-stats-list" style="display:flex;flex-direction:column;gap:8px;"></div>
     </div>
 
+    <!-- WORLD CUP MAP -->
+    <p class="section-title" style="margin-bottom:0.75rem;">🌍 Where the group is backing</p>
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1.5rem;">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Based on everyone's World Cup winner picks — who does the group trust?</div>
+      <div id="wc-map-content">
+        <div style="text-align:center;font-size:13px;color:var(--text-muted);padding:0.5rem;">Loading...</div>
+      </div>
+    </div>
+
     <img src="https://coed-football-2026.vercel.app/logo-full.png" alt="COED&FOOTBALL" style="width:180px; display:block; margin:2rem auto 0; opacity:0.7;">
   </div>
 
@@ -4417,6 +4426,7 @@
       loadFunStats(users);
       loadPlayerOfRound(users);
     }
+    loadWCMap(users);
   }
 
   async function loadFunStats(users) {
@@ -4460,6 +4470,65 @@
       `).join('');
       section.style.display = 'block';
     }
+  }
+
+  function loadWCMap(users) {
+    const container = document.getElementById('wc-map-content');
+    if (!container) return;
+
+    // Count winner picks
+    const picks = {};
+    users.forEach(u => { if (u.tournamentWinner) picks[u.tournamentWinner] = (picks[u.tournamentWinner] || 0) + 1; });
+    const sorted = Object.entries(picks).sort((a,b) => b[1]-a[1]);
+    const total = users.filter(u => u.tournamentWinner).length;
+
+    if (sorted.length === 0) {
+      container.innerHTML = `<div style="text-align:center;padding:1rem;font-size:13px;color:var(--text-muted);">🏆 Winner picks will appear here once everyone locks in their choice before June 10.</div>`;
+      return;
+    }
+
+    const COUNTRY_FLAGS = {
+      'Argentina':'ar','France':'fr','Brazil':'br','England':'gb-eng','Spain':'es',
+      'Portugal':'pt','Germany':'de','Netherlands':'nl','Belgium':'be','Croatia':'hr',
+      'Uruguay':'uy','Colombia':'co','USA':'us','Mexico':'mx','Morocco':'ma',
+      'Senegal':'sn','Japan':'jp','South Korea':'kr','Australia':'au','Canada':'ca',
+      'Norway':'no','Sweden':'se','Denmark':'dk','Switzerland':'ch','Austria':'at',
+      'Czechia':'cz','Turkey':'tr','Türkiye':'tr','Ukraine':'ua','Scotland':'gb-sct',
+      'Serbia':'rs','Poland':'pl','Algeria':'dz','Ecuador':'ec','Egypt':'eg',
+      'Ghana':'gh','Ivory Coast':'ci','DR Congo':'cd','Qatar':'qa','Saudi Arabia':'sa',
+      'Iran':'ir','Iraq':'iq','Uzbekistan':'uz','Jordan':'jo','Cabo Verde':'cv',
+      'Curaçao':'cw','Panama':'pa','Haiti':'ht','Paraguay':'py','Bolivia':'bo',
+      'Bolivia':'bo','New Zealand':'nz','Bosnia-Herzegovina':'ba',
+    };
+
+    const medals = ['🥇','🥈','🥉'];
+    const maxPicks = sorted[0][1];
+
+    container.innerHTML = sorted.map(([team, count], i) => {
+      const pct = Math.round(count / total * 100);
+      const barWidth = Math.round(count / maxPicks * 100);
+      const code = COUNTRY_FLAGS[team];
+      const flag = code ? `<img src="https://flagcdn.com/24x18/${code}.png" style="border-radius:2px;vertical-align:middle;margin-right:6px;">` : '';
+      const pickers = users.filter(u => u.tournamentWinner === team).map(u => u.nickname || u.displayName);
+      return `
+        <div style="margin-bottom:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:14px;">${medals[i] || ''}</span>
+              ${flag}
+              <span style="font-size:13px;font-weight:${i<3?'600':'400'};">${team}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:11px;color:var(--text-muted);">${pickers.join(', ')}</span>
+              <span style="font-size:12px;font-weight:700;color:var(--green);min-width:32px;text-align:right;">${pct}%</span>
+            </div>
+          </div>
+          <div style="height:5px;background:var(--surface2);border-radius:99px;overflow:hidden;">
+            <div style="height:100%;width:${barWidth}%;background:${i===0?'var(--gold)':i===1?'#888780':i===2?'#854F0B':'var(--green)'};border-radius:99px;transition:width 0.5s ease;"></div>
+          </div>
+        </div>`;
+    }).join('') + `
+      <div style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:8px;">${total} of ${users.length} players have picked a winner · Deadline: June 10</div>`;
   }
 
   function loadPlayerOfRound(users) {
