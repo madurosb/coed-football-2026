@@ -814,6 +814,7 @@
       <button class="nav-btn" data-page="hof" onclick="showPage('hof')">🏅 Hall of Fame</button>
       <button class="nav-btn" data-page="h2h" onclick="showPage('h2h')">⚔️ Head-to-Head</button>
       <button class="nav-btn" data-page="analysis" onclick="showPage('analysis')">📊 Analysis</button>
+      <button class="nav-btn" data-page="coach" onclick="showPage('coach')">🏟️ Coach Room</button>
       <button class="nav-btn" data-page="rules" onclick="showPage('rules')">Rules</button>
       <button class="nav-btn" data-page="dummies" onclick="showPage('dummies')">How to play</button>
       <button class="nav-btn" data-page="admin" id="admin-nav-btn" style="display:none;" onclick="showPage('admin')">Admin</button>
@@ -851,6 +852,7 @@
     <button class="mobile-menu-btn" data-page="hof" onclick="mobileNav('hof')">🏅 &nbsp; Hall of Fame</button>
     <button class="mobile-menu-btn" data-page="h2h" onclick="mobileNav('h2h')">⚔️ &nbsp; Head-to-Head</button>
     <button class="mobile-menu-btn" data-page="analysis" onclick="mobileNav('analysis')">📊 &nbsp; Analysis</button>
+    <button class="mobile-menu-btn" data-page="coach" onclick="mobileNav('coach')">🏟️ &nbsp; Coach Room</button>
     <button class="mobile-menu-btn" data-page="rules" onclick="mobileNav('rules')">📋 &nbsp; Rules</button>
     <button class="mobile-menu-btn" data-page="dummies" onclick="mobileNav('dummies')">🎓 &nbsp; How to play</button>
     <button class="mobile-menu-btn" data-page="admin" id="admin-menu-btn" style="display:none;" onclick="mobileNav('admin')">⚙️ &nbsp; Admin</button>
@@ -2538,6 +2540,11 @@
     </div>
   </div>
 
+  <!-- COACH ROOM -->
+  <div class="page" id="page-coach">
+    <div id="coach-room-content"></div>
+  </div>
+
   <!-- HIGHLIGHTS -->
   <div class="page" id="page-highlights">
     <div style="text-align:center; padding: 2rem 1rem 3rem;">
@@ -4011,6 +4018,7 @@
     if (id === 'hof') loadHallOfFame();
     if (id === 'h2h') loadH2H();
     if (id === 'analysis') { setAnalysisTab('heatmap'); }
+    if (id === 'coach') loadCoachRoom();
 
     // Mute background music on Rules page, restore on exit
     const vid = document.getElementById('rules-video');
@@ -8010,6 +8018,471 @@
 
   // Add preview button to match cards
   const origRenderMatches = renderMatches;
+
+  // ========== COACH ROOM ==========
+  const COACHES = [
+    {
+      id: 'analyst',
+      name: 'THE ANALYST',
+      title: 'Data-Driven Tactician',
+      color: '#38bdf8',
+      bg: '#0c1a2e',
+      accent: '#0ea5e9',
+      emoji: '🧮',
+      catchphrase: 'The numbers never lie.',
+      personality: `You are THE ANALYST, a cold, precise, data-obsessed football prediction coach. 
+You speak in statistics, xG values, H2H records, and form tables. You're not rude, just clinical.
+You occasionally use phrases like "statistically speaking", "the data suggests", "per 90 minutes".
+You never rely on gut feeling — only numbers. If asked about feelings, you say "I don't have those."
+Keep responses under 120 words. Be direct and concise.`,
+      pixels: [
+        [0,0,0,1,1,1,0,0,0],
+        [0,0,1,1,1,1,1,0,0],
+        [0,1,1,1,1,1,1,1,0],
+        [0,1,1,0,1,0,1,1,0],
+        [0,1,1,1,1,1,1,1,0],
+        [0,0,1,1,0,1,1,0,0],
+        [0,0,0,1,1,1,0,0,0],
+        [0,1,1,1,1,1,1,1,0],
+        [0,1,1,1,1,1,1,1,0]
+      ]
+    },
+    {
+      id: 'mystic',
+      name: 'THE MYSTIC',
+      title: 'Spiritual Seer',
+      color: '#a78bfa',
+      bg: '#1a0c2e',
+      accent: '#8b5cf6',
+      emoji: '🔮',
+      catchphrase: 'The stars have spoken...',
+      personality: `You are THE MYSTIC, a mysterious, spiritual football prediction coach.
+You speak in vague prophecies, cosmic energy, and vibes. You reference the moon, stars, and "football karma".
+You say things like "I sense a disturbance in the midfield energy", "the universe favors the underdog today", "trust your third eye".
+You're dramatic but oddly sometimes correct. You believe in momentum and destiny.
+Keep responses under 120 words. Be mysterious and theatrical.`,
+      pixels: [
+        [0,0,0,1,1,1,0,0,0],
+        [0,0,1,1,1,1,1,0,0],
+        [0,1,1,1,1,1,1,1,0],
+        [0,1,0,0,1,0,0,1,0],
+        [0,1,1,1,1,1,1,1,0],
+        [0,0,1,0,1,0,1,0,0],
+        [0,0,0,1,1,1,0,0,0],
+        [0,1,1,1,1,1,1,1,0],
+        [0,0,1,0,1,0,1,0,0]
+      ]
+    },
+    {
+      id: 'hothead',
+      name: 'THE HOTHEAD',
+      title: 'Aggressive Risk-Taker',
+      color: '#f87171',
+      bg: '#2e0c0c',
+      accent: '#ef4444',
+      emoji: '🔥',
+      catchphrase: "ALWAYS bet the underdog. ALWAYS.",
+      personality: `You are THE HOTHEAD, a passionate, aggressive, over-confident football prediction coach.
+You're always SHOUTING (caps), picking upsets, and trash-talking favorites.
+You say things like "THE BIG TEAMS ARE OVERRATED", "nobody believes in them but I DO", "this is where we make our MONEY".
+You're impulsive, emotional, and sometimes hilariously wrong but totally unashamed.
+Keep responses under 120 words. Be loud, passionate, and use CAPS for emphasis.`,
+      pixels: [
+        [0,1,1,1,1,1,1,1,0],
+        [1,1,1,1,1,1,1,1,1],
+        [1,1,1,1,1,1,1,1,1],
+        [1,1,0,0,1,0,0,1,1],
+        [1,1,1,1,1,1,1,1,1],
+        [0,1,1,1,0,1,1,1,0],
+        [0,0,1,0,1,0,1,0,0],
+        [1,1,1,1,1,1,1,1,1],
+        [1,1,0,0,0,0,0,1,1]
+      ]
+    },
+    {
+      id: 'veteran',
+      name: 'THE VETERAN',
+      title: 'Old School Wisdom',
+      color: '#fbbf24',
+      bg: '#2e1c0c',
+      accent: '#d97706',
+      emoji: '🧓',
+      catchphrase: "I've seen it all. Twice.",
+      personality: `You are THE VETERAN, an old, wise, cynical football prediction coach who has seen everything.
+You reference matches from the 70s, 80s, 90s. You're nostalgic, slightly bitter about modern football, but deeply knowledgeable.
+You say things like "back in my day", "I watched Cruyff do this in '74", "these modern players...", "I've been doing this for 40 years".
+You're slow to trust anyone but when you believe in a pick, you really believe.
+Keep responses under 120 words. Be wise, nostalgic, occasionally grumpy.`,
+      pixels: [
+        [0,0,0,1,1,1,0,0,0],
+        [0,0,1,1,1,1,1,0,0],
+        [0,1,1,1,1,1,1,1,0],
+        [0,1,1,0,1,0,1,1,0],
+        [0,1,1,1,1,1,1,1,0],
+        [0,1,1,1,1,1,1,1,0],
+        [0,0,1,1,1,1,1,0,0],
+        [0,1,1,1,1,1,1,1,0],
+        [0,1,1,0,0,0,1,1,0]
+      ]
+    },
+    {
+      id: 'entertainer',
+      name: 'THE ENTERTAINER',
+      title: 'Chaotic Energy',
+      color: '#34d399',
+      bg: '#0c2e1a',
+      accent: '#10b981',
+      emoji: '🎭',
+      catchphrase: "Who cares about winning? Make it DRAMATIC.",
+      personality: `You are THE ENTERTAINER, a chaotic, funny, drama-obsessed football prediction coach.
+You don't really care about winning — you care about the story, the drama, the spectacle.
+You say things like "imagine the chaos if...", "this would make INCREDIBLE television", "I'm not saying bet on this, but... imagine".
+You always root for the most dramatic outcome possible. You make terrible predictions with complete confidence and zero remorse.
+Keep responses under 120 words. Be funny, dramatic, and completely unhinged.`,
+      pixels: [
+        [0,1,0,1,0,1,0,1,0],
+        [1,0,1,0,1,0,1,0,1],
+        [0,1,0,1,0,1,0,1,0],
+        [0,1,1,1,1,1,1,1,0],
+        [0,1,0,0,1,0,0,1,0],
+        [0,1,1,1,1,1,1,1,0],
+        [0,0,1,0,1,0,1,0,0],
+        [0,1,0,1,1,1,0,1,0],
+        [1,0,1,0,0,0,1,0,1]
+      ]
+    }
+  ];
+
+  let coachChatHistory = [];
+  let coachLang = 'en';
+
+  // Coach image filenames
+  const COACH_IMAGES = {
+    analyst:     'Nerdy_analyst_holds_clipboard_sk…_202605020223.jpeg',
+    mystic:      'Fortune-teller_man_holding_cryst…_202605020225.jpeg',
+    hothead:     'Furious_football_fan_shouting_fist_202605020225.jpeg',
+    veteran:     'Old_football_coach_looking_disap…_202605020225.jpeg',
+    entertainer: 'Showman_in_sequined_jersey_posing_202605020225.jpeg',
+  };
+  const COACH_IMG_BASE = 'https://coed-football-2026.vercel.app/coaches/';
+
+  function drawCoachCanvas(canvas, coach, animate) {
+    // Replace canvas with img element (LucasArts portrait)
+    const parent = canvas.parentNode;
+    if (!parent) return;
+    const img = document.createElement('img');
+    const filename = COACH_IMAGES[coach.id];
+    img.src = COACH_IMG_BASE + filename;
+    img.alt = coach.name;
+    img.style.cssText = 'width:72px;height:72px;border-radius:8px;object-fit:cover;object-position:top center;display:block;';
+    // Add CRT overlay effect via wrapper
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;flex-shrink:0;';
+    wrapper.appendChild(img);
+    // Scanline overlay
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);pointer-events:none;border-radius:8px;';
+    wrapper.appendChild(overlay);
+    parent.replaceChild(wrapper, canvas);
+  }
+
+  async function loadCoachRoom() {
+    const container = document.getElementById('coach-room-content');
+    if (!container) return;
+
+    // Load user's coach from Firestore
+    const userSnap = await getDoc(doc(db, 'users', currentUser.uid));
+    const userData = userSnap.data();
+    const savedCoachId = userData?.coachId;
+
+    if (!savedCoachId) {
+      renderCoachSelection(container);
+    } else {
+      const coach = COACHES.find(c => c.id === savedCoachId);
+      if (coach) renderCoachChat(container, coach, userData);
+    }
+  }
+
+  function renderCoachSelection(container) {
+    container.innerHTML = `
+      <div style="text-align:center;margin-bottom:1.5rem;">
+        <div style="font-family:monospace;font-size:11px;letter-spacing:4px;color:#1D9E75;text-transform:uppercase;margin-bottom:4px;">⚽ COACH ROOM</div>
+        <div style="font-size:18px;font-weight:700;margin-bottom:6px;">Choose Your Coach</div>
+        <div style="font-size:13px;color:var(--text-muted);">Your coach will give you personalised match advice.<br>After 10 predictions they'll start tailoring advice to your style.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;" id="coach-selection-list">
+        ${COACHES.map(coach => `
+          <div onclick="selectCoach('${coach.id}')" style="background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all 0.2s;"
+            onmouseover="this.style.borderColor='${coach.color}';this.style.background='${coach.bg}20'"
+            onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--surface)'">
+            <canvas id="coach-sel-${coach.id}" style="flex-shrink:0;border-radius:6px;border:2px solid ${coach.color}30;"></canvas>
+            <div style="flex:1;">
+              <div style="font-family:monospace;font-size:13px;font-weight:700;color:${coach.color};">${coach.emoji} ${coach.name}</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:1px;">${coach.title}</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:5px;font-style:italic;">"${coach.catchphrase}"</div>
+            </div>
+            <div style="font-size:20px;color:var(--text-muted);">→</div>
+          </div>`).join('')}
+      </div>`;
+
+    // Draw canvases after DOM renders
+    setTimeout(() => {
+      COACHES.forEach(coach => {
+        const canvas = document.getElementById(`coach-sel-${coach.id}`);
+        if (canvas) drawCoachCanvas(canvas, coach, true);
+      });
+    }, 50);
+  }
+
+  window.selectCoach = async (coachId) => {
+    const coach = COACHES.find(c => c.id === coachId);
+    if (!coach) return;
+
+    await updateDoc(doc(db, 'users', currentUser.uid), {
+      coachId,
+      coachSelectedAt: serverTimestamp()
+    });
+    currentUserData.coachId = coachId;
+
+    const container = document.getElementById('coach-room-content');
+    const userSnap = await getDoc(doc(db, 'users', currentUser.uid));
+    renderCoachChat(container, coach, userSnap.data());
+  };
+
+  function renderCoachChat(container, coach, userData) {
+    coachChatHistory = [];
+    const predCount = userData?.predCount || 0;
+    const personalised = predCount >= 10;
+
+    container.innerHTML = `
+      <!-- Header -->
+      <div style="background:${coach.bg};border-radius:14px;padding:1rem;margin-bottom:1rem;display:flex;align-items:center;gap:14px;border:1.5px solid ${coach.color}40;">
+        <canvas id="coach-head-canvas" style="flex-shrink:0;border-radius:8px;border:2px solid ${coach.color};"></canvas>
+        <div style="flex:1;">
+          <div style="font-family:monospace;font-size:13px;font-weight:700;color:${coach.color};">${coach.emoji} ${coach.name}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.5);">${coach.title}</div>
+          ${personalised
+            ? `<div style="font-size:10px;margin-top:4px;background:${coach.color}22;color:${coach.color};padding:2px 7px;border-radius:99px;display:inline-block;border:1px solid ${coach.color}44;">🧠 Knows your style</div>`
+            : `<div style="font-size:10px;margin-top:4px;color:rgba(255,255,255,0.35);">📊 ${Math.max(0, 10 - predCount)} more predictions until personalised advice</div>`}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+          <!-- Language toggle -->
+          <div style="display:flex;gap:4px;">
+            <button id="lang-en" onclick="setCoachLang('en')" style="font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid ${coach.color}44;background:${coachLang==='en'?coach.color:'transparent'};color:${coachLang==='en'?'#000':'rgba(255,255,255,0.5)'};cursor:pointer;font-weight:500;">EN</button>
+            <button id="lang-he" onclick="setCoachLang('he')" style="font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid ${coach.color}44;background:${coachLang==='he'?coach.color:'transparent'};color:${coachLang==='he'?'#000':'rgba(255,255,255,0.5)'};cursor:pointer;font-weight:500;">עב</button>
+          </div>
+          <!-- Change coach -->
+          <button onclick="changeCoach()" style="font-size:10px;color:rgba(255,255,255,0.35);background:none;border:none;cursor:pointer;padding:0;">change coach</button>
+        </div>
+      </div>
+
+      <!-- Chat window -->
+      <div id="coach-chat-window" style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:10px;">
+        <div id="coach-messages" style="height:360px;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:10px;scroll-behavior:smooth;">
+          <!-- Welcome message -->
+          <div class="coach-msg-coach" data-coach="${coach.id}"></div>
+        </div>
+      </div>
+
+      <!-- Quick prompts -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;" id="coach-quick-prompts">
+        <button onclick="sendCoachQuick('What match should I predict next?')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;">⚽ Next match tip</button>
+        <button onclick="sendCoachQuick('How am I doing so far?')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;">📊 My performance</button>
+        <button onclick="sendCoachQuick('Give me your boldest prediction for the tournament.')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;">🎯 Bold pick</button>
+        <button onclick="sendCoachQuick('Who should I pick as my tournament player?')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;">⭐ Player pick</button>
+      </div>
+
+      <!-- Input -->
+      <div style="display:flex;gap:8px;align-items:flex-end;">
+        <textarea id="coach-input" placeholder="Ask your coach anything..." maxlength="300" rows="2"
+          style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;resize:none;font-family:inherit;line-height:1.5;outline:none;"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCoachMessage();}"
+          onfocus="this.style.borderColor='${coach.color}'"
+          onblur="this.style.borderColor='var(--border)'"></textarea>
+        <button onclick="sendCoachMessage()" id="coach-send-btn"
+          style="padding:10px 16px;border-radius:10px;border:none;background:${coach.color};color:#000;font-weight:700;font-size:13px;cursor:pointer;flex-shrink:0;font-family:monospace;">
+          SEND
+        </button>
+      </div>`;
+
+    // Draw animated head
+    setTimeout(() => {
+      const canvas = document.getElementById('coach-head-canvas');
+      if (canvas) drawCoachCanvas(canvas, coach, true);
+    }, 50);
+
+    // Send welcome message
+    setTimeout(() => sendCoachWelcome(coach, userData), 300);
+  }
+
+  window.setCoachLang = (lang) => {
+    coachLang = lang;
+    const coach = COACHES.find(c => c.id === currentUserData?.coachId);
+    if (!coach) return;
+    ['en','he'].forEach(l => {
+      const btn = document.getElementById(`lang-${l}`);
+      if (btn) {
+        btn.style.background = l === lang ? coach.color : 'transparent';
+        btn.style.color = l === lang ? '#000' : 'rgba(255,255,255,0.5)';
+      }
+    });
+  };
+
+  window.changeCoach = async () => {
+    await updateDoc(doc(db, 'users', currentUser.uid), { coachId: null });
+    currentUserData.coachId = null;
+    coachChatHistory = [];
+    const container = document.getElementById('coach-room-content');
+    renderCoachSelection(container);
+  };
+
+  function addCoachMessage(text, isUser, coachId) {
+    const msgs = document.getElementById('coach-messages');
+    if (!msgs) return;
+
+    const coach = COACHES.find(c => c.id === coachId) || COACHES[0];
+    const div = document.createElement('div');
+
+    if (isUser) {
+      div.style.cssText = 'align-self:flex-end;max-width:80%;background:var(--green);color:white;padding:8px 12px;border-radius:12px 12px 4px 12px;font-size:13px;line-height:1.5;';
+      div.textContent = text;
+    } else {
+      div.style.cssText = 'align-self:flex-start;max-width:85%;';
+      div.innerHTML = `
+        <div style="font-family:monospace;font-size:10px;color:${coach.color};margin-bottom:4px;letter-spacing:2px;">${coach.emoji} ${coach.name}</div>
+        <div style="background:${coach.bg};border:1px solid ${coach.color}33;color:${coach.color === '#38bdf8' ? '#e0f2fe' : '#fff'};padding:10px 14px;border-radius:4px 12px 12px 12px;font-size:13px;line-height:1.65;font-family:${coach.id==='analyst'?'monospace':'inherit'};">
+          ${text.replace(/\n/g,'<br>')}
+        </div>`;
+    }
+
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function addTypingIndicator(coachId) {
+    const msgs = document.getElementById('coach-messages');
+    if (!msgs) return;
+    const coach = COACHES.find(c => c.id === coachId) || COACHES[0];
+    const div = document.createElement('div');
+    div.id = 'coach-typing';
+    div.style.cssText = 'align-self:flex-start;';
+    div.innerHTML = `
+      <div style="font-family:monospace;font-size:10px;color:${coach.color};margin-bottom:4px;letter-spacing:2px;">${coach.emoji} ${coach.name}</div>
+      <div style="background:${coach.bg};border:1px solid ${coach.color}33;padding:10px 16px;border-radius:4px 12px 12px 12px;display:flex;gap:5px;align-items:center;">
+        <span style="width:6px;height:6px;border-radius:50%;background:${coach.color};animation:dot1 1s infinite;display:inline-block;"></span>
+        <span style="width:6px;height:6px;border-radius:50%;background:${coach.color};animation:dot2 1s infinite 0.2s;display:inline-block;"></span>
+        <span style="width:6px;height:6px;border-radius:50%;background:${coach.color};animation:dot3 1s infinite 0.4s;display:inline-block;"></span>
+      </div>`;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  async function sendCoachWelcome(coach, userData) {
+    const predCount = userData?.predCount || 0;
+    const personalised = predCount >= 10;
+
+    const langInstruction = coachLang === 'he'
+      ? ' Respond in Hebrew.'
+      : ' Respond in English.';
+
+    const systemPrompt = coach.personality + langInstruction;
+    const userContext = personalised
+      ? `The user has made ${predCount} predictions. Their tournament player is ${userData?.tournamentPlayer || 'unknown'}. Their points so far: ${userData?.points || 0}.`
+      : `The user is new. Introduce yourself briefly and tell them to ask you about any upcoming World Cup match.`;
+
+    addTypingIndicator(coach.id);
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 200,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: `Welcome the user to the Coach Room. ${userContext} Keep it under 80 words.` }]
+        })
+      });
+      const data = await response.json();
+      const text = data.content?.[0]?.text || "Welcome. Let's get to work.";
+      document.getElementById('coach-typing')?.remove();
+      addCoachMessage(text, false, coach.id);
+      coachChatHistory.push({ role: 'assistant', content: text });
+    } catch(e) {
+      document.getElementById('coach-typing')?.remove();
+      addCoachMessage(`${coach.catchphrase} Ask me about any match.`, false, coach.id);
+    }
+  }
+
+  window.sendCoachQuick = (text) => {
+    const input = document.getElementById('coach-input');
+    if (input) input.value = text;
+    sendCoachMessage();
+  };
+
+  window.sendCoachMessage = async () => {
+    const input = document.getElementById('coach-input');
+    const text = input?.value?.trim();
+    if (!text) return;
+
+    const coachId = currentUserData?.coachId;
+    const coach = COACHES.find(c => c.id === coachId);
+    if (!coach) return;
+
+    input.value = '';
+    addCoachMessage(text, true, coachId);
+    coachChatHistory.push({ role: 'user', content: text });
+
+    const btn = document.getElementById('coach-send-btn');
+    if (btn) { btn.disabled = true; btn.textContent = '...'; }
+    addTypingIndicator(coachId);
+
+    // Build context from user stats
+    const userSnap = await getDoc(doc(db, 'users', currentUser.uid));
+    const ud = userSnap.data();
+    const predCount = ud?.predCount || 0;
+    const personalised = predCount >= 10;
+
+    const langInstruction = coachLang === 'he' ? ' Respond in Hebrew.' : ' Respond in English.';
+
+    let systemPrompt = coach.personality + langInstruction;
+    if (personalised) {
+      systemPrompt += ` User context: ${predCount} predictions made, ${ud?.points||0} total points, ${ud?.exactScores||0} exact scores, tournament player: ${ud?.tournamentPlayer||'not set'}. Tailor your advice to their style.`;
+    }
+
+    try {
+      const messages = [
+        ...coachChatHistory.slice(-8), // keep last 8 for context
+        { role: 'user', content: text }
+      ];
+      // Fix: ensure alternating roles
+      const cleanMessages = [];
+      messages.forEach((m, i) => {
+        if (i === 0 || m.role !== messages[i-1]?.role) cleanMessages.push(m);
+      });
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 250,
+          system: systemPrompt,
+          messages: cleanMessages
+        })
+      });
+      const data = await response.json();
+      const reply = data.content?.[0]?.text || "...";
+      document.getElementById('coach-typing')?.remove();
+      addCoachMessage(reply, false, coachId);
+      coachChatHistory.push({ role: 'assistant', content: reply });
+    } catch(e) {
+      document.getElementById('coach-typing')?.remove();
+      addCoachMessage("Connection issue. Try again.", false, coachId);
+    }
+
+    if (btn) { btn.disabled = false; btn.textContent = 'SEND'; }
+  };
 
   // ========== HALL OF FAME ==========
   async function loadHallOfFame() {
