@@ -8294,7 +8294,9 @@ Keep responses under 120 words. Be funny, dramatic, and completely unhinged.`,
       renderCoachSelection(container);
     } else {
       const coach = COACHES.find(c => c.id === savedCoachId);
-      if (coach) renderCoachChat(container, coach, userData);
+      // isReturn=true: keep existing chat history, don't send welcome again
+      const isReturn = coachChatHistory.length > 0;
+      if (coach) renderCoachChat(container, coach, userData, isReturn);
     }
   }
 
@@ -8320,15 +8322,16 @@ Keep responses under 120 words. Be funny, dramatic, and completely unhinged.`,
           </div>`).join('')}
       </div>`;
 
-    // Render videos after DOM renders
+    // Render IMAGES in selection list
     setTimeout(() => {
       COACHES.forEach(coach => {
         const div = document.getElementById(`coach-sel-${coach.id}`);
         if (!div) return;
-        const vidWrapper = makeCoachVideoEl(coach.id, 'idle', 72);
-        vidWrapper.style.border = `2px solid ${coach.color}44`;
-        vidWrapper.style.borderRadius = '8px';
-        div.appendChild(vidWrapper);
+        const filename = COACH_IMAGES[coach.id];
+        div.innerHTML = `<div style="position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;border:2px solid ${coach.color}44;flex-shrink:0;">
+          <img src="${COACH_IMG_BASE}${filename}" style="width:100%;height:100%;object-fit:cover;object-position:top center;display:block;">
+          <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);pointer-events:none;"></div>
+        </div>`;
       });
     }, 50);
   }
@@ -8376,13 +8379,15 @@ Keep responses under 120 words. Be funny, dramatic, and completely unhinged.`,
         ← Back to coach selection
       </button>`;
 
-    // Show coach video in lang selection
+    // Show coach IMAGE in lang selection
     setTimeout(() => {
       const imgDiv = document.getElementById('lang-coach-img');
       if (!imgDiv) return;
-      const vidWrapper = makeCoachVideoEl(coach.id, 'idle', 72);
-      vidWrapper.style.border = `2px solid ${coach.color}`;
-      imgDiv.appendChild(vidWrapper);
+      const filename = COACH_IMAGES[coach.id];
+      imgDiv.innerHTML = `<div style="position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;border:2px solid ${coach.color};flex-shrink:0;">
+        <img src="${COACH_IMG_BASE}${filename}" style="width:100%;height:100%;object-fit:cover;object-position:top center;display:block;">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);pointer-events:none;"></div>
+      </div>`;
     }, 50);
   }
 
@@ -8400,8 +8405,8 @@ Keep responses under 120 words. Be funny, dramatic, and completely unhinged.`,
     renderCoachChat(container, coach, userSnap.data());
   };
 
-  function renderCoachChat(container, coach, userData) {
-    coachChatHistory = [];
+  function renderCoachChat(container, coach, userData, isReturn=false) {
+    if (!isReturn) coachChatHistory = [];
     const predCount = userData?.predCount || 0;
     const personalised = predCount >= 10;
 
@@ -8417,11 +8422,6 @@ Keep responses under 120 words. Be funny, dramatic, and completely unhinged.`,
             : `<div style="font-size:10px;margin-top:4px;color:rgba(255,255,255,0.35);">📊 ${Math.max(0, 10 - predCount)} more predictions until personalised advice</div>`}
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
-          <!-- Language toggle -->
-          <div style="display:flex;gap:4px;">
-            <button id="lang-en" onclick="setCoachLang('en')" style="font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid ${coach.color}44;background:${coachLang==='en'?coach.color:'transparent'};color:${coachLang==='en'?'#000':'rgba(255,255,255,0.5)'};cursor:pointer;font-weight:500;">EN</button>
-            <button id="lang-he" onclick="setCoachLang('he')" style="font-size:10px;padding:3px 8px;border-radius:6px;border:1px solid ${coach.color}44;background:${coachLang==='he'?coach.color:'transparent'};color:${coachLang==='he'?'#000':'rgba(255,255,255,0.5)'};cursor:pointer;font-weight:500;">עב</button>
-          </div>
           <!-- Change coach -->
           <button onclick="changeCoach()" style="font-size:10px;color:rgba(255,255,255,0.35);background:none;border:none;cursor:pointer;padding:0;">change coach</button>
         </div>
@@ -8456,18 +8456,23 @@ Keep responses under 120 words. Be funny, dramatic, and completely unhinged.`,
         </button>
       </div>`;
 
-    // Show coach video
+    // Show coach VIDEO in chat
     setTimeout(() => {
       const imgDiv = document.getElementById('coach-head-img');
       if (!imgDiv) return;
+      imgDiv.innerHTML = '';
       const vidWrapper = makeCoachVideoEl(coach.id, 'idle', 88);
       vidWrapper.style.border = `2px solid ${coach.color}`;
       vidWrapper.style.borderRadius = '10px';
       imgDiv.appendChild(vidWrapper);
-    }, 50);
+      // Force play (iOS/Safari need explicit call)
+      const vid = vidWrapper.querySelector('video');
+      if (vid) vid.play().catch(()=>{});
+    }, 100);
 
-    // Send welcome message
-    setTimeout(() => sendCoachWelcome(coach, userData), 300);
+    // Send welcome message only if fresh chat
+    if (!isReturn) setTimeout(() => sendCoachWelcome(coach, userData), 300);
+    else setTimeout(() => restoreCoachMessages(coach), 50);
   }
 
   window.setCoachLang = (lang) => {
@@ -8514,7 +8519,7 @@ Keep responses under 120 words. Be funny, dramatic, and completely unhinged.`,
     document.getElementById('change-coach-popup')?.remove();
     await updateDoc(doc(db, 'users', currentUser.uid), { coachId: null });
     currentUserData.coachId = null;
-    coachChatHistory = [];
+    coachChatHistory = []; // Clear history on coach change
     const container = document.getElementById('coach-room-content');
     renderCoachSelection(container);
   };
@@ -8602,7 +8607,7 @@ Keep responses under 120 words. Be funny, dramatic, and completely unhinged.`,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           systemPrompt,
-          messages: [{ role: 'user', content: `Welcome the user to the Coach Room. ${userContext} Keep it under 80 words.` }]
+          messages: [{ role: 'user', content: `Greet the user for the first time as their new personal prediction coach. Be in character. Do NOT repeat the catchphrase verbatim. ${userContext} Keep it punchy and under 70 words.` }]
         })
       });
       const data = await response.json();
@@ -8617,6 +8622,16 @@ Keep responses under 120 words. Be funny, dramatic, and completely unhinged.`,
       addCoachMessage(`${coach.catchphrase} Ask me about any match.`, false, coach.id);
       setCoachVideoState(coach.id, 'idle');
     }
+  }
+
+  function restoreCoachMessages(coach) {
+    // Re-render all messages from history
+    const msgs = document.getElementById('coach-messages');
+    if (!msgs || coachChatHistory.length === 0) return;
+    msgs.innerHTML = '';
+    coachChatHistory.forEach(m => {
+      addCoachMessage(m.content, m.role === 'user', coach.id, false);
+    });
   }
 
   window.sendCoachQuick = (text) => {
