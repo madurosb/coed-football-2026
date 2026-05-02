@@ -8078,10 +8078,9 @@
       accent: '#0ea5e9',
       emoji: '🧮',
       catchphrase: 'The numbers never lie.',
-      personality: `THE ANALYST. World Cup 2026 only. Data robot. No emotions.
-RULES: Under 45 words. One stat. End EVERY response with bold prediction: **Pick: Team A X-X Team B. Scorer: Name.**
-If Hebrew: tech-bro Israeli — "על פי הנתונים", end with **ניחוש: ...** bolded.
-Never discuss other tournaments.`,
+      personality: `THE ANALYST. WC2026 ONLY. Data robot. Cold.
+MAX 30 WORDS unless user asks for detail. Always end: **Pick: A X-X B · Scorer: Name**
+One stat max. No feelings. Hebrew: tech-bro, end **ניחוש: ...**`,
       pixels: [
         [0,0,0,1,1,1,0,0,0],
         [0,0,1,1,1,1,1,0,0],
@@ -8103,10 +8102,9 @@ Never discuss other tournaments.`,
       accent: '#8b5cf6',
       emoji: '🔮',
       catchphrase: 'The stars have spoken...',
-      personality: `THE MYSTIC. World Cup 2026 prophecies only. Cosmic dramatics.
-RULES: Under 45 words. One vague prophecy. End with bold: **⚡ The stars say: Team A X-X Team B. Scorer: Name.**
-If Hebrew: "הכוחות דיברו", end with **⚡ הכוכבים אמרו: ...** bolded.
-Never discuss other tournaments.`,
+      personality: `THE MYSTIC. WC2026 ONLY. Cosmic. Vague.
+MAX 30 WORDS unless user asks for detail. End: **⚡ Stars say: A X-X B · Scorer: Name**
+One prophecy. Hebrew: "הכוחות", end **⚡ הכוכבים: ...**`,
       pixels: [
         [0,0,0,1,1,1,0,0,0],
         [0,0,1,1,1,1,1,0,0],
@@ -8128,10 +8126,9 @@ Never discuss other tournaments.`,
       accent: '#ef4444',
       emoji: '🔥',
       catchphrase: "ALWAYS bet the underdog. ALWAYS.",
-      personality: `THE HOTHEAD. World Cup 2026 ONLY. LOUD. UPSETS ALWAYS.
-RULES: Under 45 words. CAPS key words. One rage sentence. End bold: **🔥 BET IT: Team A X-X Team B. SCORER: NAME!!**
-If Hebrew: "אחי תאמין לי!", end with **🔥 שים על: ...** bolded.
-Never discuss other tournaments.`,
+      personality: `THE HOTHEAD. WC2026 ONLY. LOUD. UPSETS.
+MAX 30 WORDS unless user asks for detail. CAPS. End: **🔥 BET: A X-X B · SCORER: NAME!**
+One rage line. Hebrew: "אחי!", end **🔥 שים על: ...**`,
       pixels: [
         [0,1,1,1,1,1,1,1,0],
         [1,1,1,1,1,1,1,1,1],
@@ -8179,10 +8176,9 @@ Keep responses under 120 words. Be wise, nostalgic, occasionally grumpy.`,
       accent: '#10b981',
       emoji: '🎭',
       catchphrase: "Who cares about winning? Make it DRAMATIC.",
-      personality: `THE ENTERTAINER. World Cup 2026 chaos only. Drama over logic.
-RULES: Under 45 words. One insane storyline. End bold: **🎭 Chaos pick: Team A X-X Team B. Scorer: wild card.**
-If Hebrew: reality-TV — "חברה זה יהיה מטורף!", end with **🎭 ניחוש כאוס: ...** bolded.
-Never discuss other tournaments.`,
+      personality: `THE ENTERTAINER. WC2026 ONLY. Chaos. Drama.
+MAX 30 WORDS unless user asks for detail. One insane take. End: **🎭 Chaos: A X-X B · Scorer: wildcard**
+Hebrew: "חברה!", end **🎭 כאוס: ...**`,
       pixels: [
         [0,1,0,1,0,1,0,1,0],
         [1,0,1,0,1,0,1,0,1],
@@ -8263,14 +8259,13 @@ Never discuss other tournaments.`,
   }
 
   function setCoachVideoState(coachId, state) {
-    const video = document.getElementById(`coach-vid-${coachId}`);
-    if (!video || video.style.display === 'none') return;
+    const vid = document.getElementById(`coach-vid-${coachId}`);
+    if (!vid || vid.style.display === 'none') return;
     const newSrc = `${COACH_VIDEO_BASE}${coachId}_${state}.mp4`;
-    const currentSrc = video.getAttribute('src') || video.src || '';
-    if (!currentSrc.includes(`${coachId}_${state}`)) {
-      video.setAttribute('src', newSrc);
-      video.load();
-      video.play().catch(()=>{});
+    if (vid.src !== newSrc) {
+      vid.src = newSrc;
+      vid.load();
+      vid.play().catch(() => {});
     }
   }
 
@@ -8463,12 +8458,12 @@ Never discuss other tournaments.`,
       <!-- Quick prompts — dynamic by language -->
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;" id="coach-quick-prompts">
         ${coachLang === 'he' ? `
-          <button onclick="sendCoachQuick('על איזה משחק כדאי לי לנחש עכשיו?')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;">⚽ טיפ לניחוש</button>
+          <button onclick="showMatchPickerDropdown('he')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--green);background:var(--green-light);color:var(--green-dark);cursor:pointer;font-weight:500;">⚽ בחר משחק לטיפ</button>
           <button onclick="sendCoachQuick('מה אומר לי על הביצועים שלי עד עכשיו?')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;">📊 הביצועים שלי</button>
           <button onclick="sendCoachQuick('תן לי את הניחוש הכי נועז שלך לטורניר.')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;">🎯 ניחוש נועז</button>
           <button onclick="sendCoachQuick('מי כדאי לי לבחור כשחקן הטורניר שלי?')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;">⭐ שחקן טורניר</button>
         ` : `
-          <button onclick="sendCoachQuick('What match should I predict next?')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;">⚽ Next match tip</button>
+          <button onclick="showMatchPickerDropdown('en')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--green);background:var(--green-light);color:var(--green-dark);cursor:pointer;font-weight:500;">⚽ Pick a match</button>
           <button onclick="sendCoachQuick('How am I doing so far?')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;">📊 My performance</button>
           <button onclick="sendCoachQuick('Give me your boldest prediction for the tournament.')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;">🎯 Bold pick</button>
           <button onclick="sendCoachQuick('Who should I pick as my tournament player?')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;">⭐ Player pick</button>
@@ -8488,29 +8483,65 @@ Never discuss other tournaments.`,
         </button>
       </div>`;
 
-    // Show coach VIDEO in chat — build inline HTML to avoid async issues
+
+    // Show coach VIDEO in chat — built via DOM API (not innerHTML) to avoid escaping issues
     setTimeout(() => {
       const imgDiv = document.getElementById('coach-head-img');
       if (!imgDiv) return;
-      const vidSrc = `${COACH_VIDEO_BASE}${coach.id}_idle.mp4`;
-      const imgSrc = `${COACH_IMG_BASE}${COACH_IMAGES[coach.id]}`;
-      imgDiv.innerHTML = `<div id="coach-vid-wrapper-${coach.id}" style="position:relative;width:88px;height:88px;border-radius:10px;overflow:hidden;flex-shrink:0;border:2px solid ${coach.color};background:#111;">
-        <video id="coach-vid-${coach.id}" 
-          src="${vidSrc}"
-          autoplay loop muted playsinline
-          style="width:100%;height:100%;object-fit:cover;object-position:top center;display:block;"
-          onerror="this.style.display='none';document.getElementById('coach-vid-fallback-${coach.id}').style.display='block'">
-        </video>
-        <img id="coach-vid-fallback-${coach.id}" src="${imgSrc}" style="display:none;width:100%;height:100%;object-fit:cover;object-position:top center;">
-        <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.1) 2px,rgba(0,0,0,0.1) 4px);pointer-events:none;"></div>
-      </div>`;
-      const vid = document.getElementById(`coach-vid-${coach.id}`);
-      if (vid) vid.play().catch(() => {
+      imgDiv.innerHTML = '';
+
+      const coachId = coach.id;
+      const vidSrc = `${COACH_VIDEO_BASE}${coachId}_idle.mp4`;
+      const imgSrc = `${COACH_IMG_BASE}${COACH_IMAGES[coachId]}`;
+
+      // Wrapper
+      const wrapper = document.createElement('div');
+      wrapper.id = `coach-vid-wrapper-${coachId}`;
+      wrapper.style.cssText = `position:relative;width:88px;height:88px;border-radius:10px;overflow:hidden;flex-shrink:0;border:2px solid ${coach.color};background:#111;`;
+
+      // Video element
+      const vid = document.createElement('video');
+      vid.id = `coach-vid-${coachId}`;
+      vid.loop = true;
+      vid.muted = true;
+      vid.playsInline = true;
+      vid.setAttribute('playsinline', '');
+      vid.setAttribute('webkit-playsinline', '');
+      vid.style.cssText = 'width:100%;height:100%;object-fit:cover;object-position:top center;display:block;';
+
+      // Fallback image
+      const fallback = document.createElement('img');
+      fallback.id = `coach-vid-fallback-${coachId}`;
+      fallback.src = imgSrc;
+      fallback.style.cssText = 'display:none;width:100%;height:100%;object-fit:cover;object-position:top center;position:absolute;top:0;left:0;';
+
+      const showFallback = () => {
         vid.style.display = 'none';
-        const fb = document.getElementById(`coach-vid-fallback-${coach.id}`);
-        if (fb) fb.style.display = 'block';
-      });
-    }, 150);
+        fallback.style.display = 'block';
+      };
+
+      vid.onerror = showFallback;
+
+      // Scanlines
+      const scanlines = document.createElement('div');
+      scanlines.style.cssText = 'position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.1) 2px,rgba(0,0,0,0.1) 4px);pointer-events:none;';
+
+      wrapper.appendChild(vid);
+      wrapper.appendChild(fallback);
+      wrapper.appendChild(scanlines);
+      imgDiv.appendChild(wrapper);
+
+      // Set src AFTER appending to DOM
+      vid.src = vidSrc;
+      vid.load();
+      const playPromise = vid.play();
+      if (playPromise) {
+        playPromise.catch(err => {
+          console.log('Coach video play failed:', err.message);
+          showFallback();
+        });
+      }
+    }, 200);
 
     // Tooltip for "change coach" — first time only
     if (!localStorage.getItem('seenChangeCoachTip') && !isReturn) {
@@ -8657,7 +8688,7 @@ Never discuss other tournaments.`,
       ? ' Respond in Hebrew.'
       : ' Respond in English.';
 
-    const wcCtx = ' IMPORTANT: You only discuss FIFA World Cup 2026. Never mention other leagues or tournaments.';
+    const wcCtx = ' CRITICAL: WC2026 ONLY. Refuse all other leagues/tournaments.';
     const systemPrompt = coach.personality + langInstruction + wcCtx;
     const userContext = personalised
       ? `The user has made ${predCount} predictions. Their tournament player is ${userData?.tournamentPlayer || 'unknown'}. Their points so far: ${userData?.points || 0}.`
@@ -8698,6 +8729,74 @@ Never discuss other tournaments.`,
       addCoachMessage(m.content, m.role === 'user', coach.id, false);
     });
   }
+
+  window.showMatchPickerDropdown = async (lang) => {
+    // Remove existing dropdown
+    document.getElementById('match-picker-dropdown')?.remove();
+
+    const matchesSnap = await getDocs(query(collection(db, 'matches'), orderBy('kickoff')));
+    const predsSnap = await getDocs(query(collection(db, 'predictions'), where('userId', '==', currentUser.uid)));
+    const predictedIds = new Set();
+    predsSnap.forEach(d => predictedIds.add(d.data().matchId));
+
+    const now = new Date();
+    const upcoming = [];
+    matchesSnap.forEach(d => {
+      if (upcoming.length >= 6) return;
+      const m = d.data();
+      const kickoff = m.kickoff?.toDate?.() || new Date(m.kickoff);
+      const deadline = new Date(kickoff.getTime() - 24*60*60*1000);
+      if (deadline > now) upcoming.push({ id: d.id, ...m, kickoff });
+    });
+
+    const dropdown = document.createElement('div');
+    dropdown.id = 'match-picker-dropdown';
+    dropdown.style.cssText = 'position:fixed;bottom:140px;left:12px;right:12px;background:var(--surface);border:1.5px solid var(--green);border-radius:14px;z-index:9999;padding:10px;box-shadow:0 8px 32px rgba(0,0,0,0.25);max-width:500px;margin:0 auto;';
+
+    const title = document.createElement('div');
+    title.style.cssText = 'font-size:11px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;';
+    title.innerHTML = `<span>${lang === 'he' ? '⚽ בחר משחק לטיפ' : '⚽ Pick a match for tips'}</span><button onclick="document.getElementById('match-picker-dropdown').remove()" style="background:none;border:none;font-size:16px;color:var(--text-muted);cursor:pointer;padding:0;line-height:1;">×</button>`;
+    dropdown.appendChild(title);
+
+    if (upcoming.length === 0) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'font-size:13px;color:var(--text-muted);text-align:center;padding:8px;';
+      empty.textContent = lang === 'he' ? 'אין משחקים קרובים' : 'No upcoming matches found';
+      dropdown.appendChild(empty);
+    } else {
+      upcoming.forEach(m => {
+        const btn = document.createElement('button');
+        const kickoff = m.kickoff instanceof Date ? m.kickoff : m.kickoff?.toDate?.() || new Date(m.kickoff);
+        const dateStr = kickoff.toLocaleDateString('en-GB', { day:'2-digit', month:'short' });
+        const timeStr = kickoff.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+        const alreadyPredicted = predictedIds.has(m.id);
+        btn.style.cssText = `width:100%;text-align:left;padding:9px 12px;border-radius:8px;border:0.5px solid ${alreadyPredicted ? 'var(--green)' : 'var(--border)'};background:${alreadyPredicted ? 'var(--green-light)' : 'none'};color:var(--text);font-size:13px;cursor:pointer;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;transition:background 0.15s;`;
+        btn.innerHTML = `<span><strong>${m.homeTeam}</strong> vs <strong>${m.awayTeam}</strong></span><span style="font-size:11px;color:var(--text-muted);">${dateStr} ${timeStr}${alreadyPredicted ? ' ✅' : ''}</span>`;
+        btn.onclick = () => {
+          document.getElementById('match-picker-dropdown').remove();
+          const q = lang === 'he'
+            ? `מה אתה ממליץ על המשחק ${m.homeTeam} נגד ${m.awayTeam} ב-${dateStr}? תן לי ניחוש תוצאה + גולש ראשון.`
+            : `Give me your prediction for ${m.homeTeam} vs ${m.awayTeam} on ${dateStr}. Score + first scorer.`;
+          const input = document.getElementById('coach-input');
+          if (input) input.value = q;
+          sendCoachMessage();
+        };
+        dropdown.appendChild(btn);
+      });
+    }
+
+    // Close on outside click
+    setTimeout(() => {
+      document.addEventListener('click', function closeDD(e) {
+        if (!dropdown.contains(e.target)) {
+          dropdown.remove();
+          document.removeEventListener('click', closeDD);
+        }
+      });
+    }, 100);
+
+    document.body.appendChild(dropdown);
+  };
 
   window.sendCoachQuick = async (text) => {
     // For match tip requests, inject next unpredicted match info
@@ -8758,7 +8857,7 @@ Never discuss other tournaments.`,
     const personalised = predCount >= 10;
 
     const langInstruction = coachLang === 'he' ? ' Respond in Hebrew with Israeli slang.' : ' Respond in English.';
-    const wcContext = ' IMPORTANT: You only know about FIFA World Cup 2026 (USA/Mexico/Canada, June-July 2026). Groups A-L, 48 teams. If asked about other competitions, redirect to the World Cup.';
+    const wcContext = ' CRITICAL: You ONLY discuss FIFA World Cup 2026 (USA/Mexico/Canada). If user mentions any other league, cup or tournament, say you only cover WC2026 and redirect. Never give tips for Champions League, La Liga, Premier League, etc.';
 
     let systemPrompt = coach.personality + langInstruction + wcContext;
     if (personalised) {
