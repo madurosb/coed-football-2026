@@ -8506,14 +8506,14 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
 
         const wrapper = document.createElement('div');
         wrapper.id = 'coach-vid-wrapper-' + cId;
-        wrapper.style.cssText = 'position:relative;width:88px;height:88px;border-radius:10px;overflow:hidden;flex-shrink:0;border:2px solid ' + cColor + ';';
+        wrapper.style.cssText = 'position:relative;width:88px;height:88px;border-radius:10px;overflow:hidden;flex-shrink:0;border:2px solid ' + cColor + ';background:#111;';
 
-        // Static image always visible as base layer
+        // Static image as permanent background
         const img = document.createElement('img');
         img.src = cImgBase + cImages[cId];
-        img.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:top center;display:block;';
+        img.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:top center;';
 
-        // Video on top — when it loads it covers the image
+        // Video always visible — if it plays it shows, if not the image shows behind
         const vid = document.createElement('video');
         vid.id = 'coach-vid-' + cId;
         vid.loop = true;
@@ -8522,31 +8522,30 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
         vid.setAttribute('playsinline', '');
         vid.setAttribute('webkit-playsinline', '');
         vid.setAttribute('preload', 'auto');
-        // Start hidden, show once playing
-        vid.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:top center;display:none;';
-
-        // Show video once it can play
-        vid.addEventListener('canplay', function() {
-          vid.style.display = 'block';
-          console.log('Coach video ready:', cId);
-        });
-        vid.addEventListener('error', function(e) {
-          console.log('Coach video error:', cId, e);
-          // Image stays visible as fallback
-        });
+        vid.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;object-position:top center;';
 
         const scanlines = document.createElement('div');
-        scanlines.style.cssText = 'position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.1) 2px,rgba(0,0,0,0.1) 4px);pointer-events:none;';
+        scanlines.style.cssText = 'position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.1) 2px,rgba(0,0,0,0.1) 4px);pointer-events:none;z-index:2;';
 
         wrapper.appendChild(img);
         wrapper.appendChild(vid);
         wrapper.appendChild(scanlines);
         imgDiv.appendChild(wrapper);
 
+        // Set src and try to play
         vid.src = cVidBase + cId + '_idle.mp4';
         vid.load();
-        vid.play().catch(function(e) {
-          console.log('Autoplay blocked:', e.message, '— image shown instead');
+        vid.play().then(function() {
+          console.log('✅ Coach video playing:', cId);
+        }).catch(function(e) {
+          console.log('⚠️ Autoplay blocked for', cId, ':', e.message);
+          // Add click-to-play on wrapper
+          wrapper.style.cursor = 'pointer';
+          wrapper.title = 'Tap to animate';
+          wrapper.addEventListener('click', function() {
+            vid.play().catch(function(){});
+            wrapper.style.cursor = '';
+          }, { once: true });
         });
 
       }, 200);
@@ -9631,12 +9630,15 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', async () => {
       try {
-        // First unregister ALL existing service workers to fix stale cache
+        // Unregister ALL old service workers first
         const regs = await navigator.serviceWorker.getRegistrations();
-        for (const reg of regs) await reg.unregister();
-        // Then register fresh
-        await navigator.serviceWorker.register('/sw.js');
-        console.log('✅ SW registered fresh');
+        for (const reg of regs) {
+          await reg.unregister();
+          console.log('SW unregistered:', reg.scope);
+        }
+        // Register fresh SW
+        const reg = await navigator.serviceWorker.register('/sw.js?v=4');
+        console.log('✅ SW v4 registered:', reg.scope);
       } catch(err) {
         console.log('SW error:', err);
       }
