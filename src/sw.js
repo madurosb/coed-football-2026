@@ -1,4 +1,4 @@
-const CACHE_NAME = 'coed-football-v2';
+const CACHE_NAME = 'coed-football-v3';
 
 self.addEventListener('install', e => { self.skipWaiting(); });
 
@@ -13,6 +13,8 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = e.request.url;
   if (e.request.method !== 'GET') return;
+
+  // Bypass — never intercept these
   if (url.includes('firestore.googleapis.com')) return;
   if (url.includes('firebase.google.com')) return;
   if (url.includes('googleapis.com')) return;
@@ -22,6 +24,9 @@ self.addEventListener('fetch', e => {
   if (url.includes('football-data.org')) return;
   if (url.includes('gstatic.com')) return;
   if (url.includes('google.com')) return;
+  // Always bypass video/media files and coaches folder
+  if (url.includes('/coaches/')) return;
+  if (url.endsWith('.mp4') || url.endsWith('.webm') || url.endsWith('.mov')) return;
 
   e.respondWith(
     fetch(e.request)
