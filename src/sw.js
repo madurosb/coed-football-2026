@@ -1,6 +1,9 @@
-const CACHE_NAME = 'coed-football-v3';
+const CACHE_NAME = 'coed-football-v4';
 
-self.addEventListener('install', e => { self.skipWaiting(); });
+self.addEventListener('install', e => {
+  // Force immediate activation — don't wait for old SW to die
+  self.skipWaiting();
+});
 
 self.addEventListener('activate', e => {
   e.waitUntil(
@@ -14,9 +17,11 @@ self.addEventListener('fetch', e => {
   const url = e.request.url;
   if (e.request.method !== 'GET') return;
 
-  // Bypass — never intercept these
+  // Bypass ALL external domains and media
+  if (!url.includes('coed-football-2026.vercel.app') && !url.startsWith('/')) return;
+  if (url.includes('/coaches/')) return;
+  if (url.includes('.mp4') || url.includes('.webm') || url.includes('.mov')) return;
   if (url.includes('firestore.googleapis.com')) return;
-  if (url.includes('firebase.google.com')) return;
   if (url.includes('googleapis.com')) return;
   if (url.includes('youtube.com')) return;
   if (url.includes('flagcdn.com')) return;
@@ -24,9 +29,8 @@ self.addEventListener('fetch', e => {
   if (url.includes('football-data.org')) return;
   if (url.includes('gstatic.com')) return;
   if (url.includes('google.com')) return;
-  // Always bypass video/media files and coaches folder
-  if (url.includes('/coaches/')) return;
-  if (url.endsWith('.mp4') || url.endsWith('.webm') || url.endsWith('.mov')) return;
+  if (url.includes('firebaseapp.com')) return;
+  if (url.includes('/api/')) return;
 
   e.respondWith(
     fetch(e.request)
@@ -37,7 +41,7 @@ self.addEventListener('fetch', e => {
         }
         return response;
       })
-      .catch(() => caches.match(e.request))
+      .catch(() => caches.match(e.request).then(r => r || fetch(e.request)))
   );
 });
 
