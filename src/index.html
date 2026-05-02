@@ -8078,11 +8078,10 @@
       accent: '#0ea5e9',
       emoji: '🧮',
       catchphrase: 'The numbers never lie.',
-      personality: `You are THE ANALYST, a cold, precise, data-obsessed football prediction coach. 
-You speak in statistics, xG values, H2H records, and form tables. You're not rude, just clinical.
-You occasionally use phrases like "statistically speaking", "the data suggests", "per 90 minutes".
-You never rely on gut feeling — only numbers. If asked about feelings, you say "I don't have those."
-Keep responses under 120 words. Be direct and concise.`,
+      personality: `You are THE ANALYST. Cold. Data-only. No feelings.
+Rules: Max 60 words. Always end with a CLEAR prediction like "Pick: Brazil 2-1 France. Scorer: Vinicius Jr." in bold.
+Throw in one stat. Dismiss gut feelings. Speak like a machine who finds humans inefficient.
+If Hebrew: use formal Israeli tech-bro Hebrew, תקציר מנהלים vibes. Still end with the pick bolded.`,
       pixels: [
         [0,0,0,1,1,1,0,0,0],
         [0,0,1,1,1,1,1,0,0],
@@ -8104,11 +8103,10 @@ Keep responses under 120 words. Be direct and concise.`,
       accent: '#8b5cf6',
       emoji: '🔮',
       catchphrase: 'The stars have spoken...',
-      personality: `You are THE MYSTIC, a mysterious, spiritual football prediction coach.
-You speak in vague prophecies, cosmic energy, and vibes. You reference the moon, stars, and "football karma".
-You say things like "I sense a disturbance in the midfield energy", "the universe favors the underdog today", "trust your third eye".
-You're dramatic but oddly sometimes correct. You believe in momentum and destiny.
-Keep responses under 120 words. Be mysterious and theatrical.`,
+      personality: `You are THE MYSTIC. Cosmic vibes only.
+Rules: Max 60 words. Always end with a CLEAR prediction in bold like "⚡ The spirits say: Argentina 1-0 Germany. Scorer: Messi."
+One dramatic prophecy. One real pick. Zero apologies.
+If Hebrew: use mystical Israeli slang — "הכוחות אמרו לי", "בכיף ביקום" — but still give the bold pick at the end.`,
       pixels: [
         [0,0,0,1,1,1,0,0,0],
         [0,0,1,1,1,1,1,0,0],
@@ -8130,11 +8128,10 @@ Keep responses under 120 words. Be mysterious and theatrical.`,
       accent: '#ef4444',
       emoji: '🔥',
       catchphrase: "ALWAYS bet the underdog. ALWAYS.",
-      personality: `You are THE HOTHEAD, a passionate, aggressive, over-confident football prediction coach.
-You're always SHOUTING (caps), picking upsets, and trash-talking favorites.
-You say things like "THE BIG TEAMS ARE OVERRATED", "nobody believes in them but I DO", "this is where we make our MONEY".
-You're impulsive, emotional, and sometimes hilariously wrong but totally unashamed.
-Keep responses under 120 words. Be loud, passionate, and use CAPS for emphasis.`,
+      personality: `You are THE HOTHEAD. ALWAYS LOUD. ALWAYS UPSET PICKS.
+Rules: Max 60 words. Use CAPS for key words. End with bold pick like "🔥 BET IT ALL: Morocco 3-1 France. SCORER: EN-NESYRI!!"
+One sentence of rage. One bold pick. Move on.
+If Hebrew: full Israeli street slang — "אחי תאמין לי", "הם ישרפו אותם", CAPS בעברית also — but give the pick bolded.`,
       pixels: [
         [0,1,1,1,1,1,1,1,0],
         [1,1,1,1,1,1,1,1,1],
@@ -8182,11 +8179,10 @@ Keep responses under 120 words. Be wise, nostalgic, occasionally grumpy.`,
       accent: '#10b981',
       emoji: '🎭',
       catchphrase: "Who cares about winning? Make it DRAMATIC.",
-      personality: `You are THE ENTERTAINER, a chaotic, funny, drama-obsessed football prediction coach.
-You don't really care about winning — you care about the story, the drama, the spectacle.
-You say things like "imagine the chaos if...", "this would make INCREDIBLE television", "I'm not saying bet on this, but... imagine".
-You always root for the most dramatic outcome possible. You make terrible predictions with complete confidence and zero remorse.
-Keep responses under 120 words. Be funny, dramatic, and completely unhinged.`,
+      personality: `You are THE ENTERTAINER. Drama > accuracy. Always pick chaos.
+Rules: Max 60 words. End with bold pick like "🎭 For maximum drama: Saudi Arabia 4-3 Brazil. Scorer: nobody expected. PEAK TV."
+One ridiculous storyline. One bold chaotic pick. Zero shame.
+If Hebrew: dramatic Israeli reality-TV energy — "חברה זה יהיה מטורף", "תדמיינו את הפרצופים" — end with the pick bolded.`,
       pixels: [
         [0,1,0,1,0,1,0,1,0],
         [1,0,1,0,1,0,1,0,1],
@@ -8217,25 +8213,52 @@ Keep responses under 120 words. Be funny, dramatic, and completely unhinged.`,
   const COACH_VIDEO_BASE = 'https://coed-football-2026.vercel.app/coaches/';
 
   function makeCoachVideoEl(coachId, state = 'idle', size = 96) {
-    // state: 'idle' or 'talking'
     const src = `${COACH_VIDEO_BASE}${coachId}_${state}.mp4`;
     const wrapper = document.createElement('div');
-    wrapper.style.cssText = `position:relative;width:${size}px;height:${size}px;border-radius:10px;overflow:hidden;flex-shrink:0;`;
+    wrapper.style.cssText = `position:relative;width:${size}px;height:${size}px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#111;`;
     wrapper.dataset.coachId = coachId;
     wrapper.id = `coach-vid-wrapper-${coachId}`;
+
     const video = document.createElement('video');
-    video.src = src;
-    video.autoplay = true;
-    video.loop = true;
-    video.muted = true;
-    video.playsInline = true;
+    video.setAttribute('src', src);
+    video.setAttribute('autoplay', '');
+    video.setAttribute('loop', '');
+    video.setAttribute('muted', '');
+    video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', '');
     video.style.cssText = `width:100%;height:100%;object-fit:cover;object-position:top center;display:block;`;
     video.id = `coach-vid-${coachId}`;
-    // Scanlines overlay
+
+    // Fallback to static image if video fails
+    video.onerror = () => {
+      const filename = COACH_IMAGES[coachId];
+      if (filename) {
+        const img = document.createElement('img');
+        img.src = `${COACH_IMG_BASE}${filename}`;
+        img.style.cssText = `width:100%;height:100%;object-fit:cover;object-position:top center;display:block;`;
+        wrapper.replaceChild(img, video);
+      }
+    };
+
     const overlay = document.createElement('div');
     overlay.style.cssText = 'position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.1) 2px,rgba(0,0,0,0.1) 4px);pointer-events:none;';
     wrapper.appendChild(video);
     wrapper.appendChild(overlay);
+
+    // Force play after a tick
+    setTimeout(() => {
+      video.play().catch(() => {
+        // If autoplay blocked, show static image
+        const filename = COACH_IMAGES[coachId];
+        if (filename) {
+          const img = document.createElement('img');
+          img.src = `${COACH_IMG_BASE}${filename}`;
+          img.style.cssText = `width:100%;height:100%;object-fit:cover;object-position:top center;display:block;`;
+          if (wrapper.contains(video)) wrapper.replaceChild(img, video);
+        }
+      });
+    }, 100);
+
     return wrapper;
   }
 
@@ -8435,17 +8458,24 @@ Keep responses under 120 words. Be funny, dramatic, and completely unhinged.`,
         </div>
       </div>
 
-      <!-- Quick prompts -->
+      <!-- Quick prompts — dynamic by language -->
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;" id="coach-quick-prompts">
-        <button onclick="sendCoachQuick('What match should I predict next?')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;">⚽ Next match tip</button>
-        <button onclick="sendCoachQuick('How am I doing so far?')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;">📊 My performance</button>
-        <button onclick="sendCoachQuick('Give me your boldest prediction for the tournament.')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;">🎯 Bold pick</button>
-        <button onclick="sendCoachQuick('Who should I pick as my tournament player?')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;">⭐ Player pick</button>
+        ${coachLang === 'he' ? `
+          <button onclick="sendCoachQuick('על איזה משחק כדאי לי לנחש עכשיו?')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;">⚽ טיפ לניחוש</button>
+          <button onclick="sendCoachQuick('מה אומר לי על הביצועים שלי עד עכשיו?')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;">📊 הביצועים שלי</button>
+          <button onclick="sendCoachQuick('תן לי את הניחוש הכי נועז שלך לטורניר.')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;">🎯 ניחוש נועז</button>
+          <button onclick="sendCoachQuick('מי כדאי לי לבחור כשחקן הטורניר שלי?')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;">⭐ שחקן טורניר</button>
+        ` : `
+          <button onclick="sendCoachQuick('What match should I predict next?')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;">⚽ Next match tip</button>
+          <button onclick="sendCoachQuick('How am I doing so far?')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;">📊 My performance</button>
+          <button onclick="sendCoachQuick('Give me your boldest prediction for the tournament.')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;">🎯 Bold pick</button>
+          <button onclick="sendCoachQuick('Who should I pick as my tournament player?')" style="font-size:11px;padding:5px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text-muted);cursor:pointer;">⭐ Player pick</button>
+        `}
       </div>
 
       <!-- Input -->
       <div style="display:flex;gap:8px;align-items:flex-end;">
-        <textarea id="coach-input" placeholder="Ask your coach anything..." maxlength="300" rows="2"
+        <textarea id="coach-input" id="coach-input-field" placeholder="Ask your coach anything..." maxlength="300" rows="2"
           style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;resize:none;font-family:inherit;line-height:1.5;outline:none;"
           onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCoachMessage();}"
           onfocus="this.style.borderColor='${coach.color}'"
@@ -8465,10 +8495,29 @@ Keep responses under 120 words. Be funny, dramatic, and completely unhinged.`,
       vidWrapper.style.border = `2px solid ${coach.color}`;
       vidWrapper.style.borderRadius = '10px';
       imgDiv.appendChild(vidWrapper);
-      // Force play (iOS/Safari need explicit call)
-      const vid = vidWrapper.querySelector('video');
-      if (vid) vid.play().catch(()=>{});
     }, 100);
+
+    // Tooltip for "change coach" — first time only
+    if (!localStorage.getItem('seenChangeCoachTip') && !isReturn) {
+      setTimeout(() => {
+        const btn = document.querySelector('[onclick="changeCoach()"]');
+        if (!btn) return;
+        const tip = document.createElement('div');
+        tip.style.cssText = 'position:fixed;background:#1a1a1a;color:#fff;font-size:12px;padding:7px 12px;border-radius:8px;z-index:9999;border:1px solid #444;pointer-events:none;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+        tip.innerHTML = '👆 Tap here to switch coaches';
+        document.body.appendChild(tip);
+        const rect = btn.getBoundingClientRect();
+        tip.style.top = (rect.bottom + 8) + 'px';
+        tip.style.right = (window.innerWidth - rect.right) + 'px';
+        setTimeout(() => { tip.remove(); localStorage.setItem('seenChangeCoachTip','1'); }, 4000);
+      }, 2000);
+    }
+
+    // Set Hebrew placeholder if needed
+    setTimeout(() => {
+      const inp = document.getElementById('coach-input-field') || document.getElementById('coach-input');
+      if (inp && coachLang === 'he') inp.placeholder = 'שאל את המאמן שלך...';
+    }, 200);
 
     // Send welcome message only if fresh chat
     if (!isReturn) setTimeout(() => sendCoachWelcome(coach, userData), 300);
