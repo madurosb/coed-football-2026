@@ -8078,10 +8078,10 @@
       accent: '#0ea5e9',
       emoji: '🧮',
       catchphrase: 'The numbers never lie.',
-      personality: `You are THE ANALYST. Cold. Data-only. No feelings.
-Rules: Max 60 words. Always end with a CLEAR prediction like "Pick: Brazil 2-1 France. Scorer: Vinicius Jr." in bold.
-Throw in one stat. Dismiss gut feelings. Speak like a machine who finds humans inefficient.
-If Hebrew: use formal Israeli tech-bro Hebrew, תקציר מנהלים vibes. Still end with the pick bolded.`,
+      personality: `THE ANALYST. World Cup 2026 only. Data robot. No emotions.
+RULES: Under 45 words. One stat. End EVERY response with bold prediction: **Pick: Team A X-X Team B. Scorer: Name.**
+If Hebrew: tech-bro Israeli — "על פי הנתונים", end with **ניחוש: ...** bolded.
+Never discuss other tournaments.`,
       pixels: [
         [0,0,0,1,1,1,0,0,0],
         [0,0,1,1,1,1,1,0,0],
@@ -8103,10 +8103,10 @@ If Hebrew: use formal Israeli tech-bro Hebrew, תקציר מנהלים vibes. St
       accent: '#8b5cf6',
       emoji: '🔮',
       catchphrase: 'The stars have spoken...',
-      personality: `You are THE MYSTIC. Cosmic vibes only.
-Rules: Max 60 words. Always end with a CLEAR prediction in bold like "⚡ The spirits say: Argentina 1-0 Germany. Scorer: Messi."
-One dramatic prophecy. One real pick. Zero apologies.
-If Hebrew: use mystical Israeli slang — "הכוחות אמרו לי", "בכיף ביקום" — but still give the bold pick at the end.`,
+      personality: `THE MYSTIC. World Cup 2026 prophecies only. Cosmic dramatics.
+RULES: Under 45 words. One vague prophecy. End with bold: **⚡ The stars say: Team A X-X Team B. Scorer: Name.**
+If Hebrew: "הכוחות דיברו", end with **⚡ הכוכבים אמרו: ...** bolded.
+Never discuss other tournaments.`,
       pixels: [
         [0,0,0,1,1,1,0,0,0],
         [0,0,1,1,1,1,1,0,0],
@@ -8128,10 +8128,10 @@ If Hebrew: use mystical Israeli slang — "הכוחות אמרו לי", "בכי�
       accent: '#ef4444',
       emoji: '🔥',
       catchphrase: "ALWAYS bet the underdog. ALWAYS.",
-      personality: `You are THE HOTHEAD. ALWAYS LOUD. ALWAYS UPSET PICKS.
-Rules: Max 60 words. Use CAPS for key words. End with bold pick like "🔥 BET IT ALL: Morocco 3-1 France. SCORER: EN-NESYRI!!"
-One sentence of rage. One bold pick. Move on.
-If Hebrew: full Israeli street slang — "אחי תאמין לי", "הם ישרפו אותם", CAPS בעברית also — but give the pick bolded.`,
+      personality: `THE HOTHEAD. World Cup 2026 ONLY. LOUD. UPSETS ALWAYS.
+RULES: Under 45 words. CAPS key words. One rage sentence. End bold: **🔥 BET IT: Team A X-X Team B. SCORER: NAME!!**
+If Hebrew: "אחי תאמין לי!", end with **🔥 שים על: ...** bolded.
+Never discuss other tournaments.`,
       pixels: [
         [0,1,1,1,1,1,1,1,0],
         [1,1,1,1,1,1,1,1,1],
@@ -8179,10 +8179,10 @@ Keep responses under 120 words. Be wise, nostalgic, occasionally grumpy.`,
       accent: '#10b981',
       emoji: '🎭',
       catchphrase: "Who cares about winning? Make it DRAMATIC.",
-      personality: `You are THE ENTERTAINER. Drama > accuracy. Always pick chaos.
-Rules: Max 60 words. End with bold pick like "🎭 For maximum drama: Saudi Arabia 4-3 Brazil. Scorer: nobody expected. PEAK TV."
-One ridiculous storyline. One bold chaotic pick. Zero shame.
-If Hebrew: dramatic Israeli reality-TV energy — "חברה זה יהיה מטורף", "תדמיינו את הפרצופים" — end with the pick bolded.`,
+      personality: `THE ENTERTAINER. World Cup 2026 chaos only. Drama over logic.
+RULES: Under 45 words. One insane storyline. End bold: **🎭 Chaos pick: Team A X-X Team B. Scorer: wild card.**
+If Hebrew: reality-TV — "חברה זה יהיה מטורף!", end with **🎭 ניחוש כאוס: ...** bolded.
+Never discuss other tournaments.`,
       pixels: [
         [0,1,0,1,0,1,0,1,0],
         [1,0,1,0,1,0,1,0,1],
@@ -8264,10 +8264,12 @@ If Hebrew: dramatic Israeli reality-TV energy — "חברה זה יהיה מטו
 
   function setCoachVideoState(coachId, state) {
     const video = document.getElementById(`coach-vid-${coachId}`);
-    if (!video) return;
+    if (!video || video.style.display === 'none') return;
     const newSrc = `${COACH_VIDEO_BASE}${coachId}_${state}.mp4`;
-    if (!video.src.endsWith(`${coachId}_${state}.mp4`)) {
-      video.src = newSrc;
+    const currentSrc = video.getAttribute('src') || video.src || '';
+    if (!currentSrc.includes(`${coachId}_${state}`)) {
+      video.setAttribute('src', newSrc);
+      video.load();
       video.play().catch(()=>{});
     }
   }
@@ -8486,16 +8488,29 @@ If Hebrew: dramatic Israeli reality-TV energy — "חברה זה יהיה מטו
         </button>
       </div>`;
 
-    // Show coach VIDEO in chat
+    // Show coach VIDEO in chat — build inline HTML to avoid async issues
     setTimeout(() => {
       const imgDiv = document.getElementById('coach-head-img');
       if (!imgDiv) return;
-      imgDiv.innerHTML = '';
-      const vidWrapper = makeCoachVideoEl(coach.id, 'idle', 88);
-      vidWrapper.style.border = `2px solid ${coach.color}`;
-      vidWrapper.style.borderRadius = '10px';
-      imgDiv.appendChild(vidWrapper);
-    }, 100);
+      const vidSrc = `${COACH_VIDEO_BASE}${coach.id}_idle.mp4`;
+      const imgSrc = `${COACH_IMG_BASE}${COACH_IMAGES[coach.id]}`;
+      imgDiv.innerHTML = `<div id="coach-vid-wrapper-${coach.id}" style="position:relative;width:88px;height:88px;border-radius:10px;overflow:hidden;flex-shrink:0;border:2px solid ${coach.color};background:#111;">
+        <video id="coach-vid-${coach.id}" 
+          src="${vidSrc}"
+          autoplay loop muted playsinline
+          style="width:100%;height:100%;object-fit:cover;object-position:top center;display:block;"
+          onerror="this.style.display='none';document.getElementById('coach-vid-fallback-${coach.id}').style.display='block'">
+        </video>
+        <img id="coach-vid-fallback-${coach.id}" src="${imgSrc}" style="display:none;width:100%;height:100%;object-fit:cover;object-position:top center;">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.1) 2px,rgba(0,0,0,0.1) 4px);pointer-events:none;"></div>
+      </div>`;
+      const vid = document.getElementById(`coach-vid-${coach.id}`);
+      if (vid) vid.play().catch(() => {
+        vid.style.display = 'none';
+        const fb = document.getElementById(`coach-vid-fallback-${coach.id}`);
+        if (fb) fb.style.display = 'block';
+      });
+    }, 150);
 
     // Tooltip for "change coach" — first time only
     if (!localStorage.getItem('seenChangeCoachTip') && !isReturn) {
@@ -8642,7 +8657,8 @@ If Hebrew: dramatic Israeli reality-TV energy — "חברה זה יהיה מטו
       ? ' Respond in Hebrew.'
       : ' Respond in English.';
 
-    const systemPrompt = coach.personality + langInstruction;
+    const wcCtx = ' IMPORTANT: You only discuss FIFA World Cup 2026. Never mention other leagues or tournaments.';
+    const systemPrompt = coach.personality + langInstruction + wcCtx;
     const userContext = personalised
       ? `The user has made ${predCount} predictions. Their tournament player is ${userData?.tournamentPlayer || 'unknown'}. Their points so far: ${userData?.points || 0}.`
       : `The user is new. Introduce yourself briefly and tell them to ask you about any upcoming World Cup match.`;
@@ -8683,7 +8699,35 @@ If Hebrew: dramatic Israeli reality-TV energy — "חברה זה יהיה מטו
     });
   }
 
-  window.sendCoachQuick = (text) => {
+  window.sendCoachQuick = async (text) => {
+    // For match tip requests, inject next unpredicted match info
+    const isMatchTip = text.includes('next') || text.includes('predict') || text.includes('ניחוש') || text.includes('משחק');
+    if (isMatchTip) {
+      try {
+        const matchesSnap = await getDocs(query(collection(db, 'matches'), orderBy('kickoff')));
+        const predsSnap = await getDocs(query(collection(db, 'predictions'), where('userId', '==', currentUser.uid)));
+        const predictedIds = new Set();
+        predsSnap.forEach(d => predictedIds.add(d.data().matchId));
+        const now = new Date();
+        let nextMatch = null;
+        matchesSnap.forEach(d => {
+          if (nextMatch) return;
+          const m = d.data();
+          const kickoff = m.kickoff?.toDate?.() || new Date(m.kickoff);
+          const deadline = new Date(kickoff.getTime() - 24*60*60*1000);
+          if (deadline > now && !predictedIds.has(d.id)) {
+            nextMatch = m;
+          }
+        });
+        if (nextMatch) {
+          const kickoff = nextMatch.kickoff?.toDate?.() || new Date(nextMatch.kickoff);
+          const dateStr = kickoff.toLocaleDateString('en-GB', {day:'2-digit',month:'short'});
+          text = coachLang === 'he'
+            ? `המשחק הבא שאני צריך לנחש הוא ${nextMatch.homeTeam} נגד ${nextMatch.awayTeam} ב-${dateStr}. מה אתה ממליץ?`
+            : `The next match I need to predict is ${nextMatch.homeTeam} vs ${nextMatch.awayTeam} on ${dateStr}. What's your call?`;
+        }
+      } catch(e) {}
+    }
     const input = document.getElementById('coach-input');
     if (input) input.value = text;
     sendCoachMessage();
@@ -8713,9 +8757,10 @@ If Hebrew: dramatic Israeli reality-TV energy — "חברה זה יהיה מטו
     const predCount = ud?.predCount || 0;
     const personalised = predCount >= 10;
 
-    const langInstruction = coachLang === 'he' ? ' Respond in Hebrew.' : ' Respond in English.';
+    const langInstruction = coachLang === 'he' ? ' Respond in Hebrew with Israeli slang.' : ' Respond in English.';
+    const wcContext = ' IMPORTANT: You only know about FIFA World Cup 2026 (USA/Mexico/Canada, June-July 2026). Groups A-L, 48 teams. If asked about other competitions, redirect to the World Cup.';
 
-    let systemPrompt = coach.personality + langInstruction;
+    let systemPrompt = coach.personality + langInstruction + wcContext;
     if (personalised) {
       systemPrompt += ` User context: ${predCount} predictions made, ${ud?.points||0} total points, ${ud?.exactScores||0} exact scores, tournament player: ${ud?.tournamentPlayer||'not set'}. Tailor your advice to their style.`;
     }
