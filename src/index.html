@@ -2966,10 +2966,24 @@
     return w ? new Date(w.start) : null;
   }
 
+  let activeDonWeek = ''; // stored globally so cross-day tabs can check it
+
   async function loadDONStatus() {
     const donOptSnap = await getDocs(query(collection(db, 'donOptIns'), where('userId', '==', currentUser.uid)));
     myDonMatches.clear();
-    donOptSnap.forEach(d => { myDonMatches.add(d.data().matchId); });
+    activeDonWeek = '';
+    for (const d of donOptSnap.docs) {
+      const data = d.data();
+      myDonMatches.add(data.matchId);
+      // Store the week of the active DON match
+      if (data.matchId) {
+        try {
+          const mSnap = await getDoc(doc(db, 'matches', data.matchId));
+          const kickoff = mSnap.data()?.kickoff?.toDate?.();
+          if (kickoff) activeDonWeek = getMatchWeekKey(kickoff);
+        } catch(e) {}
+      }
+    }
     renderAllDONButtons();
   }
 
@@ -3003,7 +3017,9 @@
       const used = otherOptIns[0].data();
       const weekNum = week.replace('wc2026-week-','');
       const weekLabel = getWeekLabel(week);
-      const nextStart = getNextWeekStart(week);
+      // Next week start = start of week AFTER the used match's week
+      const usedMatchWeek = week; // week of THIS match (same as active DON's week)
+      const nextStart = getNextWeekStart(usedMatchWeek);
       const nextStr = nextStart ? nextStart.toLocaleDateString('en-GB', {day:'2-digit',month:'short',timeZone:'Asia/Jerusalem'}) : 'next week';
       return alert('🎰 Already used Double or Nothing in Week ' + weekNum + ' (' + weekLabel + ') on ' + (used.matchTeams || 'another match') + '!\n\nNext DON available from ' + nextStr + '.\n\nOr tap the active DON to cancel it first.');
     }
@@ -3039,11 +3055,16 @@
         // For simplicity: if any DON is active, lock others in same week
         // We'll use a data attribute set during render
         const thisBtn = document.getElementById('don-btn-' + mId);
-        const activeBtn = document.getElementById('don-btn-' + activeMatchId);
         const thisWeek = thisBtn?.dataset?.week || '';
-        const activeWeek = activeBtn?.dataset?.week || '';
-        // If same week OR we can't determine week, lock it
-        isLocked = !thisWeek || !activeWeek || thisWeek === activeWeek;
+        // Compare this match's week against the stored activeDonWeek
+        if (thisWeek && activeDonWeek) {
+          isLocked = thisWeek === activeDonWeek;
+        } else if (!thisWeek && activeDonWeek) {
+          // This button just rendered without data-week yet — lock it conservatively
+          isLocked = true;
+        } else {
+          isLocked = false;
+        }
       }
 
       if (isActive) {
@@ -3058,9 +3079,9 @@
       } else if (isLocked) {
         // Another match already has DON — grey out
         // Find which week this match is in and when next DON is available
-        const btnMatchId = mId;
-        const activeWeekKey = [...myDonMatches].length > 0 ? getWeekKey(new Date()) : '';
-        const nextStart = activeWeekKey ? getNextWeekStart(activeWeekKey) : null;
+        // Use stored activeDonWeek (works even when active match is on different day tab)
+        const activeWeekKey = activeDonWeek || getWeekKey(new Date());
+        const nextStart = getNextWeekStart(activeWeekKey);
         const nextStr = nextStart ? nextStart.toLocaleDateString('en-GB',{day:'2-digit',month:'short',timeZone:'Asia/Jerusalem'}) : 'next week';
         btn.style.cssText = 'width:100%;padding:10px 14px;border-radius:12px;border:1.5px dashed #555;background:var(--surface2);color:var(--text-muted);cursor:not-allowed;display:flex;align-items:center;gap:10px;opacity:0.45;';
         btn.title = 'DON already used this week. Next available: ' + nextStr;
@@ -5652,7 +5673,10 @@
     }
 
     loadExistingPredictions(matchesSnap);
-    setTimeout(loadDONStatus, 500);
+    setTimeout(() => {
+      loadDONStatus();
+      loadJokerStatus();
+    }, 500);
   }
 
   async function loadExistingPredictions(matchesSnap) {
