@@ -2926,18 +2926,40 @@
   let donMatchId = null;
   let myDonMatches = new Set();
 
+  // Tournament week boundaries (Thu 00:00 UTC to next Wed 23:59 UTC)
+  // Week 1: Jun 11-17, Week 2: Jun 18-24, Week 3: Jun 25-Jul 1, etc.
+  const TOURNAMENT_WEEKS = [
+    { num:1, start:'2026-06-11T00:00:00Z', end:'2026-06-18T00:00:00Z', label:'Jun 11–17' },
+    { num:2, start:'2026-06-18T00:00:00Z', end:'2026-06-25T00:00:00Z', label:'Jun 18–24' },
+    { num:3, start:'2026-06-25T00:00:00Z', end:'2026-07-02T00:00:00Z', label:'Jun 25–Jul 1' },
+    { num:4, start:'2026-07-02T00:00:00Z', end:'2026-07-09T00:00:00Z', label:'Jul 2–8' },
+    { num:5, start:'2026-07-09T00:00:00Z', end:'2026-07-16T00:00:00Z', label:'Jul 9–15' },
+    { num:6, start:'2026-07-16T00:00:00Z', end:'2026-07-20T00:00:00Z', label:'Jul 16–19 (Final)' },
+  ];
+
   function getWeekKey(date) {
-    // Tournament weeks: Wed 11 Jun = week 1, Wed 18 Jun = week 2, etc.
-    const d = date || new Date();
-    const tourneyStart = new Date('2026-06-11T00:00:00Z');
-    const diff = d - tourneyStart;
-    if (diff < 0) return 'pre-tournament';
-    const weekNum = Math.floor(diff / (7 * 24 * 60 * 60 * 1000)) + 1;
-    return `wc2026-week-${weekNum}`;
+    const d = date instanceof Date ? date : new Date();
+    for (const w of TOURNAMENT_WEEKS) {
+      if (d >= new Date(w.start) && d < new Date(w.end)) return 'wc2026-week-' + w.num;
+    }
+    return 'wc2026-week-0';
   }
 
   function getMatchWeekKey(kickoffDate) {
-    return getWeekKey(kickoffDate instanceof Date ? kickoffDate : new Date(kickoffDate));
+    const d = kickoffDate instanceof Date ? kickoffDate : new Date(kickoffDate);
+    return getWeekKey(d);
+  }
+
+  function getWeekLabel(weekKey) {
+    const num = parseInt(weekKey.replace('wc2026-week-',''));
+    const w = TOURNAMENT_WEEKS.find(x => x.num === num);
+    return w ? w.label : weekKey;
+  }
+
+  function getNextWeekStart(weekKey) {
+    const num = parseInt(weekKey.replace('wc2026-week-',''));
+    const w = TOURNAMENT_WEEKS.find(x => x.num === num + 1);
+    return w ? new Date(w.start) : null;
   }
 
   async function loadDONStatus() {
@@ -2976,7 +2998,10 @@
     if (otherOptIns.length > 0) {
       const used = otherOptIns[0].data();
       const weekNum = week.replace('wc2026-week-','');
-      return alert('🎰 Already used Double or Nothing in Week ' + weekNum + ' on ' + (used.matchTeams || 'another match') + '!\n\nTap the active DON button to cancel it first.');
+      const weekLabel = getWeekLabel(week);
+      const nextStart = getNextWeekStart(week);
+      const nextStr = nextStart ? nextStart.toLocaleDateString('en-GB', {day:'2-digit',month:'short',timeZone:'Asia/Jerusalem'}) : 'next week';
+      return alert('🎰 Already used Double or Nothing in Week ' + weekNum + ' (' + weekLabel + ') on ' + (used.matchTeams || 'another match') + '!\n\nNext DON available from ' + nextStr + '.\n\nOr tap the active DON to cancel it first.');
     }
 
     const matchData = matchSnap.data();
@@ -3016,11 +3041,17 @@
           <span style="font-size:18px;">×</span>`;
       } else if (isLocked) {
         // Another match already has DON — grey out
-        btn.style.cssText = 'width:100%;padding:10px 14px;border-radius:12px;border:1.5px dashed #555;background:var(--surface2);color:var(--text-muted);cursor:not-allowed;display:flex;align-items:center;gap:10px;opacity:0.5;';
+        // Find which week this match is in and when next DON is available
+        const btnMatchId = mId;
+        const activeWeekKey = [...myDonMatches].length > 0 ? getWeekKey(new Date()) : '';
+        const nextStart = activeWeekKey ? getNextWeekStart(activeWeekKey) : null;
+        const nextStr = nextStart ? nextStart.toLocaleDateString('en-GB',{day:'2-digit',month:'short',timeZone:'Asia/Jerusalem'}) : 'next week';
+        btn.style.cssText = 'width:100%;padding:10px 14px;border-radius:12px;border:1.5px dashed #555;background:var(--surface2);color:var(--text-muted);cursor:not-allowed;display:flex;align-items:center;gap:10px;opacity:0.45;';
+        btn.title = 'DON already used this week. Next available: ' + nextStr;
         btn.innerHTML = `<span style="font-size:24px;line-height:1;flex-shrink:0;">🎰</span>
           <div style="text-align:left;">
             <div style="font-size:12px;font-weight:700;">DOUBLE OR NOTHING</div>
-            <div style="font-size:10px;margin-top:1px;">Already used this week — cancel the other one first</div>
+            <div style="font-size:10px;margin-top:1px;">Used this week · Next DON available ${nextStr}</div>
           </div>`;
       } else {
         // Available
@@ -4570,47 +4601,111 @@
     document.querySelectorAll('[id^="joker-btn-"]').forEach(btn => {
       const matchId = btn.id.replace('joker-btn-','');
       if (jokerUsed && jokerMatchId === matchId) {
-        btn.textContent = '🃏 Active!';
-        btn.style.background = '#FAEEDA';
-        btn.style.borderColor = '#BA7517';
-        btn.disabled = true;
+        btn.style.cssText = 'padding:6px 14px;border-radius:10px;border:1.5px solid #F59E0B;background:linear-gradient(135deg,#BA7517,#F59E0B);color:#000;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px;animation:jokerPulse 2s ease infinite;';
+        btn.innerHTML = '<span style="font-size:18px;line-height:1;">🃏</span><span style="font-size:10px;letter-spacing:0.04em;">ACTIVE ✅</span>';
+        btn.title = 'Joker active! Tap to cancel.';
+        btn.disabled = false;
       } else if (jokerUsed) {
-        btn.textContent = '🃏';
         btn.style.opacity = '0.3';
+        btn.style.cursor = 'not-allowed';
         btn.disabled = true;
-        btn.title = 'Joker already used on another match';
+        btn.title = 'Joker already used on another match this tournament';
       }
     });
   }
 
+  // Add joker animation keyframes
+  const jokerStyle = document.createElement('style');
+  jokerStyle.textContent = `
+    @keyframes jokerEntrance { from { transform:scale(0.5) rotate(-10deg); opacity:0; } to { transform:scale(1) rotate(0deg); opacity:1; } }
+    @keyframes jokerSpin { 0%{transform:rotateY(0deg) scale(1)} 50%{transform:rotateY(180deg) scale(1.3)} 100%{transform:rotateY(360deg) scale(1)} }
+    @keyframes jokerActive { 0%,100%{transform:scale(1)} 25%{transform:scale(1.15) rotate(-3deg)} 75%{transform:scale(1.15) rotate(3deg)} }
+    @keyframes jokerPulse { 0%,100%{box-shadow:0 0 0 0 rgba(239,159,39,0.4)} 50%{box-shadow:0 0 0 8px rgba(239,159,39,0)} }
+  `;
+  document.head.appendChild(jokerStyle);
+
   window.activateJoker = async (matchId) => {
-    if (jokerUsed) return alert('You already used your Joker card this tournament!');
-    const deadline = new Date((await getDoc(doc(db, 'matches', matchId))).data()?.kickoff?.toDate?.() || 0);
-    deadline.setHours(deadline.getHours() - 24);
-    if (new Date() >= deadline) return alert('Deadline passed - can\'t activate Joker on this match.');
-    if (!confirm(`🃏 Activate Joker on this match?\n\nIf your prediction is correct, all points are DOUBLED.\nYou only get one Joker for the whole tournament!`)) return;
+    // If already active on THIS match — offer cancel
+    if (jokerUsed && jokerMatchId === matchId) {
+      const popup = document.createElement('div');
+      popup.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;';
+      popup.innerHTML = `<div style="background:#1a1200;border:2px solid #BA7517;border-radius:16px;padding:1.5rem;max-width:300px;width:100%;text-align:center;">
+        <div style="font-size:48px;margin-bottom:8px;">🃏</div>
+        <div style="font-size:16px;font-weight:700;color:#EF9F27;margin-bottom:8px;">Cancel Joker?</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.65);margin-bottom:1.25rem;">You can then play it on a different match.</div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="this.closest('div[style*=fixed]').remove()" style="flex:1;padding:9px;border-radius:8px;border:0.5px solid #555;background:none;color:#888;font-size:13px;cursor:pointer;">Keep it</button>
+          <button onclick="cancelJoker('${matchId}',this.closest('div[style*=fixed]'))" style="flex:1;padding:9px;border-radius:8px;border:none;background:#E24B4A;color:white;font-size:13px;font-weight:600;cursor:pointer;">Cancel Joker</button>
+        </div>
+      </div>`;
+      document.body.appendChild(popup);
+      return;
+    }
+
+    if (jokerUsed) return alert('🃏 Joker already used on another match this tournament!');
+
+    const matchSnap = await getDoc(doc(db, 'matches', matchId));
+    const kickoff = matchSnap.data()?.kickoff?.toDate?.();
+    if (kickoff && new Date() >= new Date(kickoff.getTime() - 24*60*60*1000)) {
+      return alert('Deadline passed — can\'t activate Joker on this match.');
+    }
+
+    // Dramatic popup
+    const popup = document.createElement('div');
+    popup.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;animation:fadeIn 0.2s ease;';
+    popup.innerHTML = `<div style="background:#1a1200;border:2px solid #BA7517;border-radius:16px;padding:1.5rem;max-width:320px;width:100%;text-align:center;animation:jokerEntrance 0.4s cubic-bezier(0.175,0.885,0.32,1.275);">
+      <div style="font-size:64px;margin-bottom:6px;display:inline-block;animation:jokerSpin 0.7s ease 0.1s both;">🃏</div>
+      <div style="font-family:monospace;font-size:10px;letter-spacing:4px;color:#BA7517;margin-bottom:6px;">⚠️ ONE PER TOURNAMENT</div>
+      <div style="font-size:18px;font-weight:800;color:#EF9F27;margin-bottom:10px;">Play Your Joker?</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.7);line-height:1.65;margin-bottom:1.25rem;">
+        ✅ Correct → all match points <strong style="color:#4ade80;">×2</strong><br>
+        ❌ Wrong → no penalty, Joker just fizzles<br><br>
+        <strong style="color:#EF9F27;">You only get ONE Joker this tournament.</strong>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="this.closest('div[style*=fixed]').remove()" style="flex:1;padding:10px;border-radius:8px;border:0.5px solid #555;background:none;color:#888;font-size:13px;cursor:pointer;">Not yet</button>
+        <button onclick="confirmJoker('${matchId}',this.closest('div[style*=fixed]'))" style="flex:1;padding:10px;border-radius:8px;border:none;background:linear-gradient(135deg,#BA7517,#EF9F27);color:#000;font-size:13px;font-weight:800;cursor:pointer;">🃏 PLAY IT!</button>
+      </div>
+    </div>`;
+    document.body.appendChild(popup);
+  };
+
+  window.cancelJoker = async (matchId, popupEl) => {
+    if (popupEl) popupEl.remove();
+    const jokerSnap = await getDocs(query(collection(db, 'jokerCards'), where('userId', '==', currentUser.uid)));
+    for (const d of jokerSnap.docs) await deleteDoc(d.ref);
+    jokerUsed = false;
+    jokerMatchId = null;
+    loadJokerStatus();
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#555;color:#fff;font-size:13px;padding:10px 16px;border-radius:10px;z-index:9999;white-space:nowrap;';
+    t.textContent = '🃏 Joker cancelled — play it on another match';
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.transition='opacity 0.5s'; t.style.opacity='0'; setTimeout(()=>t.remove(),500); }, 2500);
+  };
+
+  window.confirmJoker = async (matchId, popupEl) => {
+    if (popupEl) popupEl.remove();
     await setDoc(doc(db, 'jokerCards', `${currentUser.uid}`), {
-      userId: currentUser.uid,
-      matchId,
+      userId: currentUser.uid, matchId,
       nickname: currentUserData?.nickname || currentUser.displayName,
       activatedAt: serverTimestamp()
     });
     jokerUsed = true;
     jokerMatchId = matchId;
-    const btn = document.getElementById(`joker-btn-${matchId}`);
-    if (btn) {
-      btn.innerHTML = '<span style="font-size:20px;line-height:1.1;">🃏</span><span style="font-size:9px;letter-spacing:0.04em;">ACTIVE ✅</span>';
-      btn.style.background = 'linear-gradient(135deg,#BA7517,#F59E0B)';
-      btn.style.color = 'white';
-      btn.disabled = true;
-    }
-    // Show toast
     triggerAutoSave(matchId, '', '');
-    const tip = document.createElement('div');
-    tip.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#BA7517;color:#fff;font-size:13px;padding:10px 16px;border-radius:10px;z-index:9999;white-space:nowrap;';
-    tip.textContent = '🃏 Joker activated! Points doubled if correct!';
-    document.body.appendChild(tip);
-    setTimeout(() => { tip.style.transition='opacity 0.5s'; tip.style.opacity='0'; setTimeout(()=>tip.remove(),500); }, 3000);
+    const btn = document.getElementById('joker-btn-' + matchId);
+    if (btn) {
+      btn.style.cssText = 'padding:6px 14px;border-radius:10px;border:1.5px solid #F59E0B;background:linear-gradient(135deg,#BA7517,#F59E0B);color:#000;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px;animation:jokerActive 0.5s ease,jokerPulse 2s ease infinite;';
+      btn.innerHTML = '<span style="font-size:18px;line-height:1;">🃏</span><span style="font-size:10px;letter-spacing:0.04em;">ACTIVE ✅</span>';
+      btn.title = 'Joker active on this match! Tap to cancel.';
+    }
+    loadJokerStatus();
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#BA7517,#EF9F27);color:#000;font-size:14px;font-weight:800;padding:12px 20px;border-radius:12px;z-index:9999;white-space:nowrap;animation:jokerEntrance 0.3s ease;';
+    t.textContent = '🃏 JOKER ACTIVATED! Points doubled if correct!';
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.transition='opacity 0.5s'; t.style.opacity='0'; setTimeout(()=>t.remove(),500); }, 3000);
   };
 
   // ========== STREAK ==========
@@ -5485,16 +5580,8 @@
             </div>
           </div>
           ${!isPast ? `
-            <div style="display:flex;gap:8px;align-items:center;margin-top:0.75rem;">
-              
-              <button id="joker-btn-${d.id}" onclick="activateJoker('${d.id}')" title="Use your Joker - double your points if correct!"
-                style="padding:6px 10px;border-radius:10px;border:1.5px solid #BA7517;background:linear-gradient(135deg,var(--badge-gold-bg),var(--badge-gold-bg));color:var(--badge-gold-text);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:52px;box-shadow:0 2px 6px rgba(186,117,23,0.25);"
-                onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
-                <span style="font-size:20px;line-height:1.1;">🃏</span>
-                <span style="font-size:9px;letter-spacing:0.04em;">JOKER</span>
-              </button>
-            </div>
-            <div id="don-row-${d.id}" style="margin-top:8px;">
+            <!-- DON row -->
+            <div id="don-row-${d.id}" style="margin-top:0.75rem;">
               <button id="don-btn-${d.id}" onclick="toggleDON('${d.id}')"
                 style="width:100%;padding:10px 14px;border-radius:12px;border:1.5px dashed #7C3AED;background:linear-gradient(135deg,var(--badge-blue-bg),var(--badge-blue-bg));color:#5B21B6;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(124,58,237,0.12);"
                 onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'">
@@ -5503,6 +5590,16 @@
                   <div style="font-size:12px;font-weight:700;letter-spacing:0.03em;">DOUBLE OR NOTHING</div>
                   <div style="font-size:10px;font-weight:400;opacity:0.7;margin-top:1px;">Correct = x2 result pts · Wrong = those pts deducted · First scorer always safe</div>
                 </div>
+              </button>
+            </div>
+            <!-- Joker — right aligned -->
+            <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+              <button id="joker-btn-${d.id}" onclick="activateJoker('${d.id}')"
+                title="Use your Joker - double your points if correct! Once per tournament."
+                style="padding:6px 14px;border-radius:10px;border:1.5px solid #BA7517;background:linear-gradient(135deg,var(--badge-gold-bg),var(--badge-gold-bg));color:var(--badge-gold-text);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.2s;display:flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(186,117,23,0.25);"
+                onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
+                <span style="font-size:18px;line-height:1;">🃏</span>
+                <span style="font-size:10px;letter-spacing:0.04em;">JOKER</span>
               </button>
             </div>` : `<p style="font-size:12px;color:var(--text-muted);margin-top:0.75rem;text-align:center;">${isFinished ? '✅ Match finished' : '🔒 Deadline passed - predictions locked'}</p>`}
           ${finishedResult}
