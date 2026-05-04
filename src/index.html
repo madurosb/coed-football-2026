@@ -1677,6 +1677,7 @@
       <div id="matches-date-tabs" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;flex:1;"></div>
       <button onclick="scrollDateTabs(1)" style="flex-shrink:0;width:28px;height:28px;border-radius:50%;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">›</button>
     </div>
+    <div id="save-all-area"></div>
     <div class="matches" id="matches-list">
       <div style="padding:1rem; text-align:center; font-size:13px; color:var(--text-muted);">Loading matches...</div>
     </div>
@@ -1913,12 +1914,18 @@
 
   <!-- TIPS -->
   <div class="page" id="page-tips">
+    <!-- Tabs -->
+    <div style="display:flex;gap:6px;margin-bottom:1rem;">
+      <button id="tips-tab-ai" onclick="setTipsTab('ai')" style="flex:1;padding:8px;border-radius:8px;border:0.5px solid var(--green);background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">💡 AI Tips</button>
+      <button id="tips-tab-scorers" onclick="setTipsTab('scorers')" style="flex:1;padding:8px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">⚽ Top Scorers</button>
+    </div>
     <div id="tips-content">
       <div style="text-align:center;padding:3rem 1rem;">
         <div style="font-size:32px;margin-bottom:1rem;">💡</div>
         <div style="font-size:15px;color:var(--text-muted);">Loading tips...</div>
       </div>
     </div>
+    <div id="tips-scorers-content" style="display:none;"></div>
   </div>
 
   <!-- LIVE GAME -->
@@ -5263,6 +5270,25 @@
 
   function renderMatches(matchesSnap, filterDate) {
     const container = document.getElementById('matches-list');
+
+    // Add Save All button for current date tab
+    const saveAllArea = document.getElementById('save-all-area');
+    if (saveAllArea && filterDate) {
+      saveAllArea.innerHTML = `
+        <div style="background:linear-gradient(135deg,#0a1f0a,#1a3a1a);border-radius:12px;padding:10px 14px;margin-bottom:1rem;display:flex;align-items:center;gap:10px;">
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:600;color:#4ade80;margin-bottom:1px;">💾 Save all predictions for ${filterDate}</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.5);">⚠️ Important: predictions are NOT saved automatically — tap below!</div>
+          </div>
+          <button id="save-all-day-btn" onclick="saveAllDayPredictions('${filterDate}', this)"
+            style="flex-shrink:0;padding:8px 16px;border-radius:8px;border:1.5px solid #1D9E75;background:rgba(29,158,117,0.15);color:#4ade80;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">
+            💾 Save all
+          </button>
+        </div>`;
+    } else if (saveAllArea) {
+      saveAllArea.innerHTML = '';
+    }
+
     const TEAM_FLAGS = {
       // North/Central America & Caribbean
       'Mexico':'mx','USA':'us','United States':'us','US':'us','Canada':'ca',
@@ -5387,8 +5413,8 @@
               <div><div class="bonus-label">First goalscorer</div><div class="bonus-pts">+2 pts if correct</div></div>
               <select id="scorer-${d.id}" ${isPast?'disabled':''} onchange="autoSaveScorer('${d.id}', this)">
                 <option value="">Select player...</option>
-                <optgroup label="${m.homeTeam}">${(m.homePlayers||[]).map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
-                <optgroup label="${m.awayTeam}">${(m.awayPlayers||[]).map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
+                <optgroup label="${m.homeTeam}">${getPlayersForTeam(m.homeTeam, m.homePlayers).map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
+                <optgroup label="${m.awayTeam}">${getPlayersForTeam(m.awayTeam, m.awayPlayers).map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
               </select>
             </div>
           </div>
@@ -6862,6 +6888,26 @@
   }
 
   // ========== TIPS PAGE ==========
+  window.setTipsTab = (tab) => {
+    const aiBtn = document.getElementById('tips-tab-ai');
+    const scBtn = document.getElementById('tips-tab-scorers');
+    const aiContent = document.getElementById('tips-content');
+    const scContent = document.getElementById('tips-scorers-content');
+    if (tab === 'ai') {
+      aiBtn.style.background = 'var(--green)'; aiBtn.style.color = 'white'; aiBtn.style.borderColor = 'var(--green)';
+      scBtn.style.background = 'none'; scBtn.style.color = 'var(--text-muted)'; scBtn.style.borderColor = 'var(--border)';
+      aiContent.style.display = 'block'; scContent.style.display = 'none';
+    } else {
+      scBtn.style.background = 'var(--green)'; scBtn.style.color = 'white'; scBtn.style.borderColor = 'var(--green)';
+      aiBtn.style.background = 'none'; aiBtn.style.color = 'var(--text-muted)'; aiBtn.style.borderColor = 'var(--border)';
+      aiContent.style.display = 'none'; scContent.style.display = 'block';
+      if (!scContent.dataset.loaded) {
+        loadTopScorersSection(scContent);
+        scContent.dataset.loaded = '1';
+      }
+    }
+  };
+
   let tipsCache = null;
   let tipsCacheDate = null;
 
@@ -7918,6 +7964,250 @@
 
   // Init tutorial on first render
   setTimeout(() => updateTutorial(), 300);
+
+  // ========== FALLBACK PLAYER LISTS for teams missing API data ==========
+  const FALLBACK_PLAYERS = {
+    'DR Congo': ['Silas Wissa','Yoane Wissa','Cedric Bakambu','Chancel Mbemba','Arthur Masuaku','Paul-Jose Mpoku','Neeskens Kebano','Theo Bongonda','Samuel Bastien','Dodi Lukebakio','Yannick Bolasie','Ben Malango','Chadrac Akolo','Elia Meschack','Fiston Mayele'],
+    'Bosnia & Herzegovina': ['Ermedin Demirovic','Edin Dzeko','Dzenis Burnic','Rade Krunic','Nedim Bajrami','Edin Visca','Amar Dedic','Anel Ahmedhodzic','Sasa Kalajdzic','Miralem Pjanic','Benjamin Tatar','Stef Pinho','Armin Gigovic','Luka Menalo','Denis Huseinbasic'],
+    'Bosnia-Herzegovina': ['Ermedin Demirovic','Edin Dzeko','Dzenis Burnic','Rade Krunic','Nedim Bajrami','Edin Visca','Amar Dedic','Anel Ahmedhodzic','Sasa Kalajdzic','Miralem Pjanic','Benjamin Tatar','Stef Pinho','Armin Gigovic','Luka Menalo','Denis Huseinbasic'],
+    'Curaçao': ['Leandro Bacuna','Cuco Martina','Rangelo Janga','Elson Hooi','Jarchinio Antonia','Gino van Kessel','Jurien Gaari','Darryl Lachman','Juninho Bacuna','Etienne Reijnen','Quentin Boksteen','Brandley Kuwas','Delano Burgzorg','Cuco Martina','Gilmar Mejeur'],
+    'Curacao': ['Leandro Bacuna','Cuco Martina','Rangelo Janga','Elson Hooi','Jarchinio Antonia','Gino van Kessel','Jurien Gaari','Darryl Lachman','Juninho Bacuna','Etienne Reijnen','Quentin Boksteen','Brandley Kuwas','Delano Burgzorg','Gilmar Mejeur','Ricky van Haaren'],
+    'Cabo Verde': ['Garry Rodrigues','Ryan Mendes','Kenny Rocha Santos','Dylan Tavares','Roberto Lopes','Jamiro Monteiro','Steven Fortes','Julio Tavares','Carlos Ponck','Stopira','Willy Semedo','Kevin Pina','Diney','Nuno Borges','Patrick Andrade'],
+    'Cape Verde': ['Garry Rodrigues','Ryan Mendes','Kenny Rocha Santos','Dylan Tavares','Roberto Lopes','Jamiro Monteiro','Steven Fortes','Julio Tavares','Carlos Ponck','Stopira','Willy Semedo','Kevin Pina','Diney','Nuno Borges','Patrick Andrade'],
+    'Uzbekistan': ['Eldor Shomurodov','Jaloliddin Masharipov','Abbosbek Fayzullaev','Otabek Shukurov','Dostonbek Khamdamov','Khojiakbar Alijonov','Islom Tukhtamurodov','Sanjar Tursunov','Sherzod Nasrullayev','Jasurbek Yakhshiboev','Jamshid Iskanderov','Bunyod Isoqov','Asilbek Turgunov','Dilshod Haydarov','Muhammadkodir Hamrobekov'],
+    'Haiti': ['Duckens Nazon','Frantzdy Pierrot','Steeven Saba','Mechack Jerome','Derrick Etienne','Wilde-Donald Guerrier','Kevin Laventure','Duckens Chery','Jhon Luzincourt','Frantz Gerald Calixte','Jeffrey Doret','Kervens Desir','Peterson Joseph','Maxithe Theodore','Romain Aime'],
+    'Jordan': ['Musa Al-Taamari','Yazan Al-Naimat','Baha Faisal','Ahmad Gharaibeh','Hamza Al-Dardour','Ashraf Nour','Odai Al-Rashid','Mohammad Abu Hasna','Rawan Rawashdeh','Ahmad Al-Saify','Ali Olwan','Mousa Suleiman','Khaled Al-Hajri','Hassan Abdel-Fattah','Nour Al-Rawabdeh'],
+  };
+
+  function getPlayersForTeam(teamName, apiPlayers) {
+    if (apiPlayers && apiPlayers.length > 0) return apiPlayers;
+    return FALLBACK_PLAYERS[teamName] || [];
+  }
+
+  // ========== SAVE ALL PREDICTIONS FOR DAY ==========
+  window.saveAllDayPredictions = async (dateKey, btn) => {
+    const matches = allMatchesSnap ? [...allMatchesSnap.docs] : [];
+    const dayMatches = matches.filter(d => {
+      const m = d.data();
+      const kickoff = m.kickoff?.toDate?.() || new Date(m.kickoff);
+      const dk = kickoff.toLocaleDateString('en-GB', { day:'2-digit', month:'short', timeZone:'Asia/Jerusalem' });
+      return dk === dateKey;
+    });
+
+    const now = new Date();
+    let saved = 0, skipped = 0;
+
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    for (const d of dayMatches) {
+      const m = d.data();
+      const kickoff = m.kickoff?.toDate?.() || new Date(m.kickoff);
+      const deadline = new Date(kickoff.getTime() - 24*60*60*1000);
+      if (deadline < now) { skipped++; continue; }
+
+      const homeEl = document.getElementById('home-' + d.id);
+      const awayEl = document.getElementById('away-' + d.id);
+      if (!homeEl || !awayEl) continue;
+
+      const homeScore = parseInt(homeEl.dataset?.val ?? homeEl.textContent ?? 0);
+      const awayScore = parseInt(awayEl.dataset?.val ?? awayEl.textContent ?? 0);
+      const firstScorer = document.getElementById('scorer-' + d.id)?.value || '';
+
+      try {
+        await setDoc(doc(db, 'predictions', `${currentUser.uid}_${d.id}`), {
+          userId: currentUser.uid, matchId: d.id,
+          homeScore, awayScore, firstScorer,
+          submittedAt: serverTimestamp()
+        });
+        saved++;
+        // Mark individual save btn as saved
+        const individualBtn = document.querySelector(`[onclick*="savePrediction('${d.id}'"]`);
+        if (individualBtn) { individualBtn.textContent = '✅ Saved!'; individualBtn.classList.add('saved'); }
+      } catch(e) { skipped++; }
+    }
+
+    btn.textContent = `✅ Saved ${saved} prediction${saved!==1?'s':''}!`;
+    btn.style.background = 'var(--green)';
+    btn.style.color = 'white';
+    btn.style.borderColor = 'var(--green)';
+    setTimeout(() => {
+      btn.textContent = `💾 Save all predictions for this day`;
+      btn.style.background = '';
+      btn.style.color = '';
+      btn.style.borderColor = '';
+      btn.disabled = false;
+    }, 3000);
+  };
+
+  // ========== TOP SCORERS TABLE FOR TIPS ==========
+  const TOP_SCORERS_BY_COUNTRY = {
+    'Argentina':   [{name:'Lionel Messi',goals:672,team:'Inter Miami'},{name:'Lautaro Martinez',goals:135,team:'Inter Milan'},{name:'Julian Alvarez',goals:65,team:'Atletico Madrid'},{name:'Alejandro Garnacho',goals:22,team:'Man United'},{name:'Rodrigo De Paul',goals:25,team:'Atletico Madrid'}],
+    'France':      [{name:'Kylian Mbappe',goals:350,team:'Real Madrid'},{name:'Antoine Griezmann',goals:326,team:'Atletico Madrid'},{name:'Marcus Thuram',goals:40,team:'Inter Milan'},{name:'Randal Kolo Muani',goals:28,team:'PSG'},{name:'Ousmane Dembele',goals:70,team:'PSG'}],
+    'Brazil':      [{name:'Vinicius Jr.',goals:130,team:'Real Madrid'},{name:'Endrick',goals:18,team:'Real Madrid'},{name:'Raphinha',goals:85,team:'Barcelona'},{name:'Gabriel Jesus',goals:120,team:'Arsenal'},{name:'Gabriel Martinelli',goals:55,team:'Arsenal'}],
+    'England':     [{name:'Harry Kane',goals:315,team:'Bayern Munich'},{name:'Bukayo Saka',goals:90,team:'Arsenal'},{name:'Jude Bellingham',goals:55,team:'Real Madrid'},{name:'Phil Foden',goals:80,team:'Man City'},{name:'Cole Palmer',goals:45,team:'Chelsea'}],
+    'Spain':       [{name:'Lamine Yamal',goals:22,team:'Barcelona'},{name:'Alvaro Morata',goals:185,team:'AC Milan'},{name:'Nico Williams',goals:20,team:'Athletic Club'},{name:'Dani Olmo',goals:28,team:'Barcelona'},{name:'Mikel Oyarzabal',goals:95,team:'Real Sociedad'}],
+    'Portugal':    [{name:'Cristiano Ronaldo',goals:912,team:'Al-Nassr'},{name:'Bruno Fernandes',goals:120,team:'Man United'},{name:'Goncalo Ramos',goals:45,team:'PSG'},{name:'Rafael Leao',goals:55,team:'AC Milan'},{name:'Diogo Jota',goals:80,team:'Liverpool'}],
+    'Germany':     [{name:'Kai Havertz',goals:80,team:'Arsenal'},{name:'Florian Wirtz',goals:55,team:'Bayer Leverkusen'},{name:'Jamal Musiala',goals:40,team:'Bayern Munich'},{name:'Niclas Fullkrug',goals:65,team:'West Ham'},{name:'Leroy Sane',goals:90,team:'Bayern Munich'}],
+    'Netherlands': [{name:'Cody Gakpo',goals:60,team:'Liverpool'},{name:'Memphis Depay',goals:165,team:'Corinthians'},{name:'Wout Weghorst',goals:70,team:'Hoffenheim'},{name:'Xavi Simons',goals:30,team:'Leipzig'},{name:'Donyell Malen',goals:55,team:'Dortmund'}],
+    'Belgium':     [{name:'Romelu Lukaku',goals:345,team:'Napoli'},{name:'Lois Openda',goals:45,team:'Leipzig'},{name:'Leandro Trossard',goals:50,team:'Arsenal'},{name:'Jeremy Doku',goals:25,team:'Man City'},{name:'Charles De Ketelaere',goals:40,team:'Atalanta'}],
+    'Uruguay':     [{name:'Luis Suarez',goals:438,team:'Nacional'},{name:'Darwin Nunez',goals:65,team:'Liverpool'},{name:'Maxi Gomez',goals:65,team:'Trabzonspor'},{name:'Facundo Torres',goals:35,team:'Orlando City'},{name:'Federico Valverde',goals:30,team:'Real Madrid'}],
+    'Colombia':    [{name:'Radamel Falcao',goals:400,team:'Rionegro Aguilas'},{name:'Jhon Duran',goals:30,team:'Aston Villa'},{name:'Luis Diaz',goals:50,team:'Liverpool'},{name:'Cucho Hernandez',goals:45,team:'Columbus Crew'},{name:'Rafael Santos Borre',goals:70,team:'Frankfurt'}],
+    'Morocco':     [{name:'Youssef En-Nesyri',goals:90,team:'Fenerbahce'},{name:'Hakim Ziyech',goals:75,team:'Galatasaray'},{name:'Soufiane Rahimi',goals:35,team:'Al-Ain'},{name:'Abde Ezzalzouli',goals:25,team:'Betis'},{name:'Sofiane Boufal',goals:40,team:'Angers'}],
+    'Senegal':     [{name:'Sadio Mane',goals:290,team:'Al-Nassr'},{name:'Nicolas Jackson',goals:35,team:'Chelsea'},{name:'Ismaila Sarr',goals:45,team:'Marseille'},{name:'Iliman Ndiaye',goals:28,team:'Everton'},{name:'Bamba Dieng',goals:30,team:'Marseille'}],
+    'USA':         [{name:'Christian Pulisic',goals:75,team:'AC Milan'},{name:'Folarin Balogun',goals:35,team:'Monaco'},{name:'Ricardo Pepi',goals:30,team:'PSV'},{name:'Gio Reyna',goals:20,team:'Dortmund'},{name:'Josh Weah',goals:18,team:'Lille'}],
+    'Mexico':      [{name:'Raul Jimenez',goals:195,team:'Fulham'},{name:'Santiago Gimenez',goals:55,team:'AC Milan'},{name:'Hirving Lozano',goals:105,team:'PSV'},{name:'Henry Martin',goals:80,team:'Club America'},{name:'Roberto Alvarado',goals:30,team:'Chivas'}],
+    'Japan':       [{name:'Kaoru Mitoma',goals:35,team:'Brighton'},{name:'Takefusa Kubo',goals:30,team:'Real Sociedad'},{name:'Ayase Ueda',goals:40,team:'Feyenoord'},{name:'Ritsu Doan',goals:35,team:'Freiburg'},{name:'Daichi Kamada',goals:45,team:'Crystal Palace'}],
+    'South Korea': [{name:'Son Heung-min',goals:175,team:'Tottenham'},{name:'Cho Gue-sung',goals:25,team:'Midtjylland'},{name:'Hwang Hee-chan',goals:40,team:'Wolves'},{name:'Lee Kang-in',goals:25,team:'PSG'},{name:'Oh Hyeon-gyu',goals:28,team:'Celtic'}],
+    'Australia':   [{name:'Adam Taggart',goals:55,team:'Cerezo Osaka'},{name:'Mitchell Duke',goals:38,team:'Fagiano Okayama'},{name:'Mathew Leckie',goals:30,team:'Melbourne City'},{name:'Garang Kuol',goals:15,team:'Hearts'},{name:'Marco Tilio',goals:18,team:'Celtic'}],
+    'Canada':      [{name:'Jonathan David',goals:90,team:'Lille'},{name:'Cyle Larin',goals:80,team:'Mallorca'},{name:'Alphonso Davies',goals:30,team:'Bayern Munich'},{name:'Tajon Buchanan',goals:20,team:'Inter Milan'},{name:'Ike Ugbo',goals:35,team:'Troyes'}],
+    'Ecuador':     [{name:'Enner Valencia',goals:190,team:'Internacional'},{name:'Michael Estrada',goals:30,team:'Cruz Azul'},{name:'Gonzalo Plata',goals:20,team:'Al-Qadsiah'},{name:'Jordy Caicedo',goals:45,team:'Olimpia'},{name:'Jeremy Sarmiento',goals:15,team:'Brighton'}],
+    'Switzerland': [{name:'Breel Embolo',goals:45,team:'Monaco'},{name:'Xherdan Shaqiri',goals:130,team:'Chicago Fire'},{name:'Dan Ndoye',goals:20,team:'Bologna'},{name:'Cedric Itten',goals:35,team:'Young Boys'},{name:'Zeki Amdouni',goals:22,team:'Burnley'}],
+    'Croatia':     [{name:'Andrej Kramaric',goals:145,team:'Hoffenheim'},{name:'Bruno Petkovic',goals:50,team:'Dinamo Zagreb'},{name:'Ivan Perisic',goals:110,team:'Hajduk Split'},{name:'Nikola Vlasic',goals:45,team:'Torino'},{name:'Marko Livaja',goals:75,team:'Hajduk Split'}],
+    'Sweden':      [{name:'Viktor Gyokeres',goals:85,team:'Sporting CP'},{name:'Alexander Isak',goals:55,team:'Newcastle'},{name:'Dejan Kulusevski',goals:50,team:'Tottenham'},{name:'Robin Quaison',goals:60,team:'Mainz'},{name:'Emil Forsberg',goals:80,team:'Leipzig'}],
+    'Norway':      [{name:'Erling Haaland',goals:180,team:'Man City'},{name:'Alexander Sorloth',goals:65,team:'Atletico Madrid'},{name:'Alexander Isak',goals:55,team:'Newcastle'},{name:'Jorgen Strand Larsen',goals:30,team:'Wolves'},{name:'Antonio Nusa',goals:15,team:'Leipzig'}],
+    'Denmark':     [{name:'Rasmus Hojlund',goals:30,team:'Man United'},{name:'Jonas Wind',goals:35,team:'Wolfsburg'},{name:'Andreas Skov Olsen',goals:30,team:'Club Brugge'},{name:'Kasper Dolberg',goals:60,team:'Anderlecht'},{name:'Martin Braithwaite',goals:75,team:'Espanyol'}],
+    'Austria':     [{name:'Marko Arnautovic',goals:115,team:'Inter Milan'},{name:'Michael Gregoritsch',goals:55,team:'Freiburg'},{name:'Christoph Baumgartner',goals:35,team:'Leipzig'},{name:'Patrick Wimmer',goals:20,team:'Wolfsburg'},{name:'Marcel Sabitzer',goals:55,team:'Dortmund'}],
+    'Scotland':    [{name:'Lawrence Shankland',goals:75,team:'Hearts'},{name:'Che Adams',goals:50,team:'Torino'},{name:'Scott McTominay',goals:25,team:'Napoli'},{name:'Ryan Christie',goals:35,team:'Bournemouth'},{name:'Billy Gilmour',goals:10,team:'Brighton'}],
+    'Turkey':      [{name:'Hakan Calhanoglu',goals:70,team:'Inter Milan'},{name:'Arda Guler',goals:15,team:'Real Madrid'},{name:'Kerem Akturkoglu',goals:45,team:'Benfica'},{name:'Baris Alper Yilmaz',goals:28,team:'Galatasaray'},{name:'Cengiz Under',goals:60,team:'Fenerbahce'}],
+    'Iran':        [{name:'Mehdi Taremi',goals:120,team:'Inter Milan'},{name:'Sardar Azmoun',goals:65,team:'Bayer Leverkusen'},{name:'Alireza Jahanbakhsh',goals:50,team:'Feyenoord'},{name:'Karim Ansarifard',goals:80,team:'Omonia'},{name:'Saman Ghoddos',goals:25,team:'Brentford'}],
+    'Saudi Arabia':[{name:'Firas Al-Buraikan',goals:45,team:'Al-Fateh'},{name:'Salem Al-Dawsari',goals:55,team:'Al-Hilal'},{name:'Saleh Al-Shehri',goals:38,team:'Al-Hilal'},{name:'Hattan Bahebri',goals:28,team:'Al-Shabab'},{name:'Abdullah Al-Hamdan',goals:25,team:'Al-Qadsiah'}],
+    'Egypt':       [{name:'Mohamed Salah',goals:210,team:'Liverpool'},{name:'Omar Marmoush',goals:35,team:'Man City'},{name:'Mostafa Mohamed',goals:35,team:'Galatasaray'},{name:'Mahmoud Hassan',goals:35,team:'Kasimpasa'},{name:'Ahmed Sayed Zizou',goals:25,team:'Zamalek'}],
+    'Ghana':       [{name:'Jordan Ayew',goals:55,team:'Leicester'},{name:'Mohammed Kudus',goals:30,team:'West Ham'},{name:'Antoine Semenyo',goals:20,team:'Bournemouth'},{name:'Inaki Williams',goals:45,team:'Athletic Club'},{name:'Abdul Fatawu',goals:15,team:'Leicester'}],
+    'Nigeria':     [{name:'Victor Osimhen',goals:100,team:'Galatasaray'},{name:'Taiwo Awoniyi',goals:40,team:'Nottm Forest'},{name:'Ademola Lookman',goals:45,team:'Atalanta'},{name:'Samuel Chukwueze',goals:30,team:'AC Milan'},{name:'Emmanuel Dennis',goals:35,team:'Nottm Forest'}],
+    'Qatar':       [{name:'Almoez Ali',goals:50,team:'Al-Duhail'},{name:'Akram Afif',goals:35,team:'Al-Sadd'},{name:'Hassan Al-Haydos',goals:65,team:'Al-Sadd'},{name:'Ismaeel Mohammad',goals:20,team:'Al-Gharafa'},{name:'Assim Madibo',goals:10,team:'Dallas'}],
+    'Iraq':        [{name:'Aymen Hussein',goals:40,team:'Al-Zawraa'},{name:'Mohanad Ali',goals:30,team:'Al-Shorta'},{name:'Amjed Attwan',goals:25,team:'Al-Zawraa'},{name:'Alaa Abbas',goals:22,team:'Al-Quwa Al-Jawiya'},{name:'Bashar Resan',goals:20,team:'Ashdod'}],
+    'DR Congo':    [{name:'Yoane Wissa',goals:35,team:'Brentford'},{name:'Cedric Bakambu',goals:80,team:'OM'},{name:'Silas Wissa',goals:20,team:'Wolfsburg'},{name:'Dodi Lukebakio',goals:35,team:'Sevilla'},{name:'Fiston Mayele',goals:25,team:'Pyramids'}],
+    'Bosnia & Herzegovina':[{name:'Ermedin Demirovic',goals:35,team:'Stuttgart'},{name:'Edin Dzeko',goals:285,team:'Fenerbahce'},{name:'Sasa Kalajdzic',goals:25,team:'Wolves'},{name:'Nedim Bajrami',goals:18,team:'Sassuolo'},{name:'Edin Visca',goals:60,team:'Basaksehir'}],
+    'Curaçao':     [{name:'Leandro Bacuna',goals:35,team:'Cardiff'},{name:'Gino van Kessel',goals:28,team:'Omonia'},{name:'Rangelo Janga',goals:25,team:'Roda JC'},{name:'Brandley Kuwas',goals:20,team:'Twente'},{name:'Delano Burgzorg',goals:18,team:'Hertha'}],
+    'Cabo Verde':  [{name:'Garry Rodrigues',goals:25,team:'Al-Rayyan'},{name:'Ryan Mendes',goals:20,team:'Unattached'},{name:'Julio Tavares',goals:35,team:'Vitoria Guimaraes'},{name:'Kenny Rocha Santos',goals:15,team:'Pacos Ferreira'},{name:'Jamiro Monteiro',goals:18,team:'Unattached'}],
+    'New Zealand': [{name:'Chris Wood',goals:110,team:'Nottm Forest'},{name:'Liberato Cacace',goals:15,team:'Empoli'},{name:'Clayton Lewis',goals:18,team:'Portland Timbers'},{name:'Elijah Just',goals:12,team:'Barnsley'},{name:'Matthew Garbett',goals:10,team:'Portland'}],
+    'Paraguay':    [{name:'Antonio Sanabria',goals:45,team:'Torino'},{name:'Miguel Almiron',goals:45,team:'Newcastle'},{name:'Julio Enciso',goals:15,team:'Brighton'},{name:'Matias Rojas',goals:20,team:'Racing Club'},{name:'Carlos Gonzalez',goals:25,team:'Olimpia'}],
+    'Panama':      [{name:'Cecilio Waterman',goals:28,team:'Portland Timbers'},{name:'Ismael Diaz',goals:18,team:'FC Cincinnati'},{name:'Jose Fajardo',goals:22,team:'Portland Timbers'},{name:'Abdiel Arroyo',goals:15,team:'Nashville SC'},{name:'Rolando Blackburn',goals:20,team:'CF Montreal'}],
+    'Haiti':       [{name:'Duckens Nazon',goals:30,team:'Sint-Truiden'},{name:'Frantzdy Pierrot',goals:18,team:'Hammarby'},{name:'Kevin Laventure',goals:12,team:'Valenciennes'},{name:'Wilde-Donald Guerrier',goals:15,team:'Unattached'},{name:'Steeven Saba',goals:10,team:'Caen'}],
+    'Jordan':      [{name:'Musa Al-Taamari',goals:25,team:'Montpellier'},{name:'Hamza Al-Dardour',goals:20,team:'Al-Faisaly'},{name:'Yazan Al-Naimat',goals:15,team:'Al-Wehdat'},{name:'Baha Faisal',goals:12,team:'Al-Ramtha'},{name:'Ahmad Gharaibeh',goals:10,team:'Al-Jazeera'}],
+    'Uzbekistan':  [{name:'Eldor Shomurodov',goals:45,team:'Roma'},{name:'Jaloliddin Masharipov',goals:25,team:'Pakhtakor'},{name:'Abbosbek Fayzullaev',goals:18,team:'Pachuca'},{name:'Otabek Shukurov',goals:15,team:'Pakhtakor'},{name:'Jasurbek Yakhshiboev',goals:12,team:'Pakhtakor'}],
+    'Algeria':     [{name:'Riyad Mahrez',goals:125,team:'Al-Ahli'},{name:'Islam Slimani',goals:96,team:'Unattached'},{name:'Youcef Atal',goals:15,team:'OGC Nice'},{name:'Sofiane Feghouli',goals:45,team:'Galatasaray'},{name:'Ismael Bennacer',goals:15,team:'AC Milan'}],
+    'Tunisia':     [{name:'Wahbi Khazri',goals:68,team:'Montpellier'},{name:'Youssef Msakni',goals:40,team:'Esperance'},{name:'Seifeddine Jaziri',goals:25,team:'Unattached'},{name:'Naim Sliti',goals:18,team:'Dijon'},{name:'Ellyes Skhiri',goals:15,team:'Frankfurt'}],
+    'Ivory Coast': [{name:'Sebastien Haller',goals:80,team:'Dortmund'},{name:'Nicolas Pepe',goals:65,team:'Trabzonspor'},{name:'Simon Adingra',goals:18,team:'Brighton'},{name:'Jeremie Boga',goals:25,team:'OGC Nice'},{name:'Wilfried Zaha',goals:80,team:'Galatasaray'}],
+    'Cameroon':    [{name:'Vincent Aboubakar',goals:95,team:'Unattached'},{name:'Eric Maxim Choupo-Moting',goals:65,team:'Unattached'},{name:'Karl Toko Ekambi',goals:50,team:'Lyon'},{name:'Stephane Bahoken',goals:30,team:'Unattached'},{name:'Ignatius Ganago',goals:20,team:'Lens'}],
+    'South Africa':[{name:'Percy Tau',goals:35,team:'Al-Ahly'},{name:'Evidence Makgopa',goals:18,team:'Orlando Pirates'},{name:'Lyle Foster',goals:20,team:'Burnley'},{name:'Keagan Dolly',goals:25,team:'Kaizer Chiefs'},{name:'Themba Zwane',goals:40,team:'Mamelodi Sundowns'}],
+    'Scotland':    [{name:'Lawrence Shankland',goals:75,team:'Hearts'},{name:'Che Adams',goals:50,team:'Torino'},{name:'Scott McTominay',goals:25,team:'Napoli'},{name:'Ryan Christie',goals:35,team:'Bournemouth'},{name:'Lyndon Dykes',goals:30,team:'QPR'}],
+  };
+
+  function loadTopScorersSection(container) {
+    const TEAM_FLAGS = {
+      'Argentina':'ar','France':'fr','Brazil':'br','England':'gb-eng','Spain':'es',
+      'Portugal':'pt','Germany':'de','Netherlands':'nl','Belgium':'be','Uruguay':'uy',
+      'Colombia':'co','USA':'us','Mexico':'mx','Morocco':'ma','Senegal':'sn',
+      'Japan':'jp','South Korea':'kr','Australia':'au','Canada':'ca','Ecuador':'ec',
+      'Switzerland':'ch','Croatia':'hr','Sweden':'se','Norway':'no','Denmark':'dk',
+      'Austria':'at','Scotland':'gb-sct','Turkey':'tr','Iran':'ir','Saudi Arabia':'sa',
+      'Egypt':'eg','Ghana':'gh','Nigeria':'ng','Qatar':'qa','Iraq':'iq',
+      'DR Congo':'cd','Bosnia & Herzegovina':'ba','Curaçao':'cw','Cabo Verde':'cv',
+      'New Zealand':'nz','Paraguay':'py','Panama':'pa','Haiti':'ht','Jordan':'jo',
+      'Uzbekistan':'uz','Algeria':'dz','Tunisia':'tn','Ivory Coast':'ci','Cameroon':'cm',
+      'South Africa':'za','Bosnia-Herzegovina':'ba',
+    };
+
+    const allTeams = Object.keys(TOP_SCORERS_BY_COUNTRY).sort();
+    let searchTerm = '';
+
+    const render = (filter) => {
+      const teams = filter
+        ? allTeams.filter(t => t.toLowerCase().includes(filter.toLowerCase()) ||
+            TOP_SCORERS_BY_COUNTRY[t]?.some(p => p.name.toLowerCase().includes(filter.toLowerCase())))
+        : allTeams;
+
+      return `<div style="display:flex;flex-direction:column;gap:10px;">
+        ${teams.map(team => {
+          const players = TOP_SCORERS_BY_COUNTRY[team] || [];
+          const code = TEAM_FLAGS[team];
+          const flag = code ? `<img src="https://flagcdn.com/20x15/${code}.png" style="border-radius:2px;vertical-align:middle;margin-right:6px;">` : '';
+          return `
+            <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;overflow:hidden;">
+              <div style="background:var(--surface2);padding:8px 12px;display:flex;align-items:center;gap:6px;">
+                ${flag}<span style="font-size:13px;font-weight:600;">${team}</span>
+              </div>
+              <div style="padding:6px 12px;">
+                ${players.map((p,i) => `
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:${i<players.length-1?'0.5px solid var(--border)':'none'}">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <span style="font-size:12px;font-weight:700;color:var(--text-muted);width:16px;">${i+1}.</span>
+                      <div>
+                        <div style="font-size:13px;font-weight:500;">${p.name}</div>
+                        <div style="font-size:11px;color:var(--text-muted);">${p.team}</div>
+                      </div>
+                    </div>
+                    <div style="text-align:right;">
+                      <div style="font-size:14px;font-weight:700;color:var(--green);">${p.goals}</div>
+                      <div style="font-size:10px;color:var(--text-muted);">career goals</div>
+                    </div>
+                  </div>`).join('')}
+              </div>
+            </div>`;
+        }).join('')}
+      </div>`;
+    };
+
+    container.innerHTML = `
+      <div style="margin-bottom:1.25rem;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">⚽ Top scorers by country</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Use this to pick your first goalscorer for each match. Career international goals shown.</div>
+        <input id="scorer-search" type="text" placeholder="🔍 Search player or team..." 
+          style="width:100%;padding:8px 12px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;"
+          oninput="document.getElementById('scorer-list').innerHTML=loadTopScorersSearch(this.value)">
+        <div id="scorer-list" style="margin-top:10px;">${render('')}</div>
+      </div>`;
+  }
+
+  window.loadTopScorersSearch = (term) => {
+    const TEAM_FLAGS = {
+      'Argentina':'ar','France':'fr','Brazil':'br','England':'gb-eng','Spain':'es',
+      'Portugal':'pt','Germany':'de','Netherlands':'nl','Belgium':'be','Uruguay':'uy',
+      'Colombia':'co','USA':'us','Mexico':'mx','Morocco':'ma','Senegal':'sn',
+      'Japan':'jp','South Korea':'kr','Australia':'au','Canada':'ca','Ecuador':'ec',
+      'Switzerland':'ch','Croatia':'hr','Sweden':'se','Norway':'no','Denmark':'dk',
+      'Austria':'at','Scotland':'gb-sct','Turkey':'tr','Iran':'ir','Saudi Arabia':'sa',
+      'Egypt':'eg','Ghana':'gh','Nigeria':'ng','Qatar':'qa','Iraq':'iq',
+      'DR Congo':'cd','Bosnia & Herzegovina':'ba','Curaçao':'cw','Cabo Verde':'cv',
+      'New Zealand':'nz','Paraguay':'py','Panama':'pa','Haiti':'ht','Jordan':'jo',
+      'Uzbekistan':'uz','Algeria':'dz','Tunisia':'tn','Ivory Coast':'ci','Cameroon':'cm',
+      'South Africa':'za',
+    };
+    const allTeams = Object.keys(TOP_SCORERS_BY_COUNTRY).sort();
+    const teams = term
+      ? allTeams.filter(t => t.toLowerCase().includes(term.toLowerCase()) ||
+          TOP_SCORERS_BY_COUNTRY[t]?.some(p => p.name.toLowerCase().includes(term.toLowerCase())))
+      : allTeams;
+
+    return teams.map(team => {
+      const players = TOP_SCORERS_BY_COUNTRY[team] || [];
+      const code = TEAM_FLAGS[team];
+      const flag = code ? `<img src="https://flagcdn.com/20x15/${code}.png" style="border-radius:2px;vertical-align:middle;margin-right:6px;">` : '';
+      return `<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px;">
+        <div style="background:var(--surface2);padding:8px 12px;display:flex;align-items:center;gap:6px;">
+          ${flag}<span style="font-size:13px;font-weight:600;">${team}</span>
+        </div>
+        <div style="padding:6px 12px;">
+          ${players.map((p,i) => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:${i<players.length-1?'0.5px solid var(--border)':'none'}">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:12px;font-weight:700;color:var(--text-muted);width:16px;">${i+1}.</span>
+                <div>
+                  <div style="font-size:13px;font-weight:500;">${p.name}</div>
+                  <div style="font-size:11px;color:var(--text-muted);">${p.team}</div>
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:14px;font-weight:700;color:var(--green);">${p.goals}</div>
+                <div style="font-size:10px;color:var(--text-muted);">career goals</div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+    }).join('');
+  };
 
   // ========== MATCH PREVIEW POPUP ==========
   const TEAM_STATS = {
