@@ -2048,7 +2048,7 @@
       </div>
       <div style="flex:1;">
         <div style="font-size:15px;font-weight:600;margin-bottom:4px;">Predict match scores ⚽</div>
-        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Go to the <strong>Matches</strong> page. For each match, use the <strong>+ / −</strong> buttons to set your predicted score for both teams. Hit <strong>Save prediction</strong> before the deadline!</div>
+        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Go to the <strong>Matches</strong> page. For each match, use the <strong>+ / −</strong> buttons to set your predicted score for both teams. Use <strong>💾 Save all</strong> at the top to save all predictions for the day, or turn on <strong>AutoSave</strong>!</div>
         <div style="margin-top:10px;background:var(--surface2);border-radius:10px;padding:10px;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
             <div style="font-size:12px;font-weight:500;text-align:center;flex:1;">🇦🇷 Argentina</div>
@@ -2944,27 +2944,95 @@
     const donOptSnap = await getDocs(query(collection(db, 'donOptIns'), where('userId', '==', currentUser.uid)));
     myDonMatches.clear();
     donOptSnap.forEach(d => { myDonMatches.add(d.data().matchId); });
-    // Update all DON buttons
-    myDonMatches.forEach(matchId => {
-      const btn = document.getElementById(`don-btn-${matchId}`);
-      if (btn) {
-        btn.style.background = '#FAEEDA';
-        btn.style.borderColor = '#BA7517';
-        btn.innerHTML = `<span style="font-size:24px;line-height:1;flex-shrink:0;">🎰</span><div style="text-align:left;"><div style="font-size:12px;font-weight:700;">DOUBLE OR NOTHING</div><div style="font-size:10px;opacity:0.7;margin-top:1px;">Opted in! ✅ Points doubled if correct</div></div>`;btn.style.cssText += 'background:linear-gradient(135deg,#5B21B6,#7C3AED);color:white;border-color:#5B21B6;';
-      }
-    });
+    renderAllDONButtons();
   }
 
   window.toggleDON = async (matchId) => {
     const ref = doc(db, 'donOptIns', `${currentUser.uid}_${matchId}`);
     const existing = await getDoc(ref);
+
+    // If already selected this match — CANCEL it
     if (existing.exists()) {
       await deleteDoc(ref);
       myDonMatches.delete(matchId);
-      const btn = document.getElementById(`don-btn-${matchId}`);
-      if (btn) { btn.style.background = 'none'; btn.style.borderColor = '#BA7517'; btn.innerHTML = `<span style="font-size:24px;line-height:1;flex-shrink:0;">🎰</span><div style="text-align:left;"><div style="font-size:12px;font-weight:700;letter-spacing:0.03em;">DOUBLE OR NOTHING</div><div style="font-size:10px;font-weight:400;opacity:0.7;margin-top:1px;">Correct = x2 result pts · Wrong = those pts deducted · First scorer always safe</div></div>`; }
+      // Re-render all DON buttons to unlock
+      renderAllDONButtons();
+      const t = document.createElement('div');
+      t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#555;color:#fff;font-size:13px;padding:10px 16px;border-radius:10px;z-index:9999;white-space:nowrap;';
+      t.textContent = '🎰 Double or Nothing cancelled';
+      document.body.appendChild(t);
+      setTimeout(() => { t.style.transition='opacity 0.5s'; t.style.opacity='0'; setTimeout(()=>t.remove(),500); }, 2500);
       return;
     }
+
+    // Weekly check using match kickoff week
+    const matchSnap = await getDoc(doc(db, 'matches', matchId));
+    const kickoff = matchSnap.data()?.kickoff?.toDate?.();
+    if (kickoff && new Date() >= new Date(kickoff.getTime() - 24*60*60*1000)) return alert('Deadline passed for this match!');
+
+    const week = getMatchWeekKey(kickoff);
+    const weekSnap = await getDocs(query(collection(db, 'donOptIns'), where('userId', '==', currentUser.uid), where('week', '==', week)));
+    const otherOptIns = weekSnap.docs.filter(d => d.data().matchId !== matchId);
+    if (otherOptIns.length > 0) {
+      const used = otherOptIns[0].data();
+      const weekNum = week.replace('wc2026-week-','');
+      return alert('🎰 Already used Double or Nothing in Week ' + weekNum + ' on ' + (used.matchTeams || 'another match') + '!\n\nTap the active DON button to cancel it first.');
+    }
+
+    const matchData = matchSnap.data();
+    await setDoc(ref, {
+      userId: currentUser.uid, matchId, week,
+      matchTeams: `${matchData?.homeTeam} vs ${matchData?.awayTeam}`,
+      nickname: currentUserData?.nickname || currentUser.displayName,
+      createdAt: serverTimestamp()
+    });
+    myDonMatches.add(matchId);
+    renderAllDONButtons();
+
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#BA7517;color:#fff;font-size:13px;padding:10px 16px;border-radius:10px;z-index:9999;white-space:nowrap;';
+    t.textContent = "🎰 You're in! x2 result pts if correct, deducted if wrong!";
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.transition='opacity 0.5s'; t.style.opacity='0'; setTimeout(()=>t.remove(),500); }, 3000);
+  };
+
+  function renderAllDONButtons() {
+    // Find which match (if any) has DON active this week
+    const activeMatchId = myDonMatches.size > 0 ? [...myDonMatches][0] : null;
+
+    document.querySelectorAll('[id^="don-btn-"]').forEach(btn => {
+      const mId = btn.id.replace('don-btn-','');
+      const isActive = myDonMatches.has(mId);
+      const isLocked = activeMatchId && !isActive; // another match has DON this week
+
+      if (isActive) {
+        // This match has DON — show as active + cancellable
+        btn.style.cssText = 'width:100%;padding:10px 14px;border-radius:12px;border:2px solid #7C3AED;background:linear-gradient(135deg,#5B21B6,#7C3AED);color:white;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:10px;';
+        btn.innerHTML = `<span style="font-size:24px;line-height:1;flex-shrink:0;">🎰</span>
+          <div style="text-align:left;flex:1;">
+            <div style="font-size:12px;font-weight:700;">DOUBLE OR NOTHING — ACTIVE ✅</div>
+            <div style="font-size:10px;opacity:0.8;margin-top:1px;">Tap again to cancel</div>
+          </div>
+          <span style="font-size:18px;">×</span>`;
+      } else if (isLocked) {
+        // Another match already has DON — grey out
+        btn.style.cssText = 'width:100%;padding:10px 14px;border-radius:12px;border:1.5px dashed #555;background:var(--surface2);color:var(--text-muted);cursor:not-allowed;display:flex;align-items:center;gap:10px;opacity:0.5;';
+        btn.innerHTML = `<span style="font-size:24px;line-height:1;flex-shrink:0;">🎰</span>
+          <div style="text-align:left;">
+            <div style="font-size:12px;font-weight:700;">DOUBLE OR NOTHING</div>
+            <div style="font-size:10px;margin-top:1px;">Already used this week — cancel the other one first</div>
+          </div>`;
+      } else {
+        // Available
+        btn.style.cssText = 'width:100%;padding:10px 14px;border-radius:12px;border:1.5px dashed #7C3AED;background:linear-gradient(135deg,var(--badge-blue-bg),var(--badge-blue-bg));color:#5B21B6;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(124,58,237,0.12);';
+        btn.innerHTML = `<span style="font-size:24px;line-height:1;flex-shrink:0;">🎰</span>
+          <div style="text-align:left;">
+            <div style="font-size:12px;font-weight:700;letter-spacing:0.03em;">DOUBLE OR NOTHING</div>
+            <div style="font-size:10px;font-weight:400;opacity:0.7;margin-top:1px;">Correct = x2 result pts · Wrong = those pts deducted · First scorer always safe</div>
+          </div>`;
+      }
+    });
+  }
     // Use the match's kickoff week (not current date) to determine DON eligibility
     const kickoffDate = kickoff || new Date();
     const week = getMatchWeekKey(kickoffDate);
@@ -5448,7 +5516,7 @@
           </div>
           ${!isPast ? `
             <div style="display:flex;gap:8px;align-items:center;margin-top:0.75rem;">
-              <button class="save-btn" style="flex:1;" onclick="savePrediction('${d.id}', '${m.homeTeam}', '${m.awayTeam}')">Save prediction</button>
+              
               <button id="joker-btn-${d.id}" onclick="activateJoker('${d.id}')" title="Use your Joker - double your points if correct!"
                 style="padding:6px 10px;border-radius:10px;border:1.5px solid #BA7517;background:linear-gradient(135deg,var(--badge-gold-bg),var(--badge-gold-bg));color:var(--badge-gold-text);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:52px;box-shadow:0 2px 6px rgba(186,117,23,0.25);"
                 onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
@@ -8014,11 +8082,44 @@
     'Uzbekistan': ['Eldor Shomurodov','Jaloliddin Masharipov','Abbosbek Fayzullaev','Otabek Shukurov','Dostonbek Khamdamov','Khojiakbar Alijonov','Islom Tukhtamurodov','Sanjar Tursunov','Sherzod Nasrullayev','Jasurbek Yakhshiboev','Jamshid Iskanderov','Bunyod Isoqov','Asilbek Turgunov','Dilshod Haydarov','Muhammadkodir Hamrobekov'],
     'Haiti': ['Duckens Nazon','Frantzdy Pierrot','Steeven Saba','Mechack Jerome','Derrick Etienne','Wilde-Donald Guerrier','Kevin Laventure','Duckens Chery','Jhon Luzincourt','Frantz Gerald Calixte','Jeffrey Doret','Kervens Desir','Peterson Joseph','Maxithe Theodore','Romain Aime'],
     'Jordan': ['Musa Al-Taamari','Yazan Al-Naimat','Baha Faisal','Ahmad Gharaibeh','Hamza Al-Dardour','Ashraf Nour','Odai Al-Rashid','Mohammad Abu Hasna','Rawan Rawashdeh','Ahmad Al-Saify','Ali Olwan','Mousa Suleiman','Khaled Al-Hajri','Hassan Abdel-Fattah','Nour Al-Rawabdeh'],
+    'Congo': ['Silas Wissa','Yoane Wissa','Cedric Bakambu','Chancel Mbemba','Arthur Masuaku','Paul-Jose Mpoku','Neeskens Kebano','Theo Bongonda','Samuel Bastien','Dodi Lukebakio','Yannick Bolasie','Ben Malango','Chadrac Akolo','Elia Meschack','Fiston Mayele'],
+    'Democratic Republic of Congo': ['Silas Wissa','Yoane Wissa','Cedric Bakambu','Chancel Mbemba','Arthur Masuaku','Paul-Jose Mpoku','Neeskens Kebano','Theo Bongonda','Samuel Bastien','Dodi Lukebakio','Yannick Bolasie','Ben Malango','Chadrac Akolo','Elia Meschack','Fiston Mayele'],
+    'Cabo Verde': ['Garry Rodrigues','Ryan Mendes','Kenny Rocha Santos','Dylan Tavares','Roberto Lopes','Jamiro Monteiro','Steven Fortes','Julio Tavares','Carlos Ponck','Stopira','Willy Semedo','Kevin Pina','Diney','Nuno Borges','Patrick Andrade'],
+    'Cape Verde Islands': ['Garry Rodrigues','Ryan Mendes','Kenny Rocha Santos','Dylan Tavares','Roberto Lopes','Jamiro Monteiro','Steven Fortes','Julio Tavares','Carlos Ponck','Stopira','Willy Semedo','Kevin Pina','Diney','Nuno Borges','Patrick Andrade'],
+    'Republique du Congo': ['Silas Wissa','Yoane Wissa','Cedric Bakambu','Chancel Mbemba','Arthur Masuaku','Paul-Jose Mpoku','Neeskens Kebano','Theo Bongonda','Samuel Bastien','Dodi Lukebakio','Yannick Bolasie','Ben Malango','Chadrac Akolo','Elia Meschack','Fiston Mayele'],
+    'Republic of Congo': ['Silas Wissa','Yoane Wissa','Cedric Bakambu','Chancel Mbemba','Arthur Masuaku','Paul-Jose Mpoku','Neeskens Kebano','Theo Bongonda','Samuel Bastien','Dodi Lukebakio','Yannick Bolasie','Ben Malango','Chadrac Akolo','Elia Meschack','Fiston Mayele'],
   };
+
+  // Normalize team names to handle API variations
+  function normalizeTeamName(name) {
+    if (!name) return name;
+    const map = {
+      'Congo DR': 'DR Congo',
+      'Congo, DR': 'DR Congo',
+      'Democratic Republic Congo': 'DR Congo',
+      'DR Congo (Congo DR)': 'DR Congo',
+      'Republique du Congo': 'DR Congo',
+      'Republic of Congo': 'DR Congo',
+      'Cape Verde': 'Cabo Verde',
+      'Cape Verde Islands': 'Cabo Verde',
+      'Bosnia and Herzegovina': 'Bosnia & Herzegovina',
+      'Bosnia And Herzegovina': 'Bosnia & Herzegovina',
+      'Bosnia-Herzegovina': 'Bosnia & Herzegovina',
+      'Curacao': 'Curaçao',
+      'Korea Republic': 'South Korea',
+      'United States': 'USA',
+      'Ivory Coast': "Côte d'Ivoire",
+      "Côte d'Ivoire": 'Ivory Coast',
+    };
+    return map[name] || name;
+  }
 
   function getPlayersForTeam(teamName, apiPlayers) {
     if (apiPlayers && apiPlayers.length > 0) return apiPlayers;
-    return FALLBACK_PLAYERS[teamName] || [];
+    // Try direct match first, then normalized
+    return FALLBACK_PLAYERS[teamName] 
+      || FALLBACK_PLAYERS[normalizeTeamName(teamName)] 
+      || [];
   }
 
   // ========== SAVE ALL PREDICTIONS FOR DAY ==========
