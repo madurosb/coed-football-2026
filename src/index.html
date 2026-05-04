@@ -3033,36 +3033,6 @@
       }
     });
   }
-    // Use the match's kickoff week (not current date) to determine DON eligibility
-    const kickoffDate = kickoff || new Date();
-    const week = getMatchWeekKey(kickoffDate);
-    const weekSnap = await getDocs(query(collection(db, 'donOptIns'), where('userId', '==', currentUser.uid), where('week', '==', week)));
-    const otherOptIns = weekSnap.docs.filter(d => d.data().matchId !== matchId);
-    if (otherOptIns.length > 0) {
-      const used = otherOptIns[0].data();
-      const weekNum = week.replace('wc2026-week-','');
-      return alert('🎰 Already used Double or Nothing in Week ' + weekNum + ' on ' + (used.matchTeams || 'another match') + '!\n\nEach tournament week you get one DON. Next week starts on the following Wednesday.');
-    }
-    // Check deadline
-    const matchSnap = await getDoc(doc(db, 'matches', matchId));
-    const kickoff = matchSnap.data()?.kickoff?.toDate?.();
-    if (kickoff && new Date() >= new Date(kickoff.getTime() - 24*60*60*1000)) return alert('Deadline passed for this match!');
-    const matchData = matchSnap.data();
-    await setDoc(ref, {
-      userId: currentUser.uid, matchId, week,
-      matchTeams: `${matchData?.homeTeam} vs ${matchData?.awayTeam}`,
-      nickname: currentUserData?.nickname || currentUser.displayName,
-      createdAt: serverTimestamp()
-    });
-    myDonMatches.add(matchId);
-    const btn = document.getElementById(`don-btn-${matchId}`);
-    if (btn) { btn.style.background = '#FAEEDA'; btn.innerHTML = `<span style="font-size:24px;line-height:1;flex-shrink:0;">🎰</span><div style="text-align:left;"><div style="font-size:12px;font-weight:700;">DOUBLE OR NOTHING</div><div style="font-size:10px;opacity:0.7;margin-top:1px;">Opted in! ✅ Points doubled if correct</div></div>`;btn.style.cssText += 'background:linear-gradient(135deg,#5B21B6,#7C3AED);color:white;border-color:#5B21B6;'; }
-    const t = document.createElement('div');
-    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#BA7517;color:#fff;font-size:13px;padding:10px 16px;border-radius:10px;z-index:9999;';
-    t.textContent = '🎰 You\'re in! x2 result pts if correct, deducted if wrong!';
-    document.body.appendChild(t);
-    setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.5s'; setTimeout(()=>t.remove(),500); }, 3000);
-  };
 
   async function loadPicksOverview() {
     const container = document.getElementById('picks-overview-content');
