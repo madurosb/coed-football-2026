@@ -3047,24 +3047,13 @@
     document.querySelectorAll('[id^="don-btn-"]').forEach(btn => {
       const mId = btn.id.replace('don-btn-','');
       const isActive = myDonMatches.has(mId);
-      // A match is locked only if: there's an active DON AND it's in the SAME week as this match
-      // We need to check the match's kickoff week
+
+      // Only lock if: there IS an active DON match (not this one) AND it's the same week
       let isLocked = false;
-      if (activeMatchId && !isActive) {
-        // Get both match elements from DOM to compare weeks
-        // For simplicity: if any DON is active, lock others in same week
-        // We'll use a data attribute set during render
-        const thisBtn = document.getElementById('don-btn-' + mId);
-        const thisWeek = thisBtn?.dataset?.week || '';
-        // Compare this match's week against the stored activeDonWeek
-        if (thisWeek && activeDonWeek) {
-          isLocked = thisWeek === activeDonWeek;
-        } else if (!thisWeek && activeDonWeek) {
-          // This button just rendered without data-week yet — lock it conservatively
-          isLocked = true;
-        } else {
-          isLocked = false;
-        }
+      if (activeMatchId && !isActive && activeDonWeek) {
+        const thisWeek = btn.dataset?.week || '';
+        isLocked = thisWeek ? (thisWeek === activeDonWeek) : false;
+        // If no data-week on this button yet, don't lock
       }
 
       if (isActive) {
