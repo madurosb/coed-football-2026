@@ -820,10 +820,10 @@
       <button class="nav-btn" data-page="watch" onclick="showPage('watch')">Watch Together</button>
       <button class="nav-btn" data-page="trash" onclick="showPage('trash')">Trash Talk</button>
       <button class="nav-btn" data-page="highlights" onclick="showPage('highlights')">Highlights</button>
-      <button class="nav-btn" data-page="hof" onclick="showPage('hof')">🏅 Hall of Fame</button>
-      <button class="nav-btn" data-page="h2h" onclick="showPage('h2h')">⚔️ Head-to-Head</button>
-      <button class="nav-btn" data-page="analysis" onclick="showPage('analysis')">📊 Analysis</button>
-      <button class="nav-btn" data-page="coach" onclick="showPage('coach')">🏟️ Coach Room</button>
+      <button class="nav-btn" data-page="hof" onclick="showPage('hof')">Hall of Fame</button>
+      <button class="nav-btn" data-page="h2h" onclick="showPage('h2h')">Head-to-Head</button>
+      <button class="nav-btn" data-page="analysis" onclick="showPage('analysis')">Analysis</button>
+      <button class="nav-btn" data-page="coach" onclick="showPage('coach')">Coach Room</button>
       <button class="nav-btn" data-page="rules" onclick="showPage('rules')">Rules</button>
       <button class="nav-btn" data-page="dummies" onclick="showPage('dummies')">How to play</button>
       <button class="nav-btn" data-page="admin" id="admin-nav-btn" style="display:none;" onclick="showPage('admin')">Admin</button>
@@ -1676,6 +1676,14 @@
       <button onclick="scrollDateTabs(-1)" style="flex-shrink:0;width:28px;height:28px;border-radius:50%;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">‹</button>
       <div id="matches-date-tabs" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;flex:1;"></div>
       <button onclick="scrollDateTabs(1)" style="flex-shrink:0;width:28px;height:28px;border-radius:50%;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">›</button>
+    </div>
+    <!-- AutoSave toggle -->
+    <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-bottom:6px;" id="autosave-toggle-row">
+      <span style="font-size:12px;color:var(--text-muted);">AutoSave</span>
+      <div id="autosave-toggle" onclick="toggleAutoSave()" style="width:40px;height:22px;border-radius:99px;background:var(--border);cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0;">
+        <div id="autosave-knob" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:white;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
+      </div>
+      <span id="autosave-label" style="font-size:11px;color:var(--text-muted);">Off</span>
     </div>
     <div id="save-all-area"></div>
     <div class="matches" id="matches-list">
@@ -2918,11 +2926,18 @@
   let donMatchId = null;
   let myDonMatches = new Set();
 
-  function getWeekKey() {
-    const d = new Date();
-    const jan1 = new Date(d.getFullYear(), 0, 1);
-    const week = Math.ceil(((d - jan1) / 86400000 + jan1.getDay() + 1) / 7);
-    return `${d.getFullYear()}-W${week}`;
+  function getWeekKey(date) {
+    // Tournament weeks: Wed 11 Jun = week 1, Wed 18 Jun = week 2, etc.
+    const d = date || new Date();
+    const tourneyStart = new Date('2026-06-11T00:00:00Z');
+    const diff = d - tourneyStart;
+    if (diff < 0) return 'pre-tournament';
+    const weekNum = Math.floor(diff / (7 * 24 * 60 * 60 * 1000)) + 1;
+    return `wc2026-week-${weekNum}`;
+  }
+
+  function getMatchWeekKey(kickoffDate) {
+    return getWeekKey(kickoffDate instanceof Date ? kickoffDate : new Date(kickoffDate));
   }
 
   async function loadDONStatus() {
@@ -2950,13 +2965,15 @@
       if (btn) { btn.style.background = 'none'; btn.style.borderColor = '#BA7517'; btn.innerHTML = `<span style="font-size:24px;line-height:1;flex-shrink:0;">🎰</span><div style="text-align:left;"><div style="font-size:12px;font-weight:700;letter-spacing:0.03em;">DOUBLE OR NOTHING</div><div style="font-size:10px;font-weight:400;opacity:0.7;margin-top:1px;">Correct = x2 result pts · Wrong = those pts deducted · First scorer always safe</div></div>`; }
       return;
     }
-    // Strict server-side weekly check
-    const week = getWeekKey();
+    // Use the match's kickoff week (not current date) to determine DON eligibility
+    const kickoffDate = kickoff || new Date();
+    const week = getMatchWeekKey(kickoffDate);
     const weekSnap = await getDocs(query(collection(db, 'donOptIns'), where('userId', '==', currentUser.uid), where('week', '==', week)));
     const otherOptIns = weekSnap.docs.filter(d => d.data().matchId !== matchId);
     if (otherOptIns.length > 0) {
       const used = otherOptIns[0].data();
-      return alert('🎰 Already used Double or Nothing this week on ' + (used.matchTeams || 'another match') + '!\n\nCome back next week.');
+      const weekNum = week.replace('wc2026-week-','');
+      return alert('🎰 Already used Double or Nothing in Week ' + weekNum + ' on ' + (used.matchTeams || 'another match') + '!\n\nEach tournament week you get one DON. Next week starts on the following Wednesday.');
     }
     // Check deadline
     const matchSnap = await getDoc(doc(db, 'matches', matchId));
@@ -3658,6 +3675,15 @@
     if (!ap) ap = document.getElementById('audio-player');
     const mb = document.getElementById('music-btn');
     if (!ap || musicPlaying) return;
+    // Only play music once per day
+    const today = new Date().toDateString();
+    const lastMusicDay = localStorage.getItem('lastMusicDay');
+    if (lastMusicDay === today) {
+      // Already played today — stay muted
+      if (mb) mb.textContent = '🔇';
+      return;
+    }
+    localStorage.setItem('lastMusicDay', today);
     currentTrack = Math.floor(Math.random() * TRACKS.length);
     ap.src = TRACKS[currentTrack];
     ap.volume = 0.4;
@@ -4039,6 +4065,7 @@
       document.addEventListener('touchmove', preventZoom, { passive: false });
       document.addEventListener('gesturestart', preventZoom, { passive: false });
       setTimeout(loadJokerStatus, 800);
+      setTimeout(initAutoSaveToggle, 300);
     } else {
       document.removeEventListener('touchmove', preventZoom);
       document.removeEventListener('gesturestart', preventZoom);
@@ -4540,6 +4567,7 @@
       btn.disabled = true;
     }
     // Show toast
+    triggerAutoSave(matchId, '', '');
     const tip = document.createElement('div');
     tip.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#BA7517;color:#fff;font-size:13px;padding:10px 16px;border-radius:10px;z-index:9999;white-space:nowrap;';
     tip.textContent = '🃏 Joker activated! Points doubled if correct!';
@@ -5564,17 +5592,26 @@
     val = Math.max(0, Math.min(10, val));
     el.dataset.val = val;
     el.textContent = val;
-    // Pulse animation
     el.style.transform = 'scale(1.2)';
     el.style.color = delta > 0 ? 'var(--green)' : '#E24B4A';
     setTimeout(() => { el.style.transform = ''; el.style.color = ''; }, 200);
+    // AutoSave trigger — extract matchId from element id
+    const matchId = id.replace('home-','').replace('away-','');
+    const card = el.closest('.match-card');
+    if (card) {
+      const homeTeam = card.querySelector('.team .name')?.textContent || '';
+      triggerAutoSave(matchId, homeTeam, '');
+    }
   };
 
   window.autoSaveScorer = async (matchId, selectEl) => {
     const firstScorer = selectEl.value;
+    // Always trigger autosave if enabled
+    triggerAutoSave(matchId, '', '');
+    // Also update directly if prediction exists
     const predRef = doc(db, 'predictions', `${currentUser.uid}_${matchId}`);
     const existing = await getDoc(predRef);
-    if (!existing.exists()) return; // only update if prediction already saved
+    if (!existing.exists()) return;
     await updateDoc(predRef, { firstScorer });
     selectEl.style.transition = 'box-shadow 0.2s';
     selectEl.style.boxShadow = '0 0 0 2px #5DCAA5';
@@ -9227,6 +9264,66 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
     const wordCount = (reply||'').split(' ').length;
     setTimeout(() => setCoachVideoState(coachId, 'idle'), wordCount * 45 + 500);
   };
+
+  // ========== AUTOSAVE ==========
+  let autoSaveEnabled = localStorage.getItem('autoSave') === 'true';
+  let autoSaveTimers = {};
+
+  function initAutoSaveToggle() {
+    const toggle = document.getElementById('autosave-toggle');
+    const knob = document.getElementById('autosave-knob');
+    const label = document.getElementById('autosave-label');
+    if (!toggle) return;
+    if (autoSaveEnabled) {
+      toggle.style.background = 'var(--green)';
+      knob.style.left = '21px';
+      if (label) label.textContent = 'On';
+    }
+  }
+
+  window.toggleAutoSave = () => {
+    autoSaveEnabled = !autoSaveEnabled;
+    localStorage.setItem('autoSave', autoSaveEnabled);
+    const toggle = document.getElementById('autosave-toggle');
+    const knob = document.getElementById('autosave-knob');
+    const label = document.getElementById('autosave-label');
+    if (toggle) toggle.style.background = autoSaveEnabled ? 'var(--green)' : 'var(--border)';
+    if (knob) knob.style.left = autoSaveEnabled ? '21px' : '3px';
+    if (label) label.textContent = autoSaveEnabled ? 'On' : 'Off';
+    // Show toast
+    const tip = document.createElement('div');
+    tip.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:13px;padding:10px 16px;border-radius:10px;z-index:9999;white-space:nowrap;';
+    tip.textContent = autoSaveEnabled ? '✅ AutoSave ON — changes save automatically' : '🔕 AutoSave OFF — use Save All button';
+    document.body.appendChild(tip);
+    setTimeout(() => { tip.style.transition='opacity 0.5s'; tip.style.opacity='0'; setTimeout(()=>tip.remove(),500); }, 2500);
+  };
+
+  function triggerAutoSave(matchId, homeTeam, awayTeam) {
+    if (!autoSaveEnabled) return;
+    // Debounce — save 1.5s after last change
+    if (autoSaveTimers[matchId]) clearTimeout(autoSaveTimers[matchId]);
+    autoSaveTimers[matchId] = setTimeout(async () => {
+      const homeEl = document.getElementById('home-' + matchId);
+      const awayEl = document.getElementById('away-' + matchId);
+      if (!homeEl || !awayEl) return;
+      const homeScore = parseInt(homeEl.dataset?.val ?? homeEl.textContent ?? 0);
+      const awayScore = parseInt(awayEl.dataset?.val ?? awayEl.textContent ?? 0);
+      const firstScorer = document.getElementById('scorer-' + matchId)?.value || '';
+      try {
+        await setDoc(doc(db, 'predictions', `${currentUser.uid}_${matchId}`), {
+          userId: currentUser.uid, matchId, homeScore, awayScore, firstScorer,
+          submittedAt: serverTimestamp()
+        });
+        // Brief green flash on match card
+        const card = homeEl.closest('.match-card');
+        if (card) {
+          card.style.transition = 'border-color 0.3s';
+          card.style.borderColor = 'var(--green)';
+          setTimeout(() => { card.style.borderColor = ''; }, 1500);
+        }
+      } catch(e) {}
+    }, 1500);
+  }
 
   // ========== HALL OF FAME ==========
   async function loadHallOfFame() {
