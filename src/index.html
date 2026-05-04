@@ -2958,6 +2958,10 @@
 
   function getNextWeekStart(weekKey) {
     const num = parseInt(weekKey.replace('wc2026-week-',''));
+    if (isNaN(num) || num <= 0) {
+      // Pre-tournament — next available is week 1 start
+      return new Date('2026-06-11T00:00:00Z');
+    }
     const w = TOURNAMENT_WEEKS.find(x => x.num === num + 1);
     return w ? new Date(w.start) : null;
   }
@@ -4613,15 +4617,25 @@
     document.querySelectorAll('[id^="joker-btn-"]').forEach(btn => {
       const matchId = btn.id.replace('joker-btn-','');
       if (jokerUsed && jokerMatchId === matchId) {
-        btn.style.cssText = 'width:72px;height:72px;border-radius:12px;border:2px solid #F59E0B;background:linear-gradient(145deg,#BA7517,#EF9F27);color:#000;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-shadow:0 4px 16px rgba(239,159,39,0.6);animation:jokerPulse 2s ease infinite;';
+        btn.style.cssText = 'width:72px;height:72px;border-radius:12px;border:2px solid #F59E0B;background:linear-gradient(145deg,#BA7517,#EF9F27);color:#000;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-shadow:0 4px 16px rgba(239,159,39,0.6);';
+        btn.style.animation = 'jokerPulse 2s ease infinite';
         btn.innerHTML = '<span style="font-size:22px;line-height:1;">🃏</span><span style="font-size:8px;font-weight:800;letter-spacing:0.08em;font-family:monospace;">ACTIVE ✅</span>';
         btn.title = 'Joker active! Tap to cancel.';
         btn.disabled = false;
       } else if (jokerUsed) {
+        // Reset to default style but greyed out
         btn.style.opacity = '0.25';
         btn.style.cursor = 'not-allowed';
+        btn.style.filter = 'grayscale(1)';
         btn.disabled = true;
         btn.title = 'Joker already used on another match this tournament';
+      } else {
+        // Reset to default (for when joker is cancelled)
+        btn.style.opacity = '';
+        btn.style.cursor = '';
+        btn.style.filter = '';
+        btn.style.animation = '';
+        btn.disabled = false;
       }
     });
   }
@@ -5592,21 +5606,8 @@
             </div>
           </div>
           ${!isPast ? `
-            <!-- DON row -->
-            <div id="don-row-${d.id}" style="margin-top:0.75rem;">
-              <button id="don-btn-${d.id}" onclick="toggleDON('${d.id}')"
-                data-week="${getMatchWeekKey(kickoff)}"
-                style="width:100%;padding:10px 14px;border-radius:12px;border:1.5px dashed #7C3AED;background:linear-gradient(135deg,var(--badge-blue-bg),var(--badge-blue-bg));color:#5B21B6;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(124,58,237,0.12);"
-                onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'">
-                <span style="font-size:24px;line-height:1;flex-shrink:0;">🎰</span>
-                <div style="text-align:left;">
-                  <div style="font-size:12px;font-weight:700;letter-spacing:0.03em;">DOUBLE OR NOTHING</div>
-                  <div style="font-size:10px;font-weight:400;opacity:0.7;margin-top:1px;">Correct = x2 result pts · Wrong = those pts deducted · First scorer always safe</div>
-                </div>
-              </button>
-            </div>
-            <!-- Joker — luxury square card, right aligned -->
-            <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+            <!-- Joker — luxury square card, right aligned — ABOVE DON -->
+            <div style="display:flex;justify-content:flex-end;margin-top:0.75rem;">
               <button id="joker-btn-${d.id}" onclick="activateJoker('${d.id}')"
                 title="Use your Joker — doubles all points if correct. Once per tournament."
                 style="width:72px;height:72px;border-radius:12px;border:1.5px solid #BA7517;background:linear-gradient(145deg,#1a0f00,#2a1800);color:#EF9F27;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-shadow:0 4px 12px rgba(186,117,23,0.35),inset 0 1px 0 rgba(255,255,255,0.1);transition:all 0.2s;position:relative;overflow:hidden;"
@@ -5616,6 +5617,19 @@
                 <span style="font-size:26px;line-height:1;filter:drop-shadow(0 0 6px rgba(239,159,39,0.6));">🃏</span>
                 <span style="font-size:8px;font-weight:800;letter-spacing:0.12em;font-family:monospace;color:#EF9F27;">JOKER</span>
                 <div style="position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(239,159,39,0.4),transparent);"></div>
+              </button>
+            </div>
+            <!-- DON row -->
+            <div id="don-row-${d.id}" style="margin-top:8px;">
+              <button id="don-btn-${d.id}" onclick="toggleDON('${d.id}')"
+                data-week="${getMatchWeekKey(kickoff)}"
+                style="width:100%;padding:10px 14px;border-radius:12px;border:1.5px dashed #7C3AED;background:linear-gradient(135deg,var(--badge-blue-bg),var(--badge-blue-bg));color:#5B21B6;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(124,58,237,0.12);"
+                onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'">
+                <span style="font-size:24px;line-height:1;flex-shrink:0;">🎰</span>
+                <div style="text-align:left;">
+                  <div style="font-size:12px;font-weight:700;letter-spacing:0.03em;">DOUBLE OR NOTHING</div>
+                  <div style="font-size:10px;font-weight:400;opacity:0.7;margin-top:1px;">Correct = x2 result pts · Wrong = those pts deducted · First scorer always safe</div>
+                </div>
               </button>
             </div>` : `<p style="font-size:12px;color:var(--text-muted);margin-top:0.75rem;text-align:center;">${isFinished ? '✅ Match finished' : '🔒 Deadline passed - predictions locked'}</p>`}
           ${finishedResult}
