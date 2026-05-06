@@ -9081,9 +9081,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
 
   function renderCoachChat(container, coach, userData, isReturn=false) {
     if (!isReturn) coachChatHistory = [];
-    // Count actual predictions from Firestore
-    const myPredsSnap = await getDocs(query(collection(db, 'predictions'), where('userId', '==', currentUser.uid)));
-    const predCount = myPredsSnap.size;
+    const predCount = userData?.predCount || 0;
     const personalised = predCount >= 10;
 
     container.innerHTML = `
@@ -9332,9 +9330,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
   }
 
   async function sendCoachWelcome(coach, userData) {
-    // Count actual predictions from Firestore
-    const myPredsSnap = await getDocs(query(collection(db, 'predictions'), where('userId', '==', currentUser.uid)));
-    const predCount = myPredsSnap.size;
+    const predCount = userData?.predCount || 0;
     const personalised = predCount >= 10;
 
     const langInstruction = coachLang === 'he'
