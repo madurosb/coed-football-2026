@@ -4980,7 +4980,7 @@
       'Ghana':'gh','Ivory Coast':'ci','DR Congo':'cd','Qatar':'qa','Saudi Arabia':'sa',
       'Iran':'ir','Iraq':'iq','Uzbekistan':'uz','Jordan':'jo','Cabo Verde':'cv',
       'Curaçao':'cw','Panama':'pa','Haiti':'ht','Paraguay':'py','Bolivia':'bo',
-      'Bolivia':'bo','New Zealand':'nz','Bosnia-Herzegovina':'ba',
+      'Bolivia':'bo','New Zealand':'nz','Bosnia-Herzegovina':'ba','Bosnia & Herzegovina':'ba','Nigeria':'ng','Cameroon':'cm','South Africa':'za',
     };
 
     const medals = ['🥇','🥈','🥉'];
@@ -4990,7 +4990,7 @@
       const pct = Math.round(count / total * 100);
       const barWidth = Math.round(count / maxPicks * 100);
       const code = COUNTRY_FLAGS[team];
-      const flag = code ? `<img src="https://flagcdn.com/24x18/${code}.png" style="border-radius:2px;vertical-align:middle;margin-right:6px;">` : '';
+      const flag = code ? `<img src="https://flagcdn.com/24x18/${code}.png" style="border-radius:2px;vertical-align:middle;margin-right:6px;width:24px;height:18px;" loading="lazy" onerror="this.style.display='none'">` : '';
       const pickers = users.filter(u => u.tournamentWinner === team).map(u => u.nickname || u.displayName);
       return `
         <div style="margin-bottom:10px;">
@@ -9286,7 +9286,12 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
           <!-- Change coach -->
-          <button onclick="changeCoach()" style="font-size:10px;color:rgba(255,255,255,0.35);background:none;border:none;cursor:pointer;padding:0;">change coach</button>
+          <button onclick="changeCoach()" title="Switch to a different AI coach — your chat history will be cleared"
+            style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.6);background:rgba(255,255,255,0.08);border:0.5px solid rgba(255,255,255,0.15);border-radius:6px;cursor:pointer;padding:4px 10px;transition:all 0.2s;"
+            onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.color='white'"
+            onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.color='rgba(255,255,255,0.6)'">
+            🔄 Switch coach
+          </button>
         </div>
       </div>
 
