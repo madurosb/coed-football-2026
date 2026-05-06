@@ -5001,7 +5001,12 @@
         'uz':'🇺🇿','jo':'🇯🇴','cv':'🇨🇻','cw':'🇨🇼','pa':'🇵🇦','ht':'🇭🇹','py':'🇵🇾',
         'bo':'🇧🇴','nz':'🇳🇿','ba':'🇧🇦','ng':'🇳🇬','cm':'🇨🇲','za':'🇿🇦',
       };
-      const flag = code ? `<span style="font-size:18px;vertical-align:middle;margin-right:6px;">${EMOJI_FLAGS[code] || '🏳️'}</span>` : '';
+      const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+      const flag = code
+        ? isMobile
+          ? `<span style="font-size:18px;vertical-align:middle;margin-right:6px;">${EMOJI_FLAGS[code] || '🏳️'}</span>`
+          : `<img src="https://flagcdn.com/24x18/${code}.png" style="border-radius:2px;vertical-align:middle;margin-right:6px;width:24px;height:18px;" loading="lazy" onerror="this.style.display='none'">`
+        : '';
       const pickers = users.filter(u => u.tournamentWinner === team).map(u => u.nickname || u.displayName);
       return `
         <div style="margin-bottom:10px;">
