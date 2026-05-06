@@ -7524,10 +7524,13 @@
     if ((user.bonusPoints||0) >= 3) badges.push({label:'⚡ Scorer hunter', cls:'badge-amber'});
     if (predCount === 0) badges.push({label:'😴 Just watching', cls:'badge-gray'});
 
-    // Matches remaining badge — count upcoming matches without prediction
+    // Matches remaining badge — only count matches visible to user (group stage unless knockout enabled)
     const now = new Date();
+    const KNOCKOUT_START_STATS = new Date('2026-06-28T00:00:00Z');
     const upcomingMatches = matches.filter(m => {
       const kickoff = m.kickoff?.toDate?.() || new Date(m.kickoff);
+      // Hide knockout matches unless admin enabled them
+      if (kickoff >= KNOCKOUT_START_STATS && !window._knockoutEnabled) return false;
       return kickoff > now && m.status !== 'FINISHED';
     });
     const predictedIds = new Set(myPreds.map(p => p.matchId));
