@@ -6869,17 +6869,49 @@
   }
 
   // ========== WATCH TOGETHER ==========
-  const WATCH_MATCHES = [
-    { id:'w1',  date:'Jun 11', home:'Mexico',      away:'South Africa', time:'22:00', group:'Group A', emoji:'🇲🇽🇿🇦' },
-    { id:'w2',  date:'Jun 13', home:'Brazil',       away:'Morocco',      time:'22:00', group:'Group C', emoji:'🇧🇷🇲🇦' },
-    { id:'w3',  date:'Jun 14', home:'Germany',      away:'Curaçao',      time:'22:00', group:'Group E', emoji:'🇩🇪🇨🇼' },
-    { id:'w4',  date:'Jun 14', home:'Netherlands',  away:'Japan',        time:'01:00', group:'Group F', emoji:'🇳🇱🇯🇵' },
-    { id:'w5',  date:'Jun 15', home:'Spain',        away:'Cabo Verde',   time:'22:00', group:'Group H', emoji:'🇪🇸🇨🇻' },
-    { id:'w6',  date:'Jun 16', home:'France',       away:'Senegal',      time:'22:00', group:'Group I', emoji:'🇫🇷🇸🇳' },
-    { id:'w7',  date:'Jun 16', home:'Argentina',    away:'Algeria',      time:'22:00', group:'Group J', emoji:'🇦🇷🇩🇿' },
-    { id:'w8',  date:'Jun 17', home:'England',      away:'Croatia',      time:'22:00', group:'Group L', emoji:'🏴󠁧󠁢󠁥󠁮󠁧󠁿🇭🇷' },
-    { id:'w9',  date:'Jun 17', home:'Portugal',     away:'DR Congo',     time:'22:00', group:'Group K', emoji:'🇵🇹🇨🇩' },
+  // Watch matches rotate every 5 days — only attractive/big fixtures
+  const ALL_WATCH_MATCHES = [
+    // Week 1 (Jun 11-17) — Opening week
+    { id:'w1',  date:'Jun 11', home:'Mexico',      away:'South Africa', time:'22:00', group:'Group A', emoji:'🇲🇽🇿🇦', week:1 },
+    { id:'w2',  date:'Jun 12', home:'USA',         away:'Canada',       time:'22:00', group:'Group B', emoji:'🇺🇸🇨🇦', week:1 },
+    { id:'w3',  date:'Jun 13', home:'Brazil',      away:'Morocco',      time:'22:00', group:'Group C', emoji:'🇧🇷🇲🇦', week:1 },
+    { id:'w4',  date:'Jun 14', home:'Germany',     away:'Japan',        time:'22:00', group:'Group F', emoji:'🇩🇪🇯🇵', week:1 },
+    { id:'w5',  date:'Jun 15', home:'Spain',       away:'Argentina',    time:'22:00', group:'Group J', emoji:'🇪🇸🇦🇷', week:1 },
+    { id:'w6',  date:'Jun 16', home:'France',      away:'Belgium',      time:'22:00', group:'Group I', emoji:'🇫🇷🇧🇪', week:1 },
+    { id:'w7',  date:'Jun 17', home:'England',     away:'Portugal',     time:'22:00', group:'Group L', emoji:'🏴󠁧󠁢󠁥󠁮󠁧󠁿🇵🇹', week:1 },
+    // Week 2 (Jun 18-24)
+    { id:'w8',  date:'Jun 18', home:'Netherlands', away:'Argentina',    time:'22:00', group:'Group J', emoji:'🇳🇱🇦🇷', week:2 },
+    { id:'w9',  date:'Jun 19', home:'Brazil',      away:'Colombia',     time:'22:00', group:'Group C', emoji:'🇧🇷🇨🇴', week:2 },
+    { id:'w10', date:'Jun 20', home:'Spain',       away:'Germany',      time:'22:00', group:'Group E', emoji:'🇪🇸🇩🇪', week:2 },
+    { id:'w11', date:'Jun 21', home:'France',      away:'USA',          time:'22:00', group:'Group I', emoji:'🇫🇷🇺🇸', week:2 },
+    { id:'w12', date:'Jun 22', home:'Portugal',    away:'Uruguay',      time:'22:00', group:'Group K', emoji:'🇵🇹🇺🇾', week:2 },
+    { id:'w13', date:'Jun 23', home:'England',     away:'Mexico',       time:'22:00', group:'Group L', emoji:'🏴󠁧󠁢󠁥󠁮󠁧󠁿🇲🇽', week:2 },
+    // Week 3 (Jun 25-Jul 1) — Group deciders
+    { id:'w14', date:'Jun 25', home:'Argentina',   away:'Brazil',       time:'22:00', group:'Group J', emoji:'🇦🇷🇧🇷', week:3 },
+    { id:'w15', date:'Jun 26', home:'France',      away:'Spain',        time:'22:00', group:'Group I', emoji:'🇫🇷🇪🇸', week:3 },
+    { id:'w16', date:'Jun 27', home:'Germany',     away:'England',      time:'22:00', group:'Group E', emoji:'🇩🇪🏴󠁧󠁢󠁥󠁮󠁧󠁿', week:3 },
+    { id:'w17', date:'Jun 28', home:'Portugal',    away:'Morocco',      time:'22:00', group:'Group K', emoji:'🇵🇹🇲🇦', week:3 },
+    // Weeks 4-6 (Knockout)
+    { id:'w18', date:'Jul 2',  home:'TBD',         away:'TBD',          time:'22:00', group:'Round of 16', emoji:'⚽🔥', week:4 },
+    { id:'w19', date:'Jul 5',  home:'TBD',         away:'TBD',          time:'22:00', group:'Quarter-final', emoji:'⚽🔥', week:5 },
+    { id:'w20', date:'Jul 14', home:'TBD',         away:'TBD',          time:'22:00', group:'Semi-final', emoji:'⚽🔥', week:5 },
+    { id:'w21', date:'Jul 19', home:'TBD',         away:'TBD',          time:'22:00', group:'FINAL 🏆', emoji:'🏆🌟', week:6 },
   ];
+
+  function getCurrentWatchWeek() {
+    const now = new Date();
+    const start = new Date('2026-06-11T00:00:00Z');
+    const diff = Math.floor((now - start) / (5 * 24 * 60 * 60 * 1000));
+    if (diff < 0) return 1;
+    return Math.min(Math.floor(diff) + 1, 6);
+  }
+
+  function getWatchMatches() {
+    const week = getCurrentWatchWeek();
+    return ALL_WATCH_MATCHES.filter(m => m.week === week);
+  }
+
+  const WATCH_MATCHES = getWatchMatches();
 
   const MIN_WATCHERS = 4;
 
@@ -6993,8 +7025,27 @@
     container.innerHTML = html;
   }
 
+  window.resetAllWatchVotes = async () => {
+    if (!confirm('Reset ALL watch votes? This cannot be undone.')) return;
+    const snap = await getDocs(collection(db, 'watchVotes'));
+    for (const d of snap.docs) await deleteDoc(d.ref);
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#555;color:#fff;font-size:13px;padding:10px 16px;border-radius:10px;z-index:9999;white-space:nowrap;';
+    t.textContent = '🗑️ All watch votes cleared!';
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.transition='opacity 0.5s'; t.style.opacity='0'; setTimeout(()=>t.remove(),500); }, 2000);
+  };
+
   window.voteWatch = async (matchId, watching) => {
-    await setDoc(doc(db, 'watchVotes', `${currentUser.uid}_${matchId}`), {
+    // Check if same vote — if so, cancel it
+    const ref = doc(db, 'watchVotes', `${currentUser.uid}_${matchId}`);
+    const existing = await getDoc(ref);
+    if (existing.exists() && existing.data().watching === watching) {
+      await deleteDoc(ref);
+      loadWatchPage();
+      return;
+    }
+    await setDoc(ref, {
       matchId, userId: currentUser.uid,
       nickname: currentUserData?.nickname || currentUser.displayName,
       watching, updatedAt: serverTimestamp()
@@ -7474,14 +7525,19 @@
     const container = document.getElementById('stats-content');
     container.innerHTML = '<div style="padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);">Loading your stats...</div>';
 
-    const [userSnap, predsSnap, matchesSnap, allUsersSnap] = await Promise.all([
+    const [userSnap, predsSnap, matchesSnap, allUsersSnap, jokerSnap] = await Promise.all([
       getDoc(doc(db, 'users', currentUser.uid)),
       getDocs(query(collection(db, 'predictions'), orderBy('submittedAt'))),
       getDocs(query(collection(db, 'matches'), orderBy('kickoff'))),
-      getDocs(collection(db, 'users'))
+      getDocs(collection(db, 'users')),
+      getDocs(query(collection(db, 'jokerCards'), where('userId', '==', currentUser.uid)))
     ]);
 
     const user = userSnap.data();
+    // Inject jokerMatchId from jokerCards collection (not user doc)
+    if (!user.jokerMatchId && !jokerSnap.empty) {
+      user.jokerMatchId = jokerSnap.docs[0].data().matchId;
+    }
     const allUsers = [];
     allUsersSnap.forEach(d => { if (!d.data().removed) allUsers.push(d.data()); });
     allUsers.sort((a,b) => (b.points||0)-(a.points||0));
