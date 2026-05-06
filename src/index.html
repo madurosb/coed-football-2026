@@ -4990,7 +4990,18 @@
       const pct = Math.round(count / total * 100);
       const barWidth = Math.round(count / maxPicks * 100);
       const code = COUNTRY_FLAGS[team];
-      const flag = code ? `<img src="https://flagcdn.com/24x18/${code}.png" style="border-radius:2px;vertical-align:middle;margin-right:6px;width:24px;height:18px;" loading="lazy" onerror="this.style.display='none'">` : '';
+      // Use emoji flags (work on all devices) + img as enhancement
+      const EMOJI_FLAGS = {
+        'ar':'🇦🇷','fr':'🇫🇷','br':'🇧🇷','gb-eng':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','es':'🇪🇸','pt':'🇵🇹','de':'🇩🇪',
+        'nl':'🇳🇱','be':'🇧🇪','hr':'🇭🇷','uy':'🇺🇾','co':'🇨🇴','us':'🇺🇸','mx':'🇲🇽',
+        'ma':'🇲🇦','sn':'🇸🇳','jp':'🇯🇵','kr':'🇰🇷','au':'🇦🇺','ca':'🇨🇦','no':'🇳🇴',
+        'se':'🇸🇪','dk':'🇩🇰','ch':'🇨🇭','at':'🇦🇹','cz':'🇨🇿','tr':'🇹🇷','ua':'🇺🇦',
+        'gb-sct':'🏴󠁧󠁢󠁳󠁣󠁴󠁿','rs':'🇷🇸','pl':'🇵🇱','dz':'🇩🇿','ec':'🇪🇨','eg':'🇪🇬',
+        'gh':'🇬🇭','ci':'🇨🇮','cd':'🇨🇩','qa':'🇶🇦','sa':'🇸🇦','ir':'🇮🇷','iq':'🇮🇶',
+        'uz':'🇺🇿','jo':'🇯🇴','cv':'🇨🇻','cw':'🇨🇼','pa':'🇵🇦','ht':'🇭🇹','py':'🇵🇾',
+        'bo':'🇧🇴','nz':'🇳🇿','ba':'🇧🇦','ng':'🇳🇬','cm':'🇨🇲','za':'🇿🇦',
+      };
+      const flag = code ? `<span style="font-size:18px;vertical-align:middle;margin-right:6px;">${EMOJI_FLAGS[code] || '🏳️'}</span>` : '';
       const pickers = users.filter(u => u.tournamentWinner === team).map(u => u.nickname || u.displayName);
       return `
         <div style="margin-bottom:10px;">
@@ -9977,6 +9988,42 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
   async function loadH2H() {
     const container = document.getElementById('h2h-content');
     if (!container) return;
+
+    // Lock until tournament starts
+    const now = new Date();
+    const tournamentStart = new Date('2026-06-11T19:00:00Z');
+    if (now < tournamentStart) {
+      const days = Math.ceil((tournamentStart - now) / (1000*60*60*24));
+      container.innerHTML = `
+        <div style="text-align:center;padding:2rem 1rem;">
+          <div style="font-size:64px;margin-bottom:1rem;animation:coachBounce 2s ease infinite;">⚔️</div>
+          <div style="font-family:monospace;font-size:11px;letter-spacing:4px;color:var(--green);text-transform:uppercase;margin-bottom:8px;">Coming Soon</div>
+          <div style="font-size:20px;font-weight:700;margin-bottom:10px;">Head to Head Challenge</div>
+          <div style="font-size:13px;color:var(--text-muted);line-height:1.7;margin-bottom:1.5rem;">
+            Once the tournament kicks off on <strong style="color:var(--text);">June 11</strong>, you can compare your predictions head-to-head against any other player.<br><br>
+            Pick up to 5 finished matches and see who called it better. Settle the debates. Expose the frauds.
+          </div>
+          <div style="background:var(--surface);border:1.5px solid var(--green);border-radius:14px;padding:1.25rem;display:inline-block;margin-bottom:1.5rem;">
+            <div style="font-family:monospace;font-size:11px;color:var(--green);letter-spacing:2px;margin-bottom:6px;">UNLOCKS IN</div>
+            <div style="font-size:32px;font-weight:700;color:var(--text);">${days} day${days!==1?'s':''}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;max-width:300px;margin:0 auto;text-align:left;">
+            <div style="background:var(--surface);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
+              <span style="font-size:20px;">🎯</span>
+              <div><div style="font-size:13px;font-weight:500;">Pick any opponent</div><div style="font-size:11px;color:var(--text-muted);">Challenge anyone in the group</div></div>
+            </div>
+            <div style="background:var(--surface);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
+              <span style="font-size:20px;">📊</span>
+              <div><div style="font-size:13px;font-weight:500;">Compare up to 5 matches</div><div style="font-size:11px;color:var(--text-muted);">Side by side prediction comparison</div></div>
+            </div>
+            <div style="background:var(--surface);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
+              <span style="font-size:20px;">🏆</span>
+              <div><div style="font-size:13px;font-weight:500;">See who won the battle</div><div style="font-size:11px;color:var(--text-muted);">Clear verdict with points breakdown</div></div>
+            </div>
+          </div>
+        </div>`;
+      return;
+    }
 
     const usersSnap = await getDocs(collection(db, 'users'));
     const users = [];
