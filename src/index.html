@@ -2694,7 +2694,8 @@
         <div class="admin-card" onclick="showAdminSub('bold-pred')"><div class="icon">🐂</div><div class="title">Bold predictions</div><div class="desc">Award the 🐂 badge to players who made a brave prediction and nailed it.</div></div>
         <div class="admin-card" onclick="showAdminSub('trash-admin')"><div class="icon">🧹</div><div class="title">Trash Talk reset</div><div class="desc">Delete all messages or messages older than a chosen number of days.</div></div>
         <div class="admin-card" onclick="showAdminSub('innercircle-admin')"><div class="icon">🏅</div><div class="title">Inner Circle Bets</div><div class="desc">Enable or disable the Inner Circle Bets page. Open it once the final player count is confirmed.</div></div>
-        <div class="admin-card" onclick="showAdminSub('knockout-admin')"><div class="icon">⚡</div><div class="title">Knockout stages</div><div class="desc">Enable predictions for Round of 16, Quarter-finals, Semi-finals and Final once the group stage is done.</div></div>
+        <div class="admin-card" onclick="showAdminSub('payment-admin')"><div class="icon">💰</div><div class="title">Payment tracker</div><div class="desc">Mark who paid their 50 ILS entry fee. Players can see their payment status in My Stats.</div></div>
+      <div class="admin-card" onclick="showAdminSub('knockout-admin')"><div class="icon">⚡</div><div class="title">Knockout stages</div><div class="desc">Enable predictions for Round of 16, Quarter-finals, Semi-finals and Final once the group stage is done.</div></div>
         <div class="admin-card" onclick="showAdminSub('score-verify')"><div class="icon">🔍</div><div class="title">Score verification</div><div class="desc">Check that all points are calculated correctly. Compare predicted vs actual results and audit per player.</div></div>
         <div class="admin-card" onclick="showAdminSub('picks-overview')"><div class="icon">📋</div><div class="title">Picks overview</div><div class="desc">See who picked which tournament player and World Cup winner. Verify everyone submitted before June 10.</div></div>
 
@@ -2796,6 +2797,16 @@
           <button onclick="verifyAllScores()" style="padding:8px 14px;border-radius:8px;border:none;background:#185FA5;color:white;font-size:13px;font-weight:500;cursor:pointer;">✅ Run full check</button>
         </div>
         <div id="score-verify-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Click Refresh to load.</div></div>
+      </div>
+    </div>
+
+    <div id="admin-payment-admin" class="admin-sub">
+      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
+      <div class="form-card">
+        <h2>💰 Payment Tracker</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Mark who actually paid their 50 ILS. Players will see their status in My Stats. No pay, no glory.</p>
+        <button onclick="loadPaymentTracker()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;margin-bottom:1rem;">🔄 Load players</button>
+        <div id="payment-tracker-list"><div style="color:var(--text-muted);font-size:13px;">Click Load to see all players.</div></div>
       </div>
     </div>
 
@@ -3855,6 +3866,10 @@
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
+  // Ensure auth persists across page refreshes
+  import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js').then(({browserLocalPersistence, setPersistence}) => {
+    setPersistence(auth, browserLocalPersistence).catch(()=>{});
+  }).catch(()=>{});
   const db = getFirestore(app);
 
   // NICKNAME
@@ -7479,7 +7494,13 @@
     const matches = [];
     matchesSnap.forEach(d => matches.push({id: d.id, ...d.data()}));
     const finishedMatches = matches.filter(m => m.status === 'FINISHED');
-    const totalMatches = matches.length;
+    const KNOCKOUT_START_DATE = new Date('2026-06-28T00:00:00Z');
+    const totalMatches = window._knockoutEnabled
+      ? matches.length
+      : matches.filter(m => {
+          const k = m.kickoff?.toDate?.() || new Date(m.kickoff);
+          return k < KNOCKOUT_START_DATE;
+        }).length;
 
     // Calculate stats
     let correctResults = 0, biggestMiss = null, biggestMissScore = 999;
@@ -7711,25 +7732,26 @@
         <div style="font-size:13px;color:var(--text-muted);">${verdict}</div>
       </div>
 
-      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:8px;">
+      <div style="background:${user.hasPaid?'linear-gradient(135deg,#0a1f0a,#0d2e0d)':'linear-gradient(135deg,#2e0a0a,#1a0808)'};border:0.5px solid ${user.hasPaid?'#1D9E75':'#E24B4A'};border-radius:12px;padding:1rem 1.25rem;margin-bottom:8px;">
         <div style="font-size:13px;font-weight:500;margin-bottom:3px;">💸 Money at stake</div>
-        <div style="font-size:13px;color:var(--text-muted);">You paid 50 ILS to enter. First prize is worth way more. ${rank === 1 ? 'You might actually win. Breathe.' : `You need to overtake ${rank-1} player${rank-1>1?'s':''} to take 1st. Easy.`}</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:6px;">${user.hasPaid ? '✅ 50 ILS received. You\'re officially in. The money is in the pot.' : '⚠️ Payment not confirmed yet. The admin is watching. Pay up.'}</div>
+        <div style="font-size:12px;color:var(--text-muted);">${rank === 1 ? '🥇 You\'re currently leading. Don\'t blow it.' : `You need to overtake ${rank-1} player${rank-1>1?'s':''} to take 1st. Easy.`}</div>
       </div>
 
       <div style="font-size:11px;font-weight:500;letter-spacing:0.08em;color:var(--text-muted);text-transform:uppercase;margin:1.25rem 0 0.5rem;">🎮 Your game features</div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem;">
-        <div style="background:linear-gradient(135deg,var(--badge-gold-bg),var(--badge-gold-bg));border-radius:12px;padding:1rem;border:1px solid #BA7517;text-align:center;">
-          <div style="font-size:24px;margin-bottom:4px;">🃏</div>
-          <div style="font-size:12px;font-weight:600;color:var(--badge-gold-text);margin-bottom:2px;">Joker card</div>
-          <div style="font-size:13px;font-weight:700;color:var(--badge-gold-text);">${user.jokerMatchId ? '🔒 Used!' : '✅ Available'}</div>
-          <div style="font-size:10px;color:var(--badge-orange-text);margin-top:2px;">${user.jokerMatchId ? 'Already played this tournament' : 'Once per tournament'}</div>
+        <div onclick="showJokerDetail('${user.uid}','${user.jokerMatchId||''}')" style="background:${user.jokerMatchId?'linear-gradient(145deg,#1a0f00,#2a1800)':'var(--surface2)'};border-radius:12px;padding:1rem;border:1px solid ${user.jokerMatchId?'#BA7517':'var(--border)'};text-align:center;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform=''">
+          <div style="font-size:24px;margin-bottom:4px;">${user.jokerMatchId?'🃏✅':'🃏'}</div>
+          <div style="font-size:12px;font-weight:600;color:${user.jokerMatchId?'#EF9F27':'var(--text-muted)'};margin-bottom:2px;">Joker Card</div>
+          <div style="font-size:13px;font-weight:700;color:${user.jokerMatchId?'#EF9F27':'var(--text)'};">${user.jokerMatchId ? '🔒 Used' : '✅ Available'}</div>
+          <div style="font-size:10px;color:${user.jokerMatchId?'#BA7517':'var(--text-muted)'};margin-top:2px;">${user.jokerMatchId ? 'Tap to see which match →' : 'Once per tournament'}</div>
         </div>
-        <div style="background:linear-gradient(135deg,var(--badge-blue-bg),var(--badge-blue-bg));border-radius:12px;padding:1rem;border:1px solid #7C3AED;text-align:center;">
+        <div onclick="showDONDetail('${user.uid}')" style="background:linear-gradient(145deg,#1a0a2e,#150a25);border-radius:12px;padding:1rem;border:1px solid #7C3AED;text-align:center;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform=''">
           <div style="font-size:24px;margin-bottom:4px;">🎰</div>
-          <div style="font-size:12px;font-weight:600;color:#5B21B6;margin-bottom:2px;">Double or Nothing</div>
-          <div style="font-size:13px;font-weight:700;color:#a78bfa;">Once/week</div>
-          <div style="font-size:10px;color:#6D28D9;margin-top:2px;">x2 if correct · result pts deducted if wrong</div>
+          <div style="font-size:12px;font-weight:600;color:#a78bfa;margin-bottom:2px;">Double or Nothing</div>
+          <div style="font-size:13px;font-weight:700;color:#a78bfa;" id="don-stat-label">Loading...</div>
+          <div style="font-size:10px;color:#6D28D9;margin-top:2px;">Tap to see history →</div>
         </div>
         <div style="background:${(user.currentStreak||0)>=3?'linear-gradient(135deg,#FFF0E0,#FEE2C0)':'var(--surface2)'};border-radius:12px;padding:1rem;border:1px solid ${(user.currentStreak||0)>=3?'#F59E0B':'var(--border)'};text-align:center;">
           <div style="font-size:24px;margin-bottom:4px;">🔥</div>
@@ -7775,6 +7797,7 @@
     `;
     loadGoalsKing();
     drawPointsChart();
+    loadDONStatLabel();
   }
 
   async function drawPointsChart() {
@@ -7885,6 +7908,112 @@
     ctx.font = 'bold 11px sans-serif';
     ctx.fillText(points[points.length-1] + 'pts', pad.left - 2, toY(points[points.length-1]) + 4);
   }
+
+  window.showJokerDetail = async (uid, jokerMatchId) => {
+    if (!jokerMatchId) {
+      // Not used yet
+      const p = document.createElement('div');
+      p.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;';
+      p.innerHTML = `<div style="background:var(--surface);border-radius:16px;padding:1.5rem;max-width:300px;width:100%;text-align:center;">
+        <div style="font-size:48px;margin-bottom:8px;">🃏</div>
+        <div style="font-size:16px;font-weight:700;margin-bottom:8px;">Joker — Still Available</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">You haven't played your Joker yet. Save it for a match you're really sure about. Or just YOLO it.<br><br>Doubles all result points if correct. No penalty if wrong.</div>
+        <button onclick="this.closest('div[style*=fixed]').remove()" style="width:100%;padding:10px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;cursor:pointer;">Got it 👍</button>
+      </div>`;
+      document.body.appendChild(p);
+      return;
+    }
+    const mSnap = await getDoc(doc(db, 'matches', jokerMatchId));
+    const m = mSnap.data();
+    const matchStr = m ? `${m.homeTeam} vs ${m.awayTeam}` : 'Unknown match';
+    const kickoff = m?.kickoff?.toDate?.();
+    const dateStr = kickoff ? kickoff.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) : '';
+    const isFinished = m?.status === 'FINISHED';
+    const resultStr = isFinished ? `Result: ${m.homeScore}-${m.awayScore}` : 'Match not yet played';
+    const p = document.createElement('div');
+    p.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;';
+    p.innerHTML = `<div style="background:linear-gradient(145deg,#1a0f00,#2a1800);border:2px solid #BA7517;border-radius:16px;padding:1.5rem;max-width:300px;width:100%;text-align:center;">
+      <div style="font-size:48px;margin-bottom:8px;animation:jokerSpin 0.6s ease;">🃏</div>
+      <div style="font-family:monospace;font-size:10px;letter-spacing:3px;color:#BA7517;margin-bottom:6px;">JOKER USED</div>
+      <div style="font-size:16px;font-weight:700;color:#EF9F27;margin-bottom:4px;">${matchStr}</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:12px;">${dateStr} · ${resultStr}</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:1rem;">One Joker per tournament. It's gone. Hopefully it was worth it.</div>
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="width:100%;padding:10px;border-radius:8px;border:none;background:#BA7517;color:#000;font-size:13px;font-weight:700;cursor:pointer;">Close</button>
+    </div>`;
+    document.body.appendChild(p);
+  };
+
+  window.showDONDetail = async (uid) => {
+    const donSnap = await getDocs(query(collection(db, 'donOptIns'), where('userId', '==', currentUser.uid)));
+    const dons = [];
+    for (const d of donSnap.docs) {
+      const data = d.data();
+      dons.push(data);
+    }
+    const p = document.createElement('div');
+    p.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;';
+    const donList = dons.length === 0
+      ? '<div style="font-size:13px;color:rgba(255,255,255,0.5);padding:1rem 0;">No Double or Nothing bets placed yet. What are you waiting for?</div>'
+      : dons.map(d => `<div style="background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);border-radius:8px;padding:8px 12px;margin-bottom:6px;text-align:left;">
+          <div style="font-size:13px;font-weight:600;color:#a78bfa;">${d.matchTeams || 'Match'}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);">${d.week?.replace('wc2026-week-','Week ') || ''}</div>
+        </div>`).join('');
+    p.innerHTML = `<div style="background:#1a0a2e;border:2px solid #7C3AED;border-radius:16px;padding:1.5rem;max-width:320px;width:100%;text-align:center;max-height:80vh;overflow-y:auto;">
+      <div style="font-size:40px;margin-bottom:8px;">🎰</div>
+      <div style="font-family:monospace;font-size:10px;letter-spacing:3px;color:#7C3AED;margin-bottom:10px;">DOUBLE OR NOTHING HISTORY</div>
+      ${donList}
+      <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:8px;">${dons.length}/6 weeks used · Once per week during the tournament</div>
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="width:100%;padding:10px;border-radius:8px;border:none;background:#7C3AED;color:white;font-size:13px;font-weight:600;cursor:pointer;margin-top:12px;">Close</button>
+    </div>`;
+    document.body.appendChild(p);
+  };
+
+  async function loadDONStatLabel() {
+    try {
+      const donSnap = await getDocs(query(collection(db, 'donOptIns'), where('userId', '==', currentUser.uid)));
+      const label = document.getElementById('don-stat-label');
+      if (label) {
+        const count = donSnap.size;
+        label.textContent = count === 0 ? '0/6 weeks used' : `${count}/6 used`;
+      }
+    } catch(e) {}
+  }
+
+  window.loadPaymentTracker = async () => {
+    const list = document.getElementById('payment-tracker-list');
+    list.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">Loading...</div>';
+    const usersSnap = await getDocs(collection(db, 'users'));
+    const users = [];
+    usersSnap.forEach(d => users.push({id: d.id, ...d.data()}));
+    users.sort((a,b) => (a.nickname||'').localeCompare(b.nickname||''));
+    list.innerHTML = users.map(u => `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);">
+        <img src="${u.avatarUrl||''}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;" onerror="this.style.display='none'">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:500;">${u.nickname||u.displayName||'Unknown'}</div>
+          <div style="font-size:11px;color:var(--text-muted);">${u.email||''}</div>
+        </div>
+        <button onclick="togglePayment('${u.uid}', ${!u.hasPaid}, this)"
+          style="padding:6px 12px;border-radius:8px;border:none;background:${u.hasPaid?'#1D9E75':'#E24B4A'};color:white;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;">
+          ${u.hasPaid ? '✅ Paid' : '❌ Not paid'}
+        </button>
+      </div>`).join('');
+  };
+
+  window.togglePayment = async (uid, newPaid, btn) => {
+    btn.disabled = true;
+    btn.textContent = '...';
+    await updateDoc(doc(db, 'users', uid), { hasPaid: newPaid });
+    btn.style.background = newPaid ? '#1D9E75' : '#E24B4A';
+    btn.textContent = newPaid ? '✅ Paid' : '❌ Not paid';
+    btn.disabled = false;
+    // Funny toast
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:13px;padding:10px 16px;border-radius:10px;z-index:9999;white-space:nowrap;';
+    t.textContent = newPaid ? '💰 Money received. They\'re in. Finally.' : '🚨 Marked as not paid. Awkward.';
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.transition='opacity 0.5s'; t.style.opacity='0'; setTimeout(()=>t.remove(),500); }, 2500);
+  };
 
   async function loadGoalsKing() {
     const container = document.getElementById('goals-king-table');
