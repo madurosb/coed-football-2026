@@ -8966,8 +8966,11 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
     } else {
       const coach = COACHES.find(c => c.id === savedCoachId);
       // isReturn=true: keep existing chat history, don't send welcome again
+      // Count real predictions
+      const myPredsForCount = await getDocs(query(collection(db, 'predictions'), where('userId', '==', currentUser.uid)));
+      const updatedData = { ...userData, predCount: myPredsForCount.size };
       const isReturn = coachChatHistory.length > 0;
-      if (coach) renderCoachChat(container, coach, userData, isReturn);
+      if (coach) renderCoachChat(container, coach, updatedData, isReturn);
     }
   }
 
@@ -9078,7 +9081,9 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
 
   function renderCoachChat(container, coach, userData, isReturn=false) {
     if (!isReturn) coachChatHistory = [];
-    const predCount = userData?.predCount || 0;
+    // Count actual predictions from Firestore
+    const myPredsSnap = await getDocs(query(collection(db, 'predictions'), where('userId', '==', currentUser.uid)));
+    const predCount = myPredsSnap.size;
     const personalised = predCount >= 10;
 
     container.innerHTML = `
@@ -9089,7 +9094,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
           <div style="font-family:monospace;font-size:13px;font-weight:700;color:${coach.color};">${coach.emoji} ${coach.name}</div>
           <div style="font-size:11px;color:rgba(255,255,255,0.5);">${coach.title}</div>
           ${personalised
-            ? `<div style="font-size:10px;margin-top:4px;background:${coach.color}22;color:${coach.color};padding:2px 7px;border-radius:99px;display:inline-block;border:1px solid ${coach.color}44;">🧠 Knows your style</div>`
+            ? `<div style="font-size:10px;margin-top:4px;background:${coach.color}22;color:${coach.color};padding:2px 7px;border-radius:99px;display:inline-block;border:1px solid ${coach.color}44;">🧠 Knows your style (${predCount} predictions)</div>`
             : `<div style="font-size:10px;margin-top:4px;color:rgba(255,255,255,0.35);">📊 ${Math.max(0, 10 - predCount)} more predictions until personalised advice</div>`}
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
@@ -9327,7 +9332,9 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
   }
 
   async function sendCoachWelcome(coach, userData) {
-    const predCount = userData?.predCount || 0;
+    // Count actual predictions from Firestore
+    const myPredsSnap = await getDocs(query(collection(db, 'predictions'), where('userId', '==', currentUser.uid)));
+    const predCount = myPredsSnap.size;
     const personalised = predCount >= 10;
 
     const langInstruction = coachLang === 'he'
@@ -9532,12 +9539,17 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
     // Build context from user stats
     const userSnap = await getDoc(doc(db, 'users', currentUser.uid));
     const ud = userSnap.data();
-    const predCount = ud?.predCount || 0;
+    const myPredsCount = await getDocs(query(collection(db, 'predictions'), where('userId', '==', currentUser.uid)));
+    const predCount = myPredsCount.size;
     const personalised = predCount >= 10;
 
     const langInstruction = coachLang === 'he' ? ' Respond in Hebrew with Israeli slang.' : ' Respond in English.';
-    const winnerPick = ud?.tournamentWinner ? ` The user has picked ${ud.tournamentWinner} to win the World Cup.` : '';
-    const wcContext = ' Context: COED&FOOTBALL WC2026 prediction game.' + winnerPick;
+    const winnerPick = ud?.tournamentWinner ? ` User's WC winner pick: ${ud.tournamentWinner}.` : '';
+    const playerPick = ud?.tournamentPlayer ? ` Tournament player pick: ${ud.tournamentPlayer}.` : '';
+    const statsCtx = personalised
+      ? ` PERSONALISED MODE: User has ${predCount} predictions, ${ud?.points||0} pts, rank context available. ${ud?.exactScores||0} exact scores. Tailor advice to their style — reference their picks where relevant.`
+      : ` User has ${predCount}/10 predictions so far. Generic advice only.`;
+    const wcContext = ' Context: COED&FOOTBALL WC2026.' + winnerPick + playerPick + statsCtx;
 
     let systemPrompt = coach.personality + langInstruction + wcContext;
     if (personalised) {
@@ -9558,7 +9570,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
       const response = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ systemPrompt, messages: cleanMessages })
+        body: JSON.stringify({ systemPrompt, messages: cleanMessages, maxTokens: 180 })
       });
       const data = await response.json();
       const reply = data.text || "...";
