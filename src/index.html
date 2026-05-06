@@ -4048,11 +4048,56 @@
     loadHomeData();
     loadMatches();
     loadPrizes();
-    // Auto-refresh every 15 minutes
-    setTimeout(() => {
-      const vid = document.getElementById('rules-video');
-      if (vid) { try { vid.contentWindow?.postMessage('{"event":"command","func":"stopVideo","args":""}', '*'); } catch(e) {} vid.src = 'about:blank'; setTimeout(() => { if(vid) vid.src=''; }, 100); }
-      location.reload();
+
+    // Silent background refresh every 15 min — no page reload!
+    // Refreshes standings + match statuses quietly in the background
+    setInterval(async () => {
+      try {
+        // Refresh leaderboard data silently
+        const usersSnap = await getDocs(collection(db, 'users'));
+        const users = [];
+        usersSnap.forEach(d => users.push(d.data()));
+        users.sort((a,b) => (b.points||0) - (a.points||0));
+        // Update home stats if on home page
+        if (currentPage === 'home') {
+          const me = users.find(u => u.uid === currentUser.uid);
+          if (me) {
+            const homeEl = document.getElementById('home-pts');
+            if (homeEl) homeEl.textContent = me.points || 0;
+            const rank = users.findIndex(u => u.uid === currentUser.uid) + 1;
+            const rankEl = document.getElementById('home-rank');
+            if (rankEl) rankEl.textContent = '#' + rank;
+          }
+          renderLeaderboard('home-leaderboard', users.slice(0, 3));
+        }
+        // Refresh leaderboard page silently if open
+        if (currentPage === 'leaderboard') {
+          const predsSnap = await getDocs(collection(db, 'predictions'));
+          const predStats = {};
+          predsSnap.forEach(d => {
+            const p = d.data();
+            if (!predStats[p.userId]) predStats[p.userId] = { total: 0, draws: 0 };
+            predStats[p.userId].total++;
+            if ((p.homeScore ?? -1) === (p.awayScore ?? -2)) predStats[p.userId].draws++;
+          });
+          renderLeaderboard('full-leaderboard', users, predStats);
+        }
+        // Refresh match statuses silently (for live scores)
+        if (currentPage === 'matches' && allMatchesSnap) {
+          const freshSnap = await getDocs(query(collection(db, 'matches'), orderBy('kickoff')));
+          allMatchesSnap = freshSnap;
+          // Only re-render if there are live matches to avoid interrupting user
+          let hasLive = false;
+          freshSnap.forEach(d => {
+            if (['IN_PLAY','PAUSED','HALFTIME','FINISHED'].includes(d.data().status)) hasLive = true;
+          });
+          if (hasLive) {
+            renderMatches(freshSnap, activeMatchDate);
+          }
+        }
+      } catch(e) {
+        console.log('Background refresh error:', e.message);
+      }
     }, 15 * 60 * 1000);
 
     // Admin-only: watch for new members
