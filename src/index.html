@@ -8496,23 +8496,47 @@
   // ========== SAVE ALL PREDICTIONS FOR DAY ==========
   // Save ALL predictions across ALL days
   // Tournament player search filter
+  let _allPlayerOptions = null;
+
   window.filterPlayerSelect = (term) => {
     const select = document.getElementById('tournament-player-select');
     if (!select) return;
-    const groups = select.querySelectorAll('optgroup');
-    const lc = term.toLowerCase();
-    groups.forEach(group => {
-      let anyVisible = false;
-      group.querySelectorAll('option').forEach(opt => {
-        const matches = !lc || opt.text.toLowerCase().includes(lc) || group.label.toLowerCase().includes(lc);
-        opt.style.display = matches ? '' : 'none';
-        if (matches) anyVisible = true;
+
+    // Cache all options on first call
+    if (!_allPlayerOptions) {
+      _allPlayerOptions = [];
+      select.querySelectorAll('optgroup').forEach(group => {
+        group.querySelectorAll('option').forEach(opt => {
+          _allPlayerOptions.push({ text: opt.text, value: opt.value, group: group.label });
+        });
       });
-      group.style.display = anyVisible ? '' : 'none';
+    }
+
+    const lc = term.toLowerCase().trim();
+    const currentVal = select.value;
+
+    // Clear and rebuild
+    select.innerHTML = '';
+    const groups = {};
+    _allPlayerOptions.forEach(p => {
+      if (!lc || p.text.toLowerCase().includes(lc) || p.group.toLowerCase().includes(lc)) {
+        if (!groups[p.group]) {
+          groups[p.group] = document.createElement('optgroup');
+          groups[p.group].label = p.group;
+          select.appendChild(groups[p.group]);
+        }
+        const opt = document.createElement('option');
+        opt.value = p.value;
+        opt.text = p.text;
+        if (p.value === currentVal) opt.selected = true;
+        groups[p.group].appendChild(opt);
+      }
     });
-    // If only one visible option, auto-select it
-    const visible = [...select.querySelectorAll('option')].filter(o => o.style.display !== 'none');
-    if (visible.length === 1) select.value = visible[0].value;
+
+    // If only one result, auto-select
+    const allOpts = select.querySelectorAll('option');
+    if (allOpts.length === 1) select.value = allOpts[0].value;
+    if (!lc) select.value = currentVal; // restore selection when cleared
   };
 
   window.saveAllPredictions = async (btn) => {
