@@ -942,7 +942,14 @@
       <div class="stat-card"><div class="num" id="home-exact">-</div><div class="lbl">Exact scores</div></div>
       <div class="stat-card"><div class="num" id="home-player" style="font-size:13px;">-</div><div class="lbl">Your player</div></div>
     </div>
-    <p class="section-title">Top 3 right now</p>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
+      <p class="section-title" style="margin:0;">Top 10 right now</p>
+      <button onclick="showPage('leaderboard')" title="See the full standings table"
+        style="font-size:12px;font-weight:500;color:var(--green);background:rgba(29,158,117,0.1);border:1px solid rgba(29,158,117,0.3);border-radius:8px;padding:5px 12px;cursor:pointer;transition:all 0.2s;white-space:nowrap;"
+        onmouseover="this.style.background='rgba(29,158,117,0.2)'" onmouseout="this.style.background='rgba(29,158,117,0.1)'">
+        Full table →
+      </button>
+    </div>
     <div class="leaderboard" id="home-leaderboard">
       <div class="lb-row header"><div></div><div>Player</div><div style="text-align:center">Pts</div><div style="text-align:center">Exact</div><div style="text-align:center">Bonus</div></div>
       <div style="padding:1rem; text-align:center; font-size:13px; color:var(--text-muted);">Loading standings...</div>
