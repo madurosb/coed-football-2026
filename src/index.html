@@ -978,6 +978,10 @@
     <div class="player-pick">
       <h3>Your tournament player</h3>
       <p>Pick one player before the tournament starts. Every goal = +2 pts, every assist = +1 pt, red card = −1 pt.</p>
+      <!-- Search box -->
+      <input type="text" id="player-search" placeholder="🔍 Search player or country..." autocomplete="off"
+        style="width:100%;padding:9px 12px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;margin-bottom:6px;"
+        oninput="filterPlayerSelect(this.value)">
       <div style="display:flex; gap:8px; align-items:center;">
         <select id="tournament-player-select" style="flex:1;">
           <optgroup label="Algeria">
@@ -8491,6 +8495,26 @@
 
   // ========== SAVE ALL PREDICTIONS FOR DAY ==========
   // Save ALL predictions across ALL days
+  // Tournament player search filter
+  window.filterPlayerSelect = (term) => {
+    const select = document.getElementById('tournament-player-select');
+    if (!select) return;
+    const groups = select.querySelectorAll('optgroup');
+    const lc = term.toLowerCase();
+    groups.forEach(group => {
+      let anyVisible = false;
+      group.querySelectorAll('option').forEach(opt => {
+        const matches = !lc || opt.text.toLowerCase().includes(lc) || group.label.toLowerCase().includes(lc);
+        opt.style.display = matches ? '' : 'none';
+        if (matches) anyVisible = true;
+      });
+      group.style.display = anyVisible ? '' : 'none';
+    });
+    // If only one visible option, auto-select it
+    const visible = [...select.querySelectorAll('option')].filter(o => o.style.display !== 'none');
+    if (visible.length === 1) select.value = visible[0].value;
+  };
+
   window.saveAllPredictions = async (btn) => {
     if (!allMatchesSnap) return;
     btn.disabled = true;
