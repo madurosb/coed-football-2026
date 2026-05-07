@@ -80,16 +80,16 @@
 
     /* LEADERBOARD */
     .leaderboard { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 1.5rem; }
-    .lb-row { display: grid; grid-template-columns: 52px 1fr 60px 60px 60px; align-items: center; padding: 0.75rem 1rem; border-bottom: 0.5px solid var(--border); transition: background 0.1s; }
+    .lb-row { display: grid; grid-template-columns: 52px 1fr 64px 64px 64px; align-items: center; padding: 0.9rem 1rem; border-bottom: 0.5px solid var(--border); transition: background 0.1s; }
     .lb-row:last-child { border-bottom: none; }
     .lb-row:hover { background: var(--surface2); }
     .lb-row.header { background: var(--surface2); font-size: 11px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
-    .lb-rank { font-size: 14px; font-weight: 500; color: var(--text-muted); text-align: center; }
+    .lb-rank { font-size: 15px; font-weight: 600; color: var(--text-muted); text-align: center; }
     .lb-rank.gold { color:var(--badge-gold-text); } .lb-rank.silver { color: #888780; } .lb-rank.bronze { color: #854F0B; }
-    .lb-user { display: flex; align-items: center; gap: 10px; }
-    .lb-user .name { font-size: 14px; font-weight: 500; }
+    .lb-user { display: flex; align-items: center; gap: 12px; }
+    .lb-user .name { font-size: 15px; font-weight: 600; }
     .lb-user .handle { font-size: 12px; color: var(--text-muted); }
-    .lb-pts { text-align: center; font-size: 14px; font-weight: 500; }
+    .lb-pts { text-align: center; font-size: 15px; font-weight: 600; }
     .lb-pts.muted { font-size: 13px; color: var(--text-muted); font-weight: 400; }
     .badge-sniper { background:var(--badge-green-bg); color:var(--badge-green-text); font-size: 10px; padding: 2px 6px; border-radius: 99px; font-weight: 500; }
     .badge-mvp { background:var(--badge-gold-bg); color:var(--badge-gold-text); font-size: 10px; padding: 2px 6px; border-radius: 99px; font-weight: 500; }
@@ -4087,7 +4087,7 @@
             const rankEl = document.getElementById('home-rank');
             if (rankEl) rankEl.textContent = '#' + rank;
           }
-          renderLeaderboard('home-leaderboard', users.slice(0, 3));
+          renderLeaderboard('home-leaderboard', users.slice(0, 10));
         }
         // Refresh leaderboard page silently if open
         if (currentPage === 'leaderboard') {
@@ -4904,7 +4904,7 @@
     users.sort((a, b) => (b.points || 0) - (a.points || 0));
     const rank = users.findIndex(u => u.uid === currentUser.uid) + 1;
     document.getElementById('home-rank').textContent = '#' + rank;
-    renderLeaderboard('home-leaderboard', users.slice(0, 3));
+    renderLeaderboard('home-leaderboard', users.slice(0, 10));
 
     // Only show fun stats and player of round if tournament has started
     const tournamentStart = new Date('2026-06-11T19:00:00Z');
@@ -5154,14 +5154,14 @@
     const rows = users.map((u, i) => {
       let avatarHTML;
       if (u.isAdmin) {
-        avatarHTML = `<div style="position:relative;width:48px;height:48px;flex-shrink:0;min-width:48px;">
-          <img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #00ff41;">
-          <span style="position:absolute;top:-4px;right:-4px;font-size:11px;">👑</span>
+        avatarHTML = `<div style="position:relative;width:56px;height:56px;flex-shrink:0;min-width:56px;">
+          <img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #00ff41;">
+          <span style="position:absolute;top:-4px;right:-4px;font-size:12px;">👑</span>
         </div>`;
       } else {
         const av = getAvatarById(u.avatar);
         avatarHTML = av
-          ? `<div style="width:48px;height:48px;border-radius:50%;overflow:hidden;flex-shrink:0;">${makeAvatarSVG(av, 48)}</div>`
+          ? `<div style="width:56px;height:56px;border-radius:50%;overflow:hidden;flex-shrink:0;">${makeAvatarSVG(av, 56)}</div>`
           : `<div class="avatar" style="background:${['#FAEEDA','#E6F1FB','#E1F5EE'][i]||'#f0f0f0'};color:${['#633806','#0C447C','#085041'][i]||'#333'};">${(u.nickname||u.displayName||'?').substring(0,2).toUpperCase()}</div>`;
       }
       const badge = getUserBadge(u, i, users, predStats);
