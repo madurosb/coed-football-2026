@@ -10357,14 +10357,44 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
     const upcomingMatches = Object.values(matches)
       .filter(m => m.status !== 'FINISHED')
       .sort((a,b) => (a.kickoff?.toDate?.() || new Date(a.kickoff)) - (b.kickoff?.toDate?.() || new Date(b.kickoff)))
-      .slice(0, 12);
+      .slice(0, 5);
 
     if (upcomingMatches.length === 0) {
       container.innerHTML = `<div style="text-align:center;padding:2rem;font-size:13px;color:var(--text-muted);">No upcoming matches found.</div>`;
       return;
     }
 
-    container.innerHTML = upcomingMatches.map(m => {
+    // Header explanation
+    const headerHtml = `
+      <div style="background:linear-gradient(135deg,#0a1f0a,#0d2e1a);border:1px solid rgba(29,158,117,0.3);border-radius:14px;padding:1rem 1.25rem;margin-bottom:1.25rem;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#1D9E75,#EF9F27,#1D9E75,transparent);animation:shimmer 3s linear infinite;background-size:200%;"></div>
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+          <div style="font-size:32px;animation:coachFloat 3s ease infinite;flex-shrink:0;">🔮</div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:white;margin-bottom:4px;">Next 5 Upcoming Matches</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.55);line-height:1.6;">
+              See how the group is split on each match. Updates automatically as matches finish — always shows the next 5 on the horizon.
+              <br><span style="color:rgba(29,158,117,0.8);font-style:italic;">Spoiler-free: no results shown, only predictions.</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:16px;margin-top:10px;padding-top:10px;border-top:0.5px solid rgba(255,255,255,0.08);">
+          <div style="text-align:center;flex:1;">
+            <div style="font-size:18px;font-weight:700;color:#4ade80;">${totalUsers}</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:0.05em;">PLAYERS</div>
+          </div>
+          <div style="text-align:center;flex:1;">
+            <div style="font-size:18px;font-weight:700;color:#EF9F27;">5</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:0.05em;">MATCHES SHOWN</div>
+          </div>
+          <div style="text-align:center;flex:1;">
+            <div style="font-size:18px;font-weight:700;color:#60a5fa;">LIVE</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:0.05em;">AUTO-UPDATE</div>
+          </div>
+        </div>
+      </div>`;
+
+    container.innerHTML = headerHtml + upcomingMatches.map(m => {
       const preds = predsByMatch[m.id] || [];
       const total = preds.length;
       if (total === 0) return `
@@ -10422,6 +10452,28 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
             </div>` : ''}
         </div>`;
     }).join('');
+
+    // Auto-refresh when a match finishes — check every 5 min and reload if new matches finished
+    if (!container._oddsRefreshTimer) {
+      container._oddsRefreshTimer = setInterval(async () => {
+        if (document.getElementById('atab-odds')?.style.background?.includes('var(--green)') === false) return;
+        const freshSnap = await getDocs(query(collection(db, 'matches'), orderBy('kickoff')));
+        const freshUpcoming = [];
+        freshSnap.forEach(d => {
+          const m = d.data();
+          if (m.status !== 'FINISHED') freshUpcoming.push(m);
+        });
+        freshUpcoming.sort((a,b) => (a.kickoff?.toDate?.() || new Date(a.kickoff)) - (b.kickoff?.toDate?.() || new Date(b.kickoff)));
+        const newTop5 = freshUpcoming.slice(0,5).map(m => m.homeTeam + m.awayTeam).join('');
+        const oldTop5 = upcomingMatches.map(m => m.homeTeam + m.awayTeam).join('');
+        if (newTop5 !== oldTop5) {
+          // The next 5 changed — reload the tab
+          delete container.dataset.loaded;
+          loadGroupOdds();
+          clearInterval(container._oddsRefreshTimer);
+        }
+      }, 5 * 60 * 1000);
+    }
   }
 
   async function loadPostMatch() {
