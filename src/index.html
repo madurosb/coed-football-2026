@@ -2010,7 +2010,14 @@
     <div style="text-align:center;margin-bottom:1.5rem;">
       <div style="font-size:11px;font-family:monospace;letter-spacing:4px;color:var(--green);text-transform:uppercase;margin-bottom:6px;">Welcome to</div>
       <div style="font-size:22px;font-weight:800;margin-bottom:4px;">COED&FOOTBALL 2026</div>
-      <div style="font-size:13px;color:var(--text-muted);">Everything you need to know. No excuses after reading this.</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Everything you need to know. No excuses after reading this.</div>
+      <!-- Language toggle -->
+      <div style="display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:0.5px solid var(--border);border-radius:99px;padding:4px 6px;">
+        <button id="htp-lang-en" onclick="setHTPLang('en')"
+          style="padding:5px 14px;border-radius:99px;border:none;background:var(--green);color:white;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;">🇺🇸 EN</button>
+        <button id="htp-lang-he" onclick="setHTPLang('he')"
+          style="padding:5px 14px;border-radius:99px;border:none;background:none;color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;">🇮🇱 עב</button>
+      </div>
     </div>
 
     <!-- Tab buttons -->
@@ -2021,6 +2028,9 @@
       <button class="htp-tab"        id="htp-tab-pages"     onclick="setHTPTab('pages')"    >📱 Pages</button>
       <button class="htp-tab"        id="htp-tab-tips"      onclick="setHTPTab('tips')"     >💡 Tips</button>
     </div>
+
+    <!-- ENGLISH content -->
+    <div id="htp-lang-content-en">
     <style>
       .htp-tab { flex-shrink:0;padding:7px 14px;border-radius:99px;border:1px solid var(--border);background:none;color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;white-space:nowrap; }
       .htp-tab.active { background:var(--green);color:white;border-color:var(--green); }
@@ -2142,15 +2152,15 @@
           </div>
         </div>
       </div>
-      <div class="htp-card red" style="background:linear-gradient(135deg,#0d0505,#1a0808);">
+      <div class="htp-card red" style="background:linear-gradient(135deg,#1a0505,#2a0808);border-color:#E24B4A;">
         <div style="display:flex;gap:14px;align-items:flex-start;">
           <div class="htp-icon">⚡</div>
           <div>
-            <div class="htp-title">Knockout stage multipliers</div>
-            <div class="htp-desc">As the stakes rise, so do the points:<br>
-              <strong style="color:#f87171;">Round of 16: ×2 &nbsp;·&nbsp; Quarter-finals: ×3</strong><br>
-              <strong style="color:#f87171;">Semi-finals: ×4</strong><br>
-              <strong style="color:#EF9F27;">Final: Exact score = 20 pts · Correct result = 10 pts 🏆</strong>
+            <div class="htp-title" style="color:white;">Knockout stage multipliers</div>
+            <div class="htp-desc" style="color:rgba(255,255,255,0.75);">As the stakes rise, so do the points:<br>
+              <strong style="color:#fca5a5;">Round of 16: ×2 &nbsp;·&nbsp; Quarter-finals: ×3</strong><br>
+              <strong style="color:#fca5a5;">Semi-finals: ×4</strong><br>
+              <strong style="color:#FCD34D;">Final: Exact score = 20 pts · Correct result = 10 pts 🏆</strong>
             </div>
           </div>
         </div>
@@ -2307,6 +2317,24 @@
           </div>
         </div>
       </div>
+      <div class="htp-card red">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">🎬</div>
+          <div>
+            <div class="htp-title">Highlights</div>
+            <div class="htp-desc">Catch up on the best moments from each match — goals, saves, drama. Embedded YouTube highlights updated after every game. For when you missed the match or just want to relive the chaos.</div>
+          </div>
+        </div>
+      </div>
+      <div class="htp-card blue">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">📋</div>
+          <div>
+            <div class="htp-title">Rules</div>
+            <div class="htp-desc">The official rules of the tournament — scoring system, deadlines, prize structure, tiebreakers, and what happens if someone tries to cheat. Read it once. You won't regret it. Ignorance is not an excuse when you lose on a technicality.</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ===== TIPS TAB ===== -->
@@ -2371,6 +2399,7 @@
       </div>
     </div>
 
+    </div><!-- end htp-english -->
   </div><!-- end page-dummies -->
 
   <!-- INSTALL TAB -->
@@ -8281,6 +8310,39 @@
   }
 
   // ========== HOW TO PLAY — TABS + TUTORIAL ==========
+  window.setHTPLang = (lang) => {
+    const enBtn = document.getElementById('htp-lang-en');
+    const heBtn = document.getElementById('htp-lang-he');
+    if (enBtn) { enBtn.style.background = lang==='en' ? 'var(--green)' : 'none'; enBtn.style.color = lang==='en' ? 'white' : 'var(--text-muted)'; }
+    if (heBtn) { heBtn.style.background = lang==='he' ? 'var(--green)' : 'none'; heBtn.style.color = lang==='he' ? 'white' : 'var(--text-muted)'; }
+    const enContent = document.getElementById('htp-lang-content-en');
+    const heContent = document.getElementById('htp-lang-content-he');
+    if (enContent) enContent.style.display = lang==='en' ? '' : 'none';
+    if (heContent) heContent.style.display = lang==='he' ? '' : 'none';
+    localStorage.setItem('htp-lang', lang);
+  };
+
+  // Load saved language pref when entering How to Play page
+  const _origShowPage = window.showPage || function(){};
+  window.showPage = (id) => {
+    _origShowPage(id);
+    if (id === 'dummies') {
+      const saved = localStorage.getItem('htp-lang') || 'en';
+      setTimeout(() => setHTPLang(saved), 100);
+    }
+  };
+
+  window.setHTPLang = (lang) => {
+    const isHe = lang === 'he';
+    document.getElementById('htp-english').style.display = isHe ? 'none' : 'block';
+    document.getElementById('htp-hebrew').style.display = isHe ? 'block' : 'none';
+    document.getElementById('htp-tab-bar').style.display = isHe ? 'none' : 'flex';
+    const enBtn = document.getElementById('htp-lang-en');
+    const heBtn = document.getElementById('htp-lang-he');
+    if (enBtn) { enBtn.style.background = isHe ? 'none' : 'var(--green)'; enBtn.style.color = isHe ? 'var(--text-muted)' : 'white'; }
+    if (heBtn) { heBtn.style.background = isHe ? 'var(--green)' : 'none'; heBtn.style.color = isHe ? 'white' : 'var(--text-muted)'; }
+  };
+
   window.setHTPTab = (tab) => {
     const tabs = ['basics','scoring','features','pages','tips'];
     tabs.forEach(t => {
