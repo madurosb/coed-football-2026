@@ -2005,488 +2005,371 @@
 
   <!-- HOW TO BET FOR DUMMIES -->
   <div class="page" id="page-dummies">
-    <p class="section-title" style="margin-bottom:0.25rem;">🎓 How to play — for dummies</p>
-    <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Everything you need to know. Step by step.</p>
 
-    <!-- Tabs -->
-    <div style="display:flex;gap:0;border-bottom:1.5px solid var(--border);margin-bottom:1.25rem;" id="dummies-tabs">
-      <button id="dtab-guide" onclick="setDummiesTab('guide')" style="flex:1;padding:9px 4px;font-size:12px;font-weight:600;border:none;border-bottom:2.5px solid var(--green);background:none;color:var(--text);cursor:pointer;">📖 Guide</button>
-      <button id="dtab-tutorial" onclick="setDummiesTab('tutorial')" style="flex:1;padding:9px 4px;font-size:12px;font-weight:600;border:none;border-bottom:2.5px solid transparent;background:none;color:var(--text-muted);cursor:pointer;">🎮 Try it out</button>
-      <button id="dtab-install" onclick="setDummiesTab('install')" style="flex:1;padding:9px 4px;font-size:12px;font-weight:600;border:none;border-bottom:2.5px solid transparent;background:none;color:var(--text-muted);cursor:pointer;">📲 Install app</button>
+    <!-- Header -->
+    <div style="text-align:center;margin-bottom:1.5rem;">
+      <div style="font-size:11px;font-family:monospace;letter-spacing:4px;color:var(--green);text-transform:uppercase;margin-bottom:6px;">Welcome to</div>
+      <div style="font-size:22px;font-weight:800;margin-bottom:4px;">COED&FOOTBALL 2026</div>
+      <div style="font-size:13px;color:var(--text-muted);">Everything you need to know. No excuses after reading this.</div>
     </div>
 
-    <!-- Guide tab (existing content) -->
-    <div id="dummies-guide">
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;display:flex;gap:14px;align-items:flex-start;">
-      <div style="flex-shrink:0;">
-        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
-          <circle cx="28" cy="28" r="28" fill="#E1F5EE"/>
-          <text x="28" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#085041">STEP</text>
-          <text x="28" y="38" text-anchor="middle" font-size="20" font-weight="700" fill="#1D9E75">1</text>
-        </svg>
+    <!-- Tab buttons -->
+    <div style="display:flex;gap:6px;margin-bottom:1.25rem;overflow-x:auto;padding-bottom:2px;" id="htp-tab-bar">
+      <button class="htp-tab active" id="htp-tab-basics"    onclick="setHTPTab('basics')"   >⚽ Basics</button>
+      <button class="htp-tab"        id="htp-tab-scoring"   onclick="setHTPTab('scoring')"  >🏆 Scoring</button>
+      <button class="htp-tab"        id="htp-tab-features"  onclick="setHTPTab('features')" >✨ Features</button>
+      <button class="htp-tab"        id="htp-tab-pages"     onclick="setHTPTab('pages')"    >📱 Pages</button>
+      <button class="htp-tab"        id="htp-tab-tips"      onclick="setHTPTab('tips')"     >💡 Tips</button>
+    </div>
+    <style>
+      .htp-tab { flex-shrink:0;padding:7px 14px;border-radius:99px;border:1px solid var(--border);background:none;color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;white-space:nowrap; }
+      .htp-tab.active { background:var(--green);color:white;border-color:var(--green); }
+      .htp-card { background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.1rem 1.25rem;margin-bottom:10px;position:relative;overflow:hidden; }
+      .htp-card::before { content:'';position:absolute;top:0;left:0;width:3px;height:100%;border-radius:2px 0 0 2px; }
+      .htp-card.green::before  { background:#1D9E75; }
+      .htp-card.gold::before   { background:#EF9F27; }
+      .htp-card.purple::before { background:#7C3AED; }
+      .htp-card.red::before    { background:#E24B4A; }
+      .htp-card.blue::before   { background:#378ADD; }
+      .htp-icon { font-size:28px;flex-shrink:0;margin-top:2px; }
+      .htp-title { font-size:15px;font-weight:700;margin-bottom:4px; }
+      .htp-desc { font-size:13px;color:var(--text-muted);line-height:1.65; }
+      .htp-badge { display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;margin-left:6px;vertical-align:middle; }
+    </style>
+
+    <!-- ===== BASICS TAB ===== -->
+    <div id="htp-basics">
+      <div class="htp-card green">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">🔐</div>
+          <div>
+            <div class="htp-title">Step 1 — Sign in with Google</div>
+            <div class="htp-desc">Tap <strong>Sign in with Google</strong> on the login screen. Only approved members can access the site — if you can't get in, message the admin directly. Don't panic.</div>
+          </div>
+        </div>
       </div>
-      <div>
-        <div style="font-size:15px;font-weight:600;margin-bottom:4px;">Sign in with Google 🔐</div>
-        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">On the login screen, tap <strong>Sign in with Google</strong> and choose your Gmail account. Only approved members can join - contact the admin if you can't get in.</div>
-        <div style="margin-top:10px;">
-          <svg width="100%" height="52" viewBox="0 0 260 52">
-            <rect width="260" height="52" rx="10" fill="#f8f8f8" stroke="#e0e0e0" stroke-width="1"/>
-            <circle cx="26" cy="26" r="14" fill="#4285F4"/>
-            <text x="26" y="30" text-anchor="middle" font-size="14" fill="white">G</text>
-            <text x="52" y="21" font-size="11" fill="#333" font-weight="500">Sign in with Google</text>
-            <text x="52" y="35" font-size="10" fill="#888">Use your Gmail account</text>
-            <rect x="210" y="16" width="36" height="20" rx="5" fill="#4285F4"/>
-            <text x="228" y="30" text-anchor="middle" font-size="10" fill="white" font-weight="600">Sign in</text>
-          </svg>
+      <div class="htp-card green">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">🎭</div>
+          <div>
+            <div class="htp-title">Step 2 — Pick your nickname & avatar</div>
+            <div class="htp-desc">Choose a nickname (this shows on the leaderboard — choose wisely, you'll be living with the shame or glory for 5 weeks) and pick an avatar from the gallery.</div>
+          </div>
+        </div>
+      </div>
+      <div class="htp-card green">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">⚽</div>
+          <div>
+            <div class="htp-title">Step 3 — Predict match scores</div>
+            <div class="htp-desc">Go to <strong>Matches</strong> and predict the score for every game. Tap the +/− buttons to set home and away goals. You must submit at least <strong>24 hours before kickoff</strong> — no last-minute betting on the whistle.</div>
+          </div>
+        </div>
+      </div>
+      <div class="htp-card green">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">🥅</div>
+          <div>
+            <div class="htp-title">Step 4 — Pick the first goalscorer</div>
+            <div class="htp-desc">For each match, use the dropdown to pick who you think scores first. Worth extra points if you nail it. Wrong pick? No penalty. The bold survive.</div>
+          </div>
+        </div>
+      </div>
+      <div class="htp-card green">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">🌟</div>
+          <div>
+            <div class="htp-title">Step 5 — Pick your tournament player & WC winner</div>
+            <div class="htp-desc">Before the tournament starts, pick <strong>one player</strong> who you think will shine — every goal they score = +2 pts, every assist = +1 pt, red card = −1 pt. Also pick the <strong>World Cup winner</strong> — correct = 15 pts at the end.</div>
+          </div>
+        </div>
+      </div>
+      <div class="htp-card gold">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">💾</div>
+          <div>
+            <div class="htp-title">Don't forget to SAVE</div>
+            <div class="htp-desc">Use the <strong>💾 Save all predictions</strong> button at the top of the Matches page to save everything at once. Or turn on <strong>AutoSave</strong> and let the app handle it automatically after each change.</div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- STEP 2 -->
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;display:flex;gap:14px;align-items:flex-start;">
-      <div style="flex-shrink:0;">
-        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
-          <circle cx="28" cy="28" r="28" fill="#E6F1FB"/>
-          <text x="28" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#0C447C">STEP</text>
-          <text x="28" y="38" text-anchor="middle" font-size="20" font-weight="700" fill="#185FA5">2</text>
-        </svg>
-      </div>
-      <div style="flex:1;">
-        <div style="font-size:15px;font-weight:600;margin-bottom:4px;">Choose your nickname & avatar 😎</div>
-        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Pick a nickname (how you'll appear on the leaderboard) and choose one of 20 fun avatars. This is how everyone will see you!</div>
-        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-          <div style="width:32px;height:32px;border-radius:50%;background:#1D9E7520;border:2px solid #1D9E75;display:flex;align-items:center;justify-content:center;font-size:15px;">🧟</div>
-          <div style="width:32px;height:32px;border-radius:50%;background:#E24B4A20;border:2px solid #E24B4A;display:flex;align-items:center;justify-content:center;font-size:15px;">🧛</div>
-          <div style="width:32px;height:32px;border-radius:50%;background:#BA751720;border:2px solid #BA7517;display:flex;align-items:center;justify-content:center;font-size:15px;">🤖</div>
-          <div style="width:32px;height:32px;border-radius:50%;background:#6366f120;border:2px solid #6366f1;display:flex;align-items:center;justify-content:center;font-size:15px;">🤡</div>
-          <div style="width:32px;height:32px;border-radius:50%;background:#ec489920;border:2px solid #ec4899;display:flex;align-items:center;justify-content:center;font-size:15px;">🧙</div>
-          <div style="width:32px;height:32px;border-radius:50%;background:#f9731620;border:2px solid #f97316;display:flex;align-items:center;justify-content:center;font-size:15px;">🥷</div>
-          <div style="font-size:11px;color:var(--text-muted);">...and 14 more!</div>
+    <!-- ===== SCORING TAB ===== -->
+    <div id="htp-scoring" style="display:none;">
+      <div class="htp-card green">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">✅</div>
+          <div>
+            <div class="htp-title">Correct result (W/D/L)</div>
+            <div class="htp-desc">You got who won (or that it was a draw) right, but not the exact score.<br><strong style="color:var(--green);">+3 points</strong></div>
+          </div>
         </div>
       </div>
-    </div>
-
-    <!-- STEP 3 -->
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;display:flex;gap:14px;align-items:flex-start;">
-      <div style="flex-shrink:0;">
-        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
-          <circle cx="28" cy="28" r="28" fill="#FAEEDA"/>
-          <text x="28" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#633806">STEP</text>
-          <text x="28" y="38" text-anchor="middle" font-size="20" font-weight="700" fill="#BA7517">3</text>
-        </svg>
+      <div class="htp-card green">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">🎯</div>
+          <div>
+            <div class="htp-title">Exact score</div>
+            <div class="htp-desc">You nailed it. The exact scoreline. You're either a genius or incredibly lucky.<br><strong style="color:var(--green);">+7 points</strong> (includes the correct result points)</div>
+          </div>
+        </div>
       </div>
-      <div style="flex:1;">
-        <div style="font-size:15px;font-weight:600;margin-bottom:4px;">Predict match scores ⚽</div>
-        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Go to the <strong>Matches</strong> page. For each match, use the <strong>+ / −</strong> buttons to set your predicted score for both teams. Use <strong>💾 Save all</strong> at the top to save all predictions for the day, or turn on <strong>AutoSave</strong>!</div>
-        <div style="margin-top:10px;background:var(--surface2);border-radius:10px;padding:10px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-            <div style="font-size:12px;font-weight:500;text-align:center;flex:1;">🇦🇷 Argentina</div>
-            <div style="display:flex;align-items:center;gap:6px;">
-              <div style="width:24px;height:24px;border-radius:50%;border:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text-muted);">−</div>
-              <div style="width:36px;height:36px;border-radius:8px;border:1px solid var(--green);background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;">2</div>
-              <div style="font-size:14px;color:var(--text-muted);">-</div>
-              <div style="width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;">0</div>
-              <div style="width:24px;height:24px;border-radius:50%;border:1px solid var(--green);background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--green);">+</div>
+      <div class="htp-card blue">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">🥅</div>
+          <div>
+            <div class="htp-title">First goalscorer</div>
+            <div class="htp-desc">You correctly predicted who scored first in the match.<br><strong style="color:#60a5fa;">+5 points</strong></div>
+          </div>
+        </div>
+      </div>
+      <div class="htp-card blue">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">🌟</div>
+          <div>
+            <div class="htp-title">Tournament player</div>
+            <div class="htp-desc">Your chosen player accumulates points throughout the whole tournament.<br><strong style="color:#60a5fa;">⚽ Goal: +2 pts &nbsp;·&nbsp; 🎯 Assist: +1 pt &nbsp;·&nbsp; 🟥 Red card: −1 pt</strong></div>
+          </div>
+        </div>
+      </div>
+      <div class="htp-card gold">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">🏆</div>
+          <div>
+            <div class="htp-title">World Cup winner pick</div>
+            <div class="htp-desc">Revealed at the end of the tournament.<br><strong style="color:#EF9F27;">+15 points</strong> if you picked the right nation. Glory reserved for the brave.</div>
+          </div>
+        </div>
+      </div>
+      <div class="htp-card red" style="background:linear-gradient(135deg,#0d0505,#1a0808);">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">⚡</div>
+          <div>
+            <div class="htp-title">Knockout stage multipliers</div>
+            <div class="htp-desc">As the stakes rise, so do the points:<br>
+              <strong style="color:#f87171;">Round of 16: ×2 &nbsp;·&nbsp; Quarter-finals: ×3</strong><br>
+              <strong style="color:#f87171;">Semi-finals: ×4</strong><br>
+              <strong style="color:#EF9F27;">Final: Exact score = 20 pts · Correct result = 10 pts 🏆</strong>
             </div>
-            <div style="font-size:12px;font-weight:500;text-align:center;flex:1;">France 🇫🇷</div>
-          </div>
-        </div>
-        <div style="margin-top:8px;font-size:12px;background:var(--badge-green-bg);border-radius:8px;padding:8px 10px;color:var(--badge-green-text);">
-          ⏰ <strong>Deadline:</strong> 24 hours before kickoff. After that, predictions are locked!
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 4 -->
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;display:flex;gap:14px;align-items:flex-start;">
-      <div style="flex-shrink:0;">
-        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
-          <circle cx="28" cy="28" r="28" fill="#E1F5EE"/>
-          <text x="28" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#085041">STEP</text>
-          <text x="28" y="38" text-anchor="middle" font-size="20" font-weight="700" fill="#1D9E75">4</text>
-        </svg>
-      </div>
-      <div style="flex:1;">
-        <div style="font-size:15px;font-weight:600;margin-bottom:4px;">Pick the first goalscorer 🎯</div>
-        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Under each match there's a dropdown to pick who you think will score <strong>first</strong> in that game. Get it right = <strong>+2 points!</strong></div>
-        <div style="margin-top:10px;background:var(--surface2);border-radius:10px;padding:8px 10px;">
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">First goalscorer</div>
-          <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;display:flex;justify-content:space-between;align-items:center;">
-            <span>Lionel Messi (Argentina)</span>
-            <span style="font-size:10px;color:var(--text-muted);">▼</span>
-          </div>
-          <div style="font-size:11px;color:var(--green);margin-top:4px;font-weight:500;">✅ Auto-saved!</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 5 -->
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;display:flex;gap:14px;align-items:flex-start;">
-      <div style="flex-shrink:0;">
-        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
-          <circle cx="28" cy="28" r="28" fill="#FAEEDA"/>
-          <text x="28" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#633806">STEP</text>
-          <text x="28" y="38" text-anchor="middle" font-size="20" font-weight="700" fill="#BA7517">5</text>
-        </svg>
-      </div>
-      <div style="flex:1;">
-        <div style="font-size:15px;font-weight:600;margin-bottom:4px;">Pick your tournament player ⭐</div>
-        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Choose <strong>one player</strong> who you think will have a great tournament. Every goal = <strong>+2 pts</strong>, every assist = <strong>+1 pt</strong>. But if they get a red card = <strong>−1 pt!</strong> Must be locked in before June 10.</div>
-        <div style="margin-top:10px;background:var(--surface2);border-radius:10px;padding:8px 10px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div>
-              <div style="font-size:12px;font-weight:500;">⭐ Erling Haaland</div>
-              <div style="font-size:10px;color:var(--text-muted);">Norway · 6 goals expected</div>
-            </div>
-            <div style="display:flex;gap:8px;font-size:11px;">
-              <span style="background:var(--badge-green-bg);color:var(--badge-green-text);padding:2px 6px;border-radius:99px;">⚽ +2pts</span>
-              <span style="background:var(--badge-blue-bg);color:var(--badge-blue-text);padding:2px 6px;border-radius:99px;">🎯 +1pt</span>
-              <span style="background:var(--badge-red-bg);color:var(--badge-red-text);padding:2px 6px;border-radius:99px;">🟥 -1pt</span>
-            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- STEP 6 -->
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;display:flex;gap:14px;align-items:flex-start;">
-      <div style="flex-shrink:0;">
-        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
-          <circle cx="28" cy="28" r="28" fill="#EDE9FE"/>
-          <text x="28" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#5B21B6">STEP</text>
-          <text x="28" y="38" text-anchor="middle" font-size="20" font-weight="700" fill="#7C3AED">6</text>
-        </svg>
-      </div>
-      <div style="flex:1;">
-        <div style="font-size:15px;font-weight:600;margin-bottom:4px;">Pick the World Cup winner 🏆</div>
-        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">One prediction for the whole tournament - which team wins it all? Get it right = <strong>+15 bonus points!</strong> Lock it in before June 10.</div>
-        <div style="margin-top:10px;background:var(--surface2);border-radius:10px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;">
-          <div style="font-size:13px;font-weight:500;">🇦🇷 Argentina</div>
-          <div style="background:#7c3aed;color:white;font-size:11px;padding:3px 10px;border-radius:99px;font-weight:500;">+15 pts if correct</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 7 - SPECIAL FEATURES -->
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;display:flex;gap:14px;align-items:flex-start;">
-      <div style="flex-shrink:0;">
-        <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
-          <circle cx="28" cy="28" r="28" fill="#EDE9FE"/>
-          <text x="28" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#5B21B6">STEP</text>
-          <text x="28" y="38" text-anchor="middle" font-size="20" font-weight="700" fill="#7C3AED">7</text>
-        </svg>
-      </div>
-      <div style="flex:1;">
-        <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Special game features 🎮</div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <div style="background:linear-gradient(135deg,var(--badge-gold-bg),var(--badge-gold-bg));border-radius:10px;padding:10px 12px;border:1px solid #BA7517;">
-            <div style="font-size:13px;font-weight:600;margin-bottom:2px;color:var(--badge-gold-text);">🃏 Joker Card</div>
-            <div style="font-size:12px;color:#7C4A0A;">Once per tournament - tap the JOKER button on any match before the deadline. If your prediction is correct, all points for that match are doubled. You only get one!</div>
-          </div>
-          <div style="background:linear-gradient(135deg,var(--badge-blue-bg),var(--badge-blue-bg));border-radius:10px;padding:10px 12px;border:1px solid #7C3AED;">
-            <div style="font-size:13px;font-weight:600;margin-bottom:2px;color:#5B21B6;">🎰 Double or Nothing</div>
-            <div style="font-size:12px;color:#6D28D9;">Once per week, pick any match and go Double or Nothing. Correct = result and exact score points doubled. Wrong = those same points get deducted from your total. Your first scorer pick is always safe either way. No pressure. (Lots of pressure.)</div>
-          </div>
-          <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">🔥 Streak Bonus</div>
-            <div style="font-size:12px;color:var(--text-muted);">Get 3+ correct predictions in a row and earn a streak badge on the leaderboard. Keep it going for bigger streaks!</div>
-          </div>
-          <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">🐂 Bold Prediction</div>
-            <div style="font-size:12px;color:var(--text-muted);">Predict something wild - like a big upset or a crazy score - and if you nail it, you automatically earn the legendary 🐂 badge. A popup will appear to tell you!</div>
-          </div>
-          <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">💬 Trash Talk Wall</div>
-            <div style="font-size:12px;color:var(--text-muted);">Send short messages to the whole group. React with ❤️ 👍 💩 😡 👀 to other people's messages. Keep it fun!</div>
-          </div>
-          <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">🏅 Inner Circle Bets</div>
-            <div style="font-size:12px;color:var(--text-muted);">Vote on who from your group will finish first and who will finish last. Secret until June 10, then revealed. Just for fun!</div>
-          </div>
-          <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;">
-            <div style="font-size:13px;font-weight:600;margin-bottom:2px;">🎯 Sniper of the Week</div>
-            <div style="font-size:12px;color:var(--text-muted);">Each round, the player with the best exact score accuracy earns a special badge. Rotates each round.</div>
+    <!-- ===== FEATURES TAB ===== -->
+    <div id="htp-features" style="display:none;">
+      <div class="htp-card gold">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">🃏</div>
+          <div>
+            <div class="htp-title">Joker Card <span class="htp-badge" style="background:rgba(186,117,23,0.2);color:#EF9F27;border:1px solid rgba(186,117,23,0.3);">ONCE PER TOURNAMENT</span></div>
+            <div class="htp-desc">Play your Joker on any one match before it starts. If your prediction is <strong>correct</strong>, all points for that match are <strong>×2</strong>. Wrong? No penalty — the Joker just fizzles out. Choose wisely. Use it on a match you're actually sure about. Or just YOLO it.</div>
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- SCORING QUICK GUIDE -->
-    <div style="background:var(--surface);border:0.5px solid var(--green);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
-      <div style="font-size:14px;font-weight:600;margin-bottom:10px;">📊 Points at a glance</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
-        <div style="background:var(--surface2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>✅ Correct result</span><strong style="color:var(--green);">+1 pt</strong></div>
-        <div style="background:var(--surface2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>🎯 Exact score</span><strong style="color:var(--green);">+3 pts</strong></div>
-        <div style="background:var(--surface2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>⚽ 1st scorer</span><strong style="color:var(--green);">+2 pts</strong></div>
-        <div style="background:var(--surface2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>🔥 Round of 16</span><strong style="color:var(--badge-gold-text);">×2 pts</strong></div>
-        <div style="background:var(--surface2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>🔥 Quarter-final</span><strong style="color:var(--badge-gold-text);">×3 pts</strong></div>
-        <div style="background:var(--surface2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;"><span>🔥 Semi-final</span><strong style="color:var(--badge-gold-text);">×4 pts</strong></div>
-        <div style="background:var(--surface2);border-radius:8px;padding:8px;display:flex;justify-content:space-between;grid-column:span 2;"><span>🏆 Final - exact</span><strong style="color:#E24B4A;">20 pts</strong></div>
-      </div>
-    </div>
-
-    <!-- TIPS BOX -->
-    <div style="background:#0a1f0a;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem;">
-      <div style="font-size:13px;font-weight:600;color:#4ade80;margin-bottom:8px;">💡 Pro tips</div>
-      <div style="font-size:12px;color:#86efac;line-height:1.8;">
-        • Check the <strong>Tips</strong> page for AI-powered predictions<br>
-        • The later the stage, the more points are worth - don't give up!<br>
-        • Pick a tournament player who plays every game (not injury-prone)<br>
-        • Predict draws for teams known to draw - check Tips page for stats<br>
-        • You can change predictions anytime before the 24h deadline
-      </div>
-    </div>
-
-    <div style="text-align:center;padding:0.5rem 0 1rem;">
-      <button onclick="showPage('matches')" style="background:var(--green);color:white;border:none;padding:12px 28px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;">
-        ⚽ Start predicting now!
-      </button>
-    </div>
-
-    <!-- NEW FEATURES SECTION -->
-    <div style="background:#0a1f0a;border-radius:14px;padding:1rem 1.25rem;margin-bottom:1rem;">
-      <div style="font-size:14px;font-weight:700;color:#4ade80;margin-bottom:4px;">🆕 New features — what else can you do?</div>
-      <div style="font-size:12px;color:#86efac;">Beyond predictions, the site is packed with extras 👇</div>
-    </div>
-
-    <!-- Coach Room -->
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <span style="font-size:28px;">🏟️</span>
-        <div>
-          <div style="font-size:14px;font-weight:600;">Coach Room</div>
-          <div style="font-size:12px;color:var(--text-muted);">Menu → Coach Room</div>
-        </div>
-      </div>
-      <div style="font-size:13px;color:var(--text-muted);line-height:1.6;margin-bottom:10px;">
-        Your personal AI coach — each one has a unique personality, an animated LucasArts-style character, and their own take on football predictions.
-      </div>
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;">
-          <div style="font-size:13px;font-weight:500;margin-bottom:3px;">🧮 The Analyst</div>
-          <div style="font-size:12px;color:var(--text-muted);">Cold, data-driven. Talks in xG, form tables, and H2H stats. Never wrong — statistically speaking.</div>
-        </div>
-        <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;">
-          <div style="font-size:13px;font-weight:500;margin-bottom:3px;">🔮 The Mystic</div>
-          <div style="font-size:12px;color:var(--text-muted);">Spiritual, cosmic. "The stars have spoken..." Surprisingly accurate for someone who doesn't use data.</div>
-        </div>
-        <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;">
-          <div style="font-size:13px;font-weight:500;margin-bottom:3px;">🔥 The Hothead</div>
-          <div style="font-size:12px;color:var(--text-muted);">ALWAYS SHOUTING. Always picks upsets. Zero remorse when wrong. Maximum passion.</div>
-        </div>
-        <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;">
-          <div style="font-size:13px;font-weight:500;margin-bottom:3px;">🧓 The Veteran</div>
-          <div style="font-size:12px;color:var(--text-muted);">"Back in '74, Cruyff did this..." Wise, cynical, seen it all. Slow to trust but deeply knowledgeable.</div>
-        </div>
-        <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;">
-          <div style="font-size:13px;font-weight:500;margin-bottom:3px;">🎭 The Entertainer</div>
-          <div style="font-size:12px;color:var(--text-muted);">Pure chaos. Always picks the most dramatic outcome. Terrible predictions with total confidence.</div>
-        </div>
-      </div>
-      <div style="margin-top:10px;background:#0a1f0a;border-radius:8px;padding:10px 12px;font-size:12px;color:#86efac;line-height:1.7;">
-        💡 After <strong style="color:#4ade80;">10 predictions</strong> your coach starts learning your style and tailoring advice to you. You can chat in <strong style="color:#4ade80;">English or Hebrew</strong> and switch coaches anytime.
-      </div>
-    </div>
-
-    <!-- Hall of Fame -->
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <span style="font-size:28px;">🏅</span>
-        <div>
-          <div style="font-size:14px;font-weight:600;">Hall of Fame</div>
-          <div style="font-size:12px;color:var(--text-muted);">Menu → Hall of Fame</div>
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-muted);">
-        <div style="display:flex;gap:8px;align-items:flex-start;">
-          <span style="flex-shrink:0;">👑</span><span><strong style="color:var(--text);">Most Points</strong> — overall tournament leader</span>
-        </div>
-        <div style="display:flex;gap:8px;align-items:flex-start;">
-          <span style="flex-shrink:0;">🎯</span><span><strong style="color:var(--text);">Sharpest Predictor</strong> — highest % of exact scores</span>
-        </div>
-        <div style="display:flex;gap:8px;align-items:flex-start;">
-          <span style="flex-shrink:0;">🔥</span><span><strong style="color:var(--text);">The Oracle</strong> — highest % of correct results</span>
-        </div>
-        <div style="display:flex;gap:8px;align-items:flex-start;">
-          <span style="flex-shrink:0;">⚽</span><span><strong style="color:var(--text);">Scorer Hunter</strong> — most first goalscorers called correctly</span>
-        </div>
-        <div style="display:flex;gap:8px;align-items:flex-start;">
-          <span style="flex-shrink:0;">📋</span><span><strong style="color:var(--text);">Most Committed</strong> — most predictions submitted</span>
-        </div>
-        <div style="display:flex;gap:8px;align-items:flex-start;">
-          <span style="flex-shrink:0;">⚡</span><span><strong style="color:var(--text);">Bonus King</strong> — most tournament player bonus points</span>
-        </div>
-      </div>
-      <div style="margin-top:10px;font-size:11px;color:var(--text-muted);background:var(--surface2);border-radius:8px;padding:8px 10px;">
-        🔄 Updates automatically after every match result. You could be in multiple categories!
-      </div>
-    </div>
-
-    <!-- Head to Head -->
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <span style="font-size:28px;">⚔️</span>
-        <div>
-          <div style="font-size:14px;font-weight:600;">Head-to-Head Challenge</div>
-          <div style="font-size:12px;color:var(--text-muted);">Menu → Head-to-Head</div>
-        </div>
-      </div>
-      <div style="font-size:13px;color:var(--text-muted);line-height:1.6;margin-bottom:8px;">
-        Think you predicted better than a specific friend? Pick any 5 finished matches and compare your predictions head-to-head.
-      </div>
-      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;background:var(--surface2);border-radius:10px;padding:10px;">
-        <div style="text-align:center;font-size:12px;font-weight:600;color:var(--green);">You<br><span style="font-size:20px;font-weight:800;">3</span><br><span style="font-size:10px;font-weight:400;color:var(--text-muted);">wins</span></div>
-        <div style="text-align:center;font-size:12px;font-weight:700;color:var(--text-muted);">VS</div>
-        <div style="text-align:center;font-size:12px;font-weight:600;color:#E24B4A;">Opponent<br><span style="font-size:20px;font-weight:800;">2</span><br><span style="font-size:10px;font-weight:400;color:var(--text-muted);">wins</span></div>
-      </div>
-    </div>
-
-    <!-- Analysis -->
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <span style="font-size:28px;">📊</span>
-        <div>
-          <div style="font-size:14px;font-weight:600;">Match Analysis</div>
-          <div style="font-size:12px;color:var(--text-muted);">Menu → Analysis</div>
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:10px;">
-        <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;">
-          <div style="font-size:13px;font-weight:500;margin-bottom:3px;">🗺️ Prediction Heatmap</div>
-          <div style="font-size:12px;color:var(--text-muted);">A colour-coded grid showing everyone's predictions vs actual results. Green = exact, Blue = correct result, Red = wrong. Spot patterns at a glance.</div>
-        </div>
-        <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;">
-          <div style="font-size:13px;font-weight:500;margin-bottom:3px;">📈 Group Odds</div>
-          <div style="font-size:12px;color:var(--text-muted);">Before each match — see what % of the group picked home/draw/away. Find out who's being a <em>Contrarian</em> and going against the crowd.</div>
-        </div>
-        <div style="background:var(--surface2);border-radius:10px;padding:10px 12px;">
-          <div style="font-size:13px;font-weight:500;margin-bottom:3px;">🔍 Post-Match Breakdown</div>
-          <div style="font-size:12px;color:var(--text-muted);">After every game — who got it exact, who got the result, who got it completely wrong. With an AI-generated summary of how the group did.</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Match Preview -->
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <span style="font-size:28px;">📋</span>
-        <div>
-          <div style="font-size:14px;font-weight:600;">Match Preview</div>
-          <div style="font-size:12px;color:var(--text-muted);">Matches page → 📋 Preview button</div>
-        </div>
-      </div>
-      <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">
-        Tap the <strong style="color:var(--text);">📋 Preview</strong> button on any match card before predicting. You'll see both teams' last 5 results (form), average goals scored and conceded, playing style — and what % of the group has already predicted for each outcome.
-      </div>
-    </div>
-
-    <!-- Weekly Digest -->
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <span style="font-size:28px;">📬</span>
-        <div>
-          <div style="font-size:14px;font-weight:600;">Weekly Digest</div>
-          <div style="font-size:12px;color:var(--text-muted);">Every Monday · Notifications bell 🔔</div>
-        </div>
-      </div>
-      <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">
-        Every Monday morning you'll get a notification with your current rank, total points, how many you got right that week, and a heads-up if someone is about to overtake you or if you're breathing down someone's neck.
-      </div>
-    </div>
-
-    <!-- Notifications system -->
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <span style="font-size:28px;">🔔</span>
-        <div>
-          <div style="font-size:14px;font-weight:600;">Notifications</div>
-          <div style="font-size:12px;color:var(--text-muted);">Bell icon · Top right corner</div>
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--text-muted);">
-        <div>⚽ <strong style="color:var(--text);">Game</strong> — results, points, deadlines, Joker & DON</div>
-        <div>💬 <strong style="color:var(--text);">Social</strong> — Trash Talk reactions, new members</div>
-        <div>🔔 <strong style="color:var(--text);">System</strong> — badges, weekly digest, leaderboard changes</div>
-      </div>
-      <div style="margin-top:8px;font-size:11px;color:var(--text-muted);">You can delete individual notifications or all at once. Categorised into 3 tabs.</div>
-    </div>
-
-    <!-- World map / winner picks -->
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <span style="font-size:28px;">🌍</span>
-        <div>
-          <div style="font-size:14px;font-weight:600;">Group Winner Picks</div>
-          <div style="font-size:12px;color:var(--text-muted);">Home page · "Where the group is backing"</div>
-        </div>
-      </div>
-      <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">
-        The Home page shows a live breakdown of who the group has picked as World Cup winner — ranked by popularity, with each picker's name shown. See how your pick compares to the rest.
-      </div>
-    </div>
-
-  </div><!-- end dummies-guide -->
-
-  <!-- TUTORIAL TAB -->
-  <div id="dummies-tutorial" style="display:none;">
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
-      <div style="font-size:15px;font-weight:600;margin-bottom:4px;">🎮 Practice a prediction</div>
-      <div style="font-size:13px;color:var(--text-muted);margin-bottom:1.25rem;">Try predicting this match. No real points — just to get the hang of it!</div>
-
-      <!-- Mock match card -->
-      <div style="background:var(--surface2);border-radius:12px;padding:1rem;margin-bottom:1rem;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-          <span style="font-size:11px;color:var(--text-muted);">Group A · June 14</span>
-          <span style="font-size:11px;color:var(--text-muted);">21:00</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:1rem;">
-          <div style="flex:1;text-align:center;">
-            <div style="font-size:28px;">🇧🇷</div>
-            <div style="font-size:13px;font-weight:600;margin-top:4px;">Brazil</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <input id="tut-home" type="number" min="0" max="20" value="2" oninput="updateTutorial()"
-              style="width:48px;height:48px;border-radius:10px;border:1.5px solid var(--green);background:var(--surface);text-align:center;font-size:22px;font-weight:700;">
-            <span style="font-size:18px;color:var(--text-muted);">-</span>
-            <input id="tut-away" type="number" min="0" max="20" value="1" oninput="updateTutorial()"
-              style="width:48px;height:48px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);text-align:center;font-size:22px;font-weight:700;">
-          </div>
-          <div style="flex:1;text-align:center;">
-            <div style="font-size:28px;">🇩🇪</div>
-            <div style="font-size:13px;font-weight:600;margin-top:4px;">Germany</div>
+      <div class="htp-card purple">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">🎰</div>
+          <div>
+            <div class="htp-title">Double or Nothing <span class="htp-badge" style="background:rgba(124,58,237,0.2);color:#a78bfa;border:1px solid rgba(124,58,237,0.3);">ONCE PER WEEK</span></div>
+            <div class="htp-desc">Once per tournament week, pick one match to go double or nothing. Correct result = <strong>×2 result points</strong>. Wrong result = those result points are <strong>deducted</strong> from your total. First goalscorer points are always safe. High risk, high reward. For the mentally unhinged.</div>
           </div>
         </div>
-
-        <!-- First scorer -->
-        <div style="margin-bottom:1rem;">
-          <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">⚽ First goalscorer (optional, +2 pts)</div>
-          <select id="tut-scorer" onchange="updateTutorial()" style="width:100%;padding:8px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface);font-size:13px;">
-            <option value="">— None / not sure —</option>
-            <option value="Vinicius Jr.">Vinicius Jr. 🇧🇷</option>
-            <option value="Endrick">Endrick 🇧🇷</option>
-            <option value="Raphinha">Raphinha 🇧🇷</option>
-            <option value="Florian Wirtz">Florian Wirtz 🇩🇪</option>
-            <option value="Jamal Musiala">Jamal Musiala 🇩🇪</option>
-            <option value="Kai Havertz">Kai Havertz 🇩🇪</option>
-          </select>
+      </div>
+      <div class="htp-card red">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">🐂</div>
+          <div>
+            <div class="htp-title">Bold Prediction Badge</div>
+            <div class="htp-desc">The admin awards this to players who made a spectacularly bold prediction that came true — like calling a 3-0 win for the underdog when everyone else picked a draw. Purely honorary. Infinite bragging rights included.</div>
+          </div>
         </div>
       </div>
-
-      <!-- Live points calculation -->
-      <div id="tut-result" style="background:linear-gradient(135deg,#0a1f0a,#1a3a1a);border-radius:12px;padding:1rem;color:white;">
-        <div style="font-size:12px;color:#4ade80;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">🎯 Your potential points</div>
-        <div id="tut-breakdown" style="font-size:13px;line-height:1.8;color:#86efac;"></div>
-        <div style="border-top:1px solid rgba(255,255,255,0.1);margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:13px;color:rgba(255,255,255,0.6);">If you're right:</span>
-          <span id="tut-total" style="font-size:24px;font-weight:700;color:#fbbf24;"></span>
+      <div class="htp-card green">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">🏟️</div>
+          <div>
+            <div class="htp-title">Coach Room — AI Coaches</div>
+            <div class="htp-desc">5 AI coaches with unique personalities: The Analyst (data robot), The Mystic (cosmic prophecies), The Hothead (ALWAYS LOUD), The Veteran (grumpy wisdom), The Entertainer (pure chaos). Chat in English or Hebrew. After 10 predictions, they start learning your style and roasting you personally.</div>
+          </div>
         </div>
       </div>
-
-      <div style="margin-top:1rem;background:var(--surface2);border-radius:10px;padding:12px;font-size:12px;color:var(--text-muted);line-height:1.7;">
-        <strong>💡 Remember:</strong> In knockout rounds the multiplier increases — ×2 in Round of 16, ×3 in Quarter-finals, ×4 in Semi-finals. The Final is special: exact score = 20 pts, correct result = 10 pts.
+      <div class="htp-card blue">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">💬</div>
+          <div>
+            <div class="htp-title">Trash Talk Wall</div>
+            <div class="htp-desc">A dedicated wall for talking trash, celebrating wins, and rubbing people's faces in your correct predictions. React with emojis. Keep it competitive. Keep it fun. The admin reserves the right to delete anything that crosses the line into actual war crimes.</div>
+          </div>
+        </div>
+      </div>
+      <div class="htp-card green">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">👀</div>
+          <div>
+            <div class="htp-title">Watch Together</div>
+            <div class="htp-desc">For key matches, vote on whether you're coming to watch together or watching from home. Every 5 days the matches rotate to the next set of games. Vote Yes/No — tap again to cancel your vote.</div>
+          </div>
+        </div>
+      </div>
+      <div class="htp-card gold">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">💸</div>
+          <div>
+            <div class="htp-title">Inner Circle Bets</div>
+            <div class="htp-desc">Special bonus bets that open at specific times during the tournament — separate from the main predictions. The admin controls when they open and close. Stay alert for notifications.</div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
+
+    <!-- ===== PAGES TAB ===== -->
+    <div id="htp-pages" style="display:none;">
+      <div class="htp-card green">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">🏠</div>
+          <div>
+            <div class="htp-title">Home</div>
+            <div class="htp-desc">Your dashboard. See your current rank, points, and the top 10 leaderboard at a glance. Also shows who the group is backing to win the World Cup and your tournament player pick.</div>
+          </div>
+        </div>
+      </div>
+      <div class="htp-card green">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">⚽</div>
+          <div>
+            <div class="htp-title">Matches</div>
+            <div class="htp-desc">The main action. Browse by day or view all matches. Set scores, pick first goalscorers, activate your Joker or Double or Nothing. Use Save All to save everything at once, or turn on AutoSave.</div>
+          </div>
+        </div>
+      </div>
+      <div class="htp-card blue">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">🏆</div>
+          <div>
+            <div class="htp-title">Standings</div>
+            <div class="htp-desc">The full leaderboard with points, exact scores, bonus points, streaks, and badges. Also shows World Cup group tables and top scorers. Refresh anytime for live updates.</div>
+          </div>
+        </div>
+      </div>
+      <div class="htp-card blue">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">📊</div>
+          <div>
+            <div class="htp-title">My Stats</div>
+            <div class="htp-desc">Your personal breakdown — accuracy rate, correct results, exact scores, points chart, streak, Joker status, Double or Nothing history, and payment status. Your whole tournament story in one page.</div>
+          </div>
+        </div>
+      </div>
+      <div class="htp-card purple">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">📊</div>
+          <div>
+            <div class="htp-title">Analysis</div>
+            <div class="htp-desc">Three tabs: <strong>Heatmap</strong> (visual grid of everyone's predictions), <strong>Group Odds</strong> (see how the group is split on the next 5 matches — are you the contrarian?), and <strong>Post-Match</strong> (AI breakdown of finished games).</div>
+          </div>
+        </div>
+      </div>
+      <div class="htp-card purple">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">⚔️</div>
+          <div>
+            <div class="htp-title">Head to Head <span class="htp-badge" style="background:rgba(29,158,117,0.15);color:var(--green);border:1px solid rgba(29,158,117,0.3);">UNLOCKS JUN 11</span></div>
+            <div class="htp-desc">Challenge any other player. Pick up to 5 finished matches and see side-by-side who predicted better. Clear verdict. No mercy. Settle the debates once and for all.</div>
+          </div>
+        </div>
+      </div>
+      <div class="htp-card gold">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">🏅</div>
+          <div>
+            <div class="htp-title">Hall of Fame</div>
+            <div class="htp-desc">Six awards that update as the tournament progresses: 👑 Most Points, 🎯 Sharpest Predictor, 🔥 The Oracle, ⚽ Scorer Hunter, 📋 Most Committed, ⚡ Bonus King. Before Jun 11 — just a countdown. After — your legacy begins.</div>
+          </div>
+        </div>
+      </div>
+      <div class="htp-card green">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">💡</div>
+          <div>
+            <div class="htp-title">Tips</div>
+            <div class="htp-desc">Two tabs: <strong>AI Tips</strong> — AI-generated predictions and insight for upcoming matches. <strong>Top Scorers</strong> — career international goal tallies for every squad, searchable by player or country. Use it before picking your first goalscorer.</div>
+          </div>
+        </div>
+      </div>
+      <div class="htp-card green">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">📺</div>
+          <div>
+            <div class="htp-title">Live</div>
+            <div class="htp-desc">Follow live match stats, lineups, and scores during games. Auto-syncs every 15 minutes. Best used while watching the match.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TIPS TAB ===== -->
+    <div id="htp-tips" style="display:none;">
+      <div style="background:linear-gradient(135deg,#0a1f0a,#0d2e1a);border:1px solid rgba(29,158,117,0.3);border-radius:14px;padding:1.1rem 1.25rem;margin-bottom:1rem;">
+        <div style="font-size:13px;font-weight:700;color:#4ade80;margin-bottom:8px;">🧠 General strategy</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.6);line-height:1.7;">Don't just pick favorites to win every game. The scoring system rewards exact scores heavily (+7 vs +3). A bold 2-1 win for the underdog, if correct, beats a safe "home win" call by miles. Take calculated risks.</div>
+      </div>
+      <div class="htp-card green">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">🃏</div>
+          <div>
+            <div class="htp-title">When to play your Joker</div>
+            <div class="htp-desc">Save it for a knockout match you're highly confident about — the multipliers are higher there. Playing it in the group stage is valid but you might regret it when the Quarter-finals arrive and you're chasing points.</div>
+          </div>
+        </div>
+      </div>
+      <div class="htp-card purple">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">🎰</div>
+          <div>
+            <div class="htp-title">Double or Nothing strategy</div>
+            <div class="htp-desc">Don't use it on matches you're unsure about. The result points are deducted if wrong — that can erase gains from 2-3 correct predictions. Use it on mismatches where the outcome feels certain.</div>
+          </div>
+        </div>
+      </div>
+      <div class="htp-card blue">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">🌟</div>
+          <div>
+            <div class="htp-title">Picking your tournament player</div>
+            <div class="htp-desc">Pick a striker or attacking midfielder from a strong team likely to go deep in the tournament. A great player eliminated in the group stage earns you nothing after week 1. Think Mbappe, Vinicius, Kane, Lamine Yamal.</div>
+          </div>
+        </div>
+      </div>
+      <div class="htp-card gold">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">💡</div>
+          <div>
+            <div class="htp-title">Use the Tips page</div>
+            <div class="htp-desc">Check the AI Tips and Top Scorers before submitting predictions. The top scorers table shows career international goals per player — useful for picking first goalscorers in matches where you're unsure.</div>
+          </div>
+        </div>
+      </div>
+      <div class="htp-card red">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">⏰</div>
+          <div>
+            <div class="htp-title">24-hour deadline warning</div>
+            <div class="htp-desc">You'll receive a notification 24 hours before any match you haven't predicted yet. Don't ignore it — you cannot submit after the deadline. Set AutoSave on and save early to avoid stress.</div>
+          </div>
+        </div>
+      </div>
+      <div class="htp-card green">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div class="htp-icon">📲</div>
+          <div>
+            <div class="htp-title">Install as an app</div>
+            <div class="htp-desc">Add <strong>coedworldcup.me</strong> to your home screen for the best experience. On iPhone: tap Share → Add to Home Screen. On Android: tap the menu → Install app. Works like a native app, loads faster, and you get notifications.</div>
+          </div>
+        </div>
+      </div>
+    </div>
 
   </div><!-- end page-dummies -->
 
@@ -8398,6 +8281,16 @@
   }
 
   // ========== HOW TO PLAY — TABS + TUTORIAL ==========
+  window.setHTPTab = (tab) => {
+    const tabs = ['basics','scoring','features','pages','tips'];
+    tabs.forEach(t => {
+      const btn = document.getElementById('htp-tab-' + t);
+      const panel = document.getElementById('htp-' + t);
+      if (btn) { btn.classList.toggle('active', t === tab); }
+      if (panel) panel.style.display = t === tab ? 'block' : 'none';
+    });
+  };
+
   window.setDummiesTab = (tab) => {
     ['guide','tutorial','install'].forEach(t => {
       const el = document.getElementById(`dummies-${t}`);
