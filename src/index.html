@@ -2047,6 +2047,86 @@
       .htp-badge { display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;margin-left:6px;vertical-align:middle; }
     </style>
 
+    <!-- Hebrew content (hidden by default) -->
+    <div id="htp-hebrew" style="display:none;">
+      <div style="direction:rtl;text-align:right;">
+        <div class="htp-card green">
+          <div style="display:flex;gap:14px;align-items:flex-start;flex-direction:row-reverse;">
+            <div class="htp-icon">⚽</div>
+            <div>
+              <div class="htp-title">ניחושים</div>
+              <div class="htp-desc">עוברים לעמוד <strong>Matches</strong> ומנחשים תוצאה לכל משחק. 24 שעות לפני תחילת המשחק — נסגר. אין חרטות ברגע האחרון.</div>
+            </div>
+          </div>
+        </div>
+        <div class="htp-card green">
+          <div style="display:flex;gap:14px;align-items:flex-start;flex-direction:row-reverse;">
+            <div class="htp-icon">🎯</div>
+            <div>
+              <div class="htp-title">מה מרוויחים?</div>
+              <div class="htp-desc">✅ תוצאה נכונה: <strong style="color:var(--green);">3 נקודות</strong><br>🎯 תוצאה מדויקת: <strong style="color:var(--green);">7 נקודות</strong><br>🥅 מבקיע ראשון: <strong style="color:#60a5fa;">5 נקודות</strong><br>🌟 שחקן טורניר — גול: <strong style="color:#60a5fa;">+2</strong>, בישול: +1<br>🏆 מנצח הגביע: <strong style="color:#EF9F27;">15 נקודות</strong></div>
+            </div>
+          </div>
+        </div>
+        <div class="htp-card gold">
+          <div style="display:flex;gap:14px;align-items:flex-start;flex-direction:row-reverse;">
+            <div class="htp-icon">🃏</div>
+            <div>
+              <div class="htp-title">ג'וקר — פעם אחת בטורניר</div>
+              <div class="htp-desc">שמים על משחק אחד — ניחוש נכון = ×2 נקודות. טעיתם? אין עונש. ג'וקר נשרף.</div>
+            </div>
+          </div>
+        </div>
+        <div class="htp-card purple">
+          <div style="display:flex;gap:14px;align-items:flex-start;flex-direction:row-reverse;">
+            <div class="htp-icon">🎰</div>
+            <div>
+              <div class="htp-title">Double or Nothing — פעם בשבוע</div>
+              <div class="htp-desc">תוצאה נכונה = ×2. תוצאה שגויה = נקודות נגרעות. נקודות המבקיע תמיד בטוחות.</div>
+            </div>
+          </div>
+        </div>
+        <div class="htp-card blue">
+          <div style="display:flex;gap:14px;align-items:flex-start;flex-direction:row-reverse;">
+            <div class="htp-icon">💾</div>
+            <div>
+              <div class="htp-title">חשוב — לשמור ניחושים</div>
+              <div class="htp-desc">לוחצים על <strong>💾 Save all predictions</strong> בראש עמוד המשחקים. אפשר גם להפעיל AutoSave שישמור אוטומטית.</div>
+            </div>
+          </div>
+        </div>
+        <div class="htp-card red" style="background:linear-gradient(135deg,#1a0505,#2a0808);border-color:#E24B4A;">
+          <div style="display:flex;gap:14px;align-items:flex-start;flex-direction:row-reverse;">
+            <div class="htp-icon">⚡</div>
+            <div>
+              <div class="htp-title" style="color:white;">שלבי נוק-אאוט</div>
+              <div class="htp-desc" style="color:rgba(255,255,255,0.8);">שמינית: ×2 · רבע: ×3 · חצי: ×4<br><strong style="color:#FCD34D;">גמר: מדויק = 20 נק' · נכון = 10 נק'</strong></div>
+            </div>
+          </div>
+        </div>
+        <div class="htp-card green">
+          <div style="display:flex;gap:14px;align-items:flex-start;flex-direction:row-reverse;">
+            <div class="htp-icon">🏟️</div>
+            <div>
+              <div class="htp-title">Coach Room</div>
+              <div class="htp-desc">5 מאמני AI עם אישיות — האנליסט, המיסטיקן, העצבן, הוותיק, המנטרל. שאלו אותם על כל משחק. זמין גם בעברית.</div>
+            </div>
+          </div>
+        </div>
+        <div class="htp-card blue">
+          <div style="display:flex;gap:14px;align-items:flex-start;flex-direction:row-reverse;">
+            <div class="htp-icon">📲</div>
+            <div>
+              <div class="htp-title">להתקין כאפליקציה</div>
+              <div class="htp-desc">iPhone: Share → Add to Home Screen. Android: תפריט → Install app.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- English content wrapper -->
+    <div id="htp-english">
     <!-- ===== BASICS TAB ===== -->
     <div id="htp-basics">
       <div class="htp-card green">
@@ -7728,7 +7808,7 @@
       </div>
 
       <div style="background:${user.hasPaid?'linear-gradient(135deg,#0a1f0a,#0d2e0d)':'linear-gradient(135deg,#2e0a0a,#1a0808)'};border:0.5px solid ${user.hasPaid?'#1D9E75':'#E24B4A'};border-radius:12px;padding:1rem 1.25rem;margin-bottom:8px;">
-        <div style="font-size:13px;font-weight:500;margin-bottom:3px;">💸 Money at stake</div>
+        <div style="font-size:13px;font-weight:500;margin-bottom:3px;color:var(--text);">💸 Money at stake</div>
         <div style="font-size:13px;color:var(--text-muted);margin-bottom:6px;">${user.hasPaid ? '✅ 50 ILS received. You\'re officially in. The money is in the pot.' : '⚠️ Payment not confirmed yet. The admin is watching. Pay up.'}</div>
         <div style="font-size:12px;color:var(--text-muted);">${rank === 1 ? '🥇 You\'re currently leading. Don\'t blow it.' : `You need to overtake ${rank-1} player${rank-1>1?'s':''} to take 1st. Easy.`}</div>
       </div>
@@ -8334,13 +8414,17 @@
 
   window.setHTPLang = (lang) => {
     const isHe = lang === 'he';
-    document.getElementById('htp-english').style.display = isHe ? 'none' : 'block';
-    document.getElementById('htp-hebrew').style.display = isHe ? 'block' : 'none';
-    document.getElementById('htp-tab-bar').style.display = isHe ? 'none' : 'flex';
+    const enContent = document.getElementById('htp-lang-content-en');
+    const heContent = document.getElementById('htp-lang-content-he');
+    const tabBar = document.getElementById('htp-tab-bar');
+    if (enContent) enContent.style.display = isHe ? 'none' : 'block';
+    if (heContent) heContent.style.display = isHe ? 'block' : 'none';
+    if (tabBar) tabBar.style.display = isHe ? 'none' : 'flex';
     const enBtn = document.getElementById('htp-lang-en');
     const heBtn = document.getElementById('htp-lang-he');
     if (enBtn) { enBtn.style.background = isHe ? 'none' : 'var(--green)'; enBtn.style.color = isHe ? 'var(--text-muted)' : 'white'; }
     if (heBtn) { heBtn.style.background = isHe ? 'var(--green)' : 'none'; heBtn.style.color = isHe ? 'white' : 'var(--text-muted)'; }
+    localStorage.setItem('htp-lang', lang);
   };
 
   window.setHTPTab = (tab) => {
