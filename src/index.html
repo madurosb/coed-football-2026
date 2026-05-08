@@ -2123,10 +2123,9 @@
           </div>
         </div>
       </div>
-    </div>
+    </div><!-- end rtl wrapper -->
+    </div><!-- end htp-hebrew -->
 
-    <!-- English content wrapper -->
-    <div id="htp-english">
     <!-- ===== BASICS TAB ===== -->
     <div id="htp-basics">
       <div class="htp-card green">
@@ -2479,7 +2478,6 @@
       </div>
     </div>
 
-    </div><!-- end htp-english -->
   </div><!-- end page-dummies -->
 
   <!-- INSTALL TAB -->
@@ -8391,16 +8389,25 @@
 
   // ========== HOW TO PLAY — TABS + TUTORIAL ==========
   window.setHTPLang = (lang) => {
+    const isHe = lang === 'he';
+    localStorage.setItem('htpLang', lang);
+    // Show/hide Hebrew block
+    const heBlock = document.getElementById('htp-hebrew');
+    const tabBar = document.getElementById('htp-tab-bar');
+    const tabs = ['htp-basics','htp-scoring','htp-features','htp-pages','htp-tips'];
+    if (heBlock) heBlock.style.display = isHe ? 'block' : 'none';
+    if (tabBar) tabBar.style.display = isHe ? 'none' : 'flex';
+    tabs.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = isHe ? 'none' : (id === 'htp-basics' ? 'block' : 'none');
+    });
+    if (!isHe) setHTPTab('basics'); // reset to first tab
+    // Toggle button styles
     const enBtn = document.getElementById('htp-lang-en');
     const heBtn = document.getElementById('htp-lang-he');
-    if (enBtn) { enBtn.style.background = lang==='en' ? 'var(--green)' : 'none'; enBtn.style.color = lang==='en' ? 'white' : 'var(--text-muted)'; }
-    if (heBtn) { heBtn.style.background = lang==='he' ? 'var(--green)' : 'none'; heBtn.style.color = lang==='he' ? 'white' : 'var(--text-muted)'; }
-    const enContent = document.getElementById('htp-lang-content-en');
-    const heContent = document.getElementById('htp-lang-content-he');
-    if (enContent) enContent.style.display = lang==='en' ? '' : 'none';
-    if (heContent) heContent.style.display = lang==='he' ? '' : 'none';
-    localStorage.setItem('htp-lang', lang);
-  };
+    if (enBtn) { enBtn.style.background = isHe ? 'none' : 'var(--green)'; enBtn.style.color = isHe ? 'var(--text-muted)' : 'white'; }
+    if (heBtn) { heBtn.style.background = isHe ? 'var(--green)' : 'none'; heBtn.style.color = isHe ? 'white' : 'var(--text-muted)'; }
+  };;
 
   // Load saved language pref when entering How to Play page
   const _origShowPage = window.showPage || function(){};
