@@ -8066,6 +8066,20 @@
       </div>`).join('');
   };
 
+  window.toggleBlock = async (uid, block, btn) => {
+    btn.disabled = true;
+    await updateDoc(doc(db, 'users', uid), { isBlocked: block });
+    btn.style.background = block ? '#555' : '#1a1a1a';
+    btn.style.color = block ? '#fff' : '#666';
+    btn.textContent = block ? '🔓 Unblock' : '🔒 Block';
+    btn.disabled = false;
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:13px;padding:10px 16px;border-radius:10px;z-index:9999;white-space:nowrap;';
+    t.textContent = block ? '🔒 User blocked \u2014 they\'ll see the payment screen' : '🔓 User unblocked \u2014 access restored';
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.transition='opacity 0.5s'; t.style.opacity='0'; setTimeout(()=>t.remove(),500); }, 2500);
+  };
+
   window.togglePayment = async (uid, newPaid, btn) => {
     btn.disabled = true;
     btn.textContent = '...';
@@ -8381,6 +8395,7 @@
   }
 
   // ========== HOW TO PLAY — TABS + TUTORIAL ==========
+
   window.setHTPLang = (lang) => {
     const isHe = lang === 'he';
     localStorage.setItem('htpLang', lang);
@@ -8402,7 +8417,49 @@
     if (heBtn) { heBtn.style.background = isHe ? 'var(--green)' : 'none'; heBtn.style.color = isHe ? 'white' : 'var(--text-muted)'; }
   };;
 
-  // Load saved language pref when entering How to Play page
+
+  function showBlockedScreen(userData) {
+    const existing = document.getElementById('blocked-screen');
+    if (existing) existing.remove();
+
+    const messages = [
+      { emoji: '💸', title: "Pay Up, Legend", msg: `The gates are locked, ${userData.nickname || 'friend'}. This is a premium experience and your 50 ILS haven't arrived yet. The admin is watching. The leaderboard is laughing.` },
+      { emoji: '🏦', title: "Access Denied", msg: `Nice try, ${userData.nickname || 'champ'}. The predictions are right there. You're right here. Between you and them: 50 ILS. Ball's in your court.` },
+      { emoji: '🔒', title: "Membership Frozen", msg: `${userData.nickname || 'Hey you'}, your account is in the premium waiting lounge. Translation: you haven't paid yet. Contact the admin and sort it out. We'll be here.` },
+      { emoji: '🧾', title: "Invoice Outstanding", msg: `Our records show a balance of exactly 50 ILS on your account, ${userData.nickname || 'pal'}. Funny how that works. The admin accepts cash, Bit, and humble apologies.` },
+    ];
+    const pick = messages[Math.floor(Math.random() * messages.length)];
+
+    const div = document.createElement('div');
+    div.id = 'blocked-screen';
+    div.style.cssText = 'position:fixed;inset:0;background:#080808;z-index:99999;display:flex;align-items:center;justify-content:center;padding:1.5rem;flex-direction:column;';
+    div.innerHTML = `
+      <div style="max-width:340px;width:100%;text-align:center;">
+        <!-- Animated lock -->
+        <div style="font-size:72px;margin-bottom:1rem;animation:coachBounce 2s ease infinite;">${pick.emoji}</div>
+        <div style="font-family:monospace;font-size:11px;letter-spacing:4px;color:#E24B4A;text-transform:uppercase;margin-bottom:8px;">Account Locked</div>
+        <div style="font-size:22px;font-weight:800;color:white;margin-bottom:12px;">${pick.title}</div>
+        <div style="font-size:14px;color:rgba(255,255,255,0.6);line-height:1.7;margin-bottom:1.5rem;background:rgba(255,255,255,0.04);border-radius:12px;padding:1rem 1.25rem;border:0.5px solid rgba(226,75,74,0.3);">
+          ${pick.msg}
+        </div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:1.5rem;">
+          Entry fee: <strong style="color:#EF9F27;">50 ILS</strong> · Once paid, admin unlocks you instantly.
+        </div>
+        <button onclick="firebase_signOut()" style="width:100%;padding:12px;border-radius:10px;border:0.5px solid rgba(255,255,255,0.15);background:none;color:rgba(255,255,255,0.4);font-size:13px;cursor:pointer;">
+          Sign out
+        </button>
+      </div>`;
+    document.body.appendChild(div);
+  }
+
+  window.firebase_signOut = async () => {
+    const { signOut } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    await signOut(auth);
+    document.getElementById('blocked-screen')?.remove();
+    document.getElementById('loading').style.display = 'flex';
+  };
+
+    // Load saved language pref when entering How to Play page
   const _origShowPage = window.showPage || function(){};
   window.showPage = (id) => {
     _origShowPage(id);
@@ -8412,20 +8469,15 @@
     }
   };
 
-  window.setHTPLang = (lang) => {
-    const isHe = lang === 'he';
-    const enContent = document.getElementById('htp-lang-content-en');
-    const heContent = document.getElementById('htp-lang-content-he');
-    const tabBar = document.getElementById('htp-tab-bar');
-    if (enContent) enContent.style.display = isHe ? 'none' : 'block';
-    if (heContent) heContent.style.display = isHe ? 'block' : 'none';
-    if (tabBar) tabBar.style.display = isHe ? 'none' : 'flex';
-    const enBtn = document.getElementById('htp-lang-en');
-    const heBtn = document.getElementById('htp-lang-he');
-    if (enBtn) { enBtn.style.background = isHe ? 'none' : 'var(--green)'; enBtn.style.color = isHe ? 'var(--text-muted)' : 'white'; }
-    if (heBtn) { heBtn.style.background = isHe ? 'var(--green)' : 'none'; heBtn.style.color = isHe ? 'white' : 'var(--text-muted)'; }
-    localStorage.setItem('htp-lang', lang);
+
+  window.firebase_signOut = async () => {
+    const { signOut } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    await signOut(auth);
+    document.getElementById('blocked-screen')?.remove();
+    document.getElementById('loading').style.display = 'flex';
   };
+
+
 
   window.setHTPTab = (tab) => {
     const tabs = ['basics','scoring','features','pages','tips'];
