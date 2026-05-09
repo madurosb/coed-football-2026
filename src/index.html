@@ -3985,6 +3985,14 @@
         });
       } else {
         currentUserData = userSnap.data();
+        // Check if user is blocked
+        if (currentUserData.isBlocked) {
+          clearInterval(splashInterval);
+          const splash = document.getElementById('splash-screen');
+          if (splash) { splash.style.transition = 'opacity 0.3s'; splash.style.opacity = '0'; setTimeout(() => splash?.remove(), 300); }
+          showBlockedScreen(currentUserData);
+          return;
+        }
         showApp();
       }
     } else {
@@ -8062,6 +8070,10 @@
         <button onclick="togglePayment('${u.uid}', ${!u.hasPaid}, this)"
           style="padding:6px 12px;border-radius:8px;border:none;background:${u.hasPaid?'#1D9E75':'#E24B4A'};color:white;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;">
           ${u.hasPaid ? '✅ Paid' : '❌ Not paid'}
+        </button>
+        <button onclick="toggleBlock('${u.uid}', ${!u.isBlocked}, this)"
+          style="padding:6px 10px;border-radius:8px;background:${u.isBlocked?'#E24B4A':'#2a2a2a'};color:${u.isBlocked?'white':'#888'};font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;border:1px solid ${u.isBlocked?'#E24B4A':'#444'};">
+          ${u.isBlocked ? '🔓 Unblock' : '🔒 Block'}
         </button>
       </div>`).join('');
   };
