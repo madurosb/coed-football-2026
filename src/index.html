@@ -2689,6 +2689,12 @@
         <div class="admin-card" onclick="showAdminSub('trash-admin')"><div class="icon">🧹</div><div class="title">Trash Talk reset</div><div class="desc">Delete all messages or messages older than a chosen number of days.</div></div>
         <div class="admin-card" onclick="showAdminSub('innercircle-admin')"><div class="icon">🏅</div><div class="title">Inner Circle Bets</div><div class="desc">Enable or disable the Inner Circle Bets page. Open it once the final player count is confirmed.</div></div>
         <div class="admin-card" onclick="showAdminSub('payment-admin')"><div class="icon">💰</div><div class="title">Payment tracker</div><div class="desc">Mark who paid their 50 ILS entry fee. Players can see their payment status in My Stats.</div></div>
+      <div class="admin-card" onclick="showAdminSub('avatar-admin');loadAvatarRequests()" style="position:relative;">
+        <div class="icon">🖼️</div>
+        <div class="title">Avatar Requests</div>
+        <div class="desc">Approve players who want to change their avatar again.</div>
+        <div id="avatar-requests-badge" style="display:none;position:absolute;top:10px;right:10px;width:20px;height:20px;border-radius:50%;background:#E24B4A;color:white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;" id="avatar-badge">0</div>
+      </div>
       <div class="admin-card" onclick="showAdminSub('knockout-admin')"><div class="icon">⚡</div><div class="title">Knockout stages</div><div class="desc">Enable predictions for Round of 16, Quarter-finals, Semi-finals and Final once the group stage is done.</div></div>
         <div class="admin-card" onclick="showAdminSub('score-verify')"><div class="icon">🔍</div><div class="title">Score verification</div><div class="desc">Check that all points are calculated correctly. Compare predicted vs actual results and audit per player.</div></div>
         <div class="admin-card" onclick="showAdminSub('picks-overview')"><div class="icon">📋</div><div class="title">Picks overview</div><div class="desc">See who picked which tournament player and World Cup winner. Verify everyone submitted before June 10.</div></div>
@@ -2802,12 +2808,14 @@
         <button onclick="loadPaymentTracker()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;margin-bottom:1rem;">🔄 Load players</button>
         <div id="payment-tracker-list"><div style="color:var(--text-muted);font-size:13px;">Click Load to see all players.</div></div>
       </div>
-      <!-- Avatar change requests -->
-      <div class="form-card" style="margin-top:1rem;">
+    </div>
+
+    <div id="admin-avatar-admin" class="admin-sub">
+      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
+      <div class="form-card">
         <h2>🖼️ Avatar Change Requests</h2>
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Players who used their one avatar change and are begging for another shot.</p>
-        <button onclick="loadAvatarRequests()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;margin-bottom:1rem;">🔄 Load requests</button>
-        <div id="avatar-requests-list"><div style="color:var(--text-muted);font-size:13px;">Click Load to see pending requests.</div></div>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Players who used their one free change and need admin approval for another.</p>
+        <div id="avatar-requests-list"><div style="color:var(--text-muted);font-size:13px;">Loading...</div></div>
       </div>
     </div>
 
@@ -4252,7 +4260,8 @@
       document.removeEventListener('touchmove', preventZoom);
       document.removeEventListener('gesturestart', preventZoom);
     }
-    if (id === 'admin') { showAdminMain(); loadAdminUsers(); loadAdminStats(); }
+    if (id === 'admin') {
+      setTimeout(checkAvatarBadge, 500); showAdminMain(); loadAdminUsers(); loadAdminStats(); }
     if (id === 'leaderboard') { loadFullLeaderboard(); document.getElementById('wc-groups-content').dataset.loaded = ''; document.getElementById('wc-scorers-content').dataset.loaded = ''; }
     if (id === 'stats') loadStatsPage();
     if (id === 'dummies') {
@@ -6408,6 +6417,18 @@
     }
   };
 
+  // Check avatar requests badge on admin load
+  async function checkAvatarBadge() {
+    try {
+      const snap = await getDocs(query(collection(db, 'users'), where('avatarChangeRequested', '==', true)));
+      const badge = document.getElementById('avatar-requests-badge');
+      if (badge) {
+        badge.textContent = snap.size;
+        badge.style.display = snap.size > 0 ? 'flex' : 'none';
+      }
+    } catch(e) {}
+  }
+
   async function loadAdminStats() {
     const usersSnap = await getDocs(collection(db, 'users'));
     const predsSnap = await getDocs(collection(db, 'predictions'));
@@ -7080,18 +7101,18 @@
       </div>`;
     document.body.appendChild(modal);
 
-    // Populate gallery with all available avatars
+    // Populate gallery with AVATARS
     const grid = document.getElementById('avatar-gallery-grid');
-    const avatars = typeof getAllAvatars === 'function' ? getAllAvatars() : (window.AVATARS || []);
-    if (avatars.length > 0) {
-      grid.innerHTML = avatars.map(av => `
-        <div onclick="selectGalleryAvatar('${av.id}')" style="cursor:pointer;border-radius:10px;overflow:hidden;border:2px solid var(--border);transition:all 0.15s;aspect-ratio:1;display:flex;align-items:center;justify-content:center;"
-          onmouseover="this.style.borderColor='var(--green)';this.style.transform='scale(1.05)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform=''">
-          ${makeAvatarSVG(av, 70)}
-        </div>`).join('');
-    } else {
-      grid.innerHTML = '<div style="grid-column:span 4;text-align:center;font-size:12px;color:var(--text-muted);padding:1rem;">No gallery avatars available</div>';
-    }
+    grid.innerHTML = AVATARS.map(av => {
+      const imgUrl = `https://coed-football-2026.vercel.app/avatars/${av.img}`;
+      return `<div onclick="selectGalleryAvatar('${av.id}')"
+        style="cursor:pointer;border-radius:10px;overflow:hidden;border:2px solid var(--border);transition:all 0.15s;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px;background:var(--surface2);"
+        onmouseover="this.style.borderColor='var(--green)';this.style.transform='scale(1.05)'"
+        onmouseout="this.style.borderColor='var(--border)';this.style.transform=''">
+        <img src="${imgUrl}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;display:block;">
+        <div style="font-size:9px;color:var(--text-muted);margin-top:3px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;">${av.label}</div>
+      </div>`;
+    }).join('');
   };
 
   window.previewAvatarUpload = (input) => {
@@ -7118,7 +7139,7 @@
 
     try {
       const { getStorage, ref, uploadBytes, getDownloadURL } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js');
-      const storage = getStorage();
+      const storage = getStorage(app);
       const storageRef = ref(storage, `avatars/${currentUser.uid}/avatar.jpg`);
 
       // Resize to 256×256 before upload
@@ -8239,6 +8260,7 @@
 
   window.loadAvatarRequests = async () => {
     const list = document.getElementById('avatar-requests-list');
+    if (!list) return;
     list.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">Loading...</div>';
     const usersSnap = await getDocs(collection(db, 'users'));
     const requests = [];
@@ -8247,8 +8269,18 @@
       if (u.avatarChangeRequested) requests.push({ id: d.id, ...u });
     });
 
+    // Update badge
+    const badge = document.getElementById('avatar-requests-badge');
+    if (badge) {
+      if (requests.length > 0) {
+        badge.textContent = requests.length;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
     if (requests.length === 0) {
-      list.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:8px 0;">No pending requests. Everyone is happy with their face.</div>';
+      list.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:8px 0;">No pending requests. Everyone is happy with their face. 😌</div>';
       return;
     }
 
