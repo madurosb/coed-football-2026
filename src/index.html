@@ -2802,6 +2802,13 @@
         <button onclick="loadPaymentTracker()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;margin-bottom:1rem;">🔄 Load players</button>
         <div id="payment-tracker-list"><div style="color:var(--text-muted);font-size:13px;">Click Load to see all players.</div></div>
       </div>
+      <!-- Avatar change requests -->
+      <div class="form-card" style="margin-top:1rem;">
+        <h2>🖼️ Avatar Change Requests</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Players who used their one avatar change and are begging for another shot.</p>
+        <button onclick="loadAvatarRequests()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;margin-bottom:1rem;">🔄 Load requests</button>
+        <div id="avatar-requests-list"><div style="color:var(--text-muted);font-size:13px;">Click Load to see pending requests.</div></div>
+      </div>
     </div>
 
     <div id="admin-knockout-admin" class="admin-sub">
@@ -7043,6 +7050,148 @@
     container.innerHTML = html;
   }
 
+  window.showAvatarChangeModal = () => {
+    const modal = document.createElement('div');
+    modal.id = 'avatar-change-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
+    modal.innerHTML = `
+      <div style="background:var(--surface);border-radius:20px 20px 0 0;padding:1.5rem;width:100%;max-width:500px;max-height:85vh;overflow-y:auto;">
+        <div style="text-align:center;margin-bottom:1rem;">
+          <div style="font-size:18px;font-weight:700;margin-bottom:4px;">Change Your Avatar</div>
+          <div style="font-size:12px;color:#E24B4A;font-weight:500;">⚠️ You can only do this ONCE — choose wisely.</div>
+        </div>
+        <!-- Upload personal photo -->
+        <div style="background:var(--surface2);border:1.5px dashed var(--green);border-radius:12px;padding:1.25rem;margin-bottom:1rem;text-align:center;cursor:pointer;" onclick="document.getElementById('avatar-file-input').click()">
+          <div style="font-size:28px;margin-bottom:6px;">📸</div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:2px;">Upload a personal photo</div>
+          <div style="font-size:11px;color:var(--text-muted);">JPG or PNG · Max 2MB · Cropped to circle</div>
+          <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="previewAvatarUpload(this)">
+        </div>
+        <!-- Preview area -->
+        <div id="avatar-upload-preview" style="display:none;text-align:center;margin-bottom:1rem;padding:1rem;background:var(--surface2);border-radius:12px;">
+          <img id="avatar-preview-img" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid var(--green);margin-bottom:8px;">
+          <div style="font-size:12px;color:var(--green);margin-bottom:8px;">Looking good! Confirm to save.</div>
+          <button onclick="confirmAvatarUpload()" style="padding:8px 20px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:600;cursor:pointer;">✅ Use this photo</button>
+        </div>
+        <!-- Gallery -->
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Or choose from gallery</div>
+        <div id="avatar-gallery-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1rem;"></div>
+        <button onclick="document.getElementById('avatar-change-modal').remove()" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;cursor:pointer;margin-top:4px;">Cancel</button>
+      </div>`;
+    document.body.appendChild(modal);
+
+    // Populate gallery with all available avatars
+    const grid = document.getElementById('avatar-gallery-grid');
+    const avatars = typeof getAllAvatars === 'function' ? getAllAvatars() : (window.AVATARS || []);
+    if (avatars.length > 0) {
+      grid.innerHTML = avatars.map(av => `
+        <div onclick="selectGalleryAvatar('${av.id}')" style="cursor:pointer;border-radius:10px;overflow:hidden;border:2px solid var(--border);transition:all 0.15s;aspect-ratio:1;display:flex;align-items:center;justify-content:center;"
+          onmouseover="this.style.borderColor='var(--green)';this.style.transform='scale(1.05)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform=''">
+          ${makeAvatarSVG(av, 70)}
+        </div>`).join('');
+    } else {
+      grid.innerHTML = '<div style="grid-column:span 4;text-align:center;font-size:12px;color:var(--text-muted);padding:1rem;">No gallery avatars available</div>';
+    }
+  };
+
+  window.previewAvatarUpload = (input) => {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { alert('File too large — max 2MB please.'); input.value = ''; return; }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const preview = document.getElementById('avatar-upload-preview');
+      const img = document.getElementById('avatar-preview-img');
+      if (img) img.src = e.target.result;
+      if (preview) preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  };
+
+  window.confirmAvatarUpload = async () => {
+    const input = document.getElementById('avatar-file-input');
+    const file = input?.files[0];
+    if (!file) return;
+
+    const btn = document.querySelector('#avatar-upload-preview button');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Uploading...'; }
+
+    try {
+      const { getStorage, ref, uploadBytes, getDownloadURL } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js');
+      const storage = getStorage();
+      const storageRef = ref(storage, `avatars/${currentUser.uid}/avatar.jpg`);
+
+      // Resize to 256×256 before upload
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      await new Promise(r => { img.onload = r; });
+      const canvas = document.createElement('canvas');
+      canvas.width = 256; canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      const size = Math.min(img.width, img.height);
+      ctx.drawImage(img, (img.width-size)/2, (img.height-size)/2, size, size, 0, 0, 256, 256);
+      const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.85));
+
+      await uploadBytes(storageRef, blob);
+      const url = await getDownloadURL(storageRef);
+
+      await updateDoc(doc(db, 'users', currentUser.uid), { avatarUrl: url, avatarChanged: true, avatar: null });
+      currentUserData.avatarUrl = url;
+      currentUserData.avatarChanged = true;
+
+      // Update top nav avatar
+      const topAv = document.getElementById('user-avatar');
+      if (topAv) topAv.innerHTML = `<img src="${url}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">`;
+
+      document.getElementById('avatar-change-modal')?.remove();
+      const t = document.createElement('div');
+      t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--green);color:white;font-size:13px;font-weight:600;padding:10px 20px;border-radius:10px;z-index:9999;';
+      t.textContent = '✅ New avatar saved! Looking fresh.';
+      document.body.appendChild(t);
+      setTimeout(() => { t.style.transition='opacity 0.5s'; t.style.opacity='0'; setTimeout(()=>t.remove(),500); }, 3000);
+      loadStatsPage();
+    } catch(e) {
+      console.error('Upload error:', e);
+      alert('Upload failed: ' + e.message);
+      if (btn) { btn.disabled = false; btn.textContent = '✅ Use this photo'; }
+    }
+  };
+
+  window.requestAvatarChange = async () => {
+    if (!confirm('Send a request to the admin to allow you to change your avatar one more time?')) return;
+    await updateDoc(doc(db, 'users', currentUser.uid), {
+      avatarChangeRequested: true,
+      avatarChangeRequestedAt: serverTimestamp()
+    });
+    currentUserData.avatarChangeRequested = true;
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#EF9F27;color:#000;font-size:13px;font-weight:600;padding:10px 20px;border-radius:10px;z-index:9999;white-space:nowrap;';
+    t.textContent = '📨 Request sent! Waiting for admin approval.';
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.transition='opacity 0.5s'; t.style.opacity='0'; setTimeout(()=>t.remove(),500); }, 3000);
+    loadStatsPage();
+  };
+
+  window.selectGalleryAvatar = async (avatarId) => {
+    if (!confirm('Switch to this avatar? You only get one change — make it count!')) return;
+    await updateDoc(doc(db, 'users', currentUser.uid), { avatar: avatarId, avatarUrl: null, avatarChanged: true });
+    currentUserData.avatar = avatarId;
+    currentUserData.avatarChanged = true;
+    const av = getAvatarById(avatarId);
+    const topAv = document.getElementById('user-avatar');
+    if (topAv && av) {
+      topAv.innerHTML = makeAvatarSVG(av, 32);
+      topAv.style.cssText = 'width:32px;height:32px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+    }
+    document.getElementById('avatar-change-modal')?.remove();
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--green);color:white;font-size:13px;font-weight:600;padding:10px 20px;border-radius:10px;z-index:9999;';
+    t.textContent = '✅ Avatar updated!';
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.transition='opacity 0.5s'; t.style.opacity='0'; setTimeout(()=>t.remove(),500); }, 2500);
+    loadStatsPage();
+  };
+
   window.resetAllWatchVotes = async () => {
     if (!confirm('Reset ALL watch votes? This cannot be undone.')) return;
     const snap = await getDocs(collection(db, 'watchVotes'));
@@ -7643,11 +7792,19 @@
     ].filter(Boolean);
     const verdict = verdicts[0] || `Rank ${rank} of ${totalPlayers}. ${rank <= 3 ? 'Solid.' : 'There\'s room to grow.'}`;
 
-    // Avatar
+    // Avatar — with change button if not yet used
     const isAdmin = user.isAdmin;
-    const avatarHTML = isAdmin
+    const canChangeAvatar = !user.avatarChanged; // one-time change
+    const avatarHtmlInner = isAdmin
       ? `<img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid #00ff41;">`
-      : (() => { const av = getAvatarById(user.avatar); return av ? makeAvatarSVG(av, 96) : `<div style="width:96px;height:96px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:500;color:var(--green-dark);">${(user.nickname||'?').substring(0,2).toUpperCase()}</div>`; })();
+      : user.avatarUrl
+        ? `<img src="${user.avatarUrl}" style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid var(--green);">`
+        : (() => { const av = getAvatarById(user.avatar); return av ? makeAvatarSVG(av, 96) : `<div style="width:96px;height:96px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:500;color:var(--green-dark);">${(user.nickname||'?').substring(0,2).toUpperCase()}</div>`; })();
+    const avatarHTML = `<div style="position:relative;display:inline-block;">
+      ${avatarHtmlInner}
+      ${canChangeAvatar && !isAdmin ? `<button onclick="showAvatarChangeModal()" title="Change your avatar — once only!"
+        style="position:absolute;bottom:0;right:0;width:28px;height:28px;border-radius:50%;border:2px solid var(--surface);background:var(--green);color:white;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.3);">✏️</button>` : ''}
+    </div>`;
 
     const nameHTML = isAdmin
       ? `${user.nickname||user.displayName} <span style="font-size:10px;background:#00ff41;color:#000;padding:1px 5px;border-radius:99px;font-weight:700;margin-left:4px;">ADMIN</span>`
@@ -7655,7 +7812,11 @@
 
     container.innerHTML = `
       <div style="margin-bottom:1.5rem;padding:1rem 1.25rem;background:var(--surface);border:0.5px solid var(--border);border-radius:12px;display:flex;align-items:center;gap:16px;">
-        <div style="flex-shrink:0;">${avatarHTML}</div>
+      <div style="flex-shrink:0;">${avatarHTML}
+        ${canChangeAvatar && !isAdmin ? `<div style="font-size:10px;color:var(--text-muted);text-align:center;margin-top:4px;">✏️ 1 change left</div>` : ''}
+        ${!canChangeAvatar && !isAdmin ? `<div style="font-size:10px;color:var(--text-muted);text-align:center;margin-top:4px;">🔒 Avatar locked</div>
+          ${!user.avatarChangeRequested ? `<button onclick="requestAvatarChange()" style="margin-top:6px;font-size:10px;padding:3px 8px;border-radius:6px;border:0.5px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;display:block;width:100%;">Request change</button>` : `<div style="font-size:10px;color:#EF9F27;text-align:center;margin-top:4px;">⏳ Request pending</div>`}` : ''}
+      </div>
         <div style="flex:1;">
           <div style="font-size:18px;font-weight:500;margin-bottom:4px;">${nameHTML}</div>
           <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">Rank #${rank} of ${totalPlayers} players &nbsp;·&nbsp; ${user.tournamentPlayer || 'No tournament player set'}</div>
@@ -8052,6 +8213,53 @@
       }
     } catch(e) {}
   }
+
+  window.loadAvatarRequests = async () => {
+    const list = document.getElementById('avatar-requests-list');
+    list.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">Loading...</div>';
+    const usersSnap = await getDocs(collection(db, 'users'));
+    const requests = [];
+    usersSnap.forEach(d => {
+      const u = d.data();
+      if (u.avatarChangeRequested) requests.push({ id: d.id, ...u });
+    });
+
+    if (requests.length === 0) {
+      list.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:8px 0;">No pending requests. Everyone is happy with their face.</div>';
+      return;
+    }
+
+    list.innerHTML = requests.map(u => `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--border);">
+        ${u.avatarUrl
+          ? `<img src="${u.avatarUrl}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
+          : `<div style="width:40px;height:40px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">${(u.nickname||'?').substring(0,2).toUpperCase()}</div>`}
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:500;">${u.nickname||u.displayName||'Unknown'}</div>
+          <div style="font-size:11px;color:var(--text-muted);">Wants to change their avatar. Again.</div>
+        </div>
+        <button onclick="approveAvatarChange('${u.uid}', this)"
+          style="padding:6px 12px;border-radius:8px;border:none;background:var(--green);color:white;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;">
+          ✅ Approve
+        </button>
+      </div>`).join('');
+  };
+
+  window.approveAvatarChange = async (uid, btn) => {
+    btn.disabled = true;
+    btn.textContent = '...';
+    await updateDoc(doc(db, 'users', uid), {
+      avatarChanged: false,           // allow one more change
+      avatarChangeRequested: false    // clear the request
+    });
+    btn.textContent = '✅ Approved!';
+    btn.style.background = '#555';
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--green);color:white;font-size:13px;padding:10px 16px;border-radius:10px;z-index:9999;';
+    t.textContent = '✅ Approved! They can change their avatar again.';
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.transition='opacity 0.5s'; t.style.opacity='0'; setTimeout(()=>t.remove(),500); }, 2500);
+  };
 
   window.loadPaymentTracker = async () => {
     const list = document.getElementById('payment-tracker-list');
