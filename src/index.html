@@ -7119,13 +7119,23 @@
     if (lastUrl && lastUrl !== curUrl) {
       const lastSection = document.createElement('div');
       lastSection.style.cssText = 'margin-bottom:14px;';
-      lastSection.innerHTML = '<div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">&#128247; Your last uploaded photo</div>'
-        + '<div style="display:flex;align-items:center;gap:12px;background:var(--surface2);border-radius:10px;padding:10px 12px;cursor:pointer;border:2px solid var(--border);transition:border-color 0.15s;"'
-        + ' onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border)'"'
-        + ' onclick="restoreLastAvatar('' + lastUrl + '')">'
-        + '<img src="' + lastUrl + '" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0;">'
-        + '<div><div style="font-size:13px;font-weight:500;">Restore this photo</div>'
-        + '<div style="font-size:11px;color:var(--text-muted);">Switch back to your previous upload</div></div></div>';
+      const lastDiv = document.createElement('div');
+      lastDiv.style.cssText = 'display:flex;align-items:center;gap:12px;background:var(--surface2);border-radius:10px;padding:10px 12px;cursor:pointer;border:2px solid var(--border);';
+      lastDiv.addEventListener('mouseenter', () => lastDiv.style.borderColor = 'var(--green)');
+      lastDiv.addEventListener('mouseleave', () => lastDiv.style.borderColor = 'var(--border)');
+      lastDiv.addEventListener('click', () => restoreLastAvatar(lastUrl));
+      const lastImg = document.createElement('img');
+      lastImg.src = lastUrl;
+      lastImg.style.cssText = 'width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0;';
+      const lastText = document.createElement('div');
+      lastText.innerHTML = '<div style="font-size:13px;font-weight:500;">Restore this photo</div><div style="font-size:11px;color:var(--text-muted);">Switch back to your previous upload</div>';
+      lastDiv.appendChild(lastImg);
+      lastDiv.appendChild(lastText);
+      const lastLabel = document.createElement('div');
+      lastLabel.style.cssText = 'font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;';
+      lastLabel.textContent = '📷 Your last uploaded photo';
+      lastSection.appendChild(lastLabel);
+      lastSection.appendChild(lastDiv);
       grid.parentElement.insertBefore(lastSection, grid);
     }
 
