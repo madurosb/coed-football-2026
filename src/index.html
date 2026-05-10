@@ -4061,7 +4061,7 @@
     } else {
       if (currentUserData.avatarUrl) {
         avatarEl.innerHTML = `<img src="${currentUserData.avatarUrl}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;display:block;">`;
-        avatarEl.style.cssText = "width:32px;height:32px;border-radius:50%;overflow:hidden;flex-shrink:0;";
+        avatarEl.style.cssText = "width:32px;height:32px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid var(--border);";
         avatarEl.style.background = 'none';
         avatarEl.style.padding = '0';
       } else {
@@ -5182,7 +5182,7 @@
       } else {
         const av = getAvatarById(u.avatar);
         avatarHTML = u.avatarUrl
-          ? `<div style="width:56px;height:56px;border-radius:50%;overflow:hidden;flex-shrink:0;"><img src="${u.avatarUrl}" style="width:56px;height:56px;object-fit:cover;border-radius:50%;display:block;"></div>`
+          ? `<div style="width:56px;height:56px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid var(--border);"><img src="${u.avatarUrl}" style="width:56px;height:56px;object-fit:cover;border-radius:50%;display:block;"></div>`
           : av
             ? `<div style="width:56px;height:56px;border-radius:50%;overflow:hidden;flex-shrink:0;">${makeAvatarSVG(av, 56)}</div>`
             : `<div class="avatar" style="background:${['#FAEEDA','#E6F1FB','#E1F5EE'][i]||'#f0f0f0'};color:${['#633806','#0C447C','#085041'][i]||'#333'};">${(u.nickname||u.displayName||'?').substring(0,2).toUpperCase()}</div>`;
