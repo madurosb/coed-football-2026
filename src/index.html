@@ -4059,14 +4059,21 @@
       // Add admin badge next to handle
       document.getElementById('user-handle').innerHTML = '@' + (currentUserData.nickname || currentUserData.displayName) + ' <span style="font-size:10px;background:#00ff41;color:#000;padding:1px 6px;border-radius:99px;font-weight:700;margin-left:4px;letter-spacing:0.05em;">ADMIN</span>';
     } else {
-      const av = getAvatarById(currentUserData.avatar);
-      if (av) {
-        avatarEl.innerHTML = makeAvatarSVG(av, 32); avatarEl.style.cssText = "width:32px;height:32px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;";
+      if (currentUserData.avatarUrl) {
+        avatarEl.innerHTML = `<img src="${currentUserData.avatarUrl}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;display:block;">`;
+        avatarEl.style.cssText = "width:32px;height:32px;border-radius:50%;overflow:hidden;flex-shrink:0;";
         avatarEl.style.background = 'none';
         avatarEl.style.padding = '0';
       } else {
-        avatarEl.textContent = (currentUserData.nickname || currentUserData.displayName || '?').substring(0, 2).toUpperCase();
-        avatarEl.style.fontSize = '12px';
+        const av = getAvatarById(currentUserData.avatar);
+        if (av) {
+          avatarEl.innerHTML = makeAvatarSVG(av, 32); avatarEl.style.cssText = "width:32px;height:32px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;";
+          avatarEl.style.background = 'none';
+          avatarEl.style.padding = '0';
+        } else {
+          avatarEl.textContent = (currentUserData.nickname || currentUserData.displayName || '?').substring(0, 2).toUpperCase();
+          avatarEl.style.fontSize = '12px';
+        }
       }
     }
     if (isAdmin) {
@@ -5174,9 +5181,11 @@
         </div>`;
       } else {
         const av = getAvatarById(u.avatar);
-        avatarHTML = av
-          ? `<div style="width:56px;height:56px;border-radius:50%;overflow:hidden;flex-shrink:0;">${makeAvatarSVG(av, 56)}</div>`
-          : `<div class="avatar" style="background:${['#FAEEDA','#E6F1FB','#E1F5EE'][i]||'#f0f0f0'};color:${['#633806','#0C447C','#085041'][i]||'#333'};">${(u.nickname||u.displayName||'?').substring(0,2).toUpperCase()}</div>`;
+        avatarHTML = u.avatarUrl
+          ? `<div style="width:56px;height:56px;border-radius:50%;overflow:hidden;flex-shrink:0;"><img src="${u.avatarUrl}" style="width:56px;height:56px;object-fit:cover;border-radius:50%;display:block;"></div>`
+          : av
+            ? `<div style="width:56px;height:56px;border-radius:50%;overflow:hidden;flex-shrink:0;">${makeAvatarSVG(av, 56)}</div>`
+            : `<div class="avatar" style="background:${['#FAEEDA','#E6F1FB','#E1F5EE'][i]||'#f0f0f0'};color:${['#633806','#0C447C','#085041'][i]||'#333'};">${(u.nickname||u.displayName||'?').substring(0,2).toUpperCase()}</div>`;
       }
       const badge = getUserBadge(u, i, users, predStats);
       const badgeHTML = badge
@@ -7103,6 +7112,23 @@
 
     // Populate gallery with AVATARS
     const grid = document.getElementById('avatar-gallery-grid');
+
+    // Show "last uploaded photo" option above gallery if available
+    const lastUrl = currentUserData.lastAvatarUrl;
+    const curUrl = currentUserData.avatarUrl;
+    if (lastUrl && lastUrl !== curUrl) {
+      const lastSection = document.createElement('div');
+      lastSection.style.cssText = 'margin-bottom:14px;';
+      lastSection.innerHTML = '<div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">&#128247; Your last uploaded photo</div>'
+        + '<div style="display:flex;align-items:center;gap:12px;background:var(--surface2);border-radius:10px;padding:10px 12px;cursor:pointer;border:2px solid var(--border);transition:border-color 0.15s;"'
+        + ' onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--border)'"'
+        + ' onclick="restoreLastAvatar('' + lastUrl + '')">'
+        + '<img src="' + lastUrl + '" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0;">'
+        + '<div><div style="font-size:13px;font-weight:500;">Restore this photo</div>'
+        + '<div style="font-size:11px;color:var(--text-muted);">Switch back to your previous upload</div></div></div>';
+      grid.parentElement.insertBefore(lastSection, grid);
+    }
+
     grid.innerHTML = AVATARS.map(av => {
       const imgUrl = `https://coed-football-2026.vercel.app/avatars/${av.img}`;
       return `<div onclick="selectGalleryAvatar('${av.id}')"
@@ -7156,7 +7182,8 @@
       await uploadBytes(storageRef, blob);
       const url = await getDownloadURL(storageRef);
 
-      await updateDoc(doc(db, 'users', currentUser.uid), { avatarUrl: url, avatarChanged: true, avatar: null });
+      const prevUrl = currentUserData.avatarUrl || null;
+      await updateDoc(doc(db, 'users', currentUser.uid), { avatarUrl: url, avatarChanged: true, avatar: null, lastAvatarUrl: prevUrl });
       currentUserData.avatarUrl = url;
       currentUserData.avatarChanged = true;
 
@@ -7193,9 +7220,25 @@
     loadStatsPage();
   };
 
+  window.restoreLastAvatar = async (url) => {
+    if (!url) return;
+    if (!confirm('Switch back to your previous uploaded photo?')) return;
+    await updateDoc(doc(db, 'users', currentUser.uid), { avatarUrl: url, avatar: null, avatarChanged: true });
+    currentUserData.avatarUrl = url;
+    document.getElementById('avatar-change-modal')?.remove();
+    const topAv = document.getElementById('user-avatar');
+    if (topAv) topAv.innerHTML = '<img src="' + url + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">';
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--green);color:white;font-size:13px;font-weight:600;padding:10px 20px;border-radius:10px;z-index:9999;';
+    t.textContent = '✅ Previous photo restored!';
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.transition='opacity 0.5s'; t.style.opacity='0'; setTimeout(()=>t.remove(),500); }, 2500);
+    loadStatsPage();
+  };
+
   window.selectGalleryAvatar = async (avatarId) => {
     if (!confirm('Switch to this avatar? You only get one change — make it count!')) return;
-    await updateDoc(doc(db, 'users', currentUser.uid), { avatar: avatarId, avatarUrl: null, avatarChanged: true });
+    await updateDoc(doc(db, 'users', currentUser.uid), { avatar: avatarId, avatarUrl: null, avatarChanged: true, lastAvatarUrl: currentUserData.avatarUrl || null });
     currentUserData.avatar = avatarId;
     currentUserData.avatarChanged = true;
     const av = getAvatarById(avatarId);
