@@ -8041,8 +8041,9 @@
 
     // Wire up avatar buttons (can't use onclick in nested template literals)
     const editBtn = document.getElementById('avatar-edit-btn');
-    if (editBtn) editBtn.addEventListener('click', showAvatarChangeModal);
     const reqBtn = document.getElementById('avatar-request-btn');
+    console.log('Avatar debug - canChangeAvatar:', canChangeAvatar, 'isAdmin:', isAdmin, 'editBtn:', editBtn, 'avatarChanged:', user.avatarChanged);
+    if (editBtn) editBtn.addEventListener('click', showAvatarChangeModal);
     if (reqBtn) reqBtn.addEventListener('click', requestAvatarChange);
   }
 
