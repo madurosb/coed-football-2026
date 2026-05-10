@@ -8028,31 +8028,32 @@
     drawPointsChart();
     loadDONStatLabel();
 
-    // Add avatar change UI via DOM (avoid nested template literal issues)
-    if (!isAdmin) {
-      const statusDiv = document.getElementById('stats-avatar-status');
-      const avatarWrap = document.getElementById('stats-avatar-wrap');
-      if (statusDiv && avatarWrap) {
-        if (canChangeAvatar) {
-          // Add edit button
+    // Add avatar change UI via DOM
+    const statusDiv = document.getElementById('stats-avatar-status');
+    const avatarWrapDiv = document.getElementById('stats-avatar-wrap');
+    if (statusDiv && avatarWrapDiv) {
+      const innerDiv = avatarWrapDiv.querySelector('div');
+      if (canChangeAvatar) {
+        if (innerDiv) {
+          innerDiv.style.position = 'relative';
+          innerDiv.style.display = 'inline-block';
           const editBtn = document.createElement('button');
           editBtn.title = 'Change your avatar — once only!';
-          editBtn.style.cssText = 'position:absolute;bottom:0;right:0;width:28px;height:28px;border-radius:50%;border:2px solid var(--surface);background:var(--green);color:white;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.3);';
+          editBtn.style.cssText = 'position:absolute;bottom:0;right:0;width:28px;height:28px;border-radius:50%;border:2px solid #080808;background:var(--green);color:white;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.4);padding:0;line-height:1;';
           editBtn.textContent = '✏️';
           editBtn.addEventListener('click', showAvatarChangeModal);
-          avatarWrap.querySelector('div').style.position = 'relative';
-          avatarWrap.querySelector('div').appendChild(editBtn);
-          statusDiv.innerHTML = '<div style="font-size:10px;color:var(--text-muted);">✏️ 1 change left</div>';
-        } else if (user.avatarChangeRequested) {
-          statusDiv.innerHTML = '<div style="font-size:10px;color:#EF9F27;">⏳ Request pending</div>';
-        } else {
-          statusDiv.innerHTML = '<div style="font-size:10px;color:var(--text-muted);">🔒 Avatar locked</div>';
-          const reqBtn = document.createElement('button');
-          reqBtn.textContent = 'Request change';
-          reqBtn.style.cssText = 'margin-top:4px;font-size:10px;padding:3px 8px;border-radius:6px;border:0.5px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;display:block;width:100%;';
-          reqBtn.addEventListener('click', requestAvatarChange);
-          statusDiv.appendChild(reqBtn);
+          innerDiv.appendChild(editBtn);
         }
+        statusDiv.innerHTML = '<div style="font-size:10px;color:var(--text-muted);margin-top:2px;">✏️ 1 change left</div>';
+      } else if (user.avatarChangeRequested) {
+        statusDiv.innerHTML = '<div style="font-size:10px;color:#EF9F27;margin-top:2px;">⏳ Request pending</div>';
+      } else {
+        statusDiv.innerHTML = '<div style="font-size:10px;color:var(--text-muted);margin-top:2px;">🔒 Locked</div>';
+        const reqBtn = document.createElement('button');
+        reqBtn.textContent = 'Request change';
+        reqBtn.style.cssText = 'margin-top:4px;font-size:10px;padding:3px 10px;border-radius:6px;border:0.5px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;display:block;width:100%;';
+        reqBtn.addEventListener('click', requestAvatarChange);
+        statusDiv.appendChild(reqBtn);
       }
     }
   }
