@@ -7792,37 +7792,25 @@
     ].filter(Boolean);
     const verdict = verdicts[0] || `Rank ${rank} of ${totalPlayers}. ${rank <= 3 ? 'Solid.' : 'There\'s room to grow.'}`;
 
-    // Avatar — with change button if not yet used
+    // Avatar
     const isAdmin = user.isAdmin;
     const canChangeAvatar = !user.avatarChanged;
-    const avatarHtmlInner = isAdmin
+    const avatarInner = isAdmin
       ? `<img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid #00ff41;">`
       : user.avatarUrl
         ? `<img src="${user.avatarUrl}" style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid var(--green);">`
         : (() => { const av = getAvatarById(user.avatar); return av ? makeAvatarSVG(av, 96) : `<div style="width:96px;height:96px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:500;color:var(--green-dark);">${(user.nickname||'?').substring(0,2).toUpperCase()}</div>`; })();
 
-    const editBtnHtml = (canChangeAvatar && !isAdmin)
-      ? `<button id="avatar-edit-btn" title="Change your avatar" style="position:absolute;bottom:0;right:0;width:28px;height:28px;border-radius:50%;border:2px solid var(--surface);background:var(--green);color:white;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.3);">&#9998;</button>` : '';
-
-    const avatarStatusHtml = isAdmin ? '' : canChangeAvatar
-      ? `<div style="font-size:10px;color:var(--text-muted);text-align:center;margin-top:4px;">&#9998; 1 change left</div>`
-      : user.avatarChangeRequested
-        ? `<div style="font-size:10px;color:#EF9F27;text-align:center;margin-top:4px;">&#8987; Request pending</div>`
-        : `<div style="font-size:10px;color:var(--text-muted);text-align:center;margin-top:4px;">&#128274; Avatar locked</div>
-           <button id="avatar-request-btn" style="margin-top:4px;font-size:10px;padding:3px 8px;border-radius:6px;border:0.5px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;display:block;width:100%;">Request change</button>`;
-
-    const avatarHTML = `<div style="position:relative;display:inline-block;">${avatarHtmlInner}${editBtnHtml}</div>`;
-
     const nameHTML = isAdmin
       ? `${user.nickname||user.displayName} <span style="font-size:10px;background:#00ff41;color:#000;padding:1px 5px;border-radius:99px;font-weight:700;margin-left:4px;">ADMIN</span>`
       : (user.nickname || user.displayName);
 
-    console.log('AVATAR_HTML:', avatarHTML ? avatarHTML.substring(0,100) : 'EMPTY');
-    console.log('editBtnHtml:', editBtnHtml ? 'HAS_CONTENT' : 'EMPTY');
-    console.log('canChangeAvatar:', canChangeAvatar, 'user.avatarChanged:', user.avatarChanged);
     container.innerHTML = `
-        ${avatarStatusHtml}
-      </div>
+      <div style="margin-bottom:1.5rem;padding:1rem 1.25rem;background:var(--surface);border:0.5px solid var(--border);border-radius:12px;display:flex;align-items:center;gap:16px;">
+        <div style="flex-shrink:0;text-align:center;" id="stats-avatar-wrap">
+          <div style="position:relative;display:inline-block;">${avatarInner}</div>
+          <div id="stats-avatar-status" style="margin-top:4px;"></div>
+        </div>
         <div style="flex:1;">
           <div style="font-size:18px;font-weight:500;margin-bottom:4px;">${nameHTML}</div>
           <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">Rank #${rank} of ${totalPlayers} players &nbsp;·&nbsp; ${user.tournamentPlayer || 'No tournament player set'}</div>
@@ -8040,12 +8028,33 @@
     drawPointsChart();
     loadDONStatLabel();
 
-    // Wire up avatar buttons (can't use onclick in nested template literals)
-    const editBtn = document.getElementById('avatar-edit-btn');
-    const reqBtn = document.getElementById('avatar-request-btn');
-    console.log('Avatar debug - canChangeAvatar:', canChangeAvatar, 'isAdmin:', isAdmin, 'editBtn:', editBtn, 'avatarChanged:', user.avatarChanged);
-    if (editBtn) editBtn.addEventListener('click', showAvatarChangeModal);
-    if (reqBtn) reqBtn.addEventListener('click', requestAvatarChange);
+    // Add avatar change UI via DOM (avoid nested template literal issues)
+    if (!isAdmin) {
+      const statusDiv = document.getElementById('stats-avatar-status');
+      const avatarWrap = document.getElementById('stats-avatar-wrap');
+      if (statusDiv && avatarWrap) {
+        if (canChangeAvatar) {
+          // Add edit button
+          const editBtn = document.createElement('button');
+          editBtn.title = 'Change your avatar — once only!';
+          editBtn.style.cssText = 'position:absolute;bottom:0;right:0;width:28px;height:28px;border-radius:50%;border:2px solid var(--surface);background:var(--green);color:white;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.3);';
+          editBtn.textContent = '✏️';
+          editBtn.addEventListener('click', showAvatarChangeModal);
+          avatarWrap.querySelector('div').style.position = 'relative';
+          avatarWrap.querySelector('div').appendChild(editBtn);
+          statusDiv.innerHTML = '<div style="font-size:10px;color:var(--text-muted);">✏️ 1 change left</div>';
+        } else if (user.avatarChangeRequested) {
+          statusDiv.innerHTML = '<div style="font-size:10px;color:#EF9F27;">⏳ Request pending</div>';
+        } else {
+          statusDiv.innerHTML = '<div style="font-size:10px;color:var(--text-muted);">🔒 Avatar locked</div>';
+          const reqBtn = document.createElement('button');
+          reqBtn.textContent = 'Request change';
+          reqBtn.style.cssText = 'margin-top:4px;font-size:10px;padding:3px 8px;border-radius:6px;border:0.5px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;display:block;width:100%;';
+          reqBtn.addEventListener('click', requestAvatarChange);
+          statusDiv.appendChild(reqBtn);
+        }
+      }
+    }
   }
 
   async function drawPointsChart() {
