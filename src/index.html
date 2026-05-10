@@ -7794,17 +7794,24 @@
 
     // Avatar — with change button if not yet used
     const isAdmin = user.isAdmin;
-    const canChangeAvatar = !user.avatarChanged; // one-time change
+    const canChangeAvatar = !user.avatarChanged;
     const avatarHtmlInner = isAdmin
       ? `<img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid #00ff41;">`
       : user.avatarUrl
         ? `<img src="${user.avatarUrl}" style="width:96px;height:96px;border-radius:50%;object-fit:cover;border:3px solid var(--green);">`
         : (() => { const av = getAvatarById(user.avatar); return av ? makeAvatarSVG(av, 96) : `<div style="width:96px;height:96px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:500;color:var(--green-dark);">${(user.nickname||'?').substring(0,2).toUpperCase()}</div>`; })();
-    const avatarHTML = `<div style="position:relative;display:inline-block;">
-      ${avatarHtmlInner}
-      ${canChangeAvatar && !isAdmin ? `<button onclick="showAvatarChangeModal()" title="Change your avatar — once only!"
-        style="position:absolute;bottom:0;right:0;width:28px;height:28px;border-radius:50%;border:2px solid var(--surface);background:var(--green);color:white;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.3);">✏️</button>` : ''}
-    </div>`;
+
+    const editBtnHtml = (canChangeAvatar && !isAdmin)
+      ? `<button id="avatar-edit-btn" title="Change your avatar" style="position:absolute;bottom:0;right:0;width:28px;height:28px;border-radius:50%;border:2px solid var(--surface);background:var(--green);color:white;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.3);">&#9998;</button>` : '';
+
+    const avatarStatusHtml = isAdmin ? '' : canChangeAvatar
+      ? `<div style="font-size:10px;color:var(--text-muted);text-align:center;margin-top:4px;">&#9998; 1 change left</div>`
+      : user.avatarChangeRequested
+        ? `<div style="font-size:10px;color:#EF9F27;text-align:center;margin-top:4px;">&#8987; Request pending</div>`
+        : `<div style="font-size:10px;color:var(--text-muted);text-align:center;margin-top:4px;">&#128274; Avatar locked</div>
+           <button id="avatar-request-btn" style="margin-top:4px;font-size:10px;padding:3px 8px;border-radius:6px;border:0.5px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;display:block;width:100%;">Request change</button>`;
+
+    const avatarHTML = `<div style="position:relative;display:inline-block;">${avatarHtmlInner}${editBtnHtml}</div>`;
 
     const nameHTML = isAdmin
       ? `${user.nickname||user.displayName} <span style="font-size:10px;background:#00ff41;color:#000;padding:1px 5px;border-radius:99px;font-weight:700;margin-left:4px;">ADMIN</span>`
@@ -7813,9 +7820,7 @@
     container.innerHTML = `
       <div style="margin-bottom:1.5rem;padding:1rem 1.25rem;background:var(--surface);border:0.5px solid var(--border);border-radius:12px;display:flex;align-items:center;gap:16px;">
       <div style="flex-shrink:0;">${avatarHTML}
-        ${canChangeAvatar && !isAdmin ? `<div style="font-size:10px;color:var(--text-muted);text-align:center;margin-top:4px;">✏️ 1 change left</div>` : ''}
-        ${!canChangeAvatar && !isAdmin ? `<div style="font-size:10px;color:var(--text-muted);text-align:center;margin-top:4px;">🔒 Avatar locked</div>
-          ${!user.avatarChangeRequested ? `<button onclick="requestAvatarChange()" style="margin-top:6px;font-size:10px;padding:3px 8px;border-radius:6px;border:0.5px solid var(--border);background:none;color:var(--text-muted);cursor:pointer;display:block;width:100%;">Request change</button>` : `<div style="font-size:10px;color:#EF9F27;text-align:center;margin-top:4px;">⏳ Request pending</div>`}` : ''}
+        ${avatarStatusHtml}
       </div>
         <div style="flex:1;">
           <div style="font-size:18px;font-weight:500;margin-bottom:4px;">${nameHTML}</div>
@@ -8033,6 +8038,12 @@
     loadGoalsKing();
     drawPointsChart();
     loadDONStatLabel();
+
+    // Wire up avatar buttons (can't use onclick in nested template literals)
+    const editBtn = document.getElementById('avatar-edit-btn');
+    if (editBtn) editBtn.addEventListener('click', showAvatarChangeModal);
+    const reqBtn = document.getElementById('avatar-request-btn');
+    if (reqBtn) reqBtn.addEventListener('click', requestAvatarChange);
   }
 
   async function drawPointsChart() {
