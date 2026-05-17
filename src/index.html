@@ -830,7 +830,7 @@
       <button class="nav-btn" data-page="coach" onclick="showPage('coach')">Coach Room</button>
       <button class="nav-btn" data-page="rules" onclick="showPage('rules')">Rules</button>
       <button class="nav-btn" data-page="dummies" onclick="showPage('dummies')">How to play</button>
-      <button class="nav-btn" data-page="admin" id="admin-nav-btn" style="display:none;" onclick="showPage('admin')">Admin</button>
+      <button class="nav-btn" data-page="admin" id="admin-nav-btn" style="display:none;" onclick="showPage('admin')"><span class="nav-icon">⚙️</span>Admin</button>
     </div>
     <div class="nav-user">
       <div style="display:flex;align-items:center;gap:2px;flex-shrink:0;">
@@ -904,6 +904,16 @@
 
   <!-- HOME -->
   <div class="page" id="page-home">
+    <!-- Mobile sticky predictions CTA — top of home page -->
+    <div class="mobile-only-cta" style="margin-bottom:1rem;">
+      <button onclick="showPage('matches')"
+        style="width:100%;padding:14px 16px;border-radius:12px;border:none;background:linear-gradient(135deg,#1D9E75,#16a34a);color:white;font-size:15px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 16px rgba(29,158,117,0.35);position:relative;overflow:hidden;letter-spacing:0.02em;">
+        <span style="position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent);animation:shimmer 2.5s linear infinite;background-size:200%;"></span>
+        <span style="font-size:20px;">⚽</span>
+        <span>Make your predictions</span>
+        <span style="font-size:16px;opacity:0.8;">→</span>
+      </button>
+    </div>
     <div style="background:#0a1f0a;border-radius:16px;padding:1.25rem 1rem;text-align:center;margin-bottom:1rem;">
       <div style="font-size:11px;letter-spacing:0.15em;color:#4ade80;text-transform:uppercase;margin-bottom:4px;font-family:monospace;">⚽ COED&FOOTBALL &nbsp;·&nbsp; 🏆 WORLD CUP 2026</div>
       <div style="font-size:13px;color:#86efac;margin-bottom:1rem;" id="cd-sub">Kickoff countdown</div>
@@ -982,20 +992,16 @@
 
     <img src="https://coed-football-2026.vercel.app/logo-full.png" alt="COED&FOOTBALL" style="width:180px; display:block; margin:2rem auto 0; opacity:0.7;">
 
-    <!-- Mobile only CTA button -->
-    <div class="mobile-only-cta">
-      <button onclick="showPage('matches')"
-        style="width:100%;margin-top:1.5rem;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg,#1D9E75,#16a34a);color:white;font-size:16px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:0.02em;box-shadow:0 4px 20px rgba(29,158,117,0.4);position:relative;overflow:hidden;">
-        <span style="position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent);animation:shimmer 2.5s linear infinite;background-size:200%;"></span>
-        <span style="font-size:22px;">⚽</span>
-        <span>Make your predictions</span>
-        <span style="font-size:18px;">→</span>
-      </button>
-    </div>
+
   </div>
 
   <!-- MATCHES -->
   <div class="page" id="page-matches">
+    <div style="margin-bottom:1.25rem;">
+      <div style="font-family:monospace;font-size:11px;letter-spacing:3px;color:var(--green);text-transform:uppercase;margin-bottom:4px;">⚽ Your picks</div>
+      <div style="font-size:22px;font-weight:800;margin-bottom:4px;">Predictions</div>
+      <div style="font-size:13px;color:var(--text-muted);">Pick scores &amp; first goalscorers · Deadline: 24h before kickoff · Don't forget to Save!</div>
+    </div>
     <img src="https://coed-football-2026.vercel.app/match-card.png" alt="" style="width:100%; height:auto; border-radius:12px; margin-bottom:1.5rem;">
     <div class="player-pick">
       <h3>Your tournament player</h3>
