@@ -3981,10 +3981,8 @@
       const userRef = doc(db, 'users', user.uid);
       const userSnap = await getDoc(userRef);
       if (!userSnap.exists()) {
-        // New user - show nickname modal
-        document.getElementById('view-app').style.display = 'block';
-        document.getElementById('nickname-modal').style.display = 'flex';
-        initAvatarGrid();
+        // New user - show onboarding wizard
+        showOnboardingWizard(user);
         // Create basic user doc
         await setDoc(userRef, {
           uid: user.uid,
@@ -8743,8 +8741,365 @@
     const heBtn = document.getElementById('htp-lang-he');
     if (enBtn) { enBtn.style.background = isHe ? 'none' : 'var(--green)'; enBtn.style.color = isHe ? 'var(--text-muted)' : 'white'; }
     if (heBtn) { heBtn.style.background = isHe ? 'var(--green)' : 'none'; heBtn.style.color = isHe ? 'white' : 'var(--text-muted)'; }
-  };;
+  };
 
+
+  // ========== ONBOARDING WIZARD ==========
+  let wizardStep = 0;
+  let wizardData = {};
+  let wizardUser = null;
+  const WIZARD_STEPS = 5;
+
+  function showOnboardingWizard(user) {
+    wizardUser = user;
+    wizardData = { autoSave: true };
+    wizardStep = 0;
+    document.getElementById('wizard-overlay').style.display = 'block';
+    renderWizardStep(0);
+  }
+
+  function updateWizardProgress(step) {
+    const pct = ((step + 1) / WIZARD_STEPS) * 100;
+    const bar = document.getElementById('wizard-progress');
+    const lbl = document.getElementById('wizard-step-label');
+    if (bar) bar.style.width = pct + '%';
+    if (lbl) lbl.textContent = (step + 1) + ' / ' + WIZARD_STEPS;
+  }
+
+  function renderWizardStep(step) {
+    updateWizardProgress(step);
+    const content = document.getElementById('wizard-content');
+    const nextBtn = document.getElementById('wizard-next-btn');
+    const skipDiv = document.getElementById('wizard-skip');
+    if (!content) return;
+    content.scrollTop = 0;
+    if (step === 0) wizardStep0(content, nextBtn, skipDiv);
+    else if (step === 1) wizardStep1(content, nextBtn, skipDiv);
+    else if (step === 2) wizardStep2(content, nextBtn, skipDiv);
+    else if (step === 3) wizardStep3(content, nextBtn, skipDiv);
+    else if (step === 4) wizardStep4(content, nextBtn, skipDiv);
+  }
+
+  function wizardStep0(content, nextBtn, skipDiv) {
+    skipDiv.style.display = 'none';
+    nextBtn.textContent = 'Continue →';
+    nextBtn.style.background = 'linear-gradient(135deg,#1D9E75,#16a34a)';
+    content.innerHTML = `
+      <div style="text-align:center;width:100%;max-width:420px;padding-bottom:120px;">
+        <div style="font-size:48px;margin-bottom:12px;">👋</div>
+        <div style="font-family:monospace;font-size:11px;letter-spacing:4px;color:var(--green);margin-bottom:8px;">STEP 1 OF 5</div>
+        <div style="font-size:22px;font-weight:800;margin-bottom:6px;">Welcome to COED&FOOTBALL</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:1.5rem;">Let's get you set up. Takes 2 minutes.</div>
+        <div style="background:rgba(255,255,255,0.05);border-radius:14px;padding:1.25rem;margin-bottom:1rem;text-align:left;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Your nickname</div>
+          <input id="wiz-nickname" type="text" maxlength="20" placeholder="e.g. GoalMachine99"
+            style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:white;font-size:15px;font-weight:500;outline:none;box-sizing:border-box;"
+            oninput="this.style.borderColor=this.value.length>=2?'#1D9E75':'rgba(255,255,255,0.15)'">
+          <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;">Shown on the leaderboard for everyone to see</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.05);border-radius:14px;padding:1.25rem;text-align:left;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:12px;">Pick your avatar</div>
+          <div id="wiz-avatar-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;max-height:260px;overflow-y:auto;">
+            ${AVATARS.map(av => `
+              <div onclick="selectWizardAvatar('${av.id}',this)" id="wiz-av-${av.id}"
+                style="cursor:pointer;border-radius:10px;overflow:hidden;border:2px solid transparent;transition:all 0.15s;aspect-ratio:1;">
+                <img src="https://coed-football-2026.vercel.app/avatars/${av.img}" style="width:100%;height:100%;object-fit:cover;display:block;">
+              </div>`).join('')}
+          </div>
+        </div>
+      </div>`;
+    setTimeout(() => document.getElementById('wiz-nickname')?.focus(), 100);
+  }
+
+  window.selectWizardAvatar = (id, el) => {
+    document.querySelectorAll('[id^="wiz-av-"]').forEach(d => { d.style.borderColor = 'transparent'; d.style.transform = ''; });
+    el.style.borderColor = '#1D9E75';
+    el.style.transform = 'scale(1.08)';
+    setTimeout(() => el.style.transform = '', 200);
+    wizardData.avatar = id;
+  };
+
+  function wizardStep1(content, nextBtn, skipDiv) {
+    skipDiv.style.display = 'block';
+    nextBtn.textContent = "Lock in my pick →";
+    const FLAGS = {'Argentina':'ar','France':'fr','Brazil':'br','England':'gb-eng','Spain':'es','Portugal':'pt','Germany':'de','Netherlands':'nl','Belgium':'be','Uruguay':'uy','Colombia':'co','USA':'us','Mexico':'mx','Morocco':'ma','Senegal':'sn','Japan':'jp','South Korea':'kr','Australia':'au','Canada':'ca','Ecuador':'ec','Switzerland':'ch','Croatia':'hr','Denmark':'dk','Turkey':'tr','Iran':'ir','Saudi Arabia':'sa','Egypt':'eg','Ghana':'gh','Nigeria':'ng','Qatar':'qa','DR Congo':'cd','Bosnia & Herzegovina':'ba','Curaçao':'cw','Cabo Verde':'cv','Uzbekistan':'uz','Jordan':'jo','Haiti':'ht','Panama':'pa','Paraguay':'py','New Zealand':'nz','Ivory Coast':'ci','Cameroon':'cm','Algeria':'dz','Tunisia':'tn','South Africa':'za','Iraq':'iq','Austria':'at','Scotland':'gb-sct'};
+    const teams = Object.keys(FLAGS).sort();
+    content.innerHTML = `
+      <div style="text-align:center;width:100%;max-width:420px;padding-bottom:120px;">
+        <div style="font-size:48px;margin-bottom:12px;">🏆</div>
+        <div style="font-family:monospace;font-size:11px;letter-spacing:4px;color:var(--green);margin-bottom:8px;">STEP 2 OF 5</div>
+        <div style="font-size:22px;font-weight:800;margin-bottom:6px;">Who lifts the trophy?</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:1.25rem;">Correct pick = <strong style="color:#EF9F27;">+15 pts</strong> at the end of the tournament</div>
+        <input type="text" id="wiz-winner-search" placeholder="🔍 Search country..." autocomplete="off"
+          style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:white;font-size:14px;margin-bottom:12px;box-sizing:border-box;outline:none;"
+          oninput="document.querySelectorAll('[data-wteam]').forEach(e=>e.style.display=this.value&&!e.dataset.wteam.toLowerCase().includes(this.value.toLowerCase())?'none':'')">
+        <div id="wiz-teams-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;max-height:360px;overflow-y:auto;padding-bottom:8px;">
+          ${teams.map(t => `<div onclick="selectWizardWinner('${t}',this)" data-wteam="${t}"
+            style="cursor:pointer;padding:10px 12px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);display:flex;align-items:center;gap:8px;transition:all 0.15s;">
+            ${FLAGS[t] ? `<img src="https://flagcdn.com/20x15/${FLAGS[t]}.png" style="border-radius:2px;flex-shrink:0;">` : ''}
+            <span style="font-size:13px;">${t}</span>
+          </div>`).join('')}
+        </div>
+        <div id="wiz-winner-selected" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(29,158,117,0.15);border:1px solid #1D9E75;border-radius:10px;font-size:13px;font-weight:600;color:#4ade80;"></div>
+      </div>`;
+  }
+
+  window.selectWizardWinner = (team, el) => {
+    document.querySelectorAll('[data-wteam]').forEach(d => { d.style.borderColor = 'rgba(255,255,255,0.1)'; d.style.background = 'rgba(255,255,255,0.05)'; });
+    el.style.borderColor = '#1D9E75'; el.style.background = 'rgba(29,158,117,0.15)';
+    wizardData.tournamentWinner = team;
+    const sel = document.getElementById('wiz-winner-selected');
+    if (sel) { sel.style.display = 'block'; sel.textContent = '✅ ' + team + ' selected'; }
+  };
+
+  function wizardStep2(content, nextBtn, skipDiv) {
+    skipDiv.style.display = 'block';
+    nextBtn.textContent = "Lock in my player →";
+    content.innerHTML = `
+      <div style="text-align:center;width:100%;max-width:420px;padding-bottom:120px;">
+        <div style="font-size:48px;margin-bottom:12px;">⭐</div>
+        <div style="font-family:monospace;font-size:11px;letter-spacing:4px;color:var(--green);margin-bottom:8px;">STEP 3 OF 5</div>
+        <div style="font-size:22px;font-weight:800;margin-bottom:8px;">Your tournament player</div>
+        <div style="display:flex;justify-content:center;gap:16px;margin-bottom:1rem;">
+          <div style="text-align:center;background:rgba(29,158,117,0.1);border-radius:10px;padding:8px 14px;"><div style="font-size:18px;">⚽</div><div style="font-size:11px;color:#4ade80;font-weight:600;">Goal = +2</div></div>
+          <div style="text-align:center;background:rgba(96,165,250,0.1);border-radius:10px;padding:8px 14px;"><div style="font-size:18px;">🎯</div><div style="font-size:11px;color:#60a5fa;font-weight:600;">Assist = +1</div></div>
+          <div style="text-align:center;background:rgba(248,113,113,0.1);border-radius:10px;padding:8px 14px;"><div style="font-size:18px;">🟥</div><div style="font-size:11px;color:#f87171;font-weight:600;">Red = −1</div></div>
+        </div>
+        <div style="background:rgba(239,159,39,0.1);border:1px solid rgba(239,159,39,0.3);border-radius:10px;padding:10px 14px;font-size:12px;color:#EF9F27;margin-bottom:1rem;text-align:left;">
+          💡 Pick a striker from a strong team that goes deep. Eliminated early = no points after that.
+        </div>
+        <input type="text" id="wiz-player-search" placeholder="🔍 Search player or country..." autocomplete="off"
+          style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.08);color:white;font-size:14px;margin-bottom:6px;box-sizing:border-box;outline:none;"
+          oninput="filterWizardPlayers(this.value)">
+        <select id="wiz-player-select" size="8"
+          style="width:100%;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:#1a1a1a;color:white;font-size:14px;outline:none;"
+          onchange="wizardData.tournamentPlayer=this.value;document.getElementById('wiz-player-confirm').textContent=this.value?'✅ '+this.value+' selected':''">
+        </select>
+        <div id="wiz-player-confirm" style="font-size:12px;color:#4ade80;margin-top:8px;min-height:18px;font-weight:500;"></div>
+      </div>`;
+
+    // Populate select
+    const sel = document.getElementById('wiz-player-select');
+    const src = document.getElementById('tournament-player-select');
+    if (src && src.children.length > 1) {
+      sel.innerHTML = src.innerHTML;
+    } else {
+      Object.entries(TOP_SCORERS_BY_COUNTRY).sort().forEach(([country, players]) => {
+        const grp = document.createElement('optgroup');
+        grp.label = country;
+        players.forEach(p => { const o = new Option(p.name, p.name); grp.appendChild(o); });
+        sel.appendChild(grp);
+      });
+    }
+  }
+
+  window.filterWizardPlayers = (term) => {
+    const sel = document.getElementById('wiz-player-select');
+    if (!sel) return;
+    [...sel.querySelectorAll('optgroup')].forEach(g => {
+      let any = false;
+      [...g.querySelectorAll('option')].forEach(o => {
+        const show = !term || o.text.toLowerCase().includes(term.toLowerCase()) || g.label.toLowerCase().includes(term.toLowerCase());
+        o.style.display = show ? '' : 'none';
+        if (show) any = true;
+      });
+      g.style.display = any ? '' : 'none';
+    });
+  };
+
+  function wizardStep3(content, nextBtn, skipDiv) {
+    skipDiv.style.display = 'block';
+    nextBtn.textContent = "Submit →";
+    const mxPlayers = FALLBACK_PLAYERS['Mexico'] || ['Raul Jimenez','Santiago Gimenez','Hirving Lozano','Henry Martin','Roberto Alvarado'];
+    const zaPlayers = FALLBACK_PLAYERS['South Africa'] || ['Percy Tau','Evidence Makgopa','Lyle Foster','Keagan Dolly','Themba Zwane'];
+    content.innerHTML = `
+      <div style="text-align:center;width:100%;max-width:420px;padding-bottom:120px;">
+        <div style="font-size:48px;margin-bottom:12px;">⚽</div>
+        <div style="font-family:monospace;font-size:11px;letter-spacing:4px;color:var(--green);margin-bottom:8px;">STEP 4 OF 5</div>
+        <div style="font-size:22px;font-weight:800;margin-bottom:4px;">Call the first match</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:1.25rem;">Jun 11 · 22:00 · Estadio Azteca</div>
+        <div style="background:rgba(255,255,255,0.05);border-radius:16px;padding:1.25rem;margin-bottom:1rem;">
+          <div style="display:grid;grid-template-columns:1fr 40px 1fr;align-items:center;gap:8px;">
+            <div style="text-align:center;">
+              <img src="https://flagcdn.com/48x36/mx.png" style="border-radius:4px;margin-bottom:6px;display:block;margin-left:auto;margin-right:auto;">
+              <div style="font-size:13px;font-weight:700;">Mexico</div>
+              <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;">
+                <button onclick="wizardAdjustScore('wiz-home',-1)" style="width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,0.2);background:none;color:white;font-size:16px;cursor:pointer;line-height:1;">−</button>
+                <span id="wiz-home" data-val="0" style="font-size:26px;font-weight:800;min-width:28px;text-align:center;">0</span>
+                <button onclick="wizardAdjustScore('wiz-home',1)" style="width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,0.2);background:none;color:white;font-size:16px;cursor:pointer;line-height:1;">+</button>
+              </div>
+            </div>
+            <div style="font-family:monospace;font-size:11px;color:rgba(255,255,255,0.3);text-align:center;">VS</div>
+            <div style="text-align:center;">
+              <img src="https://flagcdn.com/48x36/za.png" style="border-radius:4px;margin-bottom:6px;display:block;margin-left:auto;margin-right:auto;">
+              <div style="font-size:13px;font-weight:700;">South Africa</div>
+              <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;">
+                <button onclick="wizardAdjustScore('wiz-away',-1)" style="width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,0.2);background:none;color:white;font-size:16px;cursor:pointer;line-height:1;">−</button>
+                <span id="wiz-away" data-val="0" style="font-size:26px;font-weight:800;min-width:28px;text-align:center;">0</span>
+                <button onclick="wizardAdjustScore('wiz-away',1)" style="width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,0.2);background:none;color:white;font-size:16px;cursor:pointer;line-height:1;">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:12px 14px;text-align:left;">
+          <div style="font-size:12px;font-weight:600;margin-bottom:6px;">First goalscorer (optional)</div>
+          <select id="wiz-first-scorer" style="width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:#1a1a1a;color:white;font-size:13px;">
+            <option value="">-- No pick --</option>
+            <optgroup label="Mexico">${mxPlayers.map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
+            <optgroup label="South Africa">${zaPlayers.map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
+          </select>
+        </div>
+      </div>`;
+  }
+
+  window.wizardAdjustScore = (id, delta) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const val = Math.max(0, Math.min(10, parseInt(el.dataset.val||'0') + delta));
+    el.dataset.val = val; el.textContent = val;
+    el.style.color = delta > 0 ? '#4ade80' : '#f87171';
+    setTimeout(() => el.style.color = 'white', 300);
+  };
+
+  function wizardStep4(content, nextBtn, skipDiv) {
+    skipDiv.style.display = 'none';
+    nextBtn.textContent = '🚀 Enter COED&FOOTBALL!';
+    nextBtn.style.background = 'linear-gradient(135deg,#1D9E75,#EF9F27)';
+    wizardData.autoSave = true;
+    content.innerHTML = `
+      <div style="text-align:center;width:100%;max-width:380px;padding-bottom:120px;">
+        <div style="font-size:48px;margin-bottom:12px;">💾</div>
+        <div style="font-family:monospace;font-size:11px;letter-spacing:4px;color:var(--green);margin-bottom:8px;">STEP 5 OF 5</div>
+        <div style="font-size:22px;font-weight:800;margin-bottom:10px;">AutoSave</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.7;margin-bottom:1.5rem;">
+          Saves your predictions automatically after every change. No need to tap Save.<br>
+          <strong style="color:white;">Highly recommended.</strong>
+        </div>
+        <div onclick="toggleWizardAutosave()" id="wiz-autosave-card"
+          style="cursor:pointer;background:rgba(29,158,117,0.1);border:2px solid #1D9E75;border-radius:16px;padding:1.25rem;display:flex;align-items:center;gap:14px;transition:all 0.2s;">
+          <div style="font-size:28px;">✅</div>
+          <div style="text-align:left;flex:1;">
+            <div id="wiz-as-label" style="font-size:14px;font-weight:700;">AutoSave ON</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:2px;">Saves 1.5s after each change</div>
+          </div>
+          <div id="wiz-as-toggle" style="width:44px;height:24px;border-radius:99px;background:#1D9E75;position:relative;flex-shrink:0;transition:background 0.2s;">
+            <div id="wiz-as-knob" style="position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:white;box-shadow:0 1px 3px rgba(0,0,0,0.3);transition:all 0.2s;"></div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  window.toggleWizardAutosave = () => {
+    wizardData.autoSave = !wizardData.autoSave;
+    const on = wizardData.autoSave;
+    document.getElementById('wiz-autosave-card').style.borderColor = on ? '#1D9E75' : 'rgba(255,255,255,0.15)';
+    document.getElementById('wiz-autosave-card').style.background = on ? 'rgba(29,158,117,0.1)' : 'rgba(255,255,255,0.05)';
+    document.getElementById('wiz-as-toggle').style.background = on ? '#1D9E75' : '#555';
+    document.getElementById('wiz-as-knob').style.right = on ? '3px' : 'calc(100% - 21px)';
+    document.getElementById('wiz-as-label').textContent = on ? 'AutoSave ON' : 'AutoSave OFF';
+  };
+
+  window.wizardSkip = () => { wizardStep++; if (wizardStep >= WIZARD_STEPS) finishWizard(); else renderWizardStep(wizardStep); };
+
+  window.wizardNext = async () => {
+    if (wizardStep === 0) {
+      const nick = document.getElementById('wiz-nickname')?.value?.trim();
+      if (!nick || nick.length < 2) { alert('Please enter a nickname (min 2 characters)!'); return; }
+      if (!wizardData.avatar) { alert('Please pick an avatar!'); return; }
+      wizardData.nickname = nick;
+    } else if (wizardStep === 2) {
+      const sel = document.getElementById('wiz-player-select');
+      if (sel?.value) wizardData.tournamentPlayer = sel.value;
+    } else if (wizardStep === 3) {
+      wizardData.firstMatchPrediction = {
+        homeScore: parseInt(document.getElementById('wiz-home')?.dataset?.val||'0'),
+        awayScore: parseInt(document.getElementById('wiz-away')?.dataset?.val||'0'),
+        firstScorer: document.getElementById('wiz-first-scorer')?.value || ''
+      };
+    }
+    wizardStep++;
+    if (wizardStep >= WIZARD_STEPS) await finishWizard();
+    else renderWizardStep(wizardStep);
+  };
+
+  async function finishWizard() {
+    const nextBtn = document.getElementById('wizard-next-btn');
+    if (nextBtn) { nextBtn.disabled = true; nextBtn.textContent = '⏳ Saving...'; }
+    try {
+      const userRef = doc(db, 'users', wizardUser.uid);
+      await updateDoc(userRef, {
+        nickname: wizardData.nickname || wizardUser.displayName,
+        avatar: wizardData.avatar || null,
+        tournamentWinner: wizardData.tournamentWinner || null,
+        tournamentPlayer: wizardData.tournamentPlayer || null,
+        updatedAt: serverTimestamp()
+      });
+
+      // Save first match prediction
+      if (wizardData.firstMatchPrediction) {
+        const matchesSnap = await getDocs(query(collection(db, 'matches'), orderBy('kickoff')));
+        let firstMatchId = null;
+        matchesSnap.forEach(d => { if (!firstMatchId && (d.data().homeTeam?.includes('Mexico') || d.data().awayTeam?.includes('Mexico'))) firstMatchId = d.id; });
+        if (firstMatchId) {
+          await setDoc(doc(db, 'predictions', `${wizardUser.uid}_${firstMatchId}`), {
+            userId: wizardUser.uid, matchId: firstMatchId,
+            homeScore: wizardData.firstMatchPrediction.homeScore,
+            awayScore: wizardData.firstMatchPrediction.awayScore,
+            firstScorer: wizardData.firstMatchPrediction.firstScorer,
+            submittedAt: serverTimestamp()
+          });
+        }
+      }
+
+      // Apply autosave
+      localStorage.setItem('autoSave', wizardData.autoSave ? 'true' : 'false');
+      autoSaveEnabled = wizardData.autoSave;
+
+      // Show success screen
+      const content = document.getElementById('wizard-content');
+      if (content) content.innerHTML = `
+        <div style="text-align:center;max-width:340px;padding-bottom:120px;">
+          <div style="font-size:80px;margin-bottom:16px;animation:coachBounce 1s ease infinite;">🎉</div>
+          <div style="font-size:28px;font-weight:800;margin-bottom:8px;">You're all set!</div>
+          <div style="font-size:15px;color:rgba(255,255,255,0.6);margin-bottom:2rem;line-height:1.6;">
+            Welcome to COED&FOOTBALL,<br><strong style="color:white;">${wizardData.nickname || wizardUser.displayName}</strong>!<br>
+            Good luck — you'll need it.
+          </div>
+          <div style="background:rgba(29,158,117,0.1);border:1px solid rgba(29,158,117,0.3);border-radius:14px;padding:1rem;text-align:left;">
+            ${wizardData.tournamentWinner ? `<div style="font-size:13px;margin-bottom:6px;">🏆 WC pick: <strong>${wizardData.tournamentWinner}</strong></div>` : ''}
+            ${wizardData.tournamentPlayer ? `<div style="font-size:13px;margin-bottom:6px;">⭐ Player: <strong>${wizardData.tournamentPlayer}</strong></div>` : ''}
+            <div style="font-size:13px;">💾 AutoSave: <strong>${wizardData.autoSave ? 'ON ✅' : 'OFF'}</strong></div>
+          </div>
+        </div>`;
+      if (nextBtn) {
+        nextBtn.disabled = false;
+        nextBtn.textContent = "Let's go! ⚽";
+        nextBtn.style.background = 'linear-gradient(135deg,#1D9E75,#16a34a)';
+        nextBtn.onclick = enterApp;
+      }
+      const bar = document.getElementById('wizard-progress');
+      const lbl = document.getElementById('wizard-step-label');
+      if (bar) bar.style.width = '100%';
+      if (lbl) lbl.textContent = '✅ Done';
+      document.getElementById('wizard-skip').style.display = 'none';
+    } catch(e) {
+      console.error('Wizard error:', e);
+      alert('Error: ' + e.message);
+      if (nextBtn) { nextBtn.disabled = false; nextBtn.textContent = "Try again"; }
+    }
+  }
+
+  async function enterApp() {
+    document.getElementById('wizard-overlay').style.display = 'none';
+    const userSnap = await getDoc(doc(db, 'users', wizardUser.uid));
+    currentUserData = userSnap.data();
+    clearInterval(splashInterval);
+    const splash = document.getElementById('splash-screen');
+    if (splash) { splash.style.transition = 'opacity 0.5s'; splash.style.opacity = '0'; setTimeout(() => splash?.remove(), 500); }
+    showApp();
+  }
+
+  // ========== END WIZARD ==========
 
   function showBlockedScreen(userData) {
     const existing = document.getElementById('blocked-screen');
@@ -11222,5 +11577,27 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
   // Show popup 1.5 seconds after login
   // (called from onAuthStateChanged after user is confirmed logged in)
 </script>
+
+  <!-- ONBOARDING WIZARD -->
+  <div id="wizard-overlay" style="display:none;position:fixed;inset:0;z-index:99998;background:#080808;">
+    <!-- Progress bar -->
+    <div style="position:absolute;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,0.1);">
+      <div id="wizard-progress" style="height:100%;background:linear-gradient(90deg,#1D9E75,#4ade80);transition:width 0.4s ease;width:0%;"></div>
+    </div>
+    <!-- Step counter -->
+    <div id="wizard-step-label" style="position:absolute;top:16px;right:16px;font-family:monospace;font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:2px;"></div>
+    <!-- Content -->
+    <div id="wizard-content" style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;overflow-y:auto;"></div>
+    <!-- Bottom nav -->
+    <div style="position:absolute;bottom:0;left:0;right:0;padding:1rem 1.5rem 1.5rem;background:linear-gradient(to top,#080808 80%,transparent);">
+      <button id="wizard-next-btn" onclick="wizardNext()"
+        style="width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#1D9E75,#16a34a);color:white;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.2s;letter-spacing:0.02em;">
+        Continue →
+      </button>
+      <div id="wizard-skip" style="text-align:center;margin-top:10px;">
+        <button onclick="wizardSkip()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:12px;cursor:pointer;">Skip this step</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
