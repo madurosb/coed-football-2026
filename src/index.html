@@ -45,13 +45,16 @@
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); transition: background 0.3s, color 0.3s; }
 
     /* NAV */
-    .nav { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
+    .nav { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 0 0.75rem; display: flex; align-items: center; height: 66px; position: sticky; top: 0; z-index: 100; gap: 2px; }
     .nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 15px; cursor: pointer; text-decoration: none; color: var(--text); }
     .nav-logo .badge { background: var(--green); color: var(--green-light); font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 99px; }
-    .nav-links { display: flex; }
-    .nav-btn { background: none; border: none; border-bottom: 3px solid transparent; padding: 0 14px; height: 56px; display: flex; align-items: center; font-size: 13px; color: var(--text-muted); cursor: pointer; transition: color 0.15s, border-color 0.15s; white-space: nowrap; }
-    .nav-btn:hover { color: var(--text); }
-    .nav-btn.active { color: var(--green) !important; border-bottom: 3px solid var(--green); font-weight: 500; }
+    .nav-links { display: flex; align-items: center; gap: 2px; overflow-x: auto; flex: 1; padding: 0 4px; scrollbar-width: none; }
+    .nav-links::-webkit-scrollbar { display: none; }
+    .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 10px; border-radius: 10px; border: none; background: none; color: rgba(255,255,255,0.45); font-size: 10px; font-weight: 600; letter-spacing: 0.04em; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; text-transform: uppercase; }
+    .nav-btn .nav-icon { font-size: 18px; line-height: 1; display: block; }
+    .nav-btn:hover { background: rgba(255,255,255,0.07); color: white; }
+    .nav-btn.active { background: rgba(29,158,117,0.18); color: #1D9E75; }
+    .nav-btn.active .nav-icon { filter: drop-shadow(0 0 4px rgba(29,158,117,0.5)); }
     .nav-user { display: flex; align-items: center; gap: 8px; }
     .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--green-light); color: var(--green-dark); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; flex-shrink: 0; }
 
@@ -815,21 +818,21 @@
   <nav class="nav">
     <a class="nav-logo" onclick="showPage('home')"><img src="https://coed-football-2026.vercel.app/logo-icon.png" alt="logo" style="height:32px; width:32px; object-fit:contain;"> <span>COED&FOOTBALL</span> <span class="nav-wc-text" style="font-size:11px;font-weight:600;color:var(--badge-gold-text);letter-spacing:0.04em;">🏆 WORLD CUP</span> <span class="badge">2026</span></a>
     <div class="nav-links">
-      <button class="nav-btn" data-page="home" onclick="showPage('home')">Home</button>
-      <button class="nav-btn" data-page="matches" onclick="showPage('matches')">Matches</button>
-      <button class="nav-btn" data-page="leaderboard" onclick="showPage('leaderboard')">Standings</button>
-      <button class="nav-btn" data-page="stats" onclick="showPage('stats')">My Stats</button>
-      <button class="nav-btn" data-page="tips" onclick="showPage('tips')">Tips</button>
-      <button class="nav-btn" data-page="grouppred" onclick="showPage('grouppred')">Inner Circle Bets</button>
-      <button class="nav-btn" data-page="watch" onclick="showPage('watch')">Watch Together</button>
-      <button class="nav-btn" data-page="trash" onclick="showPage('trash')">Trash Talk</button>
-      <button class="nav-btn" data-page="highlights" onclick="showPage('highlights')">Highlights</button>
-      <button class="nav-btn" data-page="hof" onclick="showPage('hof')">Hall of Fame</button>
-      <button class="nav-btn" data-page="h2h" onclick="showPage('h2h')">Head-to-Head</button>
-      <button class="nav-btn" data-page="analysis" onclick="showPage('analysis')">Analysis</button>
-      <button class="nav-btn" data-page="coach" onclick="showPage('coach')">Coach Room</button>
-      <button class="nav-btn" data-page="rules" onclick="showPage('rules')">Rules</button>
-      <button class="nav-btn" data-page="dummies" onclick="showPage('dummies')">How to play</button>
+      <button class="nav-btn" data-page="home" onclick="showPage('home')"><span class="nav-icon">🏠</span>Home</button>
+      <button class="nav-btn" data-page="matches" onclick="showPage('matches')"><span class="nav-icon">⚽</span>Predictions</button>
+      <button class="nav-btn" data-page="leaderboard" onclick="showPage('leaderboard')"><span class="nav-icon">🏆</span>Standings</button>
+      <button class="nav-btn" data-page="stats" onclick="showPage('stats')"><span class="nav-icon">📊</span>My Stats</button>
+      <button class="nav-btn" data-page="tips" onclick="showPage('tips')"><span class="nav-icon">💡</span>Tips</button>
+      <button class="nav-btn" data-page="grouppred" onclick="showPage('grouppred')"><span class="nav-icon">🏅</span>Inner Circle</button>
+      <button class="nav-btn" data-page="watch" onclick="showPage('watch')"><span class="nav-icon">👀</span>Watch</button>
+      <button class="nav-btn" data-page="trash" onclick="showPage('trash')"><span class="nav-icon">💬</span>Trash Talk</button>
+      <button class="nav-btn" data-page="highlights" onclick="showPage('highlights')"><span class="nav-icon">🎬</span>Highlights</button>
+      <button class="nav-btn" data-page="hof" onclick="showPage('hof')"><span class="nav-icon">🏅</span>Hall of Fame</button>
+      <button class="nav-btn" data-page="h2h" onclick="showPage('h2h')"><span class="nav-icon">⚔️</span>H2H</button>
+      <button class="nav-btn" data-page="analysis" onclick="showPage('analysis')"><span class="nav-icon">📈</span>Analysis</button>
+      <button class="nav-btn" data-page="coach" onclick="showPage('coach')"><span class="nav-icon">🏟️</span>Coaches</button>
+      <button class="nav-btn" data-page="rules" onclick="showPage('rules')"><span class="nav-icon">📜</span>Rules</button>
+      <button class="nav-btn" data-page="dummies" onclick="showPage('dummies')"><span class="nav-icon">🎓</span>How to Play</button>
       <button class="nav-btn" data-page="admin" id="admin-nav-btn" style="display:none;" onclick="showPage('admin')"><span class="nav-icon">⚙️</span>Admin</button>
     </div>
     <div class="nav-user">
