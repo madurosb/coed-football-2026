@@ -45,17 +45,16 @@
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); transition: background 0.3s, color 0.3s; }
 
     /* NAV */
-    .nav { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 0 1rem; display: flex; align-items: center; height: 56px; position: sticky; top: 0; z-index: 100; }
+    .nav { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
     .nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 15px; cursor: pointer; text-decoration: none; color: var(--text); }
     .nav-logo .badge { background: var(--green); color: var(--green-light); font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 99px; }
-    .nav-links { display: flex; align-items: center; justify-content: center; flex: 1; overflow-x: auto; scrollbar-width: none; }
+    .nav-links { display: flex; justify-content: center; flex: 1; overflow-x: auto; scrollbar-width: none; }
     .nav-links::-webkit-scrollbar { display: none; }
     .nav-btn { background: none; border: none; border-bottom: 3px solid transparent; padding: 0 14px; height: 56px; display: flex; align-items: center; font-size: 13px; color: var(--text-muted); cursor: pointer; transition: color 0.15s, border-color 0.15s; white-space: nowrap; }
     .nav-btn:hover { color: var(--text); }
     .nav-btn.active { color: var(--green) !important; border-bottom: 3px solid var(--green); font-weight: 500; }
     body:not(.dark-mode) .nav-btn { color: #555; }
     body:not(.dark-mode) .nav-btn:hover { color: #111; }
-    body:not(.dark-mode) .nav { background: #fff; border-bottom-color: #e5e5e5; }
     .nav-user { display: flex; align-items: center; gap: 8px; }
     .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--green-light); color: var(--green-dark); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; flex-shrink: 0; }
 
