@@ -48,7 +48,7 @@
     .nav { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 0 0.75rem; display: flex; align-items: center; height: 66px; position: sticky; top: 0; z-index: 100; gap: 2px; }
     .nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 15px; cursor: pointer; text-decoration: none; color: var(--text); }
     .nav-logo .badge { background: var(--green); color: var(--green-light); font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 99px; }
-    .nav-links { display: flex; align-items: center; justify-content: center; gap: 2px; overflow-x: auto; flex: 1; padding: 0 4px; scrollbar-width: none; }
+    .nav-links { display: flex; align-items: center; gap: 2px; overflow-x: auto; flex: 1; padding: 0 4px; scrollbar-width: none; }
     .nav-links::-webkit-scrollbar { display: none; }
     .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 10px; border-radius: 10px; border: none; background: none; color: rgba(255,255,255,0.45); font-size: 10px; font-weight: 600; letter-spacing: 0.04em; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; text-transform: uppercase; }
     .nav-btn .nav-icon { font-size: 18px; line-height: 1; display: block; }
@@ -99,16 +99,7 @@
 
     /* MATCHES */
     .matches { display: flex; flex-direction: column; gap: 12px; margin-bottom: 1.5rem; }
-    .match-card {
-      background: #111;
-      border: 1px solid #1e1e1e;
-      border-radius: 20px;
-      padding: 20px;
-      margin-bottom: 14px;
-      transition: border-color 0.2s;
-    }
-    .match-card:hover { border-color: #2a2a2a; }
-    .match-card.is-live { border-color: #E24B4A !important; }
+    .match-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; }
     .match-meta { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem; }
     .match-meta .group { font-size: 11px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
     .match-timing .kickoff { font-size: 12px; font-weight: 500; text-align: right; }
@@ -1009,22 +1000,21 @@
 
   <!-- MATCHES -->
   <div class="page" id="page-matches">
-
-    <!-- Tournament picks — big beautiful banners -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem;" id="tournament-picks-banners">
-
-      <!-- Player pick banner -->
-      <div style="background:linear-gradient(135deg,#111,#1c1000);border:1.5px solid rgba(186,117,23,0.5);border-radius:20px;padding:20px;cursor:default;position:relative;overflow:hidden;">
-        <div style="position:absolute;top:-10px;right:-10px;font-size:90px;opacity:0.06;line-height:1;pointer-events:none;transform:rotate(10deg);">⭐</div>
-        <div style="font-size:10px;font-weight:800;letter-spacing:4px;color:#EF9F27;text-transform:uppercase;margin-bottom:10px;">⭐ Tournament Player</div>
-        <div id="player-pick-display" style="font-size:17px;font-weight:800;color:white;margin-bottom:4px;min-height:24px;">Not selected</div>
-        <div style="font-size:11px;color:rgba(255,255,255,0.35);margin-bottom:14px;">Goal = +2 pts · Assist = +1 pt · Red card = −1 pt</div>
-        <!-- Search box -->
-        <input type="text" id="player-search" placeholder="🔍 Search player..." autocomplete="off"
-          style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid rgba(186,117,23,0.3);background:rgba(255,255,255,0.06);color:white;font-size:12px;margin-bottom:6px;"
-          oninput="filterPlayerSelect(this.value)">
-        <div style="display:flex;gap:6px;align-items:center;">
-          <select id="tournament-player-select" style="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(186,117,23,0.3);background:#1a1200;color:white;font-size:12px;">
+    <div style="margin-bottom:1.25rem;">
+      <div style="font-family:monospace;font-size:11px;letter-spacing:3px;color:var(--green);text-transform:uppercase;margin-bottom:4px;">⚽ Your picks</div>
+      <div style="font-size:22px;font-weight:800;margin-bottom:4px;">Predictions</div>
+      <div style="font-size:13px;color:var(--text-muted);">Pick scores &amp; first goalscorers · Deadline: 24h before kickoff · Don't forget to Save!</div>
+    </div>
+    <img src="https://coed-football-2026.vercel.app/match-card.png" alt="" style="width:100%; height:auto; border-radius:12px; margin-bottom:1.5rem;">
+    <div class="player-pick">
+      <h3>Your tournament player</h3>
+      <p>Pick one player before the tournament starts. Every goal = +2 pts, every assist = +1 pt, red card = −1 pt.</p>
+      <!-- Search box -->
+      <input type="text" id="player-search" placeholder="🔍 Search player or country..." autocomplete="off"
+        style="width:100%;padding:9px 12px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;margin-bottom:6px;"
+        oninput="filterPlayerSelect(this.value)">
+      <div style="display:flex; gap:8px; align-items:center;">
+        <select id="tournament-player-select" style="flex:1;">
           <optgroup label="Algeria">
             <option value="Riyad Mahrez">Riyad Mahrez (Algeria)</option>
             <option value="Islam Slimani">Islam Slimani (Algeria)</option>
@@ -1677,53 +1667,44 @@
         </select>
         <button class="save-btn" id="tournament-lock-btn" style="width:auto; padding:7px 16px; margin-top:0;" onclick="saveTournamentPlayer()">Lock in</button>
       </div>
-      <div id="tournament-deadline-notice" style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;"></div>
-        </div>
-      </div>
+      <div id="tournament-deadline-notice" style="font-size:12px;color:var(--text-muted);margin-top:6px;"></div>
+    </div>
 
-      <!-- Winner pick banner -->
-      <div style="background:linear-gradient(135deg,#111,#0d1f0d);border:1.5px solid rgba(29,158,117,0.4);border-radius:20px;padding:18px;cursor:default;position:relative;overflow:hidden;">
-        <div style="position:absolute;top:0;right:0;font-size:80px;opacity:0.07;line-height:1;pointer-events:none;">🏆</div>
-        <div style="font-size:10px;font-weight:700;letter-spacing:3px;color:#1D9E75;text-transform:uppercase;margin-bottom:8px;">WC Winner Pick</div>
-        <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:12px;">Correct pick = +15 pts 🎯</div>
-        <div id="winner-pick-display" style="font-size:15px;font-weight:800;color:white;margin-bottom:12px;">Not selected</div>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <select id="winner-pick-select" style="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(29,158,117,0.3);background:#0a1a0a;color:white;font-size:12px;">
-            <option value="">Select a team...</option>
-            <option>Argentina</option><option>France</option><option>Brazil</option>
-            <option>England</option><option>Portugal</option><option>Spain</option>
-            <option>Germany</option><option>Netherlands</option><option>Belgium</option>
-            <option>Uruguay</option><option>Colombia</option><option>USA</option>
-            <option>Mexico</option><option>Morocco</option><option>Senegal</option>
-            <option>Japan</option><option>South Korea</option><option>Canada</option>
-            <option>Australia</option><option>Croatia</option><option>Switzerland</option>
-            <option>Denmark</option><option>Austria</option><option>Czechia</option>
-            <option>Scotland</option><option>Turkey</option><option>Ecuador</option>
-            <option>Iran</option><option>Saudi Arabia</option><option>Qatar</option>
-            <option>Iraq</option><option>Ghana</option><option>Ivory Coast</option>
-            <option>Egypt</option><option>Cameroon</option><option>Algeria</option>
-            <option>South Africa</option><option>New Zealand</option><option>Uzbekistan</option>
-            <option>DR Congo</option><option>Panama</option><option>Haiti</option>
-            <option>Jordan</option><option>Cabo Verde</option><option>Curaçao</option>
-            <option>Bosnia-Herzegovina</option><option>Paraguay</option><option>Tunisia</option>
-          </select>
-          <button id="winner-lock-btn" onclick="saveWinnerPick()"
-            style="padding:8px 12px;border-radius:8px;border:none;background:#1D9E75;color:white;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">
-            Lock in
-          </button>
-        </div>
-        <div id="winner-pick-notice" style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;"></div>
+    <!-- TOURNAMENT WINNER PICK -->
+    <div class="player-pick" style="margin-bottom:1rem;">
+      <h3>🏆 Who will win the World Cup?</h3>
+      <p>Pick the tournament winner. Correct = <strong>+15 bonus points</strong>. Must be locked in before June 10.</p>
+      <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+        <select id="winner-pick-select" style="flex:1;">
+          <option value="">Select a team...</option>
+          <option>Argentina</option><option>France</option><option>Brazil</option>
+          <option>England</option><option>Portugal</option><option>Spain</option>
+          <option>Germany</option><option>Netherlands</option><option>Belgium</option>
+          <option>Uruguay</option><option>Colombia</option><option>USA</option>
+          <option>Mexico</option><option>Morocco</option><option>Senegal</option>
+          <option>Japan</option><option>South Korea</option><option>Canada</option>
+          <option>Australia</option><option>Croatia</option><option>Switzerland</option>
+          <option>Sweden</option><option>Norway</option><option>Denmark</option>
+          <option>Austria</option><option>Czechia</option><option>Scotland</option>
+          <option>Turkey</option><option>Serbia</option><option>Poland</option>
+          <option>Ukraine</option><option>Ecuador</option><option>Iran</option>
+          <option>Saudi Arabia</option><option>Qatar</option><option>Iraq</option>
+          <option>Ghana</option><option>Ivory Coast</option><option>Egypt</option>
+          <option>Cameroon</option><option>Algeria</option><option>South Africa</option>
+          <option>New Zealand</option><option>Uzbekistan</option><option>DR Congo</option>
+          <option>Panama</option><option>Haiti</option><option>Jordan</option>
+          <option>Cabo Verde</option><option>Curaçao</option><option>Bosnia-Herzegovina</option>
+          <option>Paraguay</option><option>Tunisia</option>
+        </select>
+        <button class="save-btn" id="winner-lock-btn" style="width:auto; padding:7px 16px; margin-top:0;" onclick="saveWinnerPick()">Lock in</button>
       </div>
-
-    </div><!-- end tournament-picks-banners -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
-      <div>
-        <div style="font-size:18px;font-weight:800;">Match Predictions</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Deadline 24h before each kickoff ⏰</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <button onclick="showPage('live')" id="live-matches-btn" style="display:none;font-size:12px;color:white;background:#E24B4A;border:none;padding:6px 14px;border-radius:99px;cursor:pointer;font-weight:700;animation:pulse 1.5s infinite;">🔴 Live</button>
-        <button onclick="confirmResetPredictions()" style="font-size:12px;color:rgba(255,255,255,0.3);background:none;border:0.5px solid rgba(255,255,255,0.1);padding:6px 12px;border-radius:99px;cursor:pointer;">🗑 Reset</button>
+      <div id="winner-pick-notice" style="font-size:12px;color:var(--text-muted);margin-top:6px;"></div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
+      <p class="section-title" style="margin-bottom:0;">Group stage predictions — June 11-27 · Round of 32 unlocks after group results ⚡</p>
+      <div style="display:flex;gap:8px;">
+        <button onclick="showPage('live')" id="live-matches-btn" style="display:none;font-size:12px;color:white;background:#E24B4A;border:none;padding:5px 12px;border-radius:8px;cursor:pointer;animation:pulse 1.5s infinite;">🔴 Live now!</button>
+        <button onclick="confirmResetPredictions()" style="font-size:12px;color:#E24B4A;background:none;border:0.5px solid #E24B4A;padding:5px 12px;border-radius:8px;cursor:pointer;">🗑 Reset all</button>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:0.75rem;">
@@ -5673,7 +5654,7 @@
     const teamFlag = name => {
       const code = TEAM_FLAGS[name] || TEAM_FLAGS[normalizeTeamName(name)];
       if (!code) return '';
-      return `<img src="https://flagcdn.com/64x48/${code}.png" width="52" height="39" style="border-radius:6px;object-fit:cover;display:block;margin:0 auto;" alt="${name}">`;
+      return `<img src="https://flagcdn.com/64x48/${code}.png" width="64" height="48" style="border-radius:5px;object-fit:cover;" alt="${name}">`;
     };
 
     const now = new Date();
@@ -5714,106 +5695,89 @@
           ${m.firstGoalscorer ? `<div style="font-size:11px;color:var(--text-muted);">⚽ First scorer: ${m.firstGoalscorer}</div>` : ''}
         </div>` : '';
 
-      // Score input buttons (open or closed)
-      const scoreBlock = isPast ? `
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:32px;font-weight:900;min-width:28px;text-align:center;opacity:0.5;" id="home-${d.id}">0</span>
-          <span style="font-size:18px;color:rgba(255,255,255,0.2);font-weight:300;">—</span>
-          <span style="font-size:32px;font-weight:900;min-width:28px;text-align:center;opacity:0.5;" id="away-${d.id}">0</span>
-        </div>` : `
-        <div style="display:flex;align-items:center;gap:6px;background:#1a1a1a;border-radius:16px;padding:10px 14px;">
-          <button onclick="adjustScore('home-${d.id}',-1)" style="width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;transition:all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'">−</button>
-          <span style="font-size:32px;font-weight:900;min-width:32px;text-align:center;transition:color 0.2s;" id="home-${d.id}" data-val="0">0</span>
-          <span style="font-size:16px;color:rgba(255,255,255,0.2);margin:0 2px;">:</span>
-          <span style="font-size:32px;font-weight:900;min-width:32px;text-align:center;transition:color 0.2s;" id="away-${d.id}" data-val="0">0</span>
-          <button onclick="adjustScore('away-${d.id}',1)" style="width:30px;height:30px;border-radius:50%;border:1px solid rgba(29,158,117,0.4);background:rgba(29,158,117,0.1);color:#1D9E75;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;transition:all 0.15s;" onmouseover="this.style.background='rgba(29,158,117,0.2)'" onmouseout="this.style.background='rgba(29,158,117,0.1)'">+</button>
-        </div>
-        <div style="display:flex;gap:6px;margin-top:4px;">
-          <button onclick="adjustScore('home-${d.id}',1)" style="flex:1;padding:5px;border-radius:8px;border:1px solid rgba(29,158,117,0.3);background:rgba(29,158,117,0.08);color:#4ade80;font-size:11px;font-weight:600;cursor:pointer;">+${m.homeTeam.split(' ')[0]}</button>
-          <button onclick="adjustScore('away-${d.id}',-1)" style="flex:1;padding:5px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.4);font-size:11px;font-weight:600;cursor:pointer;">−${m.awayTeam.split(' ')[0]}</button>
-        </div>`;
-
-      html += `<div class="match-card${isLive?' is-live':''}">
-        <!-- Header row -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            ${liveIndicator}
-            <span style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.35);letter-spacing:0.05em;text-transform:uppercase;">${(m.group||'').replace(/_/g,' ')}</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:11px;color:rgba(255,255,255,0.3);">${kickoff.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})} · ${kickoff.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</span>
-            <button onclick="showMatchPreview('${d.id}')" style="background:rgba(255,255,255,0.06);border:none;border-radius:6px;padding:3px 8px;font-size:10px;color:rgba(255,255,255,0.4);cursor:pointer;">📋</button>
-          </div>
-        </div>
-
-        <!-- Teams + Score -->
-        <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin-bottom:16px;">
-          <!-- Home team -->
-          <div style="text-align:center;">
-            ${teamFlag(m.homeTeam)}
-            <div style="font-size:13px;font-weight:700;margin-top:6px;line-height:1.2;">${m.homeTeam}</div>
-          </div>
-          <!-- Score -->
-          <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-            ${scoreBlock}
-          </div>
-          <!-- Away team -->
-          <div style="text-align:center;">
-            ${teamFlag(m.awayTeam)}
-            <div style="font-size:13px;font-weight:700;margin-top:6px;line-height:1.2;">${m.awayTeam}</div>
-          </div>
-        </div>
-
-        ${isPast ? '' : `
-        <!-- Deadline warning -->
-        <div style="font-size:10px;color:rgba(255,255,255,0.25);text-align:center;margin-bottom:14px;">
-          ⏰ Deadline: ${deadline.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})} ${deadline.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}
-        </div>`}
-
-        <!-- First Scorer -->
-        ${isPast ? '' : `
-        <div style="background:#181818;border-radius:12px;padding:12px 14px;margin-bottom:12px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <span style="font-size:12px;font-weight:700;">⚽ First goalscorer</span>
-            <span style="font-size:10px;color:#60a5fa;font-weight:600;">+5 pts if correct</span>
-          </div>
-          <select id="scorer-${d.id}" onchange="autoSaveScorer('${d.id}', this)"
-            style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:#222;color:white;font-size:13px;outline:none;">
-            <option value="">— No pick —</option>
-            <optgroup label="${m.homeTeam}">${getPlayersForTeam(m.homeTeam,m.homePlayers).map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
-            <optgroup label="${m.awayTeam}">${getPlayersForTeam(m.awayTeam,m.awayPlayers).map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
-          </select>
-        </div>`}
-
-        <!-- Joker + DON -->
-        ${!isPast ? `
-        <div style="display:flex;gap:10px;align-items:stretch;">
-          <!-- Joker -->
-          <button id="joker-btn-${d.id}" onclick="activateJoker('${d.id}')"
-            style="width:60px;flex-shrink:0;border-radius:14px;border:1.5px solid #BA7517;background:linear-gradient(145deg,#1a0f00,#2a1800);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:10px 0;transition:all 0.2s;position:relative;overflow:hidden;"
-            onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform=''">
-            <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(239,159,39,0.8),transparent);"></div>
-            <span style="font-size:22px;filter:drop-shadow(0 0 5px rgba(239,159,39,0.5));">🃏</span>
-            <span style="font-size:8px;font-weight:800;letter-spacing:2px;color:#EF9F27;font-family:monospace;">JOKER</span>
-          </button>
-          <!-- DON -->
-          <button id="don-btn-${d.id}" onclick="toggleDON('${d.id}')" data-week="${getMatchWeekKey(kickoff)}"
-            style="flex:1;padding:12px 16px;border-radius:14px;border:1.5px dashed #7C3AED;background:rgba(124,58,237,0.08);cursor:pointer;display:flex;align-items:center;gap:12px;transition:all 0.2s;"
-            onmouseover="this.style.background='rgba(124,58,237,0.15)'" onmouseout="this.style.background='rgba(124,58,237,0.08)'">
-            <span style="font-size:22px;flex-shrink:0;">🎰</span>
-            <div style="text-align:left;">
-              <div style="font-size:12px;font-weight:800;color:#a78bfa;letter-spacing:0.02em;">Double or Nothing</div>
-              <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px;">Right = ×2 pts · Wrong = pts deducted</div>
+      html += `
+        <div class="match-card" style="${isLive ? 'border-color:#E24B4A;' : ''}">
+          <div class="match-meta">
+            <span class="group">${(m.group || '').replace(/_/g, ' ')}</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+              ${liveIndicator}
+              <button onclick="showMatchPreview('${d.id}')" style="background:none;border:0.5px solid var(--border);border-radius:6px;padding:3px 8px;font-size:10px;color:var(--text-muted);cursor:pointer;white-space:nowrap;">📋 Preview</button>
+              <div class="match-timing">
+                <div class="kickoff">${kickoff.toLocaleDateString('en-GB', {day:'2-digit',month:'short'})} ${kickoff.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})} <span class="tz">(Israel time)</span></div>
+                <div class="deadline">Deadline: ${deadline.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})} ${deadline.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})} (Israel time)</div>
+              </div>
             </div>
-          </button>
-        </div>` : `
-        <div style="text-align:center;padding:8px;font-size:12px;color:rgba(255,255,255,0.3);">
-          ${isFinished ? '✅ Match finished' : '🔒 Predictions locked'}
-        </div>`}
-
-        ${finishedResult}
-        <div id="result-${d.id}"></div>
-      </div>`;
+          </div>
+          <div class="match-teams">
+            <div class="team"><span class="flag">${teamFlag(m.homeTeam)}</span><span class="name">${m.homeTeam}</span></div>
+            <div>
+              <div class="vs">VS</div>
+              <div class="score-inputs">
+                ${isPast ? `
+                  <div style="display:flex;align-items:center;gap:2px;">
+                    <div class="score-input" id="home-${d.id}" style="display:flex;align-items:center;justify-content:center;opacity:0.6;">0</div>
+                  </div>
+                  <span class="score-dash">-</span>
+                  <div style="display:flex;align-items:center;gap:4px;">
+                    <div class="score-input" id="away-${d.id}" style="display:flex;align-items:center;justify-content:center;opacity:0.6;">0</div>
+                  </div>
+                ` : `
+                  <div style="display:flex;align-items:center;gap:4px;">
+                    <button onclick="adjustScore('home-${d.id}',-1)" style="width:28px;height:28px;border-radius:50%;border:0.5px solid var(--border);background:var(--surface2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-muted);">−</button>
+                    <div class="score-input" id="home-${d.id}" data-val="0" style="display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:500;user-select:none;">0</div>
+                    <button onclick="adjustScore('home-${d.id}',1)" style="width:28px;height:28px;border-radius:50%;border:0.5px solid var(--border);background:var(--surface2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--green);">+</button>
+                  </div>
+                  <span class="score-dash">-</span>
+                  <div style="display:flex;align-items:center;gap:4px;">
+                    <button onclick="adjustScore('away-${d.id}',-1)" style="width:28px;height:28px;border-radius:50%;border:0.5px solid var(--border);background:var(--surface2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-muted);">−</button>
+                    <div class="score-input" id="away-${d.id}" data-val="0" style="display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:500;user-select:none;">0</div>
+                    <button onclick="adjustScore('away-${d.id}',1)" style="width:28px;height:28px;border-radius:50%;border:0.5px solid var(--border);background:var(--surface2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--green);">+</button>
+                  </div>
+                `}
+              </div>
+            </div>
+            <div class="team"><span class="flag">${teamFlag(m.awayTeam)}</span><span class="name">${m.awayTeam}</span></div>
+          </div>
+          <div class="match-bonus">
+            <div class="bonus-row">
+              <div><div class="bonus-label">First goalscorer</div><div class="bonus-pts">+2 pts if correct</div></div>
+              <select id="scorer-${d.id}" ${isPast?'disabled':''} onchange="autoSaveScorer('${d.id}', this)">
+                <option value="">Select player...</option>
+                <optgroup label="${m.homeTeam}">${getPlayersForTeam(m.homeTeam, m.homePlayers).map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
+                <optgroup label="${m.awayTeam}">${getPlayersForTeam(m.awayTeam, m.awayPlayers).map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
+              </select>
+            </div>
+          </div>
+          ${!isPast ? `
+            <!-- Joker — luxury square card, right aligned — ABOVE DON -->
+            <div style="display:flex;justify-content:flex-end;margin-top:0.75rem;">
+              <button id="joker-btn-${d.id}" onclick="activateJoker('${d.id}')"
+                title="Use your Joker — doubles all points if correct. Once per tournament."
+                style="width:72px;height:72px;border-radius:12px;border:1.5px solid #BA7517;background:linear-gradient(145deg,#1a0f00,#2a1800);color:#EF9F27;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-shadow:0 4px 12px rgba(186,117,23,0.35),inset 0 1px 0 rgba(255,255,255,0.1);transition:all 0.2s;position:relative;overflow:hidden;"
+                onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 6px 20px rgba(186,117,23,0.5),inset 0 1px 0 rgba(255,255,255,0.15)'"
+                onmouseout="this.style.transform='';this.style.boxShadow='0 4px 12px rgba(186,117,23,0.35),inset 0 1px 0 rgba(255,255,255,0.1)'">
+                <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(239,159,39,0.8),transparent);"></div>
+                <span style="font-size:26px;line-height:1;filter:drop-shadow(0 0 6px rgba(239,159,39,0.6));">🃏</span>
+                <span style="font-size:8px;font-weight:800;letter-spacing:0.12em;font-family:monospace;color:#EF9F27;">JOKER</span>
+                <div style="position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(239,159,39,0.4),transparent);"></div>
+              </button>
+            </div>
+            <!-- DON row -->
+            <div id="don-row-${d.id}" style="margin-top:8px;">
+              <button id="don-btn-${d.id}" onclick="toggleDON('${d.id}')"
+                data-week="${getMatchWeekKey(kickoff)}"
+                style="width:100%;padding:10px 14px;border-radius:12px;border:1.5px dashed #7C3AED;background:linear-gradient(135deg,var(--badge-blue-bg),var(--badge-blue-bg));color:#5B21B6;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(124,58,237,0.12);"
+                onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'">
+                <span style="font-size:24px;line-height:1;flex-shrink:0;">🎰</span>
+                <div style="text-align:left;">
+                  <div style="font-size:12px;font-weight:700;letter-spacing:0.03em;">DOUBLE OR NOTHING</div>
+                  <div style="font-size:10px;font-weight:400;opacity:0.7;margin-top:1px;">Correct = x2 result pts · Wrong = those pts deducted · First scorer always safe</div>
+                </div>
+              </button>
+            </div>` : `<p style="font-size:12px;color:var(--text-muted);margin-top:0.75rem;text-align:center;">${isFinished ? '✅ Match finished' : '🔒 Deadline passed - predictions locked'}</p>`}
+          ${finishedResult}
+          <div id="result-${d.id}"></div>
+        </div>`;
     });
     container.innerHTML = html;
 
