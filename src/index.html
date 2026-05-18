@@ -18,45 +18,80 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; touch-action: manipulation; }
     :root {
-      --green: #1D9E75; --green-dark: #085041; --green-light: #E1F5EE;
-      --gold: #EF9F27; --gold-light: #FAEEDA;
+      --green: #1D9E75; --green-dark: #085041; --green-light: #0d2a1e;
+      --gold: #d4af37; --gold-light: #2a2000;
+      --accent: #3b82f6; --accent-dark: #1d4ed8;
       /* Semantic badge/alert colors */
-      --badge-green-bg: #E1F5EE; --badge-green-text: #085041;
-      --badge-gold-bg: #FAEEDA;  --badge-gold-text: #633806;
-      --badge-red-bg: #FCEBEB;   --badge-red-text: #791F1F;
-      --badge-blue-bg: #E6F1FB;  --badge-blue-text: #0C447C;
-      --badge-orange-bg: #FFF0E0; --badge-orange-text: #92400E;
-      --bg: #f5f5f3; --surface: #ffffff; --surface2: #f5f5f3;
-      --text: #1a1a1a; --text-muted: #6b6b6b;
-      --border: rgba(0,0,0,0.1);
+      --badge-green-bg: #0d2a1e; --badge-green-text: #4ade80;
+      --badge-gold-bg: #2a1e00;  --badge-gold-text: #d4af37;
+      --badge-red-bg: #2a0a0a;   --badge-red-text: #f87171;
+      --badge-blue-bg: #0a1628;  --badge-blue-text: #60a5fa;
+      --badge-orange-bg: #2a1200; --badge-orange-text: #fb923c;
+      --bg: #0f1623; --surface: #131f30; --surface2: #0d1829;
+      --text: #e2e8f0; --text-muted: #64748b;
+      --border: rgba(59,130,246,0.12);
       --radius: 8px; --radius-lg: 12px;
     }
-    body.dark-mode {
-      --bg: #0f0f0f; --surface: #1a1a1a; --surface2: #222222;
-      --text: #f0f0f0; --text-muted: #888888;
-      --border: rgba(255,255,255,0.1);
-      --green-light: #0d2e1e; --gold-light: #2a1e00;
+    /* Light mode overrides */
+    body:not(.dark-mode) {
+      --bg: #f0f4f8; --surface: #ffffff; --surface2: #f0f4f8;
+      --text: #0f172a; --text-muted: #64748b;
+      --border: rgba(0,0,0,0.08);
+      --green-light: #dcfce7; --gold-light: #fefce8;
+      --badge-green-bg: #dcfce7; --badge-green-text: #166534;
+      --badge-gold-bg: #fefce8;  --badge-gold-text: #854d0e;
+      --badge-red-bg: #fee2e2;   --badge-red-text: #991b1b;
+      --badge-blue-bg: #dbeafe;  --badge-blue-text: #1e40af;
+      --badge-orange-bg: #ffedd5; --badge-orange-text: #9a3412;
     }
-    body.dark-mode .nav { background: #141414; }
-    body.dark-mode .mobile-menu { background: #141414; }
-    body.dark-mode .login-card { background: #1a1a1a; }
-    body.dark-mode .score-input { background: #222; color: #f0f0f0; }
-    body.dark-mode select { background: #222; color: #f0f0f0; }
+    body.dark-mode {
+      --bg: #0a0f1a; --surface: #0f1623; --surface2: #0d1829;
+      --text: #e2e8f0; --text-muted: #64748b;
+      --border: rgba(59,130,246,0.12);
+      --green-light: #0d2a1e; --gold-light: #2a1e00;
+      --badge-green-bg: #0d2a1e; --badge-green-text: #4ade80;
+      --badge-gold-bg: #2a1e00;  --badge-gold-text: #d4af37;
+      --badge-red-bg: #2a0a0a;   --badge-red-text: #f87171;
+      --badge-blue-bg: #0a1628;  --badge-blue-text: #60a5fa;
+      --badge-orange-bg: #2a1200; --badge-orange-text: #fb923c;
+    }
+    body.dark-mode .mobile-menu { background: #0f1623; }
+    body.dark-mode .login-card { background: #131f30; }
+    body.dark-mode .score-input { background: #0d1829; color: #e2e8f0; }
+    body.dark-mode select { background: #0d1829; color: #e2e8f0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); transition: background 0.3s, color 0.3s; }
 
     /* NAV */
-    .nav { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 0 0.75rem; display: flex; align-items: center; height: 66px; position: sticky; top: 0; z-index: 100; gap: 2px; }
-    .nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 15px; cursor: pointer; text-decoration: none; color: var(--text); }
-    .nav-logo .badge { background: var(--green); color: var(--green-light); font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 99px; }
-    .nav-links { display: flex; align-items: center; justify-content: center; gap: 2px; overflow-x: auto; flex: 1; padding: 0 4px; scrollbar-width: none; }
+    .nav {
+      background: linear-gradient(180deg, #0a0f1a 0%, #0d1422 100%);
+      border-bottom: 1px solid rgba(59,130,246,0.15);
+      padding: 0 1rem;
+      display: flex; align-items: center; height: 64px;
+      position: sticky; top: 0; z-index: 100; gap: 4px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+    }
+    .nav::after {
+      content: '';
+      position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(59,130,246,0.5), rgba(212,175,55,0.4), rgba(59,130,246,0.5), transparent);
+    }
+    body:not(.dark-mode) .nav {
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      border-bottom: 1px solid rgba(59,130,246,0.2);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; cursor: pointer; text-decoration: none; color: #e2e8f0; letter-spacing: 0.02em; flex-shrink: 0; }
+    .nav-logo img { filter: drop-shadow(0 0 6px rgba(29,158,117,0.5)); }
+    .nav-logo .badge { background: linear-gradient(135deg, #d4af37, #f5e182); color: #000; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 99px; letter-spacing: 0.06em; }
+    .nav-links { display: flex; align-items: center; justify-content: center; gap: 1px; overflow-x: auto; flex: 1; padding: 0 8px; scrollbar-width: none; }
     .nav-links::-webkit-scrollbar { display: none; }
-    .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 10px; border-radius: 10px; border: none; background: none; color: var(--text-muted); font-size: 10px; font-weight: 600; letter-spacing: 0.04em; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; text-transform: uppercase; }
-    .nav-btn .nav-icon { font-size: 18px; line-height: 1; display: block; }
-    .nav-btn:hover { background: rgba(128,128,128,0.12); color: var(--text); }
-    .nav-btn.active { background: rgba(29,158,117,0.18); color: #1D9E75; }
-    .nav-btn.active .nav-icon { filter: drop-shadow(0 0 4px rgba(29,158,117,0.5)); }
-    .nav-user { display: flex; align-items: center; gap: 8px; }
-    .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--green-light); color: var(--green-dark); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; flex-shrink: 0; }
+    .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 9px; border-radius: 8px; border: 1px solid transparent; background: none; color: #475569; font-size: 9px; font-weight: 700; letter-spacing: 0.06em; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; text-transform: uppercase; }
+    .nav-btn .nav-icon { font-size: 17px; line-height: 1; display: block; }
+    .nav-btn:hover { background: rgba(59,130,246,0.1); color: #93c5fd; border-color: rgba(59,130,246,0.15); }
+    .nav-btn.active { background: rgba(59,130,246,0.15); color: #60a5fa; border-color: rgba(59,130,246,0.3); }
+    .nav-btn.active .nav-icon { filter: drop-shadow(0 0 5px rgba(96,165,250,0.7)); }
+    .nav-user { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #1e3a5f, #0f2040); color: #60a5fa; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; border: 1.5px solid rgba(59,130,246,0.35); }
 
     /* PAGES */
     .page { display: none; padding: 2rem 1.5rem; max-width: 960px; margin: 0 auto; }
@@ -309,30 +344,32 @@
       position: fixed;
       bottom: 0; left: 0; right: 0;
       height: 64px;
-      background: var(--surface);
-      border-top: 0.5px solid var(--border);
+      background: linear-gradient(180deg, #0d1422 0%, #0a0f1a 100%);
+      border-top: 1px solid rgba(59,130,246,0.15);
       z-index: 200;
       align-items: center;
       justify-content: space-around;
       padding-bottom: env(safe-area-inset-bottom);
+      box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
     }
     .bnav-btn {
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       gap: 3px; flex: 1; height: 100%; background: none; border: none;
-      color: var(--text-muted); font-size: 10px; cursor: pointer;
+      color: #475569; font-size: 10px; cursor: pointer;
       transition: color 0.15s; padding: 0;
     }
-    .bnav-btn.active { color: var(--green); }
+    .bnav-btn.active { color: #60a5fa; }
+    .bnav-btn.active .bnav-icon { filter: drop-shadow(0 0 5px rgba(96,165,250,0.6)); }
     .bnav-icon { font-size: 20px; line-height: 1; }
-    .bnav-label { font-size: 10px; font-weight: 500; }
+    .bnav-label { font-size: 10px; font-weight: 600; letter-spacing: 0.04em; }
 
     /* Hamburger tooltip */
     .hamburger-tooltip {
       position: fixed;
-      top: 58px;
+      top: 70px;
       right: 48px;
-      background: #1a1a1a;
-      color: #fff;
+      background: #0d1422;
+      color: #e2e8f0;
       font-size: 13px;
       padding: 8px 12px;
       border-radius: 10px;
@@ -340,6 +377,8 @@
       white-space: nowrap;
       pointer-events: none;
       animation: tooltipIn 0.4s ease;
+      border: 1px solid rgba(59,130,246,0.2);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
     }
     .hamburger-tooltip::before {
       content: '';
@@ -347,32 +386,37 @@
       top: -7px;
       right: 10px;
       border: 7px solid transparent;
-      border-bottom-color: #1a1a1a;
+      border-bottom-color: rgba(59,130,246,0.3);
       border-top: none;
     }
-    .hamburger { display: none; background: none; border: none; cursor: pointer; padding: 4px 8px; flex-direction: column; gap: 5px; align-items: center; justify-content: center; }
-    .hamburger span { display: block; width: 22px; height: 2px; background: var(--text); border-radius: 2px; transition: all 0.2s; }
+    .hamburger { display: none; background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.15); border-radius: 8px; cursor: pointer; padding: 6px 8px; flex-direction: column; gap: 4px; align-items: center; justify-content: center; transition: all 0.15s; }
+    .hamburger:hover { background: rgba(59,130,246,0.18); }
+    .hamburger span { display: block; width: 20px; height: 2px; background: #64748b; border-radius: 2px; transition: all 0.2s; }
 
     /* Mobile dropdown menu */
     .mobile-menu {
       display: none;
       position: fixed;
-      top: 50px; left: 0; right: 0;
-      background: var(--surface);
-      border-bottom: 0.5px solid var(--border);
+      top: 64px; left: 0; right: 0;
+      background: linear-gradient(180deg, #0d1422 0%, #0a0f1a 100%);
+      border-bottom: 1px solid rgba(59,130,246,0.15);
       z-index: 150;
       flex-direction: column;
       padding: 0.5rem 0;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
     }
     .mobile-menu.open { display: flex; }
     .mobile-menu-btn {
-      background: none; border: none; padding: 14px 1.25rem;
-      text-align: left; font-size: 15px; color: var(--text);
+      background: none; border: none; padding: 13px 1.25rem;
+      text-align: left; font-size: 14px; color: #94a3b8;
       cursor: pointer; display: flex; align-items: center; gap: 12px;
-      border-bottom: 0.5px solid var(--border);
+      border-bottom: 1px solid rgba(59,130,246,0.06);
+      font-weight: 500; letter-spacing: 0.01em;
+      transition: all 0.15s;
     }
     .mobile-menu-btn:last-child { border-bottom: none; }
-    .mobile-menu-btn.active { color: var(--green); font-weight: 500; }
+    .mobile-menu-btn:hover { background: rgba(59,130,246,0.08); color: #e2e8f0; }
+    .mobile-menu-btn.active { color: #60a5fa; font-weight: 600; background: rgba(59,130,246,0.1); }
     .mobile-menu-overlay { display: none; position: fixed; inset: 0; z-index: 140; }
     .mobile-menu-overlay.open { display: block; }
     /* DID YOU KNOW POPUP */
@@ -837,19 +881,19 @@
     </div>
     <div class="nav-user">
       <div style="display:flex;align-items:center;gap:2px;flex-shrink:0;">
-      <button id="darkmode-btn" onclick="toggleDarkMode()" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px;border-radius:8px;transition:background 0.15s;flex-shrink:0;" title="Toggle dark mode">🌙</button>
-      <button id="music-btn" onclick="toggleMusic()" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px;border-radius:8px;transition:background 0.15s;flex-shrink:0;" title="Play/Stop music">🔇</button>
+      <button id="darkmode-btn" onclick="toggleDarkMode()" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.15);cursor:pointer;font-size:16px;padding:5px 7px;border-radius:8px;transition:all 0.15s;flex-shrink:0;color:#64748b;" onmouseover="this.style.background='rgba(59,130,246,0.18)';this.style.color='#93c5fd'" onmouseout="this.style.background='rgba(59,130,246,0.08)';this.style.color='#64748b'" title="Toggle dark mode">🌙</button>
+      <button id="music-btn" onclick="toggleMusic()" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.15);cursor:pointer;font-size:16px;padding:5px 7px;border-radius:8px;transition:all 0.15s;flex-shrink:0;color:#64748b;" onmouseover="this.style.background='rgba(59,130,246,0.18)';this.style.color='#93c5fd'" onmouseout="this.style.background='rgba(59,130,246,0.08)';this.style.color='#64748b'" title="Play/Stop music">🔇</button>
       <!-- Notification bell -->
-      <button id="notif-btn" onclick="toggleNotifPanel()" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px;border-radius:8px;transition:background 0.15s;position:relative;flex-shrink:0;" title="Notifications">
+      <button id="notif-btn" onclick="toggleNotifPanel()" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.15);cursor:pointer;font-size:16px;padding:5px 7px;border-radius:8px;transition:all 0.15s;position:relative;flex-shrink:0;color:#64748b;" onmouseover="this.style.background='rgba(59,130,246,0.18)';this.style.color='#93c5fd'" onmouseout="this.style.background='rgba(59,130,246,0.08)';this.style.color='#64748b'" title="Notifications">
         🔔
-        <span id="notif-badge" style="display:none;position:absolute;top:2px;right:2px;background:#E24B4A;color:white;font-size:9px;font-weight:700;border-radius:99px;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 3px;">0</span>
+        <span id="notif-badge" style="display:none;position:absolute;top:1px;right:1px;background:#ef4444;color:white;font-size:9px;font-weight:700;border-radius:99px;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 3px;">0</span>
       </button>
       <button class="hamburger" id="hamburger-btn" onclick="toggleMobileMenu()">
         <span></span><span></span><span></span>
       </button>
       </div>
-      <div class="avatar" id="user-avatar" onclick="showPage('stats')" style="cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;" onmouseover="this.style.transform='scale(1.1)';this.style.boxShadow='0 0 0 2px var(--green)'" onmouseout="this.style.transform='';this.style.boxShadow=''" title="My Stats"></div>
-      <span id="user-handle" style="font-size:13px; color: var(--text-muted);"></span>
+      <div class="avatar" id="user-avatar" onclick="showPage('stats')" style="cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;" onmouseover="this.style.transform='scale(1.1)';this.style.boxShadow='0 0 0 2px #3b82f6'" onmouseout="this.style.transform='';this.style.boxShadow=''" title="My Stats"></div>
+      <span id="user-handle" style="font-size:12px;color:#475569;font-weight:500;letter-spacing:0.02em;"></span>
     </div>
   </nav>
 
