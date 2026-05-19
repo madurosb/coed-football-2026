@@ -615,39 +615,48 @@
 
       /* Teams row — bigger flags, cleaner layout */
       #page-matches .match-teams {
-        gap: 0.5rem;
+        gap: 4px;
         margin-bottom: 0.5rem;
+        overflow: hidden;
+      }
+      #page-matches .team {
+        min-width: 0;
+        overflow: hidden;
       }
       #page-matches .team .flag img {
-        width: 48px !important;
-        height: 36px !important;
+        width: 40px !important;
+        height: 30px !important;
       }
       #page-matches .team .name {
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
-      /* Score inputs — big and easy to tap */
+      /* Score inputs — big but not overflowing */
       #page-matches .score-inputs {
-        gap: 6px;
+        gap: 4px;
       }
       #page-matches .score-input {
-        width: 52px !important;
-        height: 52px !important;
-        font-size: 24px !important;
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 20px !important;
         font-weight: 800 !important;
-        border-radius: 12px !important;
+        border-radius: 10px !important;
         background: var(--surface2) !important;
         border: 2px solid var(--border) !important;
       }
 
-      /* +/- buttons — bigger touch targets */
+      /* +/- buttons */
       #page-matches .match-teams button {
-        width: 36px !important;
-        height: 36px !important;
-        font-size: 20px !important;
+        width: 30px !important;
+        height: 30px !important;
+        font-size: 17px !important;
         border-radius: 50% !important;
         touch-action: manipulation;
+        flex-shrink: 0;
       }
 
       /* Scorer dropdown — full width, easy to use */
@@ -735,11 +744,8 @@
       .nav-logo .badge { display: none; }
       .nav-wc-text { display: none !important; }
 
-      /* Show hamburger */
-      .hamburger { display: flex !important; }
-
-      /* Bottom navigation bar */
-      .bottom-nav { display: flex; }
+      /* Bottom navigation bar — hidden, replaced by smart drawer */
+      .bottom-nav { display: none; }
 
       /* Push content above bottom nav */
       .page { padding: 0.75rem 0.75rem 80px 0.75rem; }
