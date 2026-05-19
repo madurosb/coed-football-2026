@@ -424,6 +424,11 @@
     /* LOADING */
     .loading { display: flex; align-items: center; justify-content: center; min-height: 100vh; font-size: 14px; color: var(--text-muted); }
 
+    /* ═══ FAB + DRAWER — mobile only, hidden on desktop ═══ */
+    #smart-menu-fab { display: none; }
+    #smart-menu-backdrop { display: none; }
+    #smart-menu-drawer { display: none; }
+
     /* ═══ SMART MENU DRAWER — replaces bottom nav + hamburger ═══ */
     @media (max-width: 768px) {
 
@@ -433,8 +438,7 @@
       .nav { padding: 0 0.75rem; height: 56px; }
       .nav-logo .badge { display: none; }
       .nav-wc-text { display: none !important; }
-
-      /* Hide old hamburger */
+      /* Hide hamburger — replaced by FAB */
       .hamburger { display: none !important; }
 
       /* Pages get bottom padding for FAB */
@@ -442,6 +446,7 @@
 
       /* ── FAB trigger button ── */
       #smart-menu-fab {
+        display: flex;
         position: fixed;
         bottom: 24px;
         left: 50%;
@@ -456,7 +461,6 @@
         font-weight: 800;
         letter-spacing: 0.08em;
         cursor: pointer;
-        display: flex;
         align-items: center;
         gap: 8px;
         box-shadow: 0 4px 20px rgba(59,130,246,0.5), 0 2px 8px rgba(0,0,0,0.3);
@@ -476,6 +480,7 @@
 
       /* ── Backdrop ── */
       #smart-menu-backdrop {
+        display: block;
         position: fixed; inset: 0; z-index: 290;
         background: rgba(0,0,0,0);
         pointer-events: none;
@@ -490,6 +495,7 @@
 
       /* ── Drawer ── */
       #smart-menu-drawer {
+        display: block;
         position: fixed;
         bottom: 0; left: 0; right: 0;
         z-index: 295;
@@ -528,68 +534,39 @@
       }
 
       /* Category sections */
-      .drawer-section {
-        padding: 16px 16px 0;
-      }
+      .drawer-section { padding: 16px 16px 0; }
       .drawer-section-title {
-        font-size: 9px;
-        font-weight: 800;
-        color: #334155;
-        text-transform: uppercase;
-        letter-spacing: 0.15em;
-        margin-bottom: 10px;
-        padding-left: 4px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
+        font-size: 9px; font-weight: 800; color: #334155;
+        text-transform: uppercase; letter-spacing: 0.15em;
+        margin-bottom: 10px; padding-left: 4px;
+        display: flex; align-items: center; gap: 6px;
       }
       .drawer-section-title::after {
-        content: '';
-        flex: 1;
-        height: 1px;
+        content: ''; flex: 1; height: 1px;
         background: rgba(59,130,246,0.1);
       }
 
       /* Grid of nav items */
       .drawer-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 8px;
-        margin-bottom: 8px;
+        display: grid; grid-template-columns: repeat(4, 1fr);
+        gap: 8px; margin-bottom: 8px;
       }
       .drawer-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 5px;
-        padding: 10px 4px;
-        border-radius: 12px;
-        border: 1px solid transparent;
-        background: rgba(255,255,255,0.03);
-        cursor: pointer;
-        transition: all 0.15s;
-        text-align: center;
+        display: flex; flex-direction: column; align-items: center;
+        gap: 5px; padding: 10px 4px; border-radius: 12px;
+        border: 1px solid transparent; background: rgba(255,255,255,0.03);
+        cursor: pointer; transition: all 0.15s; text-align: center;
       }
       .drawer-item:active { transform: scale(0.93); }
-      .drawer-item.active {
-        background: rgba(59,130,246,0.15);
-        border-color: rgba(59,130,246,0.3);
-      }
+      .drawer-item.active { background: rgba(59,130,246,0.15); border-color: rgba(59,130,246,0.3); }
       .drawer-item .d-icon { font-size: 22px; line-height: 1; }
       .drawer-item .d-label {
-        font-size: 9px;
-        font-weight: 700;
-        color: #475569;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        line-height: 1.2;
+        font-size: 9px; font-weight: 700; color: #475569;
+        text-transform: uppercase; letter-spacing: 0.04em; line-height: 1.2;
       }
       .drawer-item.active .d-label { color: #60a5fa; }
       .drawer-item:hover { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.2); }
       .drawer-item:hover .d-label { color: #93c5fd; }
-
-      /* Bottom safe area spacer */
-      .drawer-spacer { height: 16px; }
 
       /* Leaderboard mobile adjustments */
       .lb-row { grid-template-columns: 48px 1fr 50px !important; }
@@ -608,17 +585,14 @@
       .modal { width: 92vw; }
       .rules-card { padding: 1rem; }
       .player-pick { padding: 1rem; }
-      .player-pick > div { flex-direction: column; }
       #tournament-lock-btn { width: 100%; margin-top: 8px; }
-    }
 
-    /* ── Mobile dark mode inputs ── */
-    @media (max-width: 768px) {
-      body.dark-mode .match-card { border: 1px solid rgba(59,130,246,0.15) !important; }
-      body.dark-mode .save-btn { border: 1px solid rgba(59,130,246,0.2) !important; background: #0d1829 !important; color: #e2e8f0 !important; }
-      body.dark-mode .save-btn.saved { border-color: #3b82f6 !important; color: #60a5fa !important; background: rgba(59,130,246,0.1) !important; }
-      body.dark-mode .score-input { border: 1px solid rgba(59,130,246,0.2) !important; background: #0d1829 !important; color: #e2e8f0 !important; }
-      select { -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%233b82f6' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px !important; }
+      /* Match cards mobile */
+      .match-card { padding: 0.75rem; }
+      .match-teams { gap: 0.5rem; }
+      .team .flag img { width: 40px !important; height: 30px !important; }
+      .team .name { font-size: 11px; }
+      .score-inputs { gap: 4px; }
     }
 
 
@@ -944,7 +918,51 @@
 
 } /* end @media (max-width: 768px) */
 
-  </style>
+@media (max-width: 768px) {
+  /* ── PREDICTIONS PAGE — mobile redesign ── */
+
+  /* Hide banner image */
+  #page-matches > img { display: none; }
+
+  /* Compact match card */
+  #page-matches .match-card { padding: 12px 14px; border-radius: 14px; }
+
+  /* Teams row horizontal */
+  #page-matches .match-teams {
+    display: flex; align-items: center;
+    justify-content: space-between; gap: 8px; margin-bottom: 10px;
+  }
+  #page-matches .team {
+    display: flex; align-items: center; gap: 6px; flex: 1;
+  }
+  #page-matches .team:last-child { flex-direction: row-reverse; text-align: right; }
+  #page-matches .team .flag {
+    height: 30px; width: 40px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-bottom: 0;
+  }
+  #page-matches .team .flag img { width: 40px !important; height: 30px !important; border-radius: 3px; }
+  #page-matches .team .name { font-size: 12px; font-weight: 700; margin-top: 0; line-height: 1.2; }
+
+  /* Score inputs — in the middle */
+  #page-matches .score-inputs { flex-shrink: 0; gap: 6px; }
+  #page-matches .score-input { width: 44px !important; height: 44px !important; font-size: 20px !important; border-radius: 10px; }
+
+  /* Scorer row compact */
+  #page-matches .match-bonus { padding-top: 8px; margin-top: 8px; }
+  #page-matches .bonus-row { flex-direction: column; align-items: flex-start; gap: 6px; }
+  #page-matches .bonus-row select { width: 100%; font-size: 13px; }
+  #page-matches .bonus-label { font-size: 11px; font-weight: 700; }
+
+  /* Joker + DON compact */
+  #page-matches [id^="joker-btn-"] { width: 60px !important; height: 60px !important; }
+  #page-matches [id^="don-btn-"] { padding: 8px 12px !important; }
+
+  /* Save bar compact */
+  #save-bar { padding: 8px 10px; margin-bottom: 8px; }
+  #save-all-global-btn { padding: 8px 12px !important; font-size: 12px !important; }
+  #matches-date-tabs button { font-size: 11px !important; padding: 5px 10px !important; }
+}
 </head>
 <body>
 
@@ -1202,7 +1220,7 @@
   <div class="mobile-menu-overlay" id="menu-overlay" onclick="closeMobileMenu()"></div>
   <div class="mobile-menu" id="mobile-menu">
     <button class="mobile-menu-btn" data-page="home" onclick="mobileNav('home')">🏠 &nbsp; Home</button>
-    <button class="mobile-menu-btn" data-page="matches" onclick="mobileNav('matches')">⚽ &nbsp; Matches</button>
+    <button class="mobile-menu-btn" data-page="matches" onclick="mobileNav('matches')">⚽ &nbsp; Predictions</button>
     <button class="mobile-menu-btn" data-page="leaderboard" onclick="mobileNav('leaderboard')">🏆 &nbsp; Standings</button>
     <button class="mobile-menu-btn" data-page="stats" onclick="mobileNav('stats')">📊 &nbsp; My Stats</button>
     <button class="mobile-menu-btn" data-page="tips" onclick="mobileNav('tips')">💡 &nbsp; Tips</button>
@@ -1243,7 +1261,7 @@
       <div class="drawer-section-title">Quick Access</div>
       <div class="drawer-grid">
         <div class="drawer-item" data-page="home" onclick="smartNav('home')"><span class="d-icon">🏠</span><span class="d-label">Home</span></div>
-        <div class="drawer-item" data-page="matches" onclick="smartNav('matches')"><span class="d-icon">⚽</span><span class="d-label">Matches</span></div>
+        <div class="drawer-item" data-page="matches" onclick="smartNav('matches')"><span class="d-icon">⚽</span><span class="d-label">Predictions</span></div>
         <div class="drawer-item" data-page="leaderboard" onclick="smartNav('leaderboard')"><span class="d-icon">🏆</span><span class="d-label">Standings</span></div>
         <div class="drawer-item" data-page="stats" onclick="smartNav('stats')"><span class="d-icon">📊</span><span class="d-label">My Stats</span></div>
       </div>
@@ -1371,7 +1389,7 @@
 
   </div>
 
-  <!-- MATCHES -->
+  <!-- PREDICTIONS -->
   <div class="page" id="page-matches">
     <div style="margin-bottom:1.25rem;">
       <div style="font-family:monospace;font-size:11px;letter-spacing:3px;color:var(--green);text-transform:uppercase;margin-bottom:4px;">⚽ Your picks</div>
@@ -6123,10 +6141,21 @@
       // Caribbean
       'Curacao':'cw','Curaçao':'cw','Trinidad and Tobago':'tt',
     };
+    const EMOJI_FLAGS_MAP = {
+      'mx':'🇲🇽','us':'🇺🇸','ca':'🇨🇦','br':'🇧🇷','ar':'🇦🇷','fr':'🇫🇷','de':'🇩🇪',
+      'es':'🇪🇸','pt':'🇵🇹','gb-eng':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','nl':'🇳🇱','be':'🇧🇪','hr':'🇭🇷',
+      'uy':'🇺🇾','co':'🇨🇴','jp':'🇯🇵','kr':'🇰🇷','au':'🇦🇺','ma':'🇲🇦','sn':'🇸🇳',
+      'ng':'🇳🇬','gh':'🇬🇭','eg':'🇪🇬','dz':'🇩🇿','tn':'🇹🇳','cm':'🇨🇲','za':'🇿🇦',
+      'ci':'🇨🇮','cd':'🇨🇩','sa':'🇸🇦','ir':'🇮🇷','iq':'🇮🇶','qa':'🇶🇦','jo':'🇯🇴',
+      'uz':'🇺🇿','nz':'🇳🇿','ch':'🇨🇭','at':'🇦🇹','tr':'🇹🇷','ua':'🇺🇦','no':'🇳🇴',
+      'se':'🇸🇪','dk':'🇩🇰','pl':'🇵🇱','rs':'🇷🇸','cz':'🇨🇿','gb-sct':'🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+      'ec':'🇪🇨','py':'🇵🇾','pa':'🇵🇦','ht':'🇭🇹','cv':'🇨🇻','cw':'🇨🇼','ba':'🇧🇦',
+    };
     const teamFlag = name => {
       const code = TEAM_FLAGS[name] || TEAM_FLAGS[normalizeTeamName(name)];
-      if (!code) return '';
-      return `<img src="https://flagcdn.com/64x48/${code}.png" width="64" height="48" style="border-radius:5px;object-fit:cover;" alt="${name}">`;
+      if (!code) return `<span style="font-size:32px;line-height:1;">${EMOJI_FLAGS_MAP[code]||'🏳️'}</span>`;
+      const emoji = EMOJI_FLAGS_MAP[code] || '';
+      return `<img src="https://flagcdn.com/64x48/${code}.png" width="64" height="48" style="border-radius:5px;object-fit:cover;" alt="${name}" onerror="this.outerHTML='<span style=\\'font-size:32px;line-height:1;\\'>${emoji}</span>'">`;
     };
 
     const now = new Date();
