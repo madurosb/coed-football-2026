@@ -1440,18 +1440,19 @@
       <div class="stat-card"><div class="num" id="home-exact">-</div><div class="lbl">Exact scores</div></div>
       <div class="stat-card"><div class="num" id="home-player" style="font-size:13px;">-</div><div class="lbl">Your player</div></div>
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
-      <p class="section-title" style="margin:0;">Top 10 right now</p>
-      <button onclick="showPage('leaderboard')" title="See the full standings table"
-        style="font-size:12px;font-weight:500;color:var(--green);background:rgba(29,158,117,0.1);border:1px solid rgba(29,158,117,0.3);border-radius:8px;padding:5px 12px;cursor:pointer;transition:all 0.2s;white-space:nowrap;"
-        onmouseover="this.style.background='rgba(29,158,117,0.2)'" onmouseout="this.style.background='rgba(29,158,117,0.1)'">
-        Full table →
-      </button>
+    <div style="margin-bottom:0.5rem;">
+      <p class="section-title" style="margin:0;">🏆 Top 10 right now</p>
     </div>
     <div class="leaderboard" id="home-leaderboard">
       <div class="lb-row header"><div></div><div>Player</div><div style="text-align:center">Pts</div><div style="text-align:center">Exact</div><div style="text-align:center">Bonus</div></div>
       <div style="padding:1rem; text-align:center; font-size:13px; color:var(--text-muted);">Loading standings...</div>
     </div>
+    <button onclick="showPage('leaderboard')"
+      style="width:100%;margin-bottom:1.5rem;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 16px rgba(59,130,246,0.3);transition:all 0.2s;"
+      onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 24px rgba(59,130,246,0.4)'"
+      onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(59,130,246,0.3)'">
+      🏆 View full standings table →
+    </button>
 
     <!-- PLAYER OF THE ROUND -->
     <div id="player-of-round-section" style="display:none;margin-bottom:1.5rem;">
@@ -3203,6 +3204,7 @@
       <div class="admin-card" onclick="showAdminSub('knockout-admin')"><div class="icon">⚡</div><div class="title">Knockout stages</div><div class="desc">Enable predictions for Round of 16, Quarter-finals, Semi-finals and Final once the group stage is done.</div></div>
         <div class="admin-card" onclick="showAdminSub('score-verify')"><div class="icon">🔍</div><div class="title">Score verification</div><div class="desc">Check that all points are calculated correctly. Compare predicted vs actual results and audit per player.</div></div>
         <div class="admin-card" onclick="showAdminSub('picks-overview')"><div class="icon">📋</div><div class="title">Picks overview</div><div class="desc">See who picked which tournament player and World Cup winner. Verify everyone submitted before June 10.</div></div>
+        <div class="admin-card" onclick="showAdminSub('joker-don-overview')"><div class="icon">🃏</div><div class="title">Joker & DON overview</div><div class="desc">See which players activated their Joker card and Double or Nothing bets this tournament.</div></div>
 
       </div>
     </div>
@@ -3290,6 +3292,15 @@
           <button onclick="loadPicksOverview()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">🔄 Refresh</button>
         </div>
         <div id="picks-overview-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Click Refresh to load.</div></div>
+      </div>
+    </div>
+
+    <div id="admin-joker-don-overview" class="admin-sub">
+      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
+      <div class="form-card">
+        <h2>🃏 Joker & DON Overview</h2>
+        <button onclick="loadJokerDonOverview()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;margin-bottom:1rem;">🔄 Load</button>
+        <div id="joker-don-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Click Load to see all Joker & DON data.</div></div>
       </div>
     </div>
 
@@ -3676,6 +3687,97 @@
     container.innerHTML = html;
   }
 
+
+  async function loadJokerDonOverview() {
+    const container = document.getElementById('joker-don-content');
+    if (!container) return;
+    container.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div>';
+
+    const [usersSnap, jokerSnap, donSnap, matchesSnap] = await Promise.all([
+      getDocs(collection(db, 'users')),
+      getDocs(collection(db, 'jokerCards')),
+      getDocs(collection(db, 'donOptIns')),
+      getDocs(collection(db, 'matches'))
+    ]);
+
+    const users = {}, matches = {};
+    usersSnap.forEach(d => { users[d.id] = d.data(); });
+    matchesSnap.forEach(d => { matches[d.id] = d.data(); });
+
+    // Build joker map: userId → matchId
+    const jokerMap = {};
+    jokerSnap.forEach(d => { const j = d.data(); jokerMap[j.userId] = j.matchId; });
+
+    // Build DON map: userId → array of {matchId, week, matchTeams}
+    const donMap = {};
+    donSnap.forEach(d => {
+      const v = d.data();
+      if (!donMap[v.userId]) donMap[v.userId] = [];
+      donMap[v.userId].push(v);
+    });
+
+    const allUsers = Object.values(users).filter(u => !u.isAdmin).sort((a,b) => (a.nickname||'').localeCompare(b.nickname||''));
+    const totalUsers = allUsers.length;
+    const jokerUsed = Object.keys(jokerMap).length;
+    const donUsed = Object.keys(donMap).length;
+
+    let html = `
+      <!-- Summary -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:1rem;">
+        <div style="background:var(--badge-gold-bg);border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:22px;font-weight:800;color:var(--badge-gold-text);">${jokerUsed}</div>
+          <div style="font-size:11px;color:var(--badge-gold-text);">🃏 Jokers used</div>
+        </div>
+        <div style="background:var(--badge-blue-bg);border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:22px;font-weight:800;color:var(--badge-blue-text);">${donUsed}</div>
+          <div style="font-size:11px;color:var(--badge-blue-text);">🎰 DON used</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:10px;text-align:center;">
+          <div style="font-size:22px;font-weight:800;color:var(--text-muted);">${totalUsers - jokerUsed}</div>
+          <div style="font-size:11px;color:var(--text-muted);">🃏 Jokers left</div>
+        </div>
+      </div>
+
+      <!-- Joker section -->
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--badge-gold-text);">🃏 Joker Cards</div>
+      <div style="background:var(--surface2);border-radius:10px;overflow:hidden;margin-bottom:1.25rem;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;font-size:10px;color:var(--text-muted);text-transform:uppercase;padding:6px 12px;font-weight:700;border-bottom:1px solid var(--border);">
+          <div>Player</div><div>Match</div>
+        </div>
+        ${allUsers.map(u => {
+          const matchId = jokerMap[u.uid];
+          const m = matchId ? matches[matchId] : null;
+          const matchStr = m ? `${m.homeTeam} vs ${m.awayTeam}` : '—';
+          return `<div style="display:grid;grid-template-columns:1fr 1fr;padding:8px 12px;border-top:1px solid var(--border);font-size:12px;align-items:center;background:${matchId ? 'rgba(212,175,55,0.06)' : 'none'}">
+            <div style="font-weight:600;">${u.nickname||u.displayName}</div>
+            <div style="color:${matchId ? 'var(--badge-gold-text)' : 'var(--text-muted)'};">
+              ${matchId ? `🃏 ${matchStr}` : '❌ Not used'}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+
+      <!-- DON section -->
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--badge-blue-text);">🎰 Double or Nothing</div>
+      <div style="background:var(--surface2);border-radius:10px;overflow:hidden;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;font-size:10px;color:var(--text-muted);text-transform:uppercase;padding:6px 12px;font-weight:700;border-bottom:1px solid var(--border);">
+          <div>Player</div><div>Bets placed</div>
+        </div>
+        ${allUsers.map(u => {
+          const bets = donMap[u.uid] || [];
+          return `<div style="display:grid;grid-template-columns:1fr 1fr;padding:8px 12px;border-top:1px solid var(--border);font-size:12px;align-items:center;background:${bets.length > 0 ? 'rgba(59,130,246,0.06)' : 'none'}">
+            <div style="font-weight:600;">${u.nickname||u.displayName}</div>
+            <div style="color:${bets.length > 0 ? 'var(--badge-blue-text)' : 'var(--text-muted)'};">
+              ${bets.length > 0
+                ? bets.map(b => `🎰 ${b.matchTeams || 'Match'} <span style="font-size:10px;color:var(--text-muted);">(${(b.week||'').replace('wc2026-week-','Wk ')})</span>`).join('<br>')
+                : '❌ None yet'}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+
+    container.innerHTML = html;
+  }
 
   async function loadScoreVerification() {
     const container = document.getElementById('score-verify-content');
@@ -6631,6 +6733,7 @@
     if (id === 'knockout-admin') loadKnockoutAdmin();
     if (id === 'score-verify') loadScoreVerification();
     if (id === 'picks-overview') loadPicksOverview();
+    if (id === 'joker-don-overview') loadJokerDonOverview();
     if (id === 'trash-admin') {};
     if (id === 'double-admin') loadDoubleOrNothingAdmin();
   };
@@ -7548,26 +7651,26 @@
   // ========== WATCH TOGETHER ==========
   // Watch matches rotate every 5 days — only attractive/big fixtures
   const ALL_WATCH_MATCHES = [
-    // Week 1 (Jun 11-17) — Opening week
+    // Week 1 (Jun 11-17) — Opening week, real group stage fixtures
     { id:'w1',  date:'Jun 11', home:'Mexico',      away:'South Africa', time:'22:00', group:'Group A', emoji:'🇲🇽🇿🇦', week:1 },
     { id:'w2',  date:'Jun 12', home:'USA',         away:'Canada',       time:'22:00', group:'Group B', emoji:'🇺🇸🇨🇦', week:1 },
-    { id:'w3',  date:'Jun 13', home:'Brazil',      away:'Morocco',      time:'22:00', group:'Group C', emoji:'🇧🇷🇲🇦', week:1 },
-    { id:'w4',  date:'Jun 14', home:'Germany',     away:'Japan',        time:'22:00', group:'Group F', emoji:'🇩🇪🇯🇵', week:1 },
-    { id:'w5',  date:'Jun 15', home:'Spain',       away:'Argentina',    time:'22:00', group:'Group J', emoji:'🇪🇸🇦🇷', week:1 },
-    { id:'w6',  date:'Jun 16', home:'France',      away:'Belgium',      time:'22:00', group:'Group I', emoji:'🇫🇷🇧🇪', week:1 },
-    { id:'w7',  date:'Jun 17', home:'England',     away:'Portugal',     time:'22:00', group:'Group L', emoji:'🏴󠁧󠁢󠁥󠁮󠁧󠁿🇵🇹', week:1 },
-    // Week 2 (Jun 18-24)
-    { id:'w8',  date:'Jun 18', home:'Netherlands', away:'Argentina',    time:'22:00', group:'Group J', emoji:'🇳🇱🇦🇷', week:2 },
-    { id:'w9',  date:'Jun 19', home:'Brazil',      away:'Colombia',     time:'22:00', group:'Group C', emoji:'🇧🇷🇨🇴', week:2 },
-    { id:'w10', date:'Jun 20', home:'Spain',       away:'Germany',      time:'22:00', group:'Group E', emoji:'🇪🇸🇩🇪', week:2 },
-    { id:'w11', date:'Jun 21', home:'France',      away:'USA',          time:'22:00', group:'Group I', emoji:'🇫🇷🇺🇸', week:2 },
-    { id:'w12', date:'Jun 22', home:'Portugal',    away:'Uruguay',      time:'22:00', group:'Group K', emoji:'🇵🇹🇺🇾', week:2 },
-    { id:'w13', date:'Jun 23', home:'England',     away:'Mexico',       time:'22:00', group:'Group L', emoji:'🏴󠁧󠁢󠁥󠁮󠁧󠁿🇲🇽', week:2 },
-    // Week 3 (Jun 25-Jul 1) — Group deciders
-    { id:'w14', date:'Jun 25', home:'Argentina',   away:'Brazil',       time:'22:00', group:'Group J', emoji:'🇦🇷🇧🇷', week:3 },
-    { id:'w15', date:'Jun 26', home:'France',      away:'Spain',        time:'22:00', group:'Group I', emoji:'🇫🇷🇪🇸', week:3 },
-    { id:'w16', date:'Jun 27', home:'Germany',     away:'England',      time:'22:00', group:'Group E', emoji:'🇩🇪🏴󠁧󠁢󠁥󠁮󠁧󠁿', week:3 },
-    { id:'w17', date:'Jun 28', home:'Portugal',    away:'Morocco',      time:'22:00', group:'Group K', emoji:'🇵🇹🇲🇦', week:3 },
+    { id:'w3',  date:'Jun 13', home:'Brazil',      away:'Haiti',        time:'22:00', group:'Group C', emoji:'🇧🇷🇭🇹', week:1 },
+    { id:'w4',  date:'Jun 14', home:'Germany',     away:'Curaçao',      time:'22:00', group:'Group E', emoji:'🇩🇪🇨🇼', week:1 },
+    { id:'w5',  date:'Jun 15', home:'Argentina',   away:'Algeria',      time:'22:00', group:'Group J', emoji:'🇦🇷🇩🇿', week:1 },
+    { id:'w6',  date:'Jun 16', home:'France',      away:'Iraq',         time:'22:00', group:'Group I', emoji:'🇫🇷🇮🇶', week:1 },
+    { id:'w7',  date:'Jun 17', home:'England',     away:'Panama',       time:'22:00', group:'Group L', emoji:'🏴󠁧󠁢󠁥󠁮󠁧󠁿🇵🇦', week:1 },
+    // Week 2 (Jun 18-24) — real group stage matches
+    { id:'w8',  date:'Jun 18', home:'Spain',       away:'Saudi Arabia', time:'22:00', group:'Group H', emoji:'🇪🇸🇸🇦', week:2 },
+    { id:'w9',  date:'Jun 19', home:'Brazil',      away:'Morocco',      time:'22:00', group:'Group C', emoji:'🇧🇷🇲🇦', week:2 },
+    { id:'w10', date:'Jun 20', home:'Germany',     away:'Ivory Coast',  time:'22:00', group:'Group E', emoji:'🇩🇪🇨🇮', week:2 },
+    { id:'w11', date:'Jun 21', home:'France',      away:'Senegal',      time:'22:00', group:'Group I', emoji:'🇫🇷🇸🇳', week:2 },
+    { id:'w12', date:'Jun 22', home:'Portugal',    away:'DR Congo',     time:'22:00', group:'Group K', emoji:'🇵🇹🇨🇩', week:2 },
+    { id:'w13', date:'Jun 23', home:'Argentina',   away:'Jordan',       time:'22:00', group:'Group J', emoji:'🇦🇷🇯🇴', week:2 },
+    // Week 3 (Jun 25-Jul 1) — Group deciders (final matchday)
+    { id:'w14', date:'Jun 25', home:'Argentina',   away:'Austria',      time:'22:00', group:'Group J', emoji:'🇦🇷🇦🇹', week:3 },
+    { id:'w15', date:'Jun 26', home:'France',      away:'Norway',       time:'22:00', group:'Group I', emoji:'🇫🇷🇳🇴', week:3 },
+    { id:'w16', date:'Jun 27', home:'Germany',     away:'Ecuador',      time:'22:00', group:'Group E', emoji:'🇩🇪🇪🇨', week:3 },
+    { id:'w17', date:'Jun 28', home:'England',     away:'Croatia',      time:'22:00', group:'Group L', emoji:'🏴󠁧󠁢󠁥󠁮󠁧󠁿🇭🇷', week:3 },
     // Weeks 4-6 (Knockout)
     { id:'w18', date:'Jul 2',  home:'TBD',         away:'TBD',          time:'22:00', group:'Round of 16', emoji:'⚽🔥', week:4 },
     { id:'w19', date:'Jul 5',  home:'TBD',         away:'TBD',          time:'22:00', group:'Quarter-final', emoji:'⚽🔥', week:5 },
@@ -11760,6 +11863,9 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
         <span><span style="display:inline-block;width:12px;height:12px;background:rgba(226,75,74,0.35);border-radius:2px;vertical-align:middle;margin-right:3px;"></span>Wrong</span>
         <span><span style="display:inline-block;width:12px;height:12px;background:rgba(29,158,117,0.2);border-radius:2px;vertical-align:middle;margin-right:3px;"></span>Predicted (upcoming)</span>
       </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;padding:6px 10px;background:var(--surface2);border-radius:8px;">
+        🔒 Player names are hidden — only you can see your own row highlighted
+      </div>
       <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
         <table style="border-collapse:collapse;min-width:100%;font-size:11px;">
           <thead>
@@ -11773,10 +11879,13 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
             </tr>
           </thead>
           <tbody>
-            ${allUsers.map(u => `
-              <tr>
-                <td style="padding:5px 8px;white-space:nowrap;position:sticky;left:0;background:var(--bg);z-index:1;">
-                  <div style="font-size:12px;font-weight:500;">${u.nickname||u.displayName}</div>
+            ${allUsers.map((u, idx) => {
+              const isMe = u.uid === currentUser.uid;
+              const label = isMe ? '👤 You' : `P${idx + 1}`;
+              return `
+              <tr style="${isMe ? 'background:rgba(59,130,246,0.06);' : ''}">
+                <td style="padding:5px 8px;white-space:nowrap;position:sticky;left:0;background:${isMe ? 'rgba(59,130,246,0.08)' : 'var(--bg)'};z-index:1;">
+                  <div style="font-size:12px;font-weight:${isMe ? '700' : '500'};color:${isMe ? 'var(--accent)' : 'var(--text-muted)'};">${label}</div>
                 </td>
                 ${displayMatches.map(m => {
                   const cell = getCell(u.uid, m.id, m);
@@ -11784,7 +11893,8 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
                     <div style="background:${cell.bg};border-radius:4px;padding:4px 2px;font-size:10px;color:${cell.textColor};font-weight:500;min-width:50px;">${cell.text}</div>
                   </td>`;
                 }).join('')}
-              </tr>`).join('')}
+              </tr>`;
+            }).join('')}
           </tbody>
         </table>
       </div>`;
