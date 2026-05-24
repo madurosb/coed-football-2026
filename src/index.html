@@ -3716,7 +3716,7 @@
       donMap[v.userId].push(v);
     });
 
-    const allUsers = Object.values(users).filter(u => !u.isAdmin).sort((a,b) => (a.nickname||'').localeCompare(b.nickname||''));
+    const allUsers = Object.values(users).sort((a,b) => (a.nickname||'').localeCompare(b.nickname||''));
     const totalUsers = allUsers.length;
     const jokerUsed = Object.keys(jokerMap).length;
     const donUsed = Object.keys(donMap).length;
@@ -11834,7 +11834,13 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
     const upcoming = matches.filter(m => m.status !== 'FINISHED').slice(0, 10);
     const finished = matches.filter(m => m.status === 'FINISHED').slice(-10);
     const displayMatches = [...finished.slice(-5), ...upcoming.slice(0, 5)];
-    const allUsers = Object.values(users).filter(u => !u.isAdmin).sort((a,b) => (b.points||0)-(a.points||0));
+    // Include ALL users, sort current user to top
+    const allUsers = Object.values(users)
+      .sort((a,b) => {
+        if (currentUser && a.uid === currentUser.uid) return -1;
+        if (currentUser && b.uid === currentUser.uid) return 1;
+        return (b.points||0) - (a.points||0);
+      });
 
     if (displayMatches.length === 0) {
       container.innerHTML = `<div style="text-align:center;padding:3rem;font-size:13px;color:var(--text-muted);">🗺️ Heatmap will appear once matches are scheduled!</div>`;
@@ -11880,12 +11886,12 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
           </thead>
           <tbody>
             ${allUsers.map((u, idx) => {
-              const isMe = u.uid === currentUser.uid;
-              const label = isMe ? '👤 You' : `P${idx + 1}`;
+              const isMe = currentUser && u.uid === currentUser.uid;
+              const label = isMe ? '👤 You ✨' : `P${idx + 1}`;
               return `
-              <tr style="${isMe ? 'background:rgba(59,130,246,0.06);' : ''}">
-                <td style="padding:5px 8px;white-space:nowrap;position:sticky;left:0;background:${isMe ? 'rgba(59,130,246,0.08)' : 'var(--bg)'};z-index:1;">
-                  <div style="font-size:12px;font-weight:${isMe ? '700' : '500'};color:${isMe ? 'var(--accent)' : 'var(--text-muted)'};">${label}</div>
+              <tr style="${isMe ? 'background:rgba(59,130,246,0.1);outline:2px solid rgba(59,130,246,0.3);outline-offset:-2px;border-radius:4px;' : ''}">
+                <td style="padding:5px 8px;white-space:nowrap;position:sticky;left:0;background:${isMe ? 'rgba(59,130,246,0.12)' : 'var(--bg)'};z-index:1;${isMe ? 'border-left:3px solid var(--accent);' : ''}">
+                  <div style="font-size:12px;font-weight:${isMe ? '800' : '500'};color:${isMe ? 'var(--accent)' : 'var(--text-muted)'};">${label}</div>
                 </td>
                 ${displayMatches.map(m => {
                   const cell = getCell(u.uid, m.id, m);
@@ -11911,9 +11917,10 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
       getDocs(collection(db, 'users'))
     ]);
 
-    const matches = {}, predsByMatch = {};
+    const matches = {}, predsByMatch = {}, usersMap = {};
     const totalUsers = usersSnap.size;
     matchesSnap.forEach(d => { matches[d.id] = { id: d.id, ...d.data() }; });
+    usersSnap.forEach(d => { usersMap[d.id] = d.data(); });
     predsSnap.forEach(d => {
       const p = d.data();
       if (!predsByMatch[p.matchId]) predsByMatch[p.matchId] = [];
@@ -12012,8 +12019,8 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
           ${contrarians.length > 0 && contrarians.length <= 4 ? `
             <div style="font-size:11px;color:var(--text-muted);padding:6px 8px;background:var(--surface2);border-radius:6px;">
               😎 Going against the crowd: ${contrarians.map(p => {
-                const u = p.nickname || p.userId.substring(0,6);
-                return u;
+                const u = usersMap[p.userId];
+                return u ? (u.nickname || u.displayName || 'Unknown') : 'Unknown';
               }).join(', ')}
             </div>` : ''}
         </div>`;
