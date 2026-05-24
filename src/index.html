@@ -11849,17 +11849,17 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
 
     const getCell = (userId, matchId, match) => {
       const p = predMap[matchId]?.[userId];
-      if (!p) return { bg: '#2a2a2a', text: '—', textColor: '#888' };
+      if (!p) return { bg: 'var(--surface2)', text: '—', textColor: 'var(--text-muted)' };
       if (match.status !== 'FINISHED' || match.homeScore === null) {
-        return { bg: 'rgba(29,158,117,0.2)', text: `${p.homeScore}-${p.awayScore}`, textColor: '#4ade80' };
+        return { bg: 'rgba(29,158,117,0.15)', text: `${p.homeScore}-${p.awayScore}`, textColor: '#16a34a' };
       }
       const exact = p.homeScore === match.homeScore && p.awayScore === match.awayScore;
       const ar = match.homeScore > match.awayScore ? 'H' : match.homeScore < match.awayScore ? 'A' : 'D';
       const pr = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
       const correct = ar === pr;
-      if (exact) return { bg: 'rgba(29,158,117,0.55)', text: `${p.homeScore}-${p.awayScore}`, textColor: 'white' };
-      if (correct) return { bg: 'rgba(56,130,221,0.45)', text: `${p.homeScore}-${p.awayScore}`, textColor: 'white' };
-      return { bg: 'rgba(226,75,74,0.35)', text: `${p.homeScore}-${p.awayScore}`, textColor: '#fca5a5' };
+      if (exact) return { bg: 'rgba(29,158,117,0.2)', text: `${p.homeScore}-${p.awayScore}`, textColor: '#166534' };
+      if (correct) return { bg: 'rgba(59,130,246,0.15)', text: `${p.homeScore}-${p.awayScore}`, textColor: '#1d4ed8' };
+      return { bg: 'rgba(239,68,68,0.12)', text: `${p.homeScore}-${p.awayScore}`, textColor: '#dc2626' };
     };
 
     container.innerHTML = `
