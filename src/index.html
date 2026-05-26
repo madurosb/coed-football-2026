@@ -1482,10 +1482,17 @@
 
   <!-- MATCHES -->
   <div class="page" id="page-matches">
-    <div style="margin-bottom:1.25rem;">
-      <div style="font-family:monospace;font-size:11px;letter-spacing:3px;color:var(--green);text-transform:uppercase;margin-bottom:4px;">⚽ Your picks</div>
-      <div style="font-size:22px;font-weight:800;margin-bottom:4px;">Predictions</div>
-      <div style="font-size:13px;color:var(--text-muted);">Pick scores &amp; first goalscorers · Deadline: 24h before kickoff · Don't forget to Save!</div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem;gap:12px;">
+      <div>
+        <div style="font-family:monospace;font-size:11px;letter-spacing:3px;color:var(--green);text-transform:uppercase;margin-bottom:4px;">⚽ Your picks</div>
+        <div style="font-size:22px;font-weight:800;margin-bottom:4px;">Predictions</div>
+        <div style="font-size:13px;color:var(--text-muted);">Pick scores &amp; first goalscorers · Deadline: 24h before kickoff</div>
+      </div>
+      <!-- AI Auto-fill button -->
+      <button onclick="showAIFillModal()" style="flex-shrink:0;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:12px;padding:10px 14px;font-size:12px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;box-shadow:0 4px 16px rgba(124,58,237,0.4);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(124,58,237,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(124,58,237,0.4)'">
+        <span style="font-size:20px;">🤖</span>
+        <span>AI Fill</span>
+      </button>
     </div>
     <img src="https://coed-football-2026.vercel.app/match-card.png" alt="" style="width:100%; height:auto; border-radius:12px; margin-bottom:1.5rem;">
     <div class="player-pick">
@@ -2156,29 +2163,62 @@
     <div class="player-pick" style="margin-bottom:1rem;">
       <h3>🏆 Who will win the World Cup?</h3>
       <p>Pick the tournament winner. Correct = <strong>+15 bonus points</strong>. Must be locked in before June 10.</p>
-      <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
-        <select id="winner-pick-select" style="flex:1;">
-          <option value="">Select a team...</option>
-          <option>Argentina</option><option>France</option><option>Brazil</option>
-          <option>England</option><option>Portugal</option><option>Spain</option>
-          <option>Germany</option><option>Netherlands</option><option>Belgium</option>
-          <option>Uruguay</option><option>Colombia</option><option>USA</option>
-          <option>Mexico</option><option>Morocco</option><option>Senegal</option>
-          <option>Japan</option><option>South Korea</option><option>Canada</option>
-          <option>Australia</option><option>Croatia</option><option>Switzerland</option>
-          <option>Sweden</option><option>Norway</option><option>Denmark</option>
-          <option>Austria</option><option>Czechia</option><option>Scotland</option>
-          <option>Turkey</option><option>Serbia</option><option>Poland</option>
-          <option>Ukraine</option><option>Ecuador</option><option>Iran</option>
-          <option>Saudi Arabia</option><option>Qatar</option><option>Iraq</option>
-          <option>Ghana</option><option>Ivory Coast</option><option>Egypt</option>
-          <option>Cameroon</option><option>Algeria</option><option>South Africa</option>
-          <option>New Zealand</option><option>Uzbekistan</option><option>DR Congo</option>
-          <option>Panama</option><option>Haiti</option><option>Jordan</option>
-          <option>Cabo Verde</option><option>Curaçao</option><option>Bosnia-Herzegovina</option>
-          <option>Paraguay</option><option>Tunisia</option>
-        </select>
-        <button class="save-btn" id="winner-lock-btn" style="width:auto; padding:7px 16px; margin-top:0;" onclick="saveWinnerPick()">Lock in</button>
+      <!-- Hidden select for compatibility -->
+      <select id="winner-pick-select" style="display:none;">
+        <option value="">Select a team...</option>
+        <option>Argentina</option><option>France</option><option>Brazil</option>
+        <option>England</option><option>Portugal</option><option>Spain</option>
+        <option>Germany</option><option>Netherlands</option><option>Belgium</option>
+        <option>Uruguay</option><option>Colombia</option><option>USA</option>
+        <option>Mexico</option><option>Morocco</option><option>Senegal</option>
+        <option>Japan</option><option>South Korea</option><option>Canada</option>
+        <option>Australia</option><option>Croatia</option><option>Switzerland</option>
+        <option>Sweden</option><option>Norway</option><option>Denmark</option>
+        <option>Austria</option><option>Czechia</option><option>Scotland</option>
+        <option>Turkey</option><option>Serbia</option><option>Poland</option>
+        <option>Ukraine</option><option>Ecuador</option><option>Iran</option>
+        <option>Saudi Arabia</option><option>Iraq</option>
+        <option>Ghana</option><option>Ivory Coast</option><option>Egypt</option>
+        <option>Cameroon</option><option>Algeria</option><option>South Africa</option>
+        <option>New Zealand</option><option>Uzbekistan</option><option>DR Congo</option>
+        <option>Panama</option><option>Haiti</option><option>Jordan</option>
+        <option>Cabo Verde</option><option>Curaçao</option><option>Bosnia-Herzegovina</option>
+        <option>Paraguay</option><option>Tunisia</option>
+      </select>
+      <!-- Modern flag grid -->
+      <div id="winner-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:10px;max-height:220px;overflow-y:auto;padding:4px;">
+        ${[
+          {name:'Argentina',flag:'ar'},{name:'France',flag:'fr'},{name:'Brazil',flag:'br'},
+          {name:'England',flag:'gb-eng'},{name:'Portugal',flag:'pt'},{name:'Spain',flag:'es'},
+          {name:'Germany',flag:'de'},{name:'Netherlands',flag:'nl'},{name:'Belgium',flag:'be'},
+          {name:'Uruguay',flag:'uy'},{name:'Colombia',flag:'co'},{name:'USA',flag:'us'},
+          {name:'Mexico',flag:'mx'},{name:'Morocco',flag:'ma'},{name:'Senegal',flag:'sn'},
+          {name:'Japan',flag:'jp'},{name:'South Korea',flag:'kr'},{name:'Canada',flag:'ca'},
+          {name:'Australia',flag:'au'},{name:'Croatia',flag:'hr'},{name:'Switzerland',flag:'ch'},
+          {name:'Sweden',flag:'se'},{name:'Norway',flag:'no'},{name:'Denmark',flag:'dk'},
+          {name:'Austria',flag:'at'},{name:'Czechia',flag:'cz'},{name:'Scotland',flag:'gb-sct'},
+          {name:'Turkey',flag:'tr'},{name:'Serbia',flag:'rs'},{name:'Ecuador',flag:'ec'},
+          {name:'Iran',flag:'ir'},{name:'Saudi Arabia',flag:'sa'},{name:'Iraq',flag:'iq'},
+          {name:'Algeria',flag:'dz'},{name:'Ivory Coast',flag:'ci'},{name:'South Africa',flag:'za'},
+          {name:'Ghana',flag:'gh'},{name:'Cameroon',flag:'cm'},{name:'DR Congo',flag:'cd'},
+          {name:'Panama',flag:'pa'},{name:'Haiti',flag:'ht'},{name:'Tunisia',flag:'tn'},
+          {name:'Paraguay',flag:'py'},{name:'Uzbekistan',flag:'uz'},{name:'Jordan',flag:'jo'},
+          {name:'Cabo Verde',flag:'cv'},{name:'Curaçao',flag:'cw'},{name:'Bosnia-Herzegovina',flag:'ba'},
+        ].map(t => `
+          <button onclick="selectWinner('${t.name}')" id="winner-btn-${t.name.replace(/[^a-z]/gi,'')}"
+            title="${t.name}"
+            style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px;border-radius:10px;border:2px solid transparent;background:var(--surface2);cursor:pointer;transition:all 0.15s;font-size:9px;color:var(--text-muted);font-weight:600;line-height:1.2;text-align:center;">
+            <img src="https://flagcdn.com/32x24/${t.flag}.png" width="32" height="24" style="border-radius:3px;" onerror="this.style.display='none'">
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%;padding:0 2px;">${t.name.length > 8 ? t.name.substring(0,8)+'…' : t.name}</span>
+          </button>`).join('')}
+      </div>
+      <div id="winner-selected-display" style="margin-top:8px;display:none;align-items:center;gap:8px;padding:8px 12px;background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.3);border-radius:10px;">
+        <span style="font-size:13px;font-weight:700;color:var(--gold);">🏆 Your pick: </span>
+        <span id="winner-selected-name" style="font-size:13px;font-weight:700;"></span>
+        <button onclick="clearWinnerPick()" style="margin-left:auto;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;">✕</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="save-btn" id="winner-lock-btn" style="flex:1; padding:10px 16px; margin-top:0;font-weight:700;" onclick="saveWinnerPick()">🔒 Lock in my pick</button>
       </div>
       <div id="winner-pick-notice" style="font-size:12px;color:var(--text-muted);margin-top:6px;"></div>
     </div>
@@ -4253,6 +4293,19 @@
     }
   }
 
+  // Also watch for _isAdmin to be set asynchronously
+  Object.defineProperty(window, '_isAdmin', {
+    set(val) {
+      this._isAdminValue = val;
+      if (val) {
+        const adminItem = document.getElementById('drawer-admin-item');
+        if (adminItem) adminItem.style.display = 'flex';
+      }
+    },
+    get() { return this._isAdminValue; },
+    configurable: true
+  });
+
   // Swipe down to close — only when scrolled to top
   (function() {
     const drawer = document.getElementById('smart-menu-drawer');
@@ -4844,7 +4897,7 @@
             if (['IN_PLAY','PAUSED','HALFTIME','FINISHED'].includes(d.data().status)) hasLive = true;
           });
           if (hasLive) {
-            renderMatches(freshSnap, activeMatchDate);
+            renderMatches(freshSnap, null, activeWeekFilter);
           }
         }
       } catch(e) {
@@ -5623,10 +5676,14 @@
     if (now >= tournamentDeadline) {
       if (winnerBtn) { winnerBtn.disabled = true; winnerBtn.textContent = 'Locked 🔒'; winnerBtn.style.opacity = '0.5'; }
       if (winnerSel) winnerSel.disabled = true;
+      // Disable winner grid
+      document.querySelectorAll('[id^="winner-btn-"]').forEach(b => { b.disabled = true; b.style.opacity = '0.5'; b.style.cursor = 'default'; });
       if (winnerNotice) winnerNotice.textContent = currentUserData.tournamentWinner ? `🏆 Your pick: ${currentUserData.tournamentWinner}` : '🔒 Deadline passed.';
+      if (currentUserData.tournamentWinner) selectWinner(currentUserData.tournamentWinner);
     } else {
       if (currentUserData.tournamentWinner) {
         if (winnerSel) winnerSel.value = currentUserData.tournamentWinner;
+        selectWinner(currentUserData.tournamentWinner);
         if (winnerNotice) winnerNotice.textContent = `✅ Current pick: ${currentUserData.tournamentWinner}`;
       }
     }
@@ -6211,6 +6268,14 @@
   // LOAD MATCHES
   let allMatchesSnap = null;
   let activeMatchDate = null;
+  let activeWeekFilter = null; // 'week1', 'week2', 'week3', or a specific date for knockout
+
+  // Group stage weeks definition
+  const GROUP_WEEKS = [
+    { key: 'week1', label: 'Week 1', emoji: '🟢', start: new Date('2026-06-11T00:00:00Z'), end: new Date('2026-06-18T00:00:00Z'), dates: [] },
+    { key: 'week2', label: 'Week 2', emoji: '🟡', start: new Date('2026-06-18T00:00:00Z'), end: new Date('2026-06-25T00:00:00Z'), dates: [] },
+    { key: 'week3', label: 'Week 3', emoji: '🔴', start: new Date('2026-06-25T00:00:00Z'), end: new Date('2026-06-28T23:59:59Z'), dates: [] },
+  ];
 
   async function loadMatches() {
     const matchesSnap = await getDocs(query(collection(db, 'matches'), orderBy('kickoff')));
@@ -6221,68 +6286,83 @@
       return;
     }
 
-    // Build date tabs
-    const dateSet = new Set();
-    // Load knockout setting
     const knockoutSnap = await getDoc(doc(db, 'settings', 'knockout'));
     const knockoutEnabled = knockoutSnap.exists() ? knockoutSnap.data().enabled : false;
     window._knockoutEnabled = knockoutEnabled;
-    const KNOCKOUT_START = new Date('2026-06-28T00:00:00Z'); // Round of 32 starts June 28
+    const KNOCKOUT_START = new Date('2026-06-28T00:00:00Z');
 
+    // Separate group stage vs knockout dates
+    const knockoutDateSet = new Set();
     matchesSnap.forEach(d => {
       const kickoff = d.data().kickoff?.toDate?.() || new Date(d.data().kickoff);
-      // Hide knockout dates unless admin has enabled them
-      if (kickoff >= KNOCKOUT_START && !knockoutEnabled) return;
-      const dateKey = kickoff.toLocaleDateString('en-GB', { day:'2-digit', month:'short', timeZone:'Asia/Jerusalem' });
-      dateSet.add(dateKey);
+      if (kickoff >= KNOCKOUT_START) {
+        if (!knockoutEnabled) return;
+        const dateKey = kickoff.toLocaleDateString('en-GB', { day:'2-digit', month:'short', timeZone:'Asia/Jerusalem' });
+        knockoutDateSet.add(dateKey);
+      }
     });
-    const dates = Array.from(dateSet);
+    const knockoutDates = Array.from(knockoutDateSet);
+
     const tabsEl = document.getElementById('matches-date-tabs');
-    if (tabsEl && dates.length > 1) {
-      // Default to first upcoming date
-      const now = new Date();
-      let defaultDate = dates[0];
-      for (const d of dates) {
-        const sample = Array.from(matchesSnap.docs).find(doc => {
-          const k = doc.data().kickoff?.toDate?.() || new Date(doc.data().kickoff);
-          return k.toLocaleDateString('en-GB', { day:'2-digit', month:'short', timeZone:'Asia/Jerusalem' }) === d;
-        });
-        if (sample) {
-          const k = sample.data().kickoff?.toDate?.() || new Date(sample.data().kickoff);
-          if (k >= now) { defaultDate = d; break; }
-        }
-      }
-      activeMatchDate = defaultDate;
+    if (!tabsEl) { renderMatches(matchesSnap, activeMatchDate); return; }
 
-      // Add locked notice if knockout not yet enabled
-      let lockedNotice = '';
-      if (!knockoutEnabled) {
-        lockedNotice = `<div style="font-size:11px;color:var(--text-muted);padding:4px 10px;display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0;border-left:2px solid var(--border);margin-left:4px;">🔒 Knockout stages locked</div>`;
-      }
+    // Default to current/upcoming week
+    const now = new Date();
+    let defaultWeek = GROUP_WEEKS[0].key;
+    for (const w of GROUP_WEEKS) {
+      if (now >= w.start && now < w.end) { defaultWeek = w.key; break; }
+      if (now < w.start) { defaultWeek = w.key; break; }
+    }
+    // If past all group stage, default to first knockout date
+    if (now >= new Date('2026-06-28T23:59:59Z') && knockoutDates.length > 0) {
+      defaultWeek = knockoutDates[0];
+    }
+    activeWeekFilter = defaultWeek;
+    activeMatchDate = null;
 
-      tabsEl.innerHTML = ['All', ...dates].map(d => {
-        const isJune28 = d === '28 Jun';
-        const label = isJune28 ? '28 Jun 🌙' : d;
-        const title = isJune28 ? 'Night of Jun 27→28 (Israel time)' : '';
-        return `<button onclick="filterMatchesByDate('${d}')" id="date-tab-${d.replace(/ /g,'_')}"
-          title="${title}"
-          style="flex-shrink:0;padding:5px 12px;border-radius:99px;border:0.5px solid ${d===defaultDate?'var(--green)':'var(--border)'};background:${d===defaultDate?'var(--green)':'none'};color:${d===defaultDate?'white':'var(--text-muted)'};font-size:12px;cursor:pointer;white-space:nowrap;">
-          ${label}
+    // Build tabs
+    let tabsHtml = '';
+
+    // Week tabs for group stage
+    GROUP_WEEKS.forEach(w => {
+      const isActive = w.key === activeWeekFilter;
+      const weekDates = { 'week1':'Jun 11–17', 'week2':'Jun 18–24', 'week3':'Jun 25–27' };
+      tabsHtml += `<button onclick="filterMatchesByWeek('${w.key}')" id="week-tab-${w.key}"
+        style="flex-shrink:0;padding:7px 14px;border-radius:99px;border:1px solid ${isActive?'var(--accent)':'var(--border)'};background:${isActive?'var(--accent)':'none'};color:${isActive?'white':'var(--text-muted)'};font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px;transition:all 0.15s;">
+        ${w.emoji} ${w.label} <span style="font-size:10px;opacity:0.7;">${weekDates[w.key]}</span>
+      </button>`;
+    });
+
+    // Knockout dates (if enabled)
+    if (knockoutEnabled && knockoutDates.length > 0) {
+      tabsHtml += `<div style="width:1px;height:24px;background:var(--border);align-self:center;flex-shrink:0;margin:0 4px;"></div>`;
+      knockoutDates.forEach(d => {
+        const isActive = d === activeWeekFilter;
+        tabsHtml += `<button onclick="filterMatchesByWeek('${d}')" id="week-tab-${d.replace(/ /g,'_')}"
+          style="flex-shrink:0;padding:7px 12px;border-radius:99px;border:1px solid ${isActive?'var(--gold)':'var(--border)'};background:${isActive?'rgba(212,175,55,0.15)':'none'};color:${isActive?'var(--gold)':'var(--text-muted)'};font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.15s;">
+          ⚡ ${d}
         </button>`;
-      }).join('') + lockedNotice;
+      });
+    } else if (!knockoutEnabled) {
+      tabsHtml += `<div style="font-size:11px;color:var(--text-muted);padding:6px 10px;display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0;border-left:2px solid var(--border);margin-left:4px;">🔒 Knockout locked</div>`;
     }
 
-    renderMatches(matchesSnap, activeMatchDate);
-
-    // Show note if June 28 tab exists (last group stage matches played late Jun 27 Israel time)
-    if (dates.includes('28 Jun')) {
-      const note = document.createElement('div');
-      note.style.cssText = 'font-size:11px;color:var(--text-muted);margin-bottom:0.75rem;padding:0 2px;';
-      note.textContent = '🌙 Jun 28 = matches played on the night of Jun 27→28 (Israel time)';
-      document.getElementById('matches-date-tabs')?.parentElement?.after(note);
-    }
+    tabsEl.innerHTML = tabsHtml;
+    renderMatches(matchesSnap, null, activeWeekFilter);
   }
 
+  window.filterMatchesByWeek = (weekKey) => {
+    activeWeekFilter = weekKey;
+    // Update tab styles
+    document.querySelectorAll('[id^="week-tab-"]').forEach(btn => {
+      const isKnockout = !['week1','week2','week3'].includes(weekKey);
+      const isActive = btn.id === `week-tab-${weekKey.replace(/ /g,'_')}`;
+      btn.style.background = isActive ? (isKnockout ? 'rgba(212,175,55,0.15)' : 'var(--accent)') : 'none';
+      btn.style.color = isActive ? (isKnockout ? 'var(--gold)' : 'white') : 'var(--text-muted)';
+      btn.style.borderColor = isActive ? (isKnockout ? 'var(--gold)' : 'var(--accent)') : 'var(--border)';
+    });
+    renderMatches(allMatchesSnap, null, weekKey);
+  };
   window.scrollDateTabs = (dir) => {
     const el = document.getElementById('matches-date-tabs');
     if (el) el.scrollBy({ left: dir * 120, behavior: 'smooth' });
@@ -6299,16 +6379,18 @@
     renderMatches(allMatchesSnap, activeMatchDate);
   };
 
-  function renderMatches(matchesSnap, filterDate) {
+  function renderMatches(matchesSnap, filterDate, weekFilter) {
     const container = document.getElementById('matches-list');
 
-    // Add Save All button for current date tab
     const saveAllArea = document.getElementById('save-all-area');
-    if (saveAllArea && filterDate) {
-      saveAllArea.innerHTML = '';
-    } else if (saveAllArea) {
-      saveAllArea.innerHTML = '';
-    }
+    if (saveAllArea) saveAllArea.innerHTML = '';
+
+    const KNOCKOUT_START = new Date('2026-06-28T00:00:00Z');
+    const GROUP_WEEK_RANGES = {
+      'week1': { start: new Date('2026-06-11T00:00:00Z'), end: new Date('2026-06-18T00:00:00Z') },
+      'week2': { start: new Date('2026-06-18T00:00:00Z'), end: new Date('2026-06-25T00:00:00Z') },
+      'week3': { start: new Date('2026-06-25T00:00:00Z'), end: new Date('2026-06-28T23:59:59Z') },
+    };
 
     const TEAM_FLAGS = {
       // North/Central America & Caribbean
@@ -6370,8 +6452,18 @@
       const kickoff = m.kickoff?.toDate?.() || new Date(m.kickoff);
       // Hide knockout matches if not enabled
       if (kickoff >= KNOCKOUT_START_R && !window._knockoutEnabled) return;
-      // Filter by date tab
-      if (filterDate) {
+      // Filter by week or date
+      if (weekFilter) {
+        if (GROUP_WEEK_RANGES[weekFilter]) {
+          // Group stage week filter
+          const { start, end } = GROUP_WEEK_RANGES[weekFilter];
+          if (kickoff < start || kickoff > end) return;
+        } else {
+          // Knockout date filter (specific date string)
+          const dateKey = kickoff.toLocaleDateString('en-GB', { day:'2-digit', month:'short', timeZone:'Asia/Jerusalem' });
+          if (dateKey !== weekFilter) return;
+        }
+      } else if (filterDate) {
         const dateKey = kickoff.toLocaleDateString('en-GB', { day:'2-digit', month:'short', timeZone:'Asia/Jerusalem' });
         if (dateKey !== filterDate) return;
       }
@@ -6398,7 +6490,7 @@
         </div>` : '';
 
       html += `
-        <div class="match-card" style="${isLive ? 'border-color:#E24B4A;' : ''}">
+        <div class="match-card" data-match-id="${d.id}" data-home="${m.homeTeam}" data-away="${m.awayTeam}" style="${isLive ? 'border-color:#E24B4A;' : ''}">
           <div class="match-meta">
             <span class="group">${(m.group || '').replace(/_/g, ' ')}</span>
             <div style="display:flex;align-items:center;gap:8px;">
@@ -6664,20 +6756,56 @@
     }
   };
 
+  window.selectWinner = (team) => {
+    // Update hidden select
+    const sel = document.getElementById('winner-pick-select');
+    if (sel) sel.value = team;
+    // Highlight selected button
+    document.querySelectorAll('[id^="winner-btn-"]').forEach(b => {
+      b.style.borderColor = 'transparent';
+      b.style.background = 'var(--surface2)';
+      b.style.color = 'var(--text-muted)';
+    });
+    const btnId = 'winner-btn-' + team.replace(/[^a-z]/gi,'');
+    const btn = document.getElementById(btnId);
+    if (btn) {
+      btn.style.borderColor = '#d4af37';
+      btn.style.background = 'rgba(212,175,55,0.12)';
+      btn.style.color = 'var(--text)';
+    }
+    // Show selected display
+    const display = document.getElementById('winner-selected-display');
+    const nameEl = document.getElementById('winner-selected-name');
+    if (display) display.style.display = 'flex';
+    if (nameEl) nameEl.textContent = team;
+  };
+
+  window.clearWinnerPick = () => {
+    const sel = document.getElementById('winner-pick-select');
+    if (sel) sel.value = '';
+    document.querySelectorAll('[id^="winner-btn-"]').forEach(b => {
+      b.style.borderColor = 'transparent';
+      b.style.background = 'var(--surface2)';
+      b.style.color = 'var(--text-muted)';
+    });
+    const display = document.getElementById('winner-selected-display');
+    if (display) display.style.display = 'none';
+  };
+
   window.saveWinnerPick = async () => {
     const sel = document.getElementById('winner-pick-select');
     const notice = document.getElementById('winner-pick-notice');
     const btn = document.getElementById('winner-lock-btn');
     const val = sel?.value;
-    if (!val) return alert('Please select a team!');
+    if (!val) return alert('Please select a team first!');
     const deadline = new Date('2026-06-10T19:00:00Z');
     if (new Date() >= deadline) return alert('Deadline has passed!');
     btn.disabled = true; btn.textContent = 'Saving...';
     await updateDoc(doc(db, 'users', currentUser.uid), { tournamentWinner: val });
     currentUserData.tournamentWinner = val;
     if (notice) notice.textContent = `✅ Locked in: ${val}`;
-    btn.textContent = 'Saved ✅';
-    setTimeout(() => { btn.textContent = 'Lock in'; btn.disabled = false; }, 2000);
+    btn.textContent = '✅ Saved!';
+    setTimeout(() => { btn.textContent = '🔒 Lock in my pick'; btn.disabled = false; }, 2000);
   };
 
   window.saveTournamentPlayer = async () => {
@@ -12343,4 +12471,135 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
       </div>
     </div>
   </div>
+  <!-- AI Auto-fill Modal -->
+  <div id="ai-fill-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:1001;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);">
+    <div style="background:var(--surface);border-radius:20px;padding:1.75rem 1.5rem;width:340px;max-width:92vw;border:1px solid rgba(124,58,237,0.3);box-shadow:0 20px 60px rgba(0,0,0,0.4);position:relative;">
+      <div style="text-align:center;margin-bottom:1.25rem;">
+        <div style="font-size:48px;margin-bottom:8px;">🤖</div>
+        <div style="font-size:18px;font-weight:800;margin-bottom:6px;">AI Auto-fill Predictions</div>
+        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">The AI will analyze team form, stats and tournament history to fill in score predictions and first goalscorers for all upcoming matches in the current week.<br><br><strong style="color:var(--text);">⚠️ This will overwrite your current picks for this week.</strong> You can edit them after.</div>
+      </div>
+      <div id="ai-fill-status" style="display:none;padding:10px;background:var(--surface2);border-radius:10px;font-size:13px;text-align:center;margin-bottom:1rem;color:var(--text-muted);">🤖 AI is thinking...</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="closeAIFillModal()" style="flex:1;padding:11px;border-radius:10px;border:1px solid var(--border);background:none;color:var(--text-muted);font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>
+        <button onclick="runAIFill()" id="ai-fill-confirm-btn" style="flex:2;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(124,58,237,0.4);">🚀 Fill my predictions!</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  window.showAIFillModal = () => {
+    const el = document.getElementById('ai-fill-overlay');
+    el.style.display = 'flex';
+    document.getElementById('ai-fill-status').style.display = 'none';
+    document.getElementById('ai-fill-confirm-btn').disabled = false;
+    document.getElementById('ai-fill-confirm-btn').textContent = '🚀 Fill my predictions!';
+  };
+  window.closeAIFillModal = () => {
+    document.getElementById('ai-fill-overlay').style.display = 'none';
+  };
+
+  window.runAIFill = async () => {
+    const btn = document.getElementById('ai-fill-confirm-btn');
+    const status = document.getElementById('ai-fill-status');
+    btn.disabled = true;
+    btn.textContent = '⏳ Working...';
+    status.style.display = 'block';
+    status.textContent = '🤖 AI is analyzing all matches...';
+
+    try {
+      // Get visible matches from current week
+      const matchCards = document.querySelectorAll('.match-card[data-match-id]');
+      if (matchCards.length === 0) {
+        status.textContent = '⚠️ No matches visible. Switch to a week tab first.';
+        btn.disabled = false; btn.textContent = '🚀 Fill my predictions!';
+        return;
+      }
+
+      // Build match list for AI
+      const matches = [];
+      matchCards.forEach(card => {
+        const home = card.dataset.home;
+        const away = card.dataset.away;
+        const matchId = card.dataset.matchId;
+        if (home && away) matches.push({ matchId, home, away });
+      });
+
+      status.textContent = `🤖 Getting predictions for ${matches.length} matches...`;
+
+      const prompt = `You are a World Cup 2026 expert. Predict scores and first goalscorers for these matches. Respond ONLY with JSON array, no other text:
+[{"matchId":"id","home":N,"away":N,"scorer":"Player Name (Team)"},...]
+
+Matches:
+${matches.map(m => `${m.matchId}: ${m.home} vs ${m.away}`).join('\n')}
+
+Rules:
+- Realistic scores (0-0 to 4-2 range)
+- First scorer must be a realistic star player from one of the teams
+- Format scorer as "FirstName LastName"`;
+
+      const response = await fetch('/api/coach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          coachId: 'analyst',
+          message: prompt,
+          history: [],
+          language: 'en'
+        })
+      });
+
+      const data = await response.json();
+      const text = data.reply || data.content || '';
+
+      // Parse JSON from response
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) throw new Error('Could not parse AI response');
+      const predictions = JSON.parse(jsonMatch[0]);
+
+      // Fill in the inputs
+      let filled = 0;
+      predictions.forEach(pred => {
+        const card = document.querySelector(`.match-card[data-match-id="${pred.matchId}"]`);
+        if (!card) return;
+        const inputs = card.querySelectorAll('.score-input');
+        if (inputs.length >= 2) {
+          inputs[0].value = pred.home ?? '';
+          inputs[1].value = pred.away ?? '';
+          inputs[0].dispatchEvent(new Event('input'));
+          inputs[1].dispatchEvent(new Event('input'));
+        }
+        // Fill scorer
+        if (pred.scorer) {
+          const select = card.querySelector('select');
+          if (select) {
+            // Try to find matching option
+            const opts = Array.from(select.options);
+            const match = opts.find(o => o.value.toLowerCase().includes(pred.scorer.split(' ')[1]?.toLowerCase() || pred.scorer.toLowerCase()));
+            if (match) {
+              select.value = match.value;
+              select.dispatchEvent(new Event('change'));
+            }
+          }
+        }
+        filled++;
+      });
+
+      status.style.background = 'rgba(29,158,117,0.1)';
+      status.style.color = 'var(--green)';
+      status.textContent = `✅ Filled ${filled} matches! Review and save when ready.`;
+      btn.textContent = '✅ Done!';
+      setTimeout(() => closeAIFillModal(), 2000);
+
+    } catch(e) {
+      console.error('AI fill error:', e);
+      status.style.background = 'rgba(239,68,68,0.1)';
+      status.style.color = '#ef4444';
+      status.textContent = '❌ Error: ' + e.message;
+      btn.disabled = false;
+      btn.textContent = '🔄 Try again';
+    }
+  };
+  </script>
+
 </body>
