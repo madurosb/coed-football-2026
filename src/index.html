@@ -1494,73 +1494,75 @@
         <span>AI Fill</span>
       </button>
     </div>
-    <img src="https://coed-football-2026.vercel.app/match-card.png" alt="" style="width:100%; height:auto; border-radius:12px; margin-bottom:1.5rem;">
-    <div class="player-pick">
-      <h3>⭐ Your tournament player</h3>
-      <p>Pick one player — every goal = +2 pts, assist = +1 pt, red card = −1 pt.</p>
-      <!-- Hidden select for save compatibility -->
-      <select id="tournament-player-select" style="display:none;"></select>
-      <!-- Modern searchable picker -->
-      <div style="position:relative;margin-bottom:8px;">
-        <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;">🔍</span>
-        <input type="text" id="player-search" placeholder="Search player or country..." autocomplete="off"
-          style="width:100%;padding:9px 12px 9px 32px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;box-sizing:border-box;"
-          oninput="filterPlayerCards(this.value)">
-      </div>
-      <!-- Player cards grid -->
-      <div id="player-cards-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:240px;overflow-y:auto;padding:2px;border-radius:10px;"></div>
-      <!-- Selected player display -->
-      <div id="player-selected-display" style="display:none;margin-top:8px;padding:10px 14px;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:10px;display:none;align-items:center;gap:10px;">
-        <span style="font-size:22px;" id="player-selected-flag"></span>
-        <div style="flex:1;">
-          <div style="font-size:14px;font-weight:700;" id="player-selected-name-display"></div>
-          <div style="font-size:11px;color:var(--text-muted);" id="player-selected-country"></div>
+    <img src="https://coed-football-2026.vercel.app/match-card.png" alt="" style="width:100%; height:auto; border-radius:12px; margin-bottom:1rem;">
+
+    <!-- TOURNAMENT PLAYER collapsible -->
+    <div class="player-pick" style="margin-bottom:0.75rem;padding:0;overflow:hidden;">
+      <div onclick="togglePickerSection('player-picker-body','player-picker-chevron')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;user-select:none;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:20px;">⭐</span>
+          <div>
+            <div style="font-size:14px;font-weight:800;">Your tournament player</div>
+            <div style="font-size:11px;color:var(--text-muted);" id="player-pick-summary">Goal=+2pts · Assist=+1pt · Red card=−1pt</div>
+          </div>
         </div>
-        <button onclick="clearPlayerPick()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:0;">✕</button>
+        <span id="player-picker-chevron" style="font-size:16px;color:var(--text-muted);transition:transform 0.2s;">▾</span>
       </div>
-      <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
-        <button class="save-btn" id="tournament-lock-btn" style="flex:1;padding:10px 16px;margin-top:0;font-weight:700;" onclick="saveTournamentPlayer()">🔒 Lock in player</button>
+      <div id="player-picker-body" style="display:none;padding:0 16px 16px;">
+        <select id="tournament-player-select" style="display:none;"></select>
+        <div style="position:relative;margin-bottom:8px;">
+          <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;">🔍</span>
+          <input type="text" id="player-search" placeholder="Search player or country..." autocomplete="off"
+            style="width:100%;padding:9px 12px 9px 32px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;box-sizing:border-box;"
+            oninput="filterPlayerCards(this.value)">
+        </div>
+        <div style="font-size:10px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:5px;">⭐ Suggested picks</div>
+        <div id="player-cards-grid-suggested" style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:10px;"></div>
+        <div style="font-size:10px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:5px;">All players</div>
+        <div id="player-cards-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;max-height:200px;overflow-y:auto;"></div>
+        <div id="player-selected-display" style="display:none;margin-top:10px;padding:10px 14px;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:10px;align-items:center;gap:10px;">
+          <span style="font-size:22px;" id="player-selected-flag"></span>
+          <div style="flex:1;"><div style="font-size:14px;font-weight:700;" id="player-selected-name-display"></div><div style="font-size:11px;color:var(--text-muted);" id="player-selected-country"></div></div>
+          <button onclick="clearPlayerPick()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;">✕</button>
+        </div>
+        <button class="save-btn" id="tournament-lock-btn" style="width:100%;padding:10px 16px;margin-top:10px;font-weight:700;" onclick="saveTournamentPlayer()">🔒 Lock in player</button>
+        <div id="tournament-deadline-notice" style="font-size:12px;color:var(--text-muted);margin-top:6px;"></div>
       </div>
-      <div id="tournament-deadline-notice" style="font-size:12px;color:var(--text-muted);margin-top:6px;"></div>
     </div>
 
-    <!-- TOURNAMENT WINNER PICK -->
-    <div class="player-pick" style="margin-bottom:1rem;">
-      <h3>🏆 Who will win the World Cup?</h3>
-      <p>Pick the tournament winner. Correct = <strong>+15 bonus points</strong>. Must be locked in before June 10.</p>
-      <!-- Hidden select for compatibility -->
-      <select id="winner-pick-select" style="display:none;">
-        <option value="">Select a team...</option>
-        <option>Argentina</option><option>France</option><option>Brazil</option>
-        <option>England</option><option>Portugal</option><option>Spain</option>
-        <option>Germany</option><option>Netherlands</option><option>Belgium</option>
-        <option>Uruguay</option><option>Colombia</option><option>USA</option>
-        <option>Mexico</option><option>Morocco</option><option>Senegal</option>
-        <option>Japan</option><option>South Korea</option><option>Canada</option>
-        <option>Australia</option><option>Croatia</option><option>Switzerland</option>
-        <option>Sweden</option><option>Norway</option><option>Denmark</option>
-        <option>Austria</option><option>Czechia</option><option>Scotland</option>
-        <option>Turkey</option><option>Serbia</option><option>Poland</option>
-        <option>Ukraine</option><option>Ecuador</option><option>Iran</option>
-        <option>Saudi Arabia</option><option>Iraq</option>
-        <option>Ghana</option><option>Ivory Coast</option><option>Egypt</option>
-        <option>Cameroon</option><option>Algeria</option><option>South Africa</option>
-        <option>New Zealand</option><option>Uzbekistan</option><option>DR Congo</option>
-        <option>Panama</option><option>Haiti</option><option>Jordan</option>
-        <option>Cabo Verde</option><option>Curaçao</option><option>Bosnia-Herzegovina</option>
-        <option>Paraguay</option><option>Tunisia</option>
-      </select>
-      <!-- Modern flag grid — filled by JS -->
-      <div id="winner-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:10px;max-height:220px;overflow-y:auto;padding:4px;"></div>
-      <div id="winner-selected-display" style="margin-top:8px;display:none;align-items:center;gap:8px;padding:8px 12px;background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.3);border-radius:10px;">
-        <span style="font-size:13px;font-weight:700;color:var(--gold);">🏆 Your pick: </span>
-        <span id="winner-selected-name" style="font-size:13px;font-weight:700;"></span>
-        <button onclick="clearWinnerPick()" style="margin-left:auto;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;">✕</button>
+    <!-- TOURNAMENT WINNER collapsible -->
+    <div class="player-pick" style="margin-bottom:1rem;padding:0;overflow:hidden;">
+      <div onclick="togglePickerSection('winner-picker-body','winner-picker-chevron')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;user-select:none;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:20px;">🏆</span>
+          <div>
+            <div style="font-size:14px;font-weight:800;">Who will win the World Cup?</div>
+            <div style="font-size:11px;color:var(--text-muted);" id="winner-pick-summary">Correct = +15 bonus points</div>
+          </div>
+        </div>
+        <span id="winner-picker-chevron" style="font-size:16px;color:var(--text-muted);transition:transform 0.2s;">▾</span>
       </div>
-      <div style="display:flex;gap:8px;margin-top:8px;">
-        <button class="save-btn" id="winner-lock-btn" style="flex:1; padding:10px 16px; margin-top:0;font-weight:700;" onclick="saveWinnerPick()">🔒 Lock in my pick</button>
+      <div id="winner-picker-body" style="display:none;padding:0 16px 16px;">
+        <select id="winner-pick-select" style="display:none;">
+          <option value="">Select a team...</option>
+          <option>Argentina</option><option>France</option><option>Brazil</option><option>England</option><option>Portugal</option><option>Spain</option>
+          <option>Germany</option><option>Netherlands</option><option>Belgium</option><option>Uruguay</option><option>Colombia</option><option>USA</option>
+          <option>Mexico</option><option>Morocco</option><option>Senegal</option><option>Japan</option><option>South Korea</option><option>Canada</option>
+          <option>Australia</option><option>Croatia</option><option>Switzerland</option><option>Sweden</option><option>Norway</option><option>Denmark</option>
+          <option>Austria</option><option>Czechia</option><option>Scotland</option><option>Turkey</option><option>Serbia</option><option>Ecuador</option>
+          <option>Iran</option><option>Saudi Arabia</option><option>Iraq</option><option>Ghana</option><option>Ivory Coast</option><option>Algeria</option>
+          <option>South Africa</option><option>DR Congo</option><option>Cameroon</option><option>Panama</option><option>Haiti</option><option>Jordan</option>
+          <option>Cabo Verde</option><option>Curaçao</option><option>Bosnia-Herzegovina</option><option>Paraguay</option><option>Tunisia</option><option>Uzbekistan</option>
+        </select>
+        <div id="winner-grid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;padding:2px;max-height:220px;overflow-y:auto;"></div>
+        <div id="winner-selected-display" style="display:none;margin-top:10px;align-items:center;gap:8px;padding:10px 14px;background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.3);border-radius:10px;">
+          <span style="font-size:13px;font-weight:700;color:var(--gold);">🏆 Your pick: </span>
+          <span id="winner-selected-name" style="font-size:13px;font-weight:700;"></span>
+          <button onclick="clearWinnerPick()" style="margin-left:auto;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;">✕</button>
+        </div>
+        <button class="save-btn" id="winner-lock-btn" style="width:100%;padding:10px 16px;margin-top:10px;font-weight:700;" onclick="saveWinnerPick()">🔒 Lock in my pick</button>
+        <div id="winner-pick-notice" style="font-size:12px;color:var(--text-muted);margin-top:6px;"></div>
       </div>
-      <div id="winner-pick-notice" style="font-size:12px;color:var(--text-muted);margin-top:6px;"></div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
       <p class="section-title" style="margin-bottom:0;">Group stage predictions — June 11-27 · Round of 32 unlocks after group results ⚡</p>
@@ -5840,7 +5842,10 @@
         </div>` : '';
 
       html += `
-        <div class="match-card" data-match-id="${d.id}" data-home="${m.homeTeam}" data-away="${m.awayTeam}" style="${isLive ? 'border-color:#E24B4A;' : ''}">
+        <div class="match-card" data-match-id="${d.id}" data-home="${m.homeTeam}" data-away="${m.awayTeam}"
+          data-home-players='${JSON.stringify(getPlayersForTeam(m.homeTeam, m.homePlayers)).replace(/'/g,"&#39;")}'
+          data-away-players='${JSON.stringify(getPlayersForTeam(m.awayTeam, m.awayPlayers)).replace(/'/g,"&#39;")}'
+          style="${isLive ? 'border-color:#E24B4A;' : ''}">
           <div class="match-meta">
             <span class="group">${(m.group || '').replace(/_/g, ' ')}</span>
             <div style="display:flex;align-items:center;gap:8px;">
@@ -5893,13 +5898,10 @@
               </select>
               ${!isPast ? `
               <button id="scorer-btn-${d.id}"
-                onclick="openScorerPicker('${d.id}',
-                  ${JSON.stringify(getPlayersForTeam(m.homeTeam, m.homePlayers))},
-                  ${JSON.stringify(getPlayersForTeam(m.awayTeam, m.awayPlayers))},
-                  '${m.homeTeam.replace(/'/g,"\\'")}',
-                  '${m.awayTeam.replace(/'/g,"\\'")}',
-                  document.getElementById('scorer-${d.id}')?.value
-                )"
+                data-match-id="${d.id}"
+                data-home-team="${m.homeTeam.replace(/"/g,'&quot;')}"
+                data-away-team="${m.awayTeam.replace(/"/g,'&quot;')}"
+                onclick="openScorerPickerById('${d.id}')"
                 style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;min-width:160px;max-width:200px;text-align:left;">
                 <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="scorer-label-${d.id}">⚽ Pick scorer...</span>
                 <span style="font-size:11px;flex-shrink:0;">▾</span>
@@ -6127,6 +6129,32 @@
     }
   };
 
+  // ═══ COLLAPSIBLE PICKER SECTIONS ═══
+  window.togglePickerSection = (bodyId, chevronId) => {
+    const body = document.getElementById(bodyId);
+    const chevron = document.getElementById(chevronId);
+    if (!body) return;
+    const isOpen = body.style.display !== 'none';
+    body.style.display = isOpen ? 'none' : 'block';
+    if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+  };
+
+  // Suggested stars — top picks for tournament player
+  const SUGGESTED_PLAYERS = [
+    {name:'Kylian Mbappé',country:'France',flag:'fr'},
+    {name:'Erling Haaland',country:'Norway',flag:'no'},
+    {name:'Lionel Messi',country:'Argentina',flag:'ar'},
+    {name:'Vinicius Jr.',country:'Brazil',flag:'br'},
+    {name:'Jude Bellingham',country:'England',flag:'gb-eng'},
+    {name:'Lamine Yamal',country:'Spain',flag:'es'},
+    {name:'Florian Wirtz',country:'Germany',flag:'de'},
+    {name:'Cristiano Ronaldo',country:'Portugal',flag:'pt'},
+    {name:'Son Heung-min',country:'South Korea',flag:'kr'},
+    {name:'Achraf Hakimi',country:'Morocco',flag:'ma'},
+    {name:'Alphonso Davies',country:'Canada',flag:'ca'},
+    {name:'Martin Odegaard',country:'Norway',flag:'no'},
+  ];
+
   // ═══ WINNER TEAMS DATA ═══
   const WC_TEAMS = [
     {name:'Argentina',flag:'ar'},{name:'France',flag:'fr'},{name:'Brazil',flag:'br'},
@@ -6177,6 +6205,17 @@
     const nameEl = document.getElementById('winner-selected-name');
     if (display) display.style.display = 'flex';
     if (nameEl) nameEl.textContent = team;
+    // Update summary and auto-close
+    const summary = document.getElementById('winner-pick-summary');
+    if (summary) summary.textContent = `🏆 ${team} · Correct = +15pts`;
+    setTimeout(() => {
+      const body = document.getElementById('winner-picker-body');
+      const chevron = document.getElementById('winner-picker-chevron');
+      if (body && body.style.display !== 'none') {
+        body.style.display = 'none';
+        if (chevron) chevron.style.transform = '';
+      }
+    }, 400);
   };
 
   window.clearWinnerPick = () => {
@@ -6236,9 +6275,9 @@
 
   function initPlayerCardsGrid(currentPlayer) {
     const grid = document.getElementById('player-cards-grid');
+    const suggestedGrid = document.getElementById('player-cards-grid-suggested');
     const hiddenSelect = document.getElementById('tournament-player-select');
     if (!grid) return;
-    // Also populate hidden select for save compatibility
     if (hiddenSelect && hiddenSelect.options.length <= 1) {
       const groups = {};
       ALL_PLAYERS_DATA.forEach(p => {
@@ -6246,33 +6285,36 @@
         if (!groups[p.country].find(x => x.name === p.name)) groups[p.country].push(p);
       });
       hiddenSelect.innerHTML = '<option value="">Select...</option>' +
-        Object.entries(groups).sort((a,b)=>a[0].localeCompare(b[0])).map(([country,players]) =>
-          `<optgroup label="${country}">${players.map(p=>`<option value="${p.name}">${p.name} (${p.country})</option>`).join('')}</optgroup>`
+        Object.entries(groups).sort((a,b)=>a[0].localeCompare(b[0])).map(([c,ps]) =>
+          `<optgroup label="${c}">${ps.map(p=>`<option value="${p.name}">${p.name} (${p.country})</option>`).join('')}</optgroup>`
         ).join('');
     }
+    if (suggestedGrid) suggestedGrid.innerHTML = SUGGESTED_PLAYERS.map(p => renderPlayerCardHTML(p, currentPlayer)).join('');
     renderPlayerCards(ALL_PLAYERS_DATA, currentPlayer);
+  }
+
+  function renderPlayerCardHTML(p, selected) {
+    const isSelected = p.name === selected;
+    const safeName = p.name.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    const safeCountry = p.country.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    return `<button onclick="selectPlayerCard('${safeName}','${safeCountry}','${p.flag}')"
+      class="player-card-btn" data-name="${p.name.replace(/"/g,'&quot;')}" data-country="${p.country}"
+      style="display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:10px;border:2px solid ${isSelected?'var(--accent)':'transparent'};background:${isSelected?'rgba(59,130,246,0.1)':'var(--surface2)'};cursor:pointer;transition:all 0.15s;text-align:left;min-width:0;width:100%;">
+      <img src="https://flagcdn.com/20x15/${p.flag}.png" width="20" height="15" style="border-radius:2px;flex-shrink:0;" onerror="this.style.display='none'">
+      <div style="min-width:0;flex:1;">
+        <div style="font-size:11px;font-weight:700;color:${isSelected?'var(--accent)':'var(--text)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</div>
+        <div style="font-size:9px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.country}</div>
+      </div>
+    </button>`;
   }
 
   function renderPlayerCards(players, selected) {
     const grid = document.getElementById('player-cards-grid');
     if (!grid) return;
-    // Deduplicate
     const seen = new Set();
     const unique = players.filter(p => { const k=p.name+p.country; if(seen.has(k)) return false; seen.add(k); return true; });
-    grid.innerHTML = unique.map(p => {
-      const isSelected = p.name === selected;
-      return `<button onclick="selectPlayerCard('${p.name.replace(/'/g,"\\'")}','${p.country.replace(/'/g,"\\'")}','${p.flag}')" 
-        class="player-card-btn" data-name="${p.name}" data-country="${p.country}"
-        style="display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:10px;border:2px solid ${isSelected?'var(--accent)':'transparent'};background:${isSelected?'rgba(59,130,246,0.1)':'var(--surface2)'};cursor:pointer;transition:all 0.15s;text-align:left;min-width:0;">
-        <img src="https://flagcdn.com/20x15/${p.flag}.png" width="20" height="15" style="border-radius:2px;flex-shrink:0;" onerror="this.style.display='none'">
-        <div style="min-width:0;flex:1;">
-          <div style="font-size:11px;font-weight:700;color:${isSelected?'var(--accent)':'var(--text)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</div>
-          <div style="font-size:9px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.country}</div>
-        </div>
-      </button>`;
-    }).join('');
+    grid.innerHTML = unique.map(p => renderPlayerCardHTML(p, selected)).join('');
   }
-
   window.filterPlayerCards = (term) => {
     const lc = term.toLowerCase().trim();
     const filtered = lc ? ALL_PLAYERS_DATA.filter(p =>
@@ -6284,14 +6326,13 @@
   window.selectPlayerCard = (name, country, flag) => {
     const sel = document.getElementById('tournament-player-select');
     if (sel) sel.value = name;
-    // Update all cards
     document.querySelectorAll('.player-card-btn').forEach(b => {
       const isMe = b.dataset.name === name;
       b.style.borderColor = isMe ? 'var(--accent)' : 'transparent';
       b.style.background = isMe ? 'rgba(59,130,246,0.1)' : 'var(--surface2)';
-      b.querySelector('div div:first-child').style.color = isMe ? 'var(--accent)' : 'var(--text)';
+      const label = b.querySelector('div div:first-child');
+      if (label) label.style.color = isMe ? 'var(--accent)' : 'var(--text)';
     });
-    // Show selected display
     const display = document.getElementById('player-selected-display');
     if (display) {
       display.style.display = 'flex';
@@ -6304,10 +6345,19 @@
         img.src = `https://flagcdn.com/32x24/${flag}.png`;
         img.style.cssText = 'width:32px;height:24px;border-radius:3px;flex-shrink:0;';
         display.insertBefore(img, display.firstChild);
-      } else {
-        flagImg.src = `https://flagcdn.com/32x24/${flag}.png`;
-      }
+      } else { flagImg.src = `https://flagcdn.com/32x24/${flag}.png`; }
     }
+    // Update header summary and auto-close after short delay
+    const summary = document.getElementById('player-pick-summary');
+    if (summary) summary.textContent = `⭐ ${name} (${country})`;
+    setTimeout(() => {
+      const body = document.getElementById('player-picker-body');
+      const chevron = document.getElementById('player-picker-chevron');
+      if (body && body.style.display !== 'none') {
+        body.style.display = 'none';
+        if (chevron) chevron.style.transform = '';
+      }
+    }, 400);
   };
 
   window.clearPlayerPick = () => {
@@ -12204,6 +12254,18 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
   }
 
   // ═══ FIRST GOALSCORER PICKER — replace per-match dropdowns ═══
+  window.openScorerPickerById = (matchId) => {
+    const card = document.querySelector(`.match-card[data-match-id="${matchId}"]`);
+    if (!card) return;
+    const homeTeam = card.dataset.home;
+    const awayTeam = card.dataset.away;
+    let homePlayers = [], awayPlayers = [];
+    try { homePlayers = JSON.parse(card.dataset.homePlayers || '[]'); } catch(e) {}
+    try { awayPlayers = JSON.parse(card.dataset.awayPlayers || '[]'); } catch(e) {}
+    const currentVal = document.getElementById('scorer-' + matchId)?.value || '';
+    openScorerPicker(matchId, homePlayers, awayPlayers, homeTeam, awayTeam, currentVal);
+  };
+
   window.openScorerPicker = (matchId, homePlayers, awayPlayers, homeTeam, awayTeam, currentVal) => {
     const players = [
       ...homePlayers.map(n => ({ name: n, team: homeTeam })),
@@ -12276,7 +12338,6 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
     status.textContent = '🤖 AI is analyzing all matches...';
 
     try {
-      // Get visible matches from current week
       const matchCards = document.querySelectorAll('.match-card[data-match-id]');
       if (matchCards.length === 0) {
         status.textContent = '⚠️ No matches visible. Switch to a week tab first.';
@@ -12284,69 +12345,99 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
         return;
       }
 
-      // Build match list for AI
       const matches = [];
       matchCards.forEach(card => {
         const home = card.dataset.home;
         const away = card.dataset.away;
         const matchId = card.dataset.matchId;
-        if (home && away) matches.push({ matchId, home, away });
+        // Only upcoming (inputs not disabled)
+        const inputs = card.querySelectorAll('.score-input');
+        const isLocked = inputs.length > 0 && inputs[0].disabled;
+        if (home && away && !isLocked) matches.push({ matchId, home, away });
       });
+
+      if (matches.length === 0) {
+        status.textContent = '⚠️ No unlocked matches found this week.';
+        btn.disabled = false; btn.textContent = '🚀 Fill my predictions!';
+        return;
+      }
 
       status.textContent = `🤖 Getting predictions for ${matches.length} matches...`;
 
-      const prompt = `You are a World Cup 2026 expert. Predict scores and first goalscorers for these matches. Respond ONLY with JSON array, no other text:
-[{"matchId":"id","home":N,"away":N,"scorer":"Player Name (Team)"},...]
+      const prompt = `World Cup 2026 predictions. Return ONLY a JSON array, no explanation, no markdown, no text before or after.
 
-Matches:
-${matches.map(m => `${m.matchId}: ${m.home} vs ${m.away}`).join('\n')}
+Format: [{"matchId":"ID","home":N,"away":N,"scorer":"Firstname Lastname"}]
 
-Rules:
-- Realistic scores (0-0 to 4-2 range)
-- First scorer must be a realistic star player from one of the teams
-- Format scorer as "FirstName LastName"`;
+Matches to predict:
+${matches.map(m => `ID="${m.matchId}" ${m.home} vs ${m.away}`).join('\n')}
+
+Rules: realistic scores (0-0 to 3-1 range), scorer is a real star from one of the two teams.`;
 
       const response = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          coachId: 'analyst',
-          message: prompt,
-          history: [],
-          language: 'en'
-        })
+        body: JSON.stringify({ coachId: 'analyst', message: prompt, history: [], language: 'en' })
       });
 
       const data = await response.json();
-      const text = data.reply || data.content || '';
+      const text = (data.reply || data.content || data.message || '').trim();
 
-      // Parse JSON from response
-      const jsonMatch = text.match(/\[[\s\S]*\]/);
-      if (!jsonMatch) throw new Error('Could not parse AI response');
-      const predictions = JSON.parse(jsonMatch[0]);
+      // Try multiple parse strategies
+      let predictions = null;
+      // Strategy 1: direct parse
+      try { predictions = JSON.parse(text); } catch(e) {}
+      // Strategy 2: extract JSON array
+      if (!predictions) {
+        const m = text.match(/\[[\s\S]*?\]/);
+        if (m) try { predictions = JSON.parse(m[0]); } catch(e) {}
+      }
+      // Strategy 3: extract from code block
+      if (!predictions) {
+        const m = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (m) try { predictions = JSON.parse(m[1].trim()); } catch(e) {}
+      }
 
-      // Fill in the inputs
-      let filled = 0;
+      if (!predictions || !Array.isArray(predictions)) {
+        throw new Error('AI returned unexpected format. Try again.');
+      }
+
+      let filled = 0, scorerFilled = 0;
       predictions.forEach(pred => {
         const card = document.querySelector(`.match-card[data-match-id="${pred.matchId}"]`);
         if (!card) return;
+
+        // Fill scores
         const inputs = card.querySelectorAll('.score-input');
         if (inputs.length >= 2) {
-          inputs[0].value = pred.home ?? '';
-          inputs[1].value = pred.away ?? '';
+          inputs[0].value = pred.home ?? 1;
+          inputs[1].value = pred.away ?? 0;
           inputs[0].dispatchEvent(new Event('input'));
           inputs[1].dispatchEvent(new Event('input'));
+          inputs[0].style.borderColor = 'var(--accent)';
+          inputs[1].style.borderColor = 'var(--accent)';
         }
-        // Fill scorer
+
+        // Fill scorer — match by last name or full name
         if (pred.scorer) {
-          const select = card.querySelector('select');
-          if (select) {
-            // Try to find matching option
+          const select = card.querySelector(`#scorer-${pred.matchId}`);
+          if (select && select.options.length > 1) {
+            const scorerLower = pred.scorer.toLowerCase();
+            const lastName = scorerLower.split(' ').pop();
             const opts = Array.from(select.options);
-            const match = opts.find(o => o.value.toLowerCase().includes(pred.scorer.split(' ')[1]?.toLowerCase() || pred.scorer.toLowerCase()));
+            const match = opts.find(o =>
+              o.value.toLowerCase() === scorerLower ||
+              o.value.toLowerCase().includes(lastName) ||
+              o.value.toLowerCase().split(' ').pop() === lastName
+            );
             if (match) {
               select.value = match.value;
               select.dispatchEvent(new Event('change'));
+              // Update button label
+              const lbl = document.getElementById(`scorer-label-${pred.matchId}`);
+              const sbtn = document.getElementById(`scorer-btn-${pred.matchId}`);
+              if (lbl) lbl.textContent = match.value;
+              if (sbtn) { sbtn.style.borderColor = 'var(--accent)'; sbtn.style.background = 'rgba(59,130,246,0.06)'; sbtn.style.color = 'var(--text)'; }
+              scorerFilled++;
             }
           }
         }
@@ -12354,10 +12445,10 @@ Rules:
       });
 
       status.style.background = 'rgba(29,158,117,0.1)';
-      status.style.color = 'var(--green)';
-      status.textContent = `✅ Filled ${filled} matches! Review and save when ready.`;
+      status.style.color = '#166534';
+      status.textContent = `✅ Filled ${filled} matches, ${scorerFilled} scorers! Review and save.`;
       btn.textContent = '✅ Done!';
-      setTimeout(() => closeAIFillModal(), 2000);
+      setTimeout(() => closeAIFillModal(), 2500);
 
     } catch(e) {
       console.error('AI fill error:', e);
