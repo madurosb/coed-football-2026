@@ -11482,7 +11482,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
   };
 
   // ========== AUTOSAVE ==========
-  let autoSaveEnabled = localStorage.getItem('autoSave') === 'true';
+  let autoSaveEnabled = localStorage.getItem('autoSave') !== 'false'; // default ON
   let autoSaveTimers = {};
 
   function initAutoSaveToggle() {
