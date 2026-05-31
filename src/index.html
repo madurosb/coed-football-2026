@@ -4323,6 +4323,8 @@
 
   // Poll for new messages every 30s
   setInterval(() => { if (currentUser) updateMsgBadge(); }, 30000);
+
+  window.toggleMobileMenu = () => {
     const menu = document.getElementById('mobile-menu');
     const overlay = document.getElementById('menu-overlay');
     if (!menu || !overlay) return;
