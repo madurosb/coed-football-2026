@@ -1385,7 +1385,7 @@
       <video id="opening-video" playsinline autoplay style="width:100%;height:100%;object-fit:cover;" preload="auto">
         <source src="https://coed-football-2026.vercel.app/coed_promo_intro-1.mp4" type="video/mp4">
       </video>
-      <button id="skip-video-btn" onclick="skipToAnimation()" style="display:none;position:absolute;bottom:32px;right:32px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:white;font-size:13px;font-weight:600;padding:9px 20px;border-radius:99px;cursor:pointer;backdrop-filter:blur(4px);z-index:10;">Skip →</button>
+      <button id="skip-video-btn" onclick="skipToAnimation()" style="display:none;position:absolute;bottom:32px;right:32px;background:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.6);color:white;font-size:14px;font-weight:700;padding:10px 24px;border-radius:99px;cursor:pointer;backdrop-filter:blur(8px);z-index:10;letter-spacing:0.05em;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.35)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">Skip ›</button>
     </div>
     <!-- ANIMATION PHASE -->
     <div id="intro-anim-phase" style="display:none;position:absolute;inset:0;">
@@ -4001,26 +4001,15 @@
     videoPhase.style.display = 'block';
     videoPhase.style.opacity = '1';
 
-    // Try playing
-    const playPromise = video.play();
-    if (playPromise !== undefined) {
-      playPromise.catch(() => {
-        // Autoplay blocked — show skip button immediately so user can tap to start
-        if (skipBtn) {
-          skipBtn.style.display = 'block';
-          skipBtn.textContent = '▶ Tap to play';
-          skipBtn.onclick = () => {
-            video.play().then(() => {
-              skipBtn.textContent = 'Skip →';
-              skipBtn.onclick = () => skipToAnimation();
-              setTimeout(() => { skipBtn.style.display = 'block'; }, 5000);
-            }).catch(() => skipToAnimation());
-          };
-        }
-      });
-    }
+    // Just play — if browser blocks autoplay with sound, jump straight to animation
+    video.play().then(() => {
+      // Playing fine with sound
+    }).catch(() => {
+      // Autoplay blocked — skip straight to animation
+      skipToAnimation();
+    });
 
-    setTimeout(() => { if (skipBtn) skipBtn.style.display = 'block'; }, 5000);
+    setTimeout(() => { if (skipBtn) { skipBtn.style.display = 'block'; skipBtn.style.opacity = '1'; } }, 3000);
     video.addEventListener('ended', skipToAnimation, { once: true });
   }
 
@@ -4085,13 +4074,13 @@
         const t=$('intro-trophy'); if(!t) return;
         t.style.transition='opacity 0.35s,transform 0.5s cubic-bezier(0.17,0.89,0.32,1.28)';
         t.style.opacity='1'; t.style.transform='scale(1) translateY(0)';
-      },120);
+      },80);
 
       setTimeout(()=>{
         const w=$('intro-welcome'); if(!w) return;
-        w.style.transition='opacity 0.5s,transform 0.5s';
+        w.style.transition='opacity 0.3s,transform 0.3s';
         w.style.opacity='1'; w.style.transform='translateY(0)';
-      },520);
+      },300);
 
       setTimeout(()=>{
         const b=$('intro-brand'),coed=$('ib-coed'); if(!b||!coed) return;
@@ -4100,21 +4089,21 @@
         const gi=setInterval(()=>{
           if(g%2===0){ coed.style.textShadow=`${(Math.random()-.5)*10}px 0 #FF0040,${(Math.random()-.5)*8}px 0 #00BFFF`; coed.style.transform=`translateX(${(Math.random()-.5)*7}px)`; }
           else { coed.style.textShadow='none'; coed.style.transform='none'; }
-          if(++g>12){ clearInterval(gi); coed.style.textShadow='none'; coed.style.transform='none'; }
-        },55);
-      },780);
+          if(++g>8){ clearInterval(gi); coed.style.textShadow='none'; coed.style.transform='none'; }
+        },45);
+      },480);
 
       setTimeout(()=>{
         const ba=$('intro-badge'); if(!ba) return;
-        ba.style.transition='opacity 0.4s,transform 0.5s cubic-bezier(0.17,0.89,0.32,1.2)';
+        ba.style.transition='opacity 0.3s,transform 0.4s cubic-bezier(0.17,0.89,0.32,1.2)';
         ba.style.opacity='1'; ba.style.transform='scaleX(1)';
-      },1320);
+      },800);
 
       setTimeout(()=>{
         const d=$('intro-divider'); if(!d) return;
-        d.style.transition='width 0.7s ease,opacity 0.4s';
+        d.style.transition='width 0.5s ease,opacity 0.3s';
         d.style.opacity='1'; d.style.width='280px';
-      },1480);
+      },950);
 
       const chars=[
         {c:'L'},{c:'e'},{c:'t'},{c:' '},{c:'t'},{c:'h'},{c:'e'},{c:' '},
@@ -4124,14 +4113,14 @@
       const tl=$('intro-tagline'); if(tl) {
         tl.innerHTML=chars.map(p=>`<span class="itc ${p.cl||''}">${p.c===' '?'&nbsp;':p.c}</span>`).join('');
         document.querySelectorAll('.itc').forEach((ch,i)=>{
-          setTimeout(()=>{ ch.style.transition='opacity 0.2s,transform 0.32s cubic-bezier(0.17,0.89,0.32,1.3)'; ch.style.opacity='1'; ch.style.transform='translateY(0) skewX(0)'; },1720+i*52);
+          setTimeout(()=>{ ch.style.transition='opacity 0.15s,transform 0.25s cubic-bezier(0.17,0.89,0.32,1.3)'; ch.style.opacity='1'; ch.style.transform='translateY(0) skewX(0)'; },1050+i*30);
         });
       }
 
       setTimeout(()=>{
         const colors=['#FFD700','#FF8C00','#FF2200','#FFB800','#fff'];
         const stage=$('intro-stage'); if(!stage) return;
-        for(let i=0;i<38;i++){
+        for(let i=0;i<30;i++){
           setTimeout(()=>{
             const s=document.createElement('div'); s.className='intro-spark';
             const sz=Math.random()*4+1;
@@ -4144,17 +4133,16 @@
               {opacity:0,transform:'translate(0,0) scale(0)'},
               {opacity:1,transform:`translate(${(Math.random()-.5)*80}px,${-40-Math.random()*60}px) scale(1)`},
               {opacity:0,transform:`translate(${(Math.random()-.5)*120}px,${-80-Math.random()*80}px) scale(0.3)`}
-            ],{duration:900+Math.random()*700,delay:Math.random()*300,fill:'forwards'});
-          },i*65);
+            ],{duration:700+Math.random()*400,delay:Math.random()*200,fill:'forwards'});
+          },i*40);
         }
-      },1580);
+      },980);
 
-      // Show Enter button after animation completes
+      // Show Enter button + auto-close after 2s total
       setTimeout(()=>{
-        const btn=$('intro-enter'); if(btn){ btn.style.transition='opacity 0.6s'; btn.style.opacity='1'; }
-        // Auto-close after 3 more seconds if user doesn't click
+        const btn=$('intro-enter'); if(btn){ btn.style.transition='opacity 0.4s'; btn.style.opacity='1'; }
         setTimeout(()=>closeOpeningVideo(), 2000);
-      },3600);
+      },1800);
 
     },280);
   }
