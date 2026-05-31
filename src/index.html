@@ -12621,14 +12621,14 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
 
       status.textContent = `🤖 Getting predictions for ${matches.length} matches...`;
 
-      const prompt = `World Cup 2026 predictions. Return ONLY a JSON array, no explanation, no markdown, no text before or after.
+      const prompt = `World Cup 2026 predictions. Return ONLY a JSON array, no explanation, no markdown.
 
-Format: [{"matchId":"ID","home":N,"away":N,"scorer":"Firstname Lastname"}]
+Format: [{"matchId":"EXACT_ID","home_team":"TeamName","away_team":"TeamName","home":N,"away":N,"scorer":"Firstname Lastname"}]
 
 Matches to predict:
-${matches.map(m => `ID="${m.matchId}" ${m.home} vs ${m.away}`).join('\n')}
+${matches.map(m => `matchId="${m.matchId}" | ${m.home} vs ${m.away}`).join('\n')}
 
-Rules: realistic scores (0-0 to 3-1 range), scorer is a real star from one of the two teams.`;
+Rules: realistic scores (0-4 range per team), scorer must be a real known player from one of those two teams.`;
 
       const response = await fetch('/api/coach', {
         method: 'POST',
@@ -12675,47 +12675,94 @@ Rules: realistic scores (0-0 to 3-1 range), scorer is a real star from one of th
       }
 
       let filled = 0, scorerFilled = 0;
+
+      // Build lookup by team names (more reliable than matchId)
+      const cardsByTeams = {};
+      matchCards.forEach(card => {
+        const key = `${card.dataset.home}|${card.dataset.away}`;
+        cardsByTeams[key] = card;
+      });
+
       predictions.forEach(pred => {
-        const card = document.querySelector(`.match-card[data-match-id="${pred.matchId}"]`);
+        // Try matchId first, then team name lookup
+        let card = document.querySelector(`.match-card[data-match-id="${pred.matchId}"]`);
+        if (!card && pred.home_team && pred.away_team) {
+          card = cardsByTeams[`${pred.home_team}|${pred.away_team}`];
+        }
+        if (!card) {
+          // Try fuzzy match on matchId against actual matches list
+          const match = matches.find(m => m.matchId === pred.matchId);
+          if (match) card = document.querySelector(`.match-card[data-match-id="${match.matchId}"]`);
+        }
         if (!card) return;
 
-        // Fill scores
+        const matchId = card.dataset.matchId;
+
+        // Fill scores — use change event for autosave trigger
         const inputs = card.querySelectorAll('.score-input');
-        if (inputs.length >= 2) {
-          inputs[0].value = pred.home ?? 1;
-          inputs[1].value = pred.away ?? 0;
-          inputs[0].dispatchEvent(new Event('input'));
-          inputs[1].dispatchEvent(new Event('input'));
+        if (inputs.length >= 2 && !inputs[0].disabled) {
+          const homeVal = typeof pred.home === 'number' ? pred.home : parseInt(pred.home) || 1;
+          const awayVal = typeof pred.away === 'number' ? pred.away : parseInt(pred.away) || 0;
+          inputs[0].value = homeVal;
+          inputs[1].value = awayVal;
+          inputs[0].dispatchEvent(new Event('change', { bubbles: true }));
+          inputs[1].dispatchEvent(new Event('change', { bubbles: true }));
+          inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
+          inputs[1].dispatchEvent(new Event('input', { bubbles: true }));
           inputs[0].style.borderColor = 'var(--accent)';
           inputs[1].style.borderColor = 'var(--accent)';
+          filled++;
         }
 
-        // Fill scorer — match by last name or full name
+        // Fill scorer
         if (pred.scorer) {
-          const select = card.querySelector(`#scorer-${pred.matchId}`);
+          const select = card.querySelector(`#scorer-${matchId}`);
           if (select && select.options.length > 1) {
-            const scorerLower = pred.scorer.toLowerCase();
+            const scorerLower = pred.scorer.toLowerCase().trim();
             const lastName = scorerLower.split(' ').pop();
             const opts = Array.from(select.options);
-            const match = opts.find(o =>
+            const matchOpt = opts.find(o =>
               o.value.toLowerCase() === scorerLower ||
               o.value.toLowerCase().includes(lastName) ||
               o.value.toLowerCase().split(' ').pop() === lastName
             );
-            if (match) {
-              select.value = match.value;
-              select.dispatchEvent(new Event('change'));
-              // Update button label
-              const lbl = document.getElementById(`scorer-label-${pred.matchId}`);
-              const sbtn = document.getElementById(`scorer-btn-${pred.matchId}`);
-              if (lbl) lbl.textContent = match.value;
+            if (matchOpt) {
+              select.value = matchOpt.value;
+              select.dispatchEvent(new Event('change', { bubbles: true }));
+              const lbl = document.getElementById(`scorer-label-${matchId}`);
+              const sbtn = document.getElementById(`scorer-btn-${matchId}`);
+              if (lbl) lbl.textContent = matchOpt.value;
               if (sbtn) { sbtn.style.borderColor = 'var(--accent)'; sbtn.style.background = 'rgba(59,130,246,0.06)'; sbtn.style.color = 'var(--text)'; }
               scorerFilled++;
             }
           }
         }
-        filled++;
       });
+
+      // If nothing filled by matchId, try in order (AI predictions in same order as matches)
+      if (filled === 0 && predictions.length > 0) {
+        const cards = Array.from(matchCards).filter(c => {
+          const inp = c.querySelectorAll('.score-input');
+          return inp.length >= 2 && !inp[0].disabled;
+        });
+        predictions.forEach((pred, i) => {
+          if (i >= cards.length) return;
+          const card = cards[i];
+          const matchId = card.dataset.matchId;
+          const inputs = card.querySelectorAll('.score-input');
+          const homeVal = typeof pred.home === 'number' ? pred.home : parseInt(pred.home) || 1;
+          const awayVal = typeof pred.away === 'number' ? pred.away : parseInt(pred.away) || 0;
+          inputs[0].value = homeVal;
+          inputs[1].value = awayVal;
+          inputs[0].dispatchEvent(new Event('change', { bubbles: true }));
+          inputs[1].dispatchEvent(new Event('change', { bubbles: true }));
+          inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
+          inputs[1].dispatchEvent(new Event('input', { bubbles: true }));
+          inputs[0].style.borderColor = 'var(--accent)';
+          inputs[1].style.borderColor = 'var(--accent)';
+          filled++;
+        });
+      }
 
       status.style.background = 'rgba(29,158,117,0.1)';
       status.style.color = '#166534';
