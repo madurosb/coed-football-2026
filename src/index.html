@@ -5354,6 +5354,7 @@
     const container = document.getElementById(containerId);
     const header = '<div class="lb-row header"><div></div><div>Player</div><div style="text-align:center">Pts</div><div style="text-align:center">Exact</div><div style="text-align:center">Bonus</div></div>';
     const rows = users.map((u, i) => {
+      const isMe = currentUser && u.uid === currentUser.uid;
       let avatarHTML;
       if (u.isAdmin) {
         avatarHTML = `<div style="position:relative;width:56px;height:56px;flex-shrink:0;min-width:56px;">
@@ -5363,10 +5364,10 @@
       } else {
         const av = getAvatarById(u.avatar);
         avatarHTML = u.avatarUrl
-          ? `<div style="width:56px;height:56px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid var(--border);"><img src="${u.avatarUrl}" style="width:56px;height:56px;object-fit:cover;border-radius:50%;display:block;"></div>`
+          ? `<div style="width:56px;height:56px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid ${isMe?'var(--accent)':'var(--border)'};"><img src="${u.avatarUrl}" style="width:56px;height:56px;object-fit:cover;border-radius:50%;display:block;"></div>`
           : av
-            ? `<div style="width:56px;height:56px;border-radius:50%;overflow:hidden;flex-shrink:0;">${makeAvatarSVG(av, 56)}</div>`
-            : `<div class="avatar" style="background:${['#FAEEDA','#E6F1FB','#E1F5EE'][i]||'#f0f0f0'};color:${['#633806','#0C447C','#085041'][i]||'#333'};">${(u.nickname||u.displayName||'?').substring(0,2).toUpperCase()}</div>`;
+            ? `<div style="width:56px;height:56px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid ${isMe?'var(--accent)':'transparent'};">${makeAvatarSVG(av, 56)}</div>`
+            : `<div class="avatar" style="background:${isMe?'rgba(59,130,246,0.2)':(['#FAEEDA','#E6F1FB','#E1F5EE'][i]||'#f0f0f0')};color:${isMe?'var(--accent)':(['#633806','#0C447C','#085041'][i]||'#333')};">${(u.nickname||u.displayName||'?').substring(0,2).toUpperCase()}</div>`;
       }
       const badge = getUserBadge(u, i, users, predStats);
       const badgeHTML = badge
@@ -5375,11 +5376,19 @@
       const streak = u.currentStreak || 0;
       const streakHTML = streak >= 3 ? `<span style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--badge-orange-bg);color:var(--badge-orange-text);font-weight:500;margin-left:4px;">🔥 ${streak}</span>` : '';
       const jokerHTML = u.jokerMatchId ? `<span style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--badge-gold-bg);color:var(--badge-gold-text);font-weight:500;margin-left:4px;">🃏</span>` : '';
+      const meBadgeHTML = isMe ? `<span style="font-size:10px;padding:2px 7px;border-radius:99px;background:rgba(59,130,246,0.15);color:var(--accent);font-weight:700;margin-left:4px;border:1px solid rgba(59,130,246,0.3);">👤 You</span>` : '';
       const nameHTML = u.isAdmin
         ? `${u.nickname||u.displayName} <span style="font-size:10px;background:#00ff41;color:#000;padding:1px 5px;border-radius:99px;font-weight:700;">ADMIN</span>`
-        : `${u.nickname||u.displayName}${badgeHTML}${streakHTML}${jokerHTML}`;
+        : `${u.nickname||u.displayName}${meBadgeHTML}${badgeHTML}${streakHTML}${jokerHTML}`;
+
+      const rowStyle = isMe
+        ? 'background:rgba(59,130,246,0.08);border-left:3px solid var(--accent);'
+        : i === 0 && (u.points||0) > 0
+          ? 'background:linear-gradient(135deg,var(--badge-gold-bg),var(--badge-gold-bg));border-left:3px solid #F59E0B;'
+          : '';
+
       return `
-      <div class="lb-row" ${i === 0 && (u.points||0) > 0 ? 'style="background:linear-gradient(135deg,var(--badge-gold-bg),var(--badge-gold-bg));border-left:3px solid #F59E0B;"' : ''}>
+      <div class="lb-row" id="lb-row-${u.uid}" ${rowStyle ? `style="${rowStyle}"` : ''}>
         <div class="lb-rank ${medals[i] || ''}">${i + 1}</div>
         <div class="lb-user">
           ${avatarHTML}
@@ -5388,12 +5397,22 @@
             <div class="handle">${u.isAdmin ? 'nirbrainin@gmail.com' : (u.email || '')}</div>
           </div>
         </div>
-        <div class="lb-pts">${u.points || 0}</div>
+        <div class="lb-pts" style="${isMe?'color:var(--accent);font-weight:800;':''}">${u.points || 0}</div>
         <div class="lb-pts muted">${u.exactScores || 0}</div>
         <div class="lb-pts muted">${u.bonusPoints || 0}</div>
       </div>`;
     }).join('');
     container.innerHTML = header + (rows || '<div style="padding:1rem;text-align:center;font-size:13px;color:var(--text-muted);">No players yet</div>');
+
+    // Scroll to current user's row after render (only for full leaderboard)
+    if (containerId === 'full-leaderboard' && currentUser) {
+      setTimeout(() => {
+        const myRow = document.getElementById(`lb-row-${currentUser.uid}`);
+        if (myRow) {
+          myRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+    }
   }
 
   window.refreshStandings = async (btn) => {
