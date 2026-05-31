@@ -12674,95 +12674,85 @@ Rules: realistic scores (0-4 range per team), scorer must be a real known player
         throw new Error('AI returned unexpected format. Try again.');
       }
 
-      let filled = 0, scorerFilled = 0;
+  const setScore = (matchId, side, val) => {
+    const el = document.getElementById(`${side}-${matchId}`);
+    if (!el) return false;
+    const v = Math.max(0, Math.min(10, val));
+    el.dataset.val = v;
+    el.textContent = v;
+    el.style.color = 'var(--accent)';
+    el.style.transform = 'scale(1.15)';
+    setTimeout(() => { el.style.transform = ''; el.style.color = ''; }, 300);
+    return true;
+  };
 
-      // Build lookup by team names (more reliable than matchId)
-      const cardsByTeams = {};
-      matchCards.forEach(card => {
-        const key = `${card.dataset.home}|${card.dataset.away}`;
-        cardsByTeams[key] = card;
-      });
+  let filled = 0, scorerFilled = 0;
 
-      predictions.forEach(pred => {
-        // Try matchId first, then team name lookup
-        let card = document.querySelector(`.match-card[data-match-id="${pred.matchId}"]`);
-        if (!card && pred.home_team && pred.away_team) {
-          card = cardsByTeams[`${pred.home_team}|${pred.away_team}`];
+  // Build lookup by team names
+  const cardsByTeams = {};
+  matchCards.forEach(card => {
+    const key = `${card.dataset.home}|${card.dataset.away}`;
+    cardsByTeams[key] = card;
+  });
+
+  // Also build ordered array of unlocked cards
+  const unlockedCards = Array.from(matchCards).filter(c => {
+    const homeEl = document.getElementById(`home-${c.dataset.matchId}`);
+    return homeEl && !homeEl.closest('[disabled]');
+  });
+
+  predictions.forEach((pred, idx) => {
+    // Strategy 1: exact matchId
+    let card = document.querySelector(`.match-card[data-match-id="${pred.matchId}"]`);
+    // Strategy 2: team names from response
+    if (!card && pred.home_team && pred.away_team) {
+      card = cardsByTeams[`${pred.home_team}|${pred.away_team}`];
+    }
+    // Strategy 3: positional fallback
+    if (!card && idx < unlockedCards.length) {
+      card = unlockedCards[idx];
+    }
+    if (!card) return;
+
+    const matchId = card.dataset.matchId;
+    const homeVal = typeof pred.home === 'number' ? pred.home : parseInt(pred.home) || 1;
+    const awayVal = typeof pred.away === 'number' ? pred.away : parseInt(pred.away) || 0;
+
+    // Set scores using data-val/textContent
+    const homeSet = setScore(matchId, 'home', homeVal);
+    const awaySet = setScore(matchId, 'away', awayVal);
+
+    if (homeSet && awaySet) {
+      // Trigger autosave
+      const homeTeam = card.dataset.home || '';
+      triggerAutoSave(matchId, homeTeam, '');
+      filled++;
+    }
+
+    // Fill scorer
+    if (pred.scorer) {
+      const select = card.querySelector(`#scorer-${matchId}`);
+      if (select && select.options.length > 1) {
+        const scorerLower = pred.scorer.toLowerCase().trim();
+        const lastName = scorerLower.split(' ').pop();
+        const opts = Array.from(select.options);
+        const matchOpt = opts.find(o =>
+          o.value.toLowerCase() === scorerLower ||
+          o.value.toLowerCase().includes(lastName) ||
+          o.value.toLowerCase().split(' ').pop() === lastName
+        );
+        if (matchOpt) {
+          select.value = matchOpt.value;
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+          const lbl = document.getElementById(`scorer-label-${matchId}`);
+          const sbtn = document.getElementById(`scorer-btn-${matchId}`);
+          if (lbl) lbl.textContent = matchOpt.value;
+          if (sbtn) { sbtn.style.borderColor = 'var(--accent)'; sbtn.style.background = 'rgba(59,130,246,0.06)'; sbtn.style.color = 'var(--text)'; }
+          scorerFilled++;
         }
-        if (!card) {
-          // Try fuzzy match on matchId against actual matches list
-          const match = matches.find(m => m.matchId === pred.matchId);
-          if (match) card = document.querySelector(`.match-card[data-match-id="${match.matchId}"]`);
-        }
-        if (!card) return;
-
-        const matchId = card.dataset.matchId;
-
-        // Fill scores — use change event for autosave trigger
-        const inputs = card.querySelectorAll('.score-input');
-        if (inputs.length >= 2 && !inputs[0].disabled) {
-          const homeVal = typeof pred.home === 'number' ? pred.home : parseInt(pred.home) || 1;
-          const awayVal = typeof pred.away === 'number' ? pred.away : parseInt(pred.away) || 0;
-          inputs[0].value = homeVal;
-          inputs[1].value = awayVal;
-          inputs[0].dispatchEvent(new Event('change', { bubbles: true }));
-          inputs[1].dispatchEvent(new Event('change', { bubbles: true }));
-          inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
-          inputs[1].dispatchEvent(new Event('input', { bubbles: true }));
-          inputs[0].style.borderColor = 'var(--accent)';
-          inputs[1].style.borderColor = 'var(--accent)';
-          filled++;
-        }
-
-        // Fill scorer
-        if (pred.scorer) {
-          const select = card.querySelector(`#scorer-${matchId}`);
-          if (select && select.options.length > 1) {
-            const scorerLower = pred.scorer.toLowerCase().trim();
-            const lastName = scorerLower.split(' ').pop();
-            const opts = Array.from(select.options);
-            const matchOpt = opts.find(o =>
-              o.value.toLowerCase() === scorerLower ||
-              o.value.toLowerCase().includes(lastName) ||
-              o.value.toLowerCase().split(' ').pop() === lastName
-            );
-            if (matchOpt) {
-              select.value = matchOpt.value;
-              select.dispatchEvent(new Event('change', { bubbles: true }));
-              const lbl = document.getElementById(`scorer-label-${matchId}`);
-              const sbtn = document.getElementById(`scorer-btn-${matchId}`);
-              if (lbl) lbl.textContent = matchOpt.value;
-              if (sbtn) { sbtn.style.borderColor = 'var(--accent)'; sbtn.style.background = 'rgba(59,130,246,0.06)'; sbtn.style.color = 'var(--text)'; }
-              scorerFilled++;
-            }
-          }
-        }
-      });
-
-      // If nothing filled by matchId, try in order (AI predictions in same order as matches)
-      if (filled === 0 && predictions.length > 0) {
-        const cards = Array.from(matchCards).filter(c => {
-          const inp = c.querySelectorAll('.score-input');
-          return inp.length >= 2 && !inp[0].disabled;
-        });
-        predictions.forEach((pred, i) => {
-          if (i >= cards.length) return;
-          const card = cards[i];
-          const matchId = card.dataset.matchId;
-          const inputs = card.querySelectorAll('.score-input');
-          const homeVal = typeof pred.home === 'number' ? pred.home : parseInt(pred.home) || 1;
-          const awayVal = typeof pred.away === 'number' ? pred.away : parseInt(pred.away) || 0;
-          inputs[0].value = homeVal;
-          inputs[1].value = awayVal;
-          inputs[0].dispatchEvent(new Event('change', { bubbles: true }));
-          inputs[1].dispatchEvent(new Event('change', { bubbles: true }));
-          inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
-          inputs[1].dispatchEvent(new Event('input', { bubbles: true }));
-          inputs[0].style.borderColor = 'var(--accent)';
-          inputs[1].style.borderColor = 'var(--accent)';
-          filled++;
-        });
       }
+    }
+  });
 
       status.style.background = 'rgba(29,158,117,0.1)';
       status.style.color = '#166534';
