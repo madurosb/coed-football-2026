@@ -5,6 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
   <title>COED&FOOTBALL Mundial 2026</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <script>
+    window.onerror = (msg, src, line, col, err) => {
+      document.body.innerHTML = '<div style="font-family:monospace;padding:20px;background:#0a0f1a;color:#ef4444;font-size:14px;">'
+        + '<b>JS Error:</b><br>' + msg + '<br><br>'
+        + 'File: ' + src + '<br>'
+        + 'Line: ' + line + ', Col: ' + col + '<br><br>'
+        + (err?.stack || '')
+        + '</div>';
+      return true;
+    };
+  </script>
   <link rel="icon" href="https://coed-football-2026.vercel.app/logo-icon.png" type="image/png">
   <!-- PWA -->
   <link rel="manifest" href="/manifest.json">
@@ -3407,14 +3418,19 @@
     const usersSnap = await getDocs(collection(db, 'users'));
     const users = [];
     usersSnap.forEach(d => users.push(d.data()));
-    container.innerHTML = users.map(u => `
+    container.innerHTML = users.map(u => {
+      const borderCol = u.boldPrediction ? '#E24B4A' : '#BA7517';
+      const textCol = u.boldPrediction ? '#E24B4A' : '#BA7517';
+      const btnText = u.boldPrediction ? 'Remove 🐂' : 'Award 🐂';
+      return `
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:0.5px solid var(--border);">
         <div style="font-size:13px;font-weight:500;">${u.nickname||u.displayName} ${u.boldPrediction ? '🐂' : ''}</div>
         <button onclick="toggleBoldPred('${u.uid}', ${!u.boldPrediction})"
-          style="padding:5px 12px;border-radius:8px;border:0.5px solid ${u.boldPrediction?'#E24B4A':'#BA7517'};background:none;color:${u.boldPrediction?'#E24B4A':'#BA7517'};font-size:12px;cursor:pointer;">
-          ${u.boldPrediction ? 'Remove 🐂' : 'Award 🐂'}
+          style="padding:5px 12px;border-radius:8px;border:0.5px solid ${borderCol};background:none;color:${textCol};font-size:12px;cursor:pointer;">
+          ${btnText}
         </button>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   }
 
   window.toggleBoldPred = async (uid, award) => {
@@ -8964,7 +8980,7 @@
       <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:8px;">
         <div style="font-size:13px;font-weight:500;margin-bottom:3px;">🔮 Tournament player</div>
         <div style="font-size:13px;color:var(--text-muted);">${user.tournamentPlayer
-          ? `${user.tournamentPlayer} &nbsp;·&nbsp; ${(user.bonusPoints||0) > 0 ? `${user.bonusPoints} goal${user.bonusPoints>1?'s':''} scored. You picked a winner.` : 'No goals yet. Still believing.'}`
+          ? user.tournamentPlayer + ' &nbsp;·&nbsp; ' + ((user.bonusPoints||0) > 0 ? user.bonusPoints + ' goal' + (user.bonusPoints>1?'s':'') + ' scored. You picked a winner.' : 'No goals yet. Still believing.')
           : 'You never picked one. Living on the edge.'}</div>
       </div>
 
@@ -10391,7 +10407,8 @@
     // Show hint update
     const hint = document.getElementById('save-hint-text');
     if (hint) {
-      hint.innerHTML = `<span style="color:var(--green);font-weight:600;">✅ ${saved} prediction${saved!==1?'s':''} saved!</span> ${skipped > 0 ? `(${skipped} past deadline skipped)` : ''}`;
+      const skipMsg = skipped > 0 ? '(' + skipped + ' past deadline skipped)' : '';
+      hint.innerHTML = `<span style="color:var(--green);font-weight:600;">✅ ${saved} prediction${saved!==1?'s':''} saved!</span> ${skipMsg}`;
       setTimeout(() => {
         hint.innerHTML = '<strong style="color:var(--text);">Save all</strong> — saves every prediction across all days in one tap. &nbsp;·&nbsp; <strong style="color:var(--text);">Auto</strong> — saves automatically 1.5s after each change.';
       }, 4000);
