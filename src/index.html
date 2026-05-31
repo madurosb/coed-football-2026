@@ -1383,7 +1383,7 @@
     <!-- VIDEO PHASE -->
     <div id="intro-video-phase" style="position:absolute;inset:0;">
       <video id="opening-video" playsinline style="width:100%;height:100%;object-fit:cover;" preload="auto">
-        <source src="https://raw.githubusercontent.com/madurosb/coed-football-2026/main/src/coed_promo_intro-1.mp4" type="video/mp4">
+        <source src="https://coed-football-2026.vercel.app/coed_promo_intro-1.mp4" type="video/mp4">
       </video>
       <button id="skip-video-btn" onclick="skipToAnimation()" style="display:none;position:absolute;bottom:32px;right:32px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:white;font-size:13px;font-weight:600;padding:9px 20px;border-radius:99px;cursor:pointer;backdrop-filter:blur(4px);z-index:10;">Skip →</button>
     </div>
@@ -4211,17 +4211,20 @@
       const avatarHTML = av
         ? `<div style="width:40px;height:40px;border-radius:50%;overflow:hidden;flex-shrink:0;">${makeAvatarSVG(av, 40)}</div>`
         : `<div style="width:40px;height:40px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;color:var(--accent);">${(u.nickname||'?').substring(0,2).toUpperCase()}</div>`;
+      const previewText = last
+        ? (last.from === currentUser.uid ? '✓ ' + last.text : last.text)
+        : 'Say hello 👋';
       return `
         <div onclick="openMsgThread('${u.uid}','${(u.nickname||u.displayName||'User').replace(/'/g,"\\'")}','${u.avatar||''}')"
-          style="display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.1s;"
-          onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
-          <div style="position:relative;">${avatarHTML}${unread>0?`<span style="position:absolute;top:-2px;right:-2px;width:10px;height:10px;background:#ef4444;border-radius:50%;border:2px solid var(--surface);"></span>`:''}</div>
+          style="display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.1s;background:${unread > 0 ? 'rgba(59,130,246,0.04)' : 'none'};"
+          onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='${unread > 0 ? 'rgba(59,130,246,0.04)' : 'none'}'">
+          <div style="position:relative;flex-shrink:0;">${avatarHTML}${unread > 0 ? `<span style="position:absolute;top:-2px;right:-2px;width:10px;height:10px;background:#ef4444;border-radius:50%;border:2px solid var(--surface);"></span>` : ''}</div>
           <div style="flex:1;min-width:0;">
-            <div style="font-size:13px;font-weight:${unread>0?'700':'500'};color:var(--text);display:flex;align-items:center;justify-content:space-between;">
-              <span>${u.nickname||u.displayName||'User'}</span>
-              ${unread>0?`<span style="background:#ef4444;color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;">${unread}</span>`:''}
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+              <span style="font-size:13px;font-weight:${unread > 0 ? '700' : '500'};color:var(--text);">${u.nickname||u.displayName||'User'}</span>
+              ${unread > 0 ? `<span style="background:#ef4444;color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;">${unread}</span>` : ''}
             </div>
-            <div style="font-size:11px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${last ? last.text : 'Say hello 👋'}</div>
+            <div style="font-size:11px;color:${unread > 0 ? 'var(--text)' : 'var(--text-muted)'};font-weight:${unread > 0 ? '600' : '400'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${previewText}</div>
           </div>
         </div>`;
     }).join('') || '<div style="padding:2rem;text-align:center;color:var(--text-muted);font-size:13px;">No other players yet</div>';
@@ -4240,8 +4243,8 @@
     chatView.style.height = '100%';
 
     chatView.innerHTML = `
-      <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0;">
-        <button onclick="loadMsgInbox()" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:16px;padding:0 6px 0 0;">←</button>
+      <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0;background:var(--surface);">
+        <button id="msg-back-btn" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:18px;padding:0 8px 0 0;line-height:1;">←</button>
         <div style="font-size:14px;font-weight:700;flex:1;">${toName}</div>
       </div>
       <div id="msg-messages" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;"></div>
@@ -4252,6 +4255,12 @@
         <button onclick="sendMsg('${toUid}','${threadId}')"
           style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;border:none;border-radius:99px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;">✈️</button>
       </div>`;
+
+    // Wire up back button after DOM is ready
+    setTimeout(() => {
+      const backBtn = document.getElementById('msg-back-btn');
+      if (backBtn) backBtn.onclick = () => loadMsgInbox();
+    }, 50);
 
     // Mark messages as read
     const unreadQ = query(collection(db, 'messages'),
@@ -4273,16 +4282,29 @@
       const msgs = snap.docs
         .map(d => ({ id: d.id, ...d.data() }))
         .sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+
+      // Mark incoming messages as read
+      snap.docs.forEach(d => {
+        const m = d.data();
+        if (m.to === currentUser.uid && !m.read) {
+          updateDoc(doc(db, 'messages', d.id), { read: true });
+        }
+      });
+
       container.innerHTML = msgs.length === 0
         ? '<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:1rem;">No messages yet. Say hello! 👋</div>'
-        : msgs.map(m => {
+        : msgs.map((m, idx) => {
           const isMe = m.from === currentUser.uid;
           const time = m.createdAt?.toDate ? m.createdAt.toDate().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}) : '';
-          return `<div style="display:flex;justify-content:${isMe?'flex-end':'flex-start'};">
+          // Show "Seen" on last message sent by me if recipient has read it
+          const isLastMine = isMe && msgs.slice(idx+1).every(x => x.from === currentUser.uid);
+          const showSeen = isLastMine && m.read;
+          return `<div style="display:flex;flex-direction:column;align-items:${isMe?'flex-end':'flex-start'};">
             <div style="max-width:75%;padding:8px 12px;border-radius:${isMe?'14px 14px 2px 14px':'14px 14px 14px 2px'};background:${isMe?'linear-gradient(135deg,#3b82f6,#1d4ed8)':'var(--surface2)'};color:${isMe?'white':'var(--text)'};font-size:13px;line-height:1.4;">
               ${m.text}
               <div style="font-size:10px;opacity:0.6;margin-top:2px;text-align:right;">${time}</div>
             </div>
+            ${showSeen ? `<div style="font-size:10px;color:var(--text-muted);margin-top:2px;margin-right:2px;">✓✓ Seen</div>` : ''}
           </div>`;
         }).join('');
       container.scrollTop = container.scrollHeight;
