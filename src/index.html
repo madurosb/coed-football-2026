@@ -4173,17 +4173,17 @@
       if (d.id !== currentUser.uid) allUsers.push({ uid: d.id, ...d.data() });
     });
 
-    // Check unread counts
-    const threadsSnap = await getDocs(query(
-      collection(db, 'messages'),
-      where('participants', 'array-contains', currentUser.uid)
-    ));
+    // Load all messages involving current user (sent + received)
+    const [sentSnap, receivedSnap] = await Promise.all([
+      getDocs(query(collection(db, 'messages'), where('from', '==', currentUser.uid))),
+      getDocs(query(collection(db, 'messages'), where('to', '==', currentUser.uid)))
+    ]);
     const lastMsgByThread = {};
     const unreadByThread = {};
-    threadsSnap.forEach(d => {
+    [...sentSnap.docs, ...receivedSnap.docs].forEach(d => {
       const m = d.data();
       const threadId = [m.from, m.to].sort().join('_');
-      if (!lastMsgByThread[threadId] || m.createdAt?.seconds > lastMsgByThread[threadId].ts) {
+      if (!lastMsgByThread[threadId] || (m.createdAt?.seconds||0) > lastMsgByThread[threadId].ts) {
         lastMsgByThread[threadId] = { ts: m.createdAt?.seconds || 0, text: m.text, from: m.from };
       }
       if (m.to === currentUser.uid && !m.read) {
@@ -4484,6 +4484,7 @@
   const db = getFirestore(app);
 
   // Show opening video ASAP — before waiting for Firebase auth
+  localStorage.removeItem('coed_intro_seen_2026'); // TEMP - remove after test
   checkOpeningVideo();
 
   // NICKNAME
