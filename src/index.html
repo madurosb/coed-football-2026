@@ -8988,15 +8988,30 @@
   async function loadNotifications() {
     if (!currentUser) return;
     try {
-      // Simple query without orderBy to avoid needing a composite Firestore index
       const snap = await getDocs(query(
         collection(db, 'notifications'),
         where('toUserId', '==', currentUser.uid),
-        limit(30)
+        limit(50)
       ));
+
+      // Get user's join date — filter out notifications from before they joined
+      const userJoinedAt = currentUserData?.createdAt?.seconds
+        ? currentUserData.createdAt.seconds
+        : (currentUser.metadata?.creationTime
+          ? Math.floor(new Date(currentUser.metadata.creationTime).getTime() / 1000)
+          : 0);
+
       const notifs = snap.docs
         .map(d => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+        .filter(n => {
+          // Always show important system notifications
+          if (n.important === true) return true;
+          const nTime = n.createdAt?.seconds || 0;
+          // Show if created after user joined (with 1 hour grace)
+          return nTime >= (userJoinedAt - 3600);
+        })
+        .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+        .slice(0, 30);
 
       const unseen = notifs.filter(n => !n.seen).length;
       const badge = document.getElementById('notif-badge');
@@ -12618,14 +12633,18 @@ Rules: realistic scores (0-0 to 3-1 range), scorer is a real star from one of th
       const response = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ coachId: 'analyst', message: prompt, history: [], language: 'en' })
+        body: JSON.stringify({
+          systemPrompt: 'You are a World Cup 2026 prediction expert. You MUST respond with ONLY a valid JSON array. No explanation, no markdown, no text before or after. Just the raw JSON array starting with [ and ending with ].',
+          messages: [{ role: 'user', content: prompt }],
+          maxTokens: 1200
+        })
       });
 
       const data = await response.json();
-      const text = (data.text || data.reply || data.content || data.message || '').trim();
+      if (data.error) throw new Error('API error: ' + data.error);
+      const text = (data.text || '').trim();
 
-      // Debug log
-      console.log('AI fill raw response:', text.substring(0, 300));
+      console.log('AI fill raw response:', text.substring(0, 400));
 
       // Try multiple parse strategies
       let predictions = null;
