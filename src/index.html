@@ -1382,7 +1382,7 @@
   <div id="opening-video-overlay" style="display:none;position:fixed;inset:0;z-index:99999;background:#000;flex-direction:column;">
     <!-- VIDEO PHASE -->
     <div id="intro-video-phase" style="position:absolute;inset:0;">
-      <video id="opening-video" playsinline style="width:100%;height:100%;object-fit:cover;" preload="auto">
+      <video id="opening-video" playsinline muted autoplay style="width:100%;height:100%;object-fit:cover;" preload="auto">
         <source src="https://coed-football-2026.vercel.app/coed_promo_intro-1.mp4" type="video/mp4">
       </video>
       <button id="skip-video-btn" onclick="skipToAnimation()" style="display:none;position:absolute;bottom:32px;right:32px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:white;font-size:13px;font-weight:600;padding:9px 20px;border-radius:99px;cursor:pointer;backdrop-filter:blur(4px);z-index:10;">Skip →</button>
@@ -3986,20 +3986,42 @@
     if (localStorage.getItem(key)) return;
 
     const overlay = document.getElementById('opening-video-overlay');
-    if (!overlay) return;
+    if (!overlay) { console.warn('Intro overlay not found'); return; }
     overlay.style.display = 'flex';
 
+    const videoPhase = document.getElementById('intro-video-phase');
     const video = document.getElementById('opening-video');
     const skipBtn = document.getElementById('skip-video-btn');
 
-    // Start video
-    if (video) {
-      video.play().catch(() => skipToAnimation()); // fallback if autoplay blocked
-      setTimeout(() => { if (skipBtn) skipBtn.style.display = 'block'; }, 5000);
-      video.addEventListener('ended', skipToAnimation, { once: true });
-    } else {
+    if (!video || !videoPhase) {
       skipToAnimation();
+      return;
     }
+
+    videoPhase.style.display = 'block';
+    videoPhase.style.opacity = '1';
+
+    // Try playing
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {
+        // Autoplay blocked — show skip button immediately so user can tap to start
+        if (skipBtn) {
+          skipBtn.style.display = 'block';
+          skipBtn.textContent = '▶ Tap to play';
+          skipBtn.onclick = () => {
+            video.play().then(() => {
+              skipBtn.textContent = 'Skip →';
+              skipBtn.onclick = () => skipToAnimation();
+              setTimeout(() => { skipBtn.style.display = 'block'; }, 5000);
+            }).catch(() => skipToAnimation());
+          };
+        }
+      });
+    }
+
+    setTimeout(() => { if (skipBtn) skipBtn.style.display = 'block'; }, 5000);
+    video.addEventListener('ended', skipToAnimation, { once: true });
   }
 
   window.skipToAnimation = () => {
@@ -4483,9 +4505,16 @@
   }).catch(()=>{});
   const db = getFirestore(app);
 
-  // Show opening video ASAP — before waiting for Firebase auth
-  localStorage.removeItem('coed_intro_seen_2026'); // TEMP - remove after test
-  checkOpeningVideo();
+  // Show opening video — after DOM is fully ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      localStorage.removeItem('coed_intro_seen_2026'); // TEMP - remove after test
+      checkOpeningVideo();
+    });
+  } else {
+    localStorage.removeItem('coed_intro_seen_2026'); // TEMP - remove after test
+    checkOpeningVideo();
+  }
 
   // NICKNAME
   // AVATAR GRID
