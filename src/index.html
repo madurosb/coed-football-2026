@@ -3987,7 +3987,7 @@
 
   // ═══ OPENING INTRO SEQUENCE ═══
   function checkOpeningVideo() {
-    const LAUNCH_DATE = new Date('2020-01-01T00:00:00'); // TEMP TEST
+    const LAUNCH_DATE = new Date('2026-06-10T00:00:00');
     const now = new Date();
     if (now < LAUNCH_DATE) return;
 
@@ -4513,11 +4513,9 @@
   // Show opening video — after DOM is fully ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-      localStorage.removeItem('coed_intro_seen_2026'); // TEMP - remove after test
       checkOpeningVideo();
     });
   } else {
-    localStorage.removeItem('coed_intro_seen_2026'); // TEMP - remove after test
     checkOpeningVideo();
   }
 
@@ -4729,14 +4727,6 @@
     // Opening video check + message badge
     setTimeout(checkOpeningVideo, 200);
     updateMsgBadge();
-    // TEMP TEST BUTTON - remove after test
-    setTimeout(() => {
-      const b = document.createElement('button');
-      b.textContent = '🎬 Re-test Intro';
-      b.style.cssText = 'position:fixed;bottom:90px;right:16px;z-index:9999;background:#7c3aed;color:white;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(124,58,237,0.5);';
-      b.onclick = () => { localStorage.removeItem('coed_intro_seen_2026'); location.reload(); };
-      document.body.appendChild(b);
-    }, 2000);
 
     // Silent background refresh every 15 min — no page reload!
     // Refreshes standings + match statuses quietly in the background
