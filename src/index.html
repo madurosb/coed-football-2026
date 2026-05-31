@@ -1382,7 +1382,7 @@
   <div id="opening-video-overlay" style="display:none;position:fixed;inset:0;z-index:99999;background:#000;flex-direction:column;">
     <!-- VIDEO PHASE -->
     <div id="intro-video-phase" style="position:absolute;inset:0;">
-      <video id="opening-video" playsinline muted autoplay style="width:100%;height:100%;object-fit:cover;" preload="auto">
+      <video id="opening-video" playsinline autoplay style="width:100%;height:100%;object-fit:cover;" preload="auto">
         <source src="https://coed-football-2026.vercel.app/coed_promo_intro-1.mp4" type="video/mp4">
       </video>
       <button id="skip-video-btn" onclick="skipToAnimation()" style="display:none;position:absolute;bottom:32px;right:32px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:white;font-size:13px;font-weight:600;padding:9px 20px;border-radius:99px;cursor:pointer;backdrop-filter:blur(4px);z-index:10;">Skip →</button>
@@ -4050,11 +4050,11 @@
     const overlay = document.getElementById('opening-video-overlay');
     if (!overlay) return;
     localStorage.setItem('coed_intro_seen_2026', '1');
-    overlay.style.transition = 'opacity 1.2s ease';
+    overlay.style.transition = 'opacity 0.6s ease';
     overlay.style.opacity = '0';
     const video = document.getElementById('opening-video');
     if (video) video.pause();
-    setTimeout(() => { overlay.style.display = 'none'; overlay.style.opacity = '1'; }, 1200);
+    setTimeout(() => { overlay.style.display = 'none'; overlay.style.opacity = '1'; }, 600);
   };
 
   function runIntroAnimation() {
@@ -4153,7 +4153,7 @@
       setTimeout(()=>{
         const btn=$('intro-enter'); if(btn){ btn.style.transition='opacity 0.6s'; btn.style.opacity='1'; }
         // Auto-close after 3 more seconds if user doesn't click
-        setTimeout(()=>closeOpeningVideo(), 4000);
+        setTimeout(()=>closeOpeningVideo(), 2000);
       },3600);
 
     },280);
