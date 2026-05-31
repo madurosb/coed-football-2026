@@ -1328,6 +1328,10 @@
         🔔
         <span id="notif-badge" style="display:none;position:absolute;top:1px;right:1px;background:#ef4444;color:white;font-size:9px;font-weight:700;border-radius:99px;min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 3px;">0</span>
       </button>
+      <button id="msg-btn" onclick="toggleMsgPanel()" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.15);cursor:pointer;font-size:15px;padding:5px 7px;border-radius:8px;transition:all 0.15s;position:relative;flex-shrink:0;" onmouseover="this.style.background='rgba(59,130,246,0.2)'" onmouseout="this.style.background='rgba(59,130,246,0.08)'" title="Messages">
+        ✈️
+        <span id="msg-badge" style="display:none;position:absolute;top:1px;right:1px;background:#ef4444;color:white;font-size:9px;font-weight:700;border-radius:99px;min-width:8px;height:8px;border-radius:50%;"></span>
+      </button>
       <button class="hamburger" id="hamburger-btn" onclick="toggleMobileMenu()">
         <span></span><span></span><span></span>
       </button>
@@ -1337,7 +1341,81 @@
     </div>
   </nav>
 
-  <!-- MOBILE DROPDOWN MENU -->
+  <!-- MESSENGER PANEL -->
+  <div id="msg-panel" style="display:none;position:fixed;top:64px;right:0;width:min(360px,100vw);height:min(560px,80vh);background:var(--surface);border-left:1px solid var(--border);border-bottom:1px solid var(--border);border-radius:0 0 0 16px;z-index:998;box-shadow:-4px 4px 32px rgba(0,0,0,0.2);display:none;flex-direction:column;">
+    <!-- Header -->
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      <div style="font-size:15px;font-weight:800;">✈️ Messages</div>
+      <button onclick="toggleMsgPanel()" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:18px;padding:0;">✕</button>
+    </div>
+    <!-- Conversation list / chat view -->
+    <div id="msg-body" style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
+      <div id="msg-inbox" style="flex:1;overflow-y:auto;"></div>
+      <div id="msg-chat" style="display:none;flex:1;flex-direction:column;overflow:hidden;"></div>
+    </div>
+  </div>
+
+  <!-- OPENING INTRO OVERLAY -->
+  <div id="opening-video-overlay" style="display:none;position:fixed;inset:0;z-index:99999;background:#000;flex-direction:column;">
+    <!-- VIDEO PHASE -->
+    <div id="intro-video-phase" style="position:absolute;inset:0;">
+      <video id="opening-video" playsinline style="width:100%;height:100%;object-fit:cover;" preload="auto">
+        <source src="https://raw.githubusercontent.com/madurosb/coed-football-2026/main/src/coed_promo_intro-1.mp4" type="video/mp4">
+      </video>
+      <button id="skip-video-btn" onclick="skipToAnimation()" style="display:none;position:absolute;bottom:32px;right:32px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:white;font-size:13px;font-weight:600;padding:9px 20px;border-radius:99px;cursor:pointer;backdrop-filter:blur(4px);z-index:10;">Skip →</button>
+    </div>
+    <!-- ANIMATION PHASE -->
+    <div id="intro-anim-phase" style="display:none;position:absolute;inset:0;">
+      <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;700;900&display=swap" rel="stylesheet">
+      <style>
+        #intro-stage { width:100%;height:100%;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden; }
+        #intro-grain { position:absolute;inset:0;z-index:100;opacity:0.06;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:180px 180px;animation:intro-grain 0.08s steps(1) infinite; }
+        @keyframes intro-grain { 0%{background-position:0 0} 25%{background-position:30px -15px} 50%{background-position:-20px 25px} 75%{background-position:15px 10px} }
+        #intro-scan { position:absolute;inset:0;z-index:45;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.05) 3px,rgba(0,0,0,0.05) 4px); }
+        #intro-flash { position:absolute;inset:0;z-index:90;background:#fff;opacity:0;pointer-events:none; }
+        #intro-glow { position:absolute;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(255,160,0,0.14) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%) scale(0);transition:transform 1.8s cubic-bezier(0.17,0.89,0.32,1.1);pointer-events:none; }
+        .ih-line { position:absolute;height:1px;left:0;background:linear-gradient(90deg,transparent 0%,rgba(255,180,0,0.35) 50%,transparent 100%);width:0;opacity:0;pointer-events:none; }
+        .ih-line.t { top:calc(50% - 148px); } .ih-line.b { top:calc(50% + 148px); }
+        #intro-content { position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;text-align:center; }
+        #intro-trophy { font-size:62px;display:block;opacity:0;transform:scale(0.3) translateY(20px);filter:drop-shadow(0 0 45px rgba(255,190,0,0.9));margin-bottom:18px; }
+        #intro-welcome { font-family:'Barlow Condensed',sans-serif;font-weight:300;font-size:15px;letter-spacing:16px;text-transform:uppercase;color:rgba(255,255,255,0.42);opacity:0;transform:translateY(8px);margin-bottom:10px; }
+        #intro-brand { opacity:0;line-height:0.88; }
+        #ib-coed { display:block;font-family:'Bebas Neue',sans-serif;font-size:clamp(80px,13vw,140px);background:linear-gradient(135deg,#FFE44D 0%,#FFB800 35%,#FF6B00 70%,#FF2200 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:6px; }
+        #ib-wc { display:block;font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,5.5vw,56px);color:rgba(255,255,255,0.88);letter-spacing:18px;padding-left:18px;margin-top:4px; }
+        #ib-year { display:block;font-family:'Bebas Neue',sans-serif;font-size:clamp(85px,14vw,148px);color:#fff;letter-spacing:-3px;line-height:0.85;position:relative; }
+        #ib-year::before { content:'2026';position:absolute;inset:0;-webkit-text-stroke:1px rgba(255,180,0,0.28);color:transparent;transform:translate(3px,3px); }
+        #intro-badge { display:inline-flex;align-items:center;gap:10px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:5px;text-transform:uppercase;color:rgba(255,255,255,0.28);border:1px solid rgba(255,255,255,0.1);padding:6px 20px;margin-top:14px;opacity:0;transform:scaleX(0); }
+        #intro-divider { width:0;height:1px;margin:22px auto;background:linear-gradient(90deg,transparent 0%,#FFD700 30%,#FF4500 70%,transparent 100%);opacity:0; }
+        #intro-tagline { font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,4.5vw,54px);letter-spacing:10px;color:rgba(255,255,255,0); }
+        .itc { display:inline-block;opacity:0;transform:translateY(22px) skewX(-8deg); }
+        .id1 { color:#FFD700; } .id2 { color:#FF8C00; } .id3 { color:#FF2200; }
+        .intro-spark { position:absolute;border-radius:50%;pointer-events:none;z-index:201; }
+        #intro-enter { position:absolute;bottom:36px;left:50%;transform:translateX(-50%);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;letter-spacing:6px;text-transform:uppercase;color:rgba(255,255,255,0.22);background:none;border:1px solid rgba(255,255,255,0.1);padding:8px 26px;cursor:pointer;opacity:0;z-index:200;transition:color .25s,border-color .25s,background .25s; }
+        #intro-enter:hover { color:#FFD700;border-color:rgba(255,215,0,.45);background:rgba(255,215,0,.04); }
+      </style>
+      <div id="intro-stage">
+        <div id="intro-grain"></div>
+        <div id="intro-scan"></div>
+        <div id="intro-flash"></div>
+        <div id="intro-glow"></div>
+        <div class="ih-line t"></div>
+        <div class="ih-line b"></div>
+        <div id="intro-content">
+          <span id="intro-trophy">🏆</span>
+          <div id="intro-welcome">Welcome To</div>
+          <div id="intro-brand">
+            <span id="ib-coed">COED</span>
+            <span id="ib-wc">World Cup</span>
+            <span id="ib-year">2026</span>
+          </div>
+          <div id="intro-badge">⚽&nbsp; Tournament &nbsp;⚽</div>
+          <div id="intro-divider"></div>
+          <div id="intro-tagline"></div>
+        </div>
+        <button id="intro-enter" onclick="closeOpeningVideo()">▶&nbsp; ENTER SITE</button>
+      </div>
+    </div>
+  </div>
   <div class="mobile-menu-overlay" id="menu-overlay" onclick="closeMobileMenu()"></div>
   <div class="mobile-menu" id="mobile-menu">
     <button class="mobile-menu-btn" data-page="home" onclick="mobileNav('home')">🏠 &nbsp; Home</button>
@@ -2845,7 +2923,7 @@
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
   import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
-  import { getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, updateDoc, deleteDoc, query, orderBy, where, limit, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+  import { getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, updateDoc, deleteDoc, query, orderBy, where, limit, onSnapshot, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 
   window.resetTrashTalk = async (days) => {
     const msg = days === 0 ? 'Delete ALL messages?' : `Delete messages older than ${days} days?`;
@@ -3897,7 +3975,355 @@
     if (goPage && goPage !== false) showPage(goPage);
   };
 
-  window.toggleMobileMenu = () => {
+  // ═══ OPENING INTRO SEQUENCE ═══
+  function checkOpeningVideo() {
+    const LAUNCH_DATE = new Date('2026-06-10T00:00:00');
+    const now = new Date();
+    if (now < LAUNCH_DATE) return;
+
+    const key = 'coed_intro_seen_2026';
+    if (localStorage.getItem(key)) return;
+
+    const overlay = document.getElementById('opening-video-overlay');
+    if (!overlay) return;
+    overlay.style.display = 'flex';
+
+    const video = document.getElementById('opening-video');
+    const skipBtn = document.getElementById('skip-video-btn');
+
+    // Start video
+    if (video) {
+      video.play().catch(() => skipToAnimation()); // fallback if autoplay blocked
+      setTimeout(() => { if (skipBtn) skipBtn.style.display = 'block'; }, 5000);
+      video.addEventListener('ended', skipToAnimation, { once: true });
+    } else {
+      skipToAnimation();
+    }
+  }
+
+  window.skipToAnimation = () => {
+    const videoPhase = document.getElementById('intro-video-phase');
+    const animPhase = document.getElementById('intro-anim-phase');
+    const video = document.getElementById('opening-video');
+    if (video) { video.pause(); video.removeEventListener('ended', skipToAnimation); }
+
+    // Fade out video
+    if (videoPhase) {
+      videoPhase.style.transition = 'opacity 0.5s';
+      videoPhase.style.opacity = '0';
+      setTimeout(() => {
+        videoPhase.style.display = 'none';
+        if (animPhase) {
+          animPhase.style.display = 'block';
+          runIntroAnimation();
+        }
+      }, 500);
+    } else {
+      if (animPhase) { animPhase.style.display = 'block'; runIntroAnimation(); }
+    }
+  };
+
+  window.closeOpeningVideo = () => {
+    const overlay = document.getElementById('opening-video-overlay');
+    if (!overlay) return;
+    localStorage.setItem('coed_intro_seen_2026', '1');
+    overlay.style.transition = 'opacity 1.2s ease';
+    overlay.style.opacity = '0';
+    const video = document.getElementById('opening-video');
+    if (video) video.pause();
+    setTimeout(() => { overlay.style.display = 'none'; overlay.style.opacity = '1'; }, 1200);
+  };
+
+  function runIntroAnimation() {
+    const $ = id => document.getElementById(id);
+    const iflash = (i=0.9,d=70) => { $('intro-flash').style.opacity=i; setTimeout(()=>$('intro-flash').style.opacity=0,d); };
+
+    // Reset
+    ['intro-trophy','intro-welcome','intro-brand','intro-badge','intro-divider'].forEach(id=>{
+      const e=$(id); if(!e) return; e.style.transition='none'; e.style.opacity='0';
+    });
+    if($('intro-trophy')) $('intro-trophy').style.transform='scale(0.3) translateY(20px)';
+    if($('intro-welcome')) $('intro-welcome').style.transform='translateY(8px)';
+    if($('intro-badge')) $('intro-badge').style.transform='scaleX(0)';
+    if($('intro-divider')) $('intro-divider').style.width='0';
+    if($('ib-coed')) { $('ib-coed').style.textShadow='none'; $('ib-coed').style.transform='none'; }
+    if($('intro-tagline')) $('intro-tagline').innerHTML='';
+    if($('intro-glow')) { $('intro-glow').style.transition='none'; $('intro-glow').style.transform='translate(-50%,-50%) scale(0)'; }
+    document.querySelectorAll('.ih-line').forEach(l=>{ l.style.transition='none'; l.style.width='0'; l.style.opacity='0'; });
+    if($('intro-enter')) $('intro-enter').style.opacity='0';
+
+    setTimeout(()=>{
+      iflash(0.7,200);
+
+      if($('intro-glow')) { $('intro-glow').style.transition='transform 1.8s cubic-bezier(0.17,0.89,0.32,1.1)'; $('intro-glow').style.transform='translate(-50%,-50%) scale(1.5)'; }
+      document.querySelectorAll('.ih-line').forEach((l,i)=>{ setTimeout(()=>{ l.style.transition='width 0.9s ease,opacity 0.3s'; l.style.opacity='1'; l.style.width='100%'; },180+i*90); });
+
+      setTimeout(()=>{
+        const t=$('intro-trophy'); if(!t) return;
+        t.style.transition='opacity 0.35s,transform 0.5s cubic-bezier(0.17,0.89,0.32,1.28)';
+        t.style.opacity='1'; t.style.transform='scale(1) translateY(0)';
+      },120);
+
+      setTimeout(()=>{
+        const w=$('intro-welcome'); if(!w) return;
+        w.style.transition='opacity 0.5s,transform 0.5s';
+        w.style.opacity='1'; w.style.transform='translateY(0)';
+      },520);
+
+      setTimeout(()=>{
+        const b=$('intro-brand'),coed=$('ib-coed'); if(!b||!coed) return;
+        b.style.transition='opacity 0.08s'; b.style.opacity='1';
+        let g=0;
+        const gi=setInterval(()=>{
+          if(g%2===0){ coed.style.textShadow=`${(Math.random()-.5)*10}px 0 #FF0040,${(Math.random()-.5)*8}px 0 #00BFFF`; coed.style.transform=`translateX(${(Math.random()-.5)*7}px)`; }
+          else { coed.style.textShadow='none'; coed.style.transform='none'; }
+          if(++g>12){ clearInterval(gi); coed.style.textShadow='none'; coed.style.transform='none'; }
+        },55);
+      },780);
+
+      setTimeout(()=>{
+        const ba=$('intro-badge'); if(!ba) return;
+        ba.style.transition='opacity 0.4s,transform 0.5s cubic-bezier(0.17,0.89,0.32,1.2)';
+        ba.style.opacity='1'; ba.style.transform='scaleX(1)';
+      },1320);
+
+      setTimeout(()=>{
+        const d=$('intro-divider'); if(!d) return;
+        d.style.transition='width 0.7s ease,opacity 0.4s';
+        d.style.opacity='1'; d.style.width='280px';
+      },1480);
+
+      const chars=[
+        {c:'L'},{c:'e'},{c:'t'},{c:' '},{c:'t'},{c:'h'},{c:'e'},{c:' '},
+        {c:'G'},{c:'a'},{c:'m'},{c:'e'},{c:' '},{c:'B'},{c:'e'},{c:'g'},{c:'i'},{c:'n'},
+        {c:'.',cl:'id1'},{c:'.',cl:'id2'},{c:'.',cl:'id3'}
+      ];
+      const tl=$('intro-tagline'); if(tl) {
+        tl.innerHTML=chars.map(p=>`<span class="itc ${p.cl||''}">${p.c===' '?'&nbsp;':p.c}</span>`).join('');
+        document.querySelectorAll('.itc').forEach((ch,i)=>{
+          setTimeout(()=>{ ch.style.transition='opacity 0.2s,transform 0.32s cubic-bezier(0.17,0.89,0.32,1.3)'; ch.style.opacity='1'; ch.style.transform='translateY(0) skewX(0)'; },1720+i*52);
+        });
+      }
+
+      setTimeout(()=>{
+        const colors=['#FFD700','#FF8C00','#FF2200','#FFB800','#fff'];
+        const stage=$('intro-stage'); if(!stage) return;
+        for(let i=0;i<38;i++){
+          setTimeout(()=>{
+            const s=document.createElement('div'); s.className='intro-spark';
+            const sz=Math.random()*4+1;
+            s.style.cssText=`width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};left:${20+Math.random()*60}%;top:${20+Math.random()*60}%;position:absolute;border-radius:50%;pointer-events:none;z-index:201;`;
+            stage.appendChild(s);
+            s.animate([
+              {opacity:0,transform:'translate(0,0) scale(0)'},
+              {opacity:1,transform:`translate(${(Math.random()-.5)*80}px,${-40-Math.random()*60}px) scale(1)`},
+              {opacity:0,transform:`translate(${(Math.random()-.5)*120}px,${-80-Math.random()*80}px) scale(0.3)`}
+            ],{duration:900+Math.random()*700,delay:Math.random()*300,fill:'forwards'});
+          },i*65);
+        }
+      },1580);
+
+      // Show Enter button after animation completes
+      setTimeout(()=>{
+        const btn=$('intro-enter'); if(btn){ btn.style.transition='opacity 0.6s'; btn.style.opacity='1'; }
+        // Auto-close after 3 more seconds if user doesn't click
+        setTimeout(()=>closeOpeningVideo(), 4000);
+      },3600);
+
+    },280);
+  }
+
+  // ═══ MESSENGER ═══
+  let msgCurrentThread = null;
+  let msgUnsubscribe = null;
+
+  window.toggleMsgPanel = () => {
+    const panel = document.getElementById('msg-panel');
+    if (!panel) return;
+    const isOpen = panel.style.display === 'flex';
+    // Close notif panel if open
+    const notifPanel = document.getElementById('notif-panel');
+    if (notifPanel) notifPanel.style.display = 'none';
+    if (isOpen) {
+      panel.style.display = 'none';
+      if (msgUnsubscribe) { msgUnsubscribe(); msgUnsubscribe = null; }
+    } else {
+      panel.style.display = 'flex';
+      loadMsgInbox();
+    }
+  };
+
+  async function loadMsgInbox() {
+    if (!currentUser) return;
+    const inbox = document.getElementById('msg-inbox');
+    const chatView = document.getElementById('msg-chat');
+    inbox.style.display = 'block';
+    chatView.style.display = 'none';
+    msgCurrentThread = null;
+    inbox.innerHTML = '<div style="padding:1rem;text-align:center;font-size:13px;color:var(--text-muted);">Loading...</div>';
+
+    // Load all users except self
+    const usersSnap = await getDocs(collection(db, 'users'));
+    const allUsers = [];
+    usersSnap.forEach(d => {
+      if (d.id !== currentUser.uid) allUsers.push({ uid: d.id, ...d.data() });
+    });
+
+    // Check unread counts
+    const threadsSnap = await getDocs(query(
+      collection(db, 'messages'),
+      where('participants', 'array-contains', currentUser.uid)
+    ));
+    const lastMsgByThread = {};
+    const unreadByThread = {};
+    threadsSnap.forEach(d => {
+      const m = d.data();
+      const threadId = [m.from, m.to].sort().join('_');
+      if (!lastMsgByThread[threadId] || m.createdAt?.seconds > lastMsgByThread[threadId].ts) {
+        lastMsgByThread[threadId] = { ts: m.createdAt?.seconds || 0, text: m.text, from: m.from };
+      }
+      if (m.to === currentUser.uid && !m.read) {
+        unreadByThread[threadId] = (unreadByThread[threadId] || 0) + 1;
+      }
+    });
+
+    // Sort users: unread first, then by last message
+    allUsers.sort((a, b) => {
+      const tidA = [currentUser.uid, a.uid].sort().join('_');
+      const tidB = [currentUser.uid, b.uid].sort().join('_');
+      const unreadA = unreadByThread[tidA] || 0;
+      const unreadB = unreadByThread[tidB] || 0;
+      if (unreadA !== unreadB) return unreadB - unreadA;
+      const tsA = lastMsgByThread[tidA]?.ts || 0;
+      const tsB = lastMsgByThread[tidB]?.ts || 0;
+      return tsB - tsA;
+    });
+
+    inbox.innerHTML = allUsers.map(u => {
+      const threadId = [currentUser.uid, u.uid].sort().join('_');
+      const last = lastMsgByThread[threadId];
+      const unread = unreadByThread[threadId] || 0;
+      const av = getAvatarById(u.avatar);
+      const avatarHTML = av
+        ? `<div style="width:40px;height:40px;border-radius:50%;overflow:hidden;flex-shrink:0;">${makeAvatarSVG(av, 40)}</div>`
+        : `<div style="width:40px;height:40px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;color:var(--accent);">${(u.nickname||'?').substring(0,2).toUpperCase()}</div>`;
+      return `
+        <div onclick="openMsgThread('${u.uid}','${(u.nickname||u.displayName||'User').replace(/'/g,"\\'")}','${u.avatar||''}')"
+          style="display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.1s;"
+          onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+          <div style="position:relative;">${avatarHTML}${unread>0?`<span style="position:absolute;top:-2px;right:-2px;width:10px;height:10px;background:#ef4444;border-radius:50%;border:2px solid var(--surface);"></span>`:''}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:${unread>0?'700':'500'};color:var(--text);display:flex;align-items:center;justify-content:space-between;">
+              <span>${u.nickname||u.displayName||'User'}</span>
+              ${unread>0?`<span style="background:#ef4444;color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;">${unread}</span>`:''}
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${last?last.text:'Say hello 👋':''}</div>
+          </div>
+        </div>`;
+    }).join('') || '<div style="padding:2rem;text-align:center;color:var(--text-muted);font-size:13px;">No other players yet</div>';
+  }
+
+  window.openMsgThread = async (toUid, toName, toAvatar) => {
+    if (!currentUser) return;
+    msgCurrentThread = { toUid, toName, toAvatar };
+    const threadId = [currentUser.uid, toUid].sort().join('_');
+
+    const inbox = document.getElementById('msg-inbox');
+    const chatView = document.getElementById('msg-chat');
+    inbox.style.display = 'none';
+    chatView.style.display = 'flex';
+    chatView.style.flexDirection = 'column';
+    chatView.style.height = '100%';
+
+    chatView.innerHTML = `
+      <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <button onclick="loadMsgInbox()" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:16px;padding:0 6px 0 0;">←</button>
+        <div style="font-size:14px;font-weight:700;flex:1;">${toName}</div>
+      </div>
+      <div id="msg-messages" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;"></div>
+      <div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;">
+        <input id="msg-input" type="text" placeholder="Message ${toName}..." maxlength="300"
+          style="flex:1;padding:9px 12px;border-radius:99px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;outline:none;"
+          onkeydown="if(event.key==='Enter')sendMsg('${toUid}','${threadId}')">
+        <button onclick="sendMsg('${toUid}','${threadId}')"
+          style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;border:none;border-radius:99px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;">✈️</button>
+      </div>`;
+
+    // Mark messages as read
+    const unreadQ = query(collection(db, 'messages'),
+      where('to', '==', currentUser.uid),
+      where('from', '==', toUid),
+      where('read', '==', false));
+    const unreadSnap = await getDocs(unreadQ);
+    unreadSnap.forEach(d => updateDoc(doc(db, 'messages', d.id), { read: true }));
+
+    // Real-time listener
+    if (msgUnsubscribe) msgUnsubscribe();
+    const q = query(collection(db, 'messages'),
+      where('threadId', '==', threadId),
+      orderBy('createdAt', 'asc'),
+      limit(100));
+    msgUnsubscribe = onSnapshot(q, snap => {
+      const container = document.getElementById('msg-messages');
+      if (!container) return;
+      container.innerHTML = snap.docs.map(d => {
+        const m = d.data();
+        const isMe = m.from === currentUser.uid;
+        const time = m.createdAt?.toDate ? m.createdAt.toDate().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}) : '';
+        return `<div style="display:flex;justify-content:${isMe?'flex-end':'flex-start'};">
+          <div style="max-width:75%;padding:8px 12px;border-radius:${isMe?'14px 14px 2px 14px':'14px 14px 14px 2px'};background:${isMe?'linear-gradient(135deg,#3b82f6,#1d4ed8)':'var(--surface2)'};color:${isMe?'white':'var(--text)'};font-size:13px;line-height:1.4;">
+            ${m.text}
+            <div style="font-size:10px;opacity:0.6;margin-top:2px;text-align:right;">${time}</div>
+          </div>
+        </div>`;
+      }).join('') || '<div style="text-align:center;color:var(--text-muted);font-size:12px;padding:1rem;">No messages yet. Say hello! 👋</div>';
+      container.scrollTop = container.scrollHeight;
+    });
+
+    // Update unread badge
+    updateMsgBadge();
+  };
+
+  window.sendMsg = async (toUid, threadId) => {
+    const input = document.getElementById('msg-input');
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text || !currentUser) return;
+    input.value = '';
+    input.focus();
+
+    await addDoc(collection(db, 'messages'), {
+      threadId,
+      from: currentUser.uid,
+      to: toUid,
+      text,
+      read: false,
+      createdAt: serverTimestamp()
+    });
+
+    // Send notification
+    await addDoc(collection(db, 'notifications'), {
+      toUserId: toUid,
+      type: 'message',
+      text: `💬 New message from ${currentUserData.nickname || 'Someone'}`,
+      from: currentUser.uid,
+      seen: false,
+      createdAt: serverTimestamp()
+    });
+  };
+
+  async function updateMsgBadge() {
+    if (!currentUser) return;
+    const q = query(collection(db, 'messages'),
+      where('to', '==', currentUser.uid),
+      where('read', '==', false));
+    const snap = await getDocs(q);
+    const badge = document.getElementById('msg-badge');
+    if (badge) badge.style.display = snap.size > 0 ? 'block' : 'none';
+  }
+
+  // Poll for new messages every 30s
+  setInterval(() => { if (currentUser) updateMsgBadge(); }, 30000);
     const menu = document.getElementById('mobile-menu');
     const overlay = document.getElementById('menu-overlay');
     if (!menu || !overlay) return;
@@ -4226,6 +4652,9 @@
     loadHomeData();
     loadMatches();
     loadPrizes();
+    // Opening video check + message badge
+    setTimeout(checkOpeningVideo, 800);
+    updateMsgBadge();
 
     // Silent background refresh every 15 min — no page reload!
     // Refreshes standings + match statuses quietly in the background
