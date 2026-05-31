@@ -839,6 +839,17 @@
     @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
     @keyframes badgePop { 0%{transform:scale(0.5);opacity:0} 70%{transform:scale(1.15)} 100%{transform:scale(1);opacity:1} }
     @keyframes badgeShine { 0%,100%{background-position:200% center} 50%{background-position:-200% center} }
+    /* Force wizard to always be dark theme regardless of day/night mode */
+    #wizard-overlay, #wizard-overlay * {
+      color: inherit;
+    }
+    #wizard-overlay {
+      color: #e2e8f0 !important;
+    }
+    #wizard-overlay h1, #wizard-overlay h2, #wizard-overlay h3,
+    #wizard-overlay .wiz-title { color: #ffffff !important; }
+    #wizard-overlay input { color: #ffffff !important; background: rgba(255,255,255,0.08) !important; border-color: rgba(255,255,255,0.15) !important; }
+    #wizard-overlay input::placeholder { color: rgba(255,255,255,0.35) !important; }
     @keyframes pickGlow { 0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,0)} 50%{box-shadow:0 0 0 5px rgba(59,130,246,0.3)} }
     @keyframes pickGlowGold { 0%,100%{box-shadow:0 0 0 0 rgba(212,175,55,0)} 50%{box-shadow:0 0 0 5px rgba(212,175,55,0.35)} }
     @keyframes attentionBounce { 0%,100%{transform:translateY(0)} 30%{transform:translateY(-4px)} 60%{transform:translateY(-2px)} }
@@ -9268,8 +9279,13 @@
     const content = document.getElementById('wizard-content');
     const nextBtn = document.getElementById('wizard-next-btn');
     const skipDiv = document.getElementById('wizard-skip');
+    const backBtn = document.getElementById('wizard-back-btn');
     if (!content) return;
-    content.scrollTop = 0;
+    // Show/hide back button
+    if (backBtn) backBtn.style.display = step > 0 ? 'block' : 'none';
+    // Scroll overlay to top
+    const overlay = document.getElementById('wizard-overlay');
+    if (overlay) overlay.scrollTop = 0;
     if (step === 0) wizardStep0(content, nextBtn, skipDiv);
     else if (step === 1) wizardStep1(content, nextBtn, skipDiv);
     else if (step === 2) wizardStep2(content, nextBtn, skipDiv);
@@ -9541,6 +9557,10 @@
   };
 
   window.wizardSkip = () => { wizardStep++; if (wizardStep >= WIZARD_STEPS) finishWizard(); else renderWizardStep(wizardStep); };
+
+  window.wizardBack = () => {
+    if (wizardStep > 0) { wizardStep--; renderWizardStep(wizardStep); }
+  };
 
   window.wizardNext = async () => {
     if (wizardStep === 0) {
@@ -12141,13 +12161,17 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
 </script>
 
   <!-- ONBOARDING WIZARD -->
-  <div id="wizard-overlay" style="display:none;position:fixed;inset:0;z-index:99998;background:#0a0f1a;overflow-y:auto;">
+  <div id="wizard-overlay" style="display:none;position:fixed;inset:0;z-index:99998;background:#0a0f1a;overflow-y:auto;color:#e2e8f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"  >
     <!-- Progress bar -->
     <div style="position:sticky;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,0.1);z-index:1;">
       <div id="wizard-progress" style="height:100%;background:linear-gradient(90deg,#3b82f6,#1D9E75);transition:width 0.4s ease;width:0%;"></div>
     </div>
-    <!-- Step counter -->
-    <div id="wizard-step-label" style="position:fixed;top:16px;right:16px;font-family:monospace;font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:2px;z-index:2;"></div>
+    <!-- Back button + Step counter -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 0;">
+      <button id="wizard-back-btn" onclick="wizardBack()" style="display:none;background:none;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.5);font-size:13px;padding:6px 12px;border-radius:8px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='rgba(255,255,255,0.4)';this.style.color='white'" onmouseout="this.style.borderColor='rgba(255,255,255,0.15)';this.style.color='rgba(255,255,255,0.5)'">← Back</button>
+      <div style="flex:1;"></div>
+      <div id="wizard-step-label" style="font-family:monospace;font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:2px;"></div>
+    </div>
     <!-- Single scrollable column — content + button together -->
     <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:3rem 1.5rem 2rem;">
       <!-- Content area -->
@@ -12598,24 +12622,36 @@ Rules: realistic scores (0-0 to 3-1 range), scorer is a real star from one of th
       });
 
       const data = await response.json();
-      const text = (data.reply || data.content || data.message || '').trim();
+      const text = (data.text || data.reply || data.content || data.message || '').trim();
+
+      // Debug log
+      console.log('AI fill raw response:', text.substring(0, 300));
 
       // Try multiple parse strategies
       let predictions = null;
       // Strategy 1: direct parse
       try { predictions = JSON.parse(text); } catch(e) {}
-      // Strategy 2: extract JSON array
+      // Strategy 2: greedy JSON array (handles text before/after)
       if (!predictions) {
-        const m = text.match(/\[[\s\S]*?\]/);
+        const m = text.match(/\[[\s\S]*\]/);
         if (m) try { predictions = JSON.parse(m[0]); } catch(e) {}
       }
-      // Strategy 3: extract from code block
+      // Strategy 3: code block
       if (!predictions) {
         const m = text.match(/```(?:json)?\s*([\s\S]*?)```/);
         if (m) try { predictions = JSON.parse(m[1].trim()); } catch(e) {}
       }
+      // Strategy 4: find first { up to last }
+      if (!predictions) {
+        const start = text.indexOf('[');
+        const end = text.lastIndexOf(']');
+        if (start !== -1 && end > start) {
+          try { predictions = JSON.parse(text.slice(start, end + 1)); } catch(e) {}
+        }
+      }
 
-      if (!predictions || !Array.isArray(predictions)) {
+      if (!predictions || !Array.isArray(predictions) || predictions.length === 0) {
+        console.error('Could not parse:', text.substring(0, 500));
         throw new Error('AI returned unexpected format. Try again.');
       }
 
