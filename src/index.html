@@ -4006,8 +4006,9 @@
     // Use mobile video on narrow screens
     if (window.innerWidth < 768) {
       if (videoSrc) videoSrc.src = 'https://coed-football-2026.vercel.app/coed_promo_intro_phone.mp4';
-      video.style.objectFit = 'contain';
-      video.style.background = '#000';
+      video.style.objectFit = 'cover';
+      video.style.width = '100%';
+      video.style.height = '100%';
       video.load();
     }
 
