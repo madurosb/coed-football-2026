@@ -12677,12 +12677,18 @@ Rules: realistic scores (0-4 range per team), scorer must be a real known player
   const setScore = (matchId, side, val) => {
     const el = document.getElementById(`${side}-${matchId}`);
     if (!el) return false;
-    const v = Math.max(0, Math.min(10, val));
-    el.dataset.val = v;
-    el.textContent = v;
+    const current = parseInt(el.dataset.val || '0');
+    const target = Math.max(0, Math.min(10, val));
+    const delta = target - current;
+    if (delta !== 0) {
+      // Use adjustScore which handles data-val + textContent + autosave
+      for (let i = 0; i < Math.abs(delta); i++) {
+        adjustScore(`${side}-${matchId}`, delta > 0 ? 1 : -1);
+      }
+    }
+    // Flash blue to indicate AI fill
     el.style.color = 'var(--accent)';
-    el.style.transform = 'scale(1.15)';
-    setTimeout(() => { el.style.transform = ''; el.style.color = ''; }, 300);
+    setTimeout(() => { el.style.color = ''; }, 600);
     return true;
   };
 
@@ -12723,9 +12729,6 @@ Rules: realistic scores (0-4 range per team), scorer must be a real known player
     const awaySet = setScore(matchId, 'away', awayVal);
 
     if (homeSet && awaySet) {
-      // Trigger autosave
-      const homeTeam = card.dataset.home || '';
-      triggerAutoSave(matchId, homeTeam, '');
       filled++;
     }
 
