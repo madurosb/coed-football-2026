@@ -4674,6 +4674,8 @@
     body.style.display = isOpen ? 'none' : 'block';
     if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
   };
+
+  window.toggleMobileMenu = () => {
     const menu = document.getElementById('mobile-menu');
     const overlay = document.getElementById('menu-overlay');
     if (!menu || !overlay) return;
