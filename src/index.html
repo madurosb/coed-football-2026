@@ -1549,6 +1549,8 @@
       </div>
     </div>
     <div class="stat-grid">
+      <!-- LIVE MATCHES on home (only shown when games are active) -->
+      <div id="home-live-section" style="display:none;grid-column:1/-1;margin-bottom:0.5rem;"></div>
       <div class="stat-card"><div class="num" id="home-pts">-</div><div class="lbl">Your points</div></div>
       <div class="stat-card"><div class="num" id="home-rank">-</div><div class="lbl">Your rank</div></div>
       <div class="stat-card"><div class="num" id="home-exact">-</div><div class="lbl">Exact scores</div></div>
@@ -4391,6 +4393,167 @@
     if (badge) badge.style.display = snap.size > 0 ? 'block' : 'none';
   }
 
+  // ═══ MISSING PICKS REMINDER ═══
+  let missingPicksDismissed = false;
+
+  async function checkMissingPicks() {
+    if (missingPicksDismissed) return;
+    if (!currentUser || !currentUserData) return;
+
+    const now = new Date();
+    const tournamentDeadline = new Date('2026-06-10T19:00:00Z');
+    const missing = [];
+
+    // 1. Tournament player
+    if (!currentUserData.tournamentPlayer && now < tournamentDeadline) {
+      missing.push({
+        icon: '⭐',
+        title: 'Tournament player not picked',
+        desc: 'Pick a player before Jun 10 — goals/assists = bonus pts',
+        action: () => { closeMissingPicks(); showPage('matches'); setTimeout(() => togglePickerSection('player-picker-body','player-picker-chevron'), 600); }
+      });
+    }
+
+    // 2. Tournament winner
+    if (!currentUserData.tournamentWinner && now < tournamentDeadline) {
+      missing.push({
+        icon: '🏆',
+        title: 'World Cup winner not picked',
+        desc: 'Correct pick = +15 bonus points. Deadline Jun 10.',
+        action: () => { closeMissingPicks(); showPage('matches'); setTimeout(() => togglePickerSection('winner-picker-body','winner-picker-chevron'), 600); }
+      });
+    }
+
+    // 3. Missing match predictions for upcoming matches
+    try {
+      const matchesSnap = await getDocs(collection(db, 'matches'));
+      const predsSnap = await getDocs(query(
+        collection(db, 'predictions'),
+        where('userId', '==', currentUser.uid)
+      ));
+      const myPredMatchIds = new Set(predsSnap.docs.map(d => d.data().matchId));
+      const myPredData = {};
+      predsSnap.docs.forEach(d => { myPredData[d.data().matchId] = d.data(); });
+
+      let missingScores = 0, missingScorers = 0, firstMissingMatch = null;
+
+      matchesSnap.docs.forEach(d => {
+        const m = d.data();
+        if (!m.kickoff) return;
+        const kickoff = m.kickoff.toDate ? m.kickoff.toDate() : new Date(m.kickoff);
+        const deadline = new Date(kickoff.getTime() - 24 * 60 * 60 * 1000);
+        if (deadline <= now) return; // already locked
+
+        const pred = myPredData[d.id];
+        if (!pred || pred.homeScore == null || pred.awayScore == null) {
+          missingScores++;
+          if (!firstMissingMatch) firstMissingMatch = `${m.homeTeam} vs ${m.awayTeam}`;
+        } else if (!pred.scorer) {
+          missingScorers++;
+        }
+      });
+
+      if (missingScores > 0) {
+        missing.push({
+          icon: '⚽',
+          title: missingScores + ' match' + (missingScores > 1 ? 'es' : '') + ' without a prediction',
+          desc: firstMissingMatch ? 'Starting with: ' + firstMissingMatch : 'Open predictions page to fill them in',
+          action: () => { closeMissingPicks(); showPage('matches'); }
+        });
+      }
+
+      if (missingScorers > 0) {
+        missing.push({
+          icon: '🎯',
+          title: missingScorers + ' match' + (missingScorers > 1 ? 'es' : '') + ' missing first goalscorer',
+          desc: 'Correct scorer = +2 bonus pts per match',
+          action: () => { closeMissingPicks(); showPage('matches'); }
+        });
+      }
+    } catch(e) {
+      console.log('Missing picks check error:', e.message);
+    }
+
+    if (missing.length === 0) return;
+
+    // Build popup content
+    const list = document.getElementById('missing-picks-list');
+    if (!list) return;
+    list.innerHTML = missing.map((item, i) => `
+      <div onclick="window._missingPickActions[${i}]()" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:var(--surface2);margin-bottom:8px;cursor:pointer;transition:all 0.15s;border:1px solid var(--border);"
+        onmouseover="this.style.background='var(--surface)';this.style.borderColor='var(--accent)'"
+        onmouseout="this.style.background='var(--surface2)';this.style.borderColor='var(--border)'">
+        <div style="font-size:28px;flex-shrink:0;">${item.icon}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:700;color:var(--text);">${item.title}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${item.desc}</div>
+        </div>
+        <div style="color:var(--accent);font-size:16px;flex-shrink:0;">›</div>
+      </div>`).join('');
+
+    // Store click handlers
+    window._missingPickActions = missing.map(item => item.action);
+
+    // Show popup
+    const overlay = document.getElementById('missing-picks-overlay');
+    if (overlay) {
+      overlay.style.display = 'flex';
+      requestAnimationFrame(() => {
+        overlay.querySelector('div').style.transform = 'translateY(0)';
+      });
+    }
+  }
+
+  window.closeMissingPicks = () => {
+    const overlay = document.getElementById('missing-picks-overlay');
+    if (overlay) overlay.style.display = 'none';
+  };
+
+  window.dismissMissingPicksForever = () => {
+    missingPicksDismissed = true;
+    closeMissingPicks();
+  };
+
+  async function updateHomeLiveMatches() {
+    const section = document.getElementById('home-live-section');
+    if (!section) return;
+
+    const data = await fetchLiveScores();
+    const live = data?.matches?.filter(m => ['IN_PLAY','PAUSED','HALFTIME'].includes(m.status)) || [];
+
+    if (live.length === 0) {
+      section.style.display = 'none';
+      return;
+    }
+
+    section.style.display = 'block';
+    section.innerHTML = `
+      <div style="background:linear-gradient(135deg,rgba(226,75,74,0.1),rgba(226,75,74,0.05));border:1px solid rgba(226,75,74,0.3);border-radius:14px;padding:12px 14px;overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="background:#E24B4A;color:white;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;animation:pulse 1.5s infinite;letter-spacing:0.05em;">● LIVE</span>
+          <span style="font-size:13px;font-weight:700;">Matches happening now</span>
+        </div>
+        ${live.map(m => {
+          const lH = m.homeScore ?? 0, lA = m.awayScore ?? 0;
+          const minute = m.minute ? m.minute + "'" : m.status === 'HALFTIME' ? 'HT' : '';
+          return `
+          <div onclick="showPage('matches')" style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(226,75,74,0.1);cursor:pointer;last-child:border-none;">
+            <div style="flex:1;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <span style="font-size:12px;font-weight:600;flex:1;text-align:right;">${m.homeTeam}</span>
+              <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+                <span style="font-size:18px;font-weight:800;min-width:20px;text-align:center;">${lH}</span>
+                <span style="font-size:11px;color:#E24B4A;font-weight:700;">-</span>
+                <span style="font-size:18px;font-weight:800;min-width:20px;text-align:center;">${lA}</span>
+              </div>
+              <span style="font-size:12px;font-weight:600;flex:1;">${m.awayTeam}</span>
+            </div>
+            ${minute ? `<span style="font-size:11px;color:#E24B4A;font-weight:700;flex-shrink:0;min-width:28px;text-align:right;">${minute}</span>` : ''}
+          </div>`;
+        }).join('')}
+        <div style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;cursor:pointer;" onclick="showPage('matches')">Tap to see predictions →</div>
+      </div>`;
+  }
+
   // ═══ LIVE SCORES ═══
   let liveScoresCache = null;
   let liveScoresLastFetch = 0;
@@ -5016,6 +5179,9 @@
     // Opening video check + message badge
     setTimeout(checkOpeningVideo, 200);
     updateMsgBadge();
+    // Live matches on home page — check every 60s
+    setTimeout(updateHomeLiveMatches, 1000);
+    setInterval(updateHomeLiveMatches, 60000);
 
     // Silent background refresh every 15 min — no page reload!
     // Refreshes standings + match statuses quietly in the background
@@ -5194,6 +5360,8 @@
       setTimeout(initAutoSaveToggle, 300);
       // Start live scores polling
       setTimeout(startLiveScoresPolling, 1500);
+      // Check for missing picks after 2s (give time for data to load)
+      setTimeout(checkMissingPicks, 2000);
       // Pulse attention on important picks if not yet filled
       setTimeout(() => {
         const playerCard = document.querySelector('.player-pick');
@@ -13069,7 +13237,36 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
   // (called from onAuthStateChanged after user is confirmed logged in)
 </script>
 
-  <!-- ONBOARDING WIZARD -->
+  <!-- MISSING PICKS REMINDER POPUP -->
+  <div id="missing-picks-overlay" style="display:none;position:fixed;inset:0;z-index:1050;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;padding-bottom:env(safe-area-inset-bottom);">
+    <div style="background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:0 0 1.5rem;box-shadow:0 -8px 40px rgba(0,0,0,0.3);max-height:85vh;overflow-y:auto;">
+      <!-- Handle -->
+      <div style="display:flex;justify-content:center;padding:12px 0 4px;">
+        <div style="width:36px;height:4px;border-radius:99px;background:var(--border);"></div>
+      </div>
+      <!-- Header -->
+      <div style="padding:12px 20px 16px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-size:16px;font-weight:800;">⚠️ Missing picks</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">You have incomplete predictions</div>
+          </div>
+          <button onclick="closeMissingPicks()" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:20px;padding:4px;">✕</button>
+        </div>
+      </div>
+      <!-- Items list -->
+      <div id="missing-picks-list" style="padding:12px 20px;"></div>
+      <!-- CTA -->
+      <div style="padding:0 20px;">
+        <button onclick="closeMissingPicks()" style="width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(59,130,246,0.35);">
+          Got it, let me fix! 💪
+        </button>
+        <button onclick="dismissMissingPicksForever()" style="width:100%;padding:10px;border-radius:12px;border:none;background:none;color:var(--text-muted);font-size:12px;cursor:pointer;margin-top:6px;">
+          Don't show again this session
+        </button>
+      </div>
+    </div>
+  </div>
   <div id="wizard-overlay" style="display:none;position:fixed;inset:0;z-index:99998;background:#0a0f1a;overflow-y:auto;color:#e2e8f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;"  >
     <!-- Progress bar -->
     <div style="position:sticky;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,0.1);z-index:1;">
