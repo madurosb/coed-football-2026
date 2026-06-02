@@ -4437,17 +4437,37 @@
 
       let missingScores = 0, missingScorers = 0, firstMissingMatch = null;
 
+      // Only check matches that are currently visible and unlocked in the UI
+      // (i.e. have active score inputs — not yet past deadline)
+      const visibleUnlockedCards = document.querySelectorAll('.match-card[data-match-id]');
+      const unlockedMatchIds = new Set();
+
+      visibleUnlockedCards.forEach(card => {
+        const matchId = card.dataset.matchId;
+        // Check if score inputs are still interactive (not disabled/past)
+        const homeEl = document.getElementById('home-' + matchId);
+        const scorerBtn = document.getElementById('scorer-btn-' + matchId);
+        // If scorer button exists and is visible → match is still open
+        if (scorerBtn && scorerBtn.offsetParent !== null) {
+          unlockedMatchIds.add(matchId);
+        }
+      });
+
+      // Also check from Firestore matches that haven't started yet
       matchesSnap.docs.forEach(d => {
         const m = d.data();
         if (!m.kickoff) return;
         const kickoff = m.kickoff.toDate ? m.kickoff.toDate() : new Date(m.kickoff);
-        const deadline = new Date(kickoff.getTime() - 24 * 60 * 60 * 1000);
-        if (deadline <= now) return; // already locked
+        // Deadline is 1 hour before kickoff (more accurate than 24h)
+        const deadline = new Date(kickoff.getTime() - 60 * 60 * 1000);
+        if (deadline <= now) return; // locked — skip
+
+        unlockedMatchIds.add(d.id);
 
         const pred = myPredData[d.id];
         if (!pred || pred.homeScore == null || pred.awayScore == null) {
           missingScores++;
-          if (!firstMissingMatch) firstMissingMatch = `${m.homeTeam} vs ${m.awayTeam}`;
+          if (!firstMissingMatch) firstMissingMatch = (m.homeTeam || '') + ' vs ' + (m.awayTeam || '');
         } else if (!pred.scorer) {
           missingScorers++;
         }
