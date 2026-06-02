@@ -876,6 +876,14 @@
     @keyframes pickGlow { 0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,0)} 50%{box-shadow:0 0 0 5px rgba(59,130,246,0.3)} }
     @keyframes pickGlowGold { 0%,100%{box-shadow:0 0 0 0 rgba(212,175,55,0)} 50%{box-shadow:0 0 0 5px rgba(212,175,55,0.35)} }
     @keyframes attentionBounce { 0%,100%{transform:translateY(0)} 30%{transform:translateY(-4px)} 60%{transform:translateY(-2px)} }
+    .community-stats-panel { margin-top:12px; }
+    .wdl-bar-wrap { display:flex;gap:3px;height:8px;border-radius:99px;overflow:hidden;margin:6px 0; }
+    .wdl-bar-w { background:#1D9E75;transition:width 0.6s ease; }
+    .wdl-bar-d { background:#6b7280;transition:width 0.6s ease; }
+    .wdl-bar-l { background:#E24B4A;transition:width 0.6s ease; }
+    .pred-scores-table { width:100%;border-collapse:collapse;margin-top:8px; }
+    .pred-scores-table td { padding:5px 8px;font-size:12px;vertical-align:middle; }
+    .pred-scores-table tr:not(:last-child) td { border-bottom:1px solid var(--border); }
     .pick-attention-blue { animation: pickGlow 1.8s ease-in-out 4; border-color: rgba(59,130,246,0.4) !important; }
     .pick-attention-gold { animation: pickGlowGold 1.8s ease-in-out 4; border-color: rgba(212,175,55,0.4) !important; }
     .pick-locked-badge {
@@ -1537,7 +1545,7 @@
       <div class="hero-stats">
         <div class="hero-stat"><div class="num" id="home-player-count">-</div><div class="lbl">Players</div></div>
         <div class="hero-stat"><div class="num">72</div><div class="lbl">Matches <span style="font-size:10px;color:var(--text-muted);font-weight:400;">(group stage)</span></div></div>
-        <div class="hero-stat"><div class="num">32</div><div class="lbl">Teams</div></div>
+        <div class="hero-stat"><div class="num">48</div><div class="lbl">Teams</div></div>
       </div>
     </div>
     <div class="stat-grid">
@@ -4383,10 +4391,289 @@
     if (badge) badge.style.display = snap.size > 0 ? 'block' : 'none';
   }
 
+  // ═══ LIVE SCORES ═══
+  let liveScoresCache = null;
+  let liveScoresLastFetch = 0;
+  let liveScoresInterval = null;
+
+  const FUNNY_WINNING = [
+    (name, score) => `🔥 ${name} IS EATING RIGHT NOW!! Picked ${score} and absolutely feasting 😤`,
+    (name, score) => `🤑 ${name} picked ${score} and is currently printing money`,
+    (name, score) => `💅 ${name} with ${score} — acting like they knew all along`,
+    (name, score) => `👑 ${name}: "told you so" energy. ${score} btw 👀`,
+    (name, score) => `😎 ${name} is so calm it's annoying. ${score}. Sickening.`,
+    (name, score) => `🫡 ${name} picked ${score} and is genuinely built different`,
+  ];
+  const FUNNY_LOSING = [
+    (name, score) => `😬 ${name} picked ${score}... buddy you good??`,
+    (name, score) => `💀 F in the chat for ${name} — picked ${score} 🪦`,
+    (name, score) => `🫠 ${name} is currently melting with ${score} on their card`,
+    (name, score) => `🙈 ${name} chose ${score} and is refusing to look at the screen`,
+    (name, score) => `📉 ${name}'s ${score} prediction aged like milk in August`,
+    (name, score) => `🤡 ${name} with ${score}. The circus called.`,
+  ];
+  const FUNNY_SWEATING = [
+    (name, score) => `😰 ${name} picked ${score}... one goal changes everything 👀`,
+    (name, score) => `🫡 ${name} is standing by with ${score}. Nervous? Never. (Very.)`,
+    (name, score) => `⏱️ ${name} picked ${score} and is watching every second like a hawk`,
+  ];
+
+  function getLiveMessage(myPred, liveH, liveA, allPreds, allUsersData) {
+    if (!myPred || myPred.homeScore == null) return null;
+    const myH = parseInt(myPred.homeScore), myA = parseInt(myPred.awayScore);
+    const lH = parseInt(liveH), lA = parseInt(liveA);
+    const exact = myH === lH && myA === lA;
+    const myResult = myH > myA ? 'W' : myH < myA ? 'L' : 'D';
+    const liveResult = lH > lA ? 'W' : lH < lA ? 'L' : 'D';
+    const correctDir = myResult === liveResult;
+    const sameScore = allPreds
+      .filter(p => parseInt(p.homeScore) === myH && parseInt(p.awayScore) === myA && p.userId !== myPred.userId)
+      .map(p => allUsersData[p.userId]?.nickname || 'Someone').slice(0, 2);
+    const score = myH + '-' + myA;
+    const myName = allUsersData[myPred.userId]?.nickname || 'You';
+    if (exact) {
+      const msg = FUNNY_WINNING[Math.floor(Math.random() * FUNNY_WINNING.length)](myName, score);
+      const buddyMsg = sameScore.length ? ' (with ' + sameScore.join(' & ') + ' 🤝)' : '';
+      return { type: 'winning', text: msg + buddyMsg };
+    } else if (correctDir) {
+      return { type: 'sweating', text: FUNNY_SWEATING[Math.floor(Math.random() * FUNNY_SWEATING.length)](myName, score) };
+    } else {
+      return { type: 'losing', text: FUNNY_LOSING[Math.floor(Math.random() * FUNNY_LOSING.length)](myName, score) };
+    }
+  }
+
+  async function fetchLiveScores() {
+    const now = Date.now();
+    if (liveScoresCache && now - liveScoresLastFetch < 55000) return liveScoresCache;
+    try {
+      const resp = await fetch('/api/live-scores');
+      if (!resp.ok) return null;
+      liveScoresCache = await resp.json();
+      liveScoresLastFetch = now;
+      return liveScoresCache;
+    } catch(e) { return null; }
+  }
+
+  async function updateLiveScoreCards() {
+    const data = await fetchLiveScores();
+    if (!data?.matches) return;
+    const relevant = data.matches.filter(m => ['IN_PLAY','PAUSED','HALFTIME','FINISHED'].includes(m.status));
+    if (relevant.length === 0) return;
+
+    let allUsersData = {};
+    try {
+      const usersSnap = await getDocs(collection(db, 'users'));
+      usersSnap.forEach(d => { allUsersData[d.id] = d.data(); });
+    } catch(e) {}
+
+    for (const liveMatch of relevant) {
+      const lH = liveMatch.homeScore, lA = liveMatch.awayScore;
+      if (lH === null || lA === null) continue;
+      const isLive = ['IN_PLAY','PAUSED','HALFTIME'].includes(liveMatch.status);
+
+      // Find matching card by team name fuzzy match
+      document.querySelectorAll('.match-card').forEach(async card => {
+        const cardHome = (card.dataset.home || '').toLowerCase();
+        const cardAway = (card.dataset.away || '').toLowerCase();
+        const lHome = liveMatch.homeTeam.toLowerCase();
+        const lAway = liveMatch.awayTeam.toLowerCase();
+        if (!cardHome || !cardAway) return;
+        const hm = lHome.includes(cardHome.split(' ')[0]) || cardHome.includes(lHome.split(' ')[0]);
+        const am = lAway.includes(cardAway.split(' ')[0]) || cardAway.includes(lAway.split(' ')[0]);
+        if (!hm || !am) return;
+
+        const matchId = card.dataset.matchId;
+        const livePanel = document.getElementById('live-score-' + matchId);
+        if (!livePanel) return;
+
+        let allPreds = [], myPred = null;
+        try {
+          const snap = await getDocs(query(collection(db, 'predictions'), where('matchId', '==', matchId)));
+          snap.docs.forEach(d => {
+            const p = d.data();
+            allPreds.push(p);
+            if (p.userId === currentUser?.uid) myPred = p;
+          });
+        } catch(e) {}
+
+        const statusLabel = isLive
+          ? '<span style="background:#E24B4A;color:white;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;animation:pulse 1.5s infinite;">● LIVE' + (liveMatch.minute ? ' ' + liveMatch.minute + "'" : '') + '</span>'
+          : '<span style="background:var(--surface2);color:var(--text-muted);font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;">✓ FINAL</span>';
+
+        // My pick message
+        const msg = currentUser && myPred ? getLiveMessage(myPred, lH, lA, allPreds, allUsersData) : null;
+        const msgColors = { winning:'#1D9E75', sweating:'#d97706', losing:'#E24B4A' };
+        const msgBg = { winning:'rgba(29,158,117,0.1)', sweating:'rgba(217,119,6,0.1)', losing:'rgba(226,75,74,0.1)' };
+        const myPickHtml = msg ? `
+          <div style="margin-top:8px;padding:10px 12px;border-radius:10px;background:${msgBg[msg.type]};border:1px solid ${msgColors[msg.type]}44;">
+            <div style="font-size:12px;color:${msgColors[msg.type]};font-weight:600;line-height:1.5;">${msg.text}</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:3px;">Your pick: ${myPred.homeScore}-${myPred.awayScore}</div>
+          </div>` : '';
+
+        // Who picked what
+        const byScore = {};
+        allPreds.forEach(p => {
+          if (p.homeScore == null) return;
+          const key = p.homeScore + '-' + p.awayScore;
+          byScore[key] = byScore[key] || [];
+          byScore[key].push(allUsersData[p.userId]?.nickname || '?');
+        });
+        const liveKey = lH + '-' + lA;
+        const othersRows = Object.entries(byScore).sort((a,b) => b[1].length - a[1].length).slice(0,5).map(([score, names]) =>
+          '<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px;">' +
+          '<span style="font-weight:700;color:' + (score === liveKey ? '#1D9E75' : 'var(--text)') + ';">' + score + (score === liveKey ? ' ✅' : '') + '</span>' +
+          '<span style="color:var(--text-muted);">' + names.slice(0,3).join(', ') + (names.length > 3 ? ' +' + (names.length-3) : '') + '</span>' +
+          '</div>'
+        ).join('');
+        const othersHtml = othersRows ? '<div style="margin-top:8px;font-size:10px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Who picked what:</div>' + othersRows : '';
+
+        livePanel.style.display = 'block';
+        livePanel.innerHTML =
+          '<div style="margin-top:10px;background:var(--surface2);border-radius:12px;padding:12px 14px;border:1px solid ' + (isLive ? '#E24B4A55' : 'var(--border)') + ';">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
+          statusLabel +
+          '<div style="font-size:26px;font-weight:800;letter-spacing:4px;font-variant-numeric:tabular-nums;">' + lH + ' - ' + lA + '</div>' +
+          '</div>' +
+          myPickHtml + othersHtml +
+          '</div>';
+
+        if (isLive) card.style.borderColor = '#E24B4A';
+      });
+    }
+  }
+
+  function startLiveScoresPolling() {
+    updateLiveScoreCards();
+    if (liveScoresInterval) clearInterval(liveScoresInterval);
+    liveScoresInterval = setInterval(updateLiveScoreCards, 60000);
+  }
+
   // Poll for new messages every 30s
   setInterval(() => { if (currentUser) updateMsgBadge(); }, 30000);
 
-  window.toggleMobileMenu = () => {
+  // ═══ COMMUNITY PREDICTION STATS ═══
+  const communityStatsCache = {};
+
+  async function loadCommunityStats(matchId, panel) {
+    if (!panel) return;
+    if (communityStatsCache[matchId]) {
+      panel.innerHTML = communityStatsCache[matchId];
+      return;
+    }
+    try {
+      const snap = await getDocs(query(
+        collection(db, 'predictions'),
+        where('matchId', '==', matchId)
+      ));
+      if (snap.empty) return;
+
+      // Build stats
+      const preds = {};
+      const scorers = {};
+      let total = 0;
+      const usersMap = {};
+      snap.docs.forEach(d => {
+        const p = d.data();
+        const h = parseInt(p.homeScore ?? -1);
+        const a = parseInt(p.awayScore ?? -1);
+        if (h < 0 || a < 0) return;
+        total++;
+        const key = `${h}-${a}`;
+        preds[key] = (preds[key] || { count: 0, users: [] });
+        preds[key].count++;
+        preds[key].users.push(p.userId);
+        if (p.scorer) scorers[p.scorer] = (scorers[p.scorer] || 0) + 1;
+        usersMap[p.userId] = p;
+      });
+      if (total === 0) return;
+
+      // W/D/L counts
+      let wins = 0, draws = 0, losses = 0;
+      snap.docs.forEach(d => {
+        const p = d.data();
+        const h = parseInt(p.homeScore ?? -1);
+        const a = parseInt(p.awayScore ?? -1);
+        if (h < 0 || a < 0) return;
+        if (h > a) wins++;
+        else if (h === a) draws++;
+        else losses++;
+      });
+      const wp = Math.round(wins/total*100);
+      const dp = Math.round(draws/total*100);
+      const lp = 100 - wp - dp;
+
+      // My pick
+      const myPred = snap.docs.find(d => d.data().userId === currentUser?.uid)?.data();
+      const myKey = myPred && myPred.homeScore != null ? `${myPred.homeScore}-${myPred.awayScore}` : null;
+
+      // Sort predictions by count
+      const sortedPreds = Object.entries(preds).sort((a,b) => b[1].count - a[1].count).slice(0, 6);
+
+      // Top scorer pick
+      const topScorer = Object.entries(scorers).sort((a,b) => b[1]-a[1])[0];
+
+      // Build HTML — collapsible
+      const panelId = 'csp-' + matchId;
+      const html = `
+        <div style="background:var(--surface2);border-radius:12px;overflow:hidden;border:1px solid var(--border);">
+          <!-- Header — tap to expand -->
+          <div onclick="toggleCommunityStats('${panelId}')" style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:14px;">👥</span>
+              <span style="font-size:12px;font-weight:700;">Community predictions</span>
+              <span style="font-size:11px;background:rgba(59,130,246,0.12);color:var(--accent);padding:1px 7px;border-radius:99px;font-weight:600;">${total} players</span>
+            </div>
+            <span id="${panelId}-chevron" style="font-size:14px;color:var(--text-muted);transition:transform 0.2s;">▾</span>
+          </div>
+          <!-- Body -->
+          <div id="${panelId}" style="display:none;padding:0 14px 14px;">
+            <!-- W/D/L -->
+            <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-bottom:3px;">
+              <span style="color:#1D9E75;">🏠 Win ${wp}%</span>
+              <span style="color:#6b7280;">Draw ${dp}%</span>
+              <span style="color:#E24B4A;">${lp}% Away 🚌</span>
+            </div>
+            <div class="wdl-bar-wrap">
+              <div class="wdl-bar-w" style="width:${wp}%"></div>
+              <div class="wdl-bar-d" style="width:${dp}%"></div>
+              <div class="wdl-bar-l" style="width:${lp}%"></div>
+            </div>
+            <!-- Exact scores -->
+            <div style="font-size:10px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin:10px 0 5px;">Exact score predictions</div>
+            <table class="pred-scores-table">
+              ${sortedPreds.map(([score, data]) => {
+                const isMyPick = score === myKey;
+                const pct = Math.round(data.count/total*100);
+                return `<tr style="background:${isMyPick ? 'rgba(59,130,246,0.08)' : 'none'}">
+                  <td style="font-weight:${isMyPick?'700':'500'};color:${isMyPick?'var(--accent)':'var(--text)'};font-size:14px;width:50px;">${score}${isMyPick ? ' 👤' : ''}</td>
+                  <td>
+                    <div style="background:var(--border);border-radius:99px;height:5px;overflow:hidden;">
+                      <div style="background:${isMyPick?'var(--accent)':'var(--text-muted)'};width:${pct}%;height:100%;border-radius:99px;transition:width 0.6s;"></div>
+                    </div>
+                  </td>
+                  <td style="color:var(--text-muted);font-size:11px;text-align:right;white-space:nowrap;">${data.count} (${pct}%)</td>
+                </tr>`;
+              }).join('')}
+            </table>
+            ${topScorer ? `<div style="margin-top:8px;font-size:11px;color:var(--text-muted);">⚽ Top scorer pick: <strong style="color:var(--text);">${topScorer[0]}</strong> (${topScorer[1]} votes)</div>` : ''}
+          </div>
+        </div>`;
+
+      communityStatsCache[matchId] = html;
+      panel.innerHTML = html;
+    } catch(e) {
+      console.log('Community stats error:', e.message);
+    }
+  }
+
+  window.toggleCommunityStats = (id) => {
+    const body = document.getElementById(id);
+    const chevron = document.getElementById(id + '-chevron');
+    if (!body) return;
+    const isOpen = body.style.display !== 'none';
+    body.style.display = isOpen ? 'none' : 'block';
+    if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+  };
     const menu = document.getElementById('mobile-menu');
     const overlay = document.getElementById('menu-overlay');
     if (!menu || !overlay) return;
@@ -4903,6 +5190,8 @@
       document.addEventListener('gesturestart', preventZoom, { passive: false });
       setTimeout(loadJokerStatus, 800);
       setTimeout(initAutoSaveToggle, 300);
+      // Start live scores polling
+      setTimeout(startLiveScoresPolling, 1500);
       // Pulse attention on important picks if not yet filled
       setTimeout(() => {
         const playerCard = document.querySelector('.player-pick');
@@ -6515,10 +6804,22 @@
               </button>
             </div>` : `<p style="font-size:12px;color:var(--text-muted);margin-top:0.75rem;text-align:center;">${isFinished ? '✅ Match finished' : '🔒 Deadline passed - predictions locked'}</p>`}
           ${finishedResult}
+          ${isPast ? `
+            <div id="community-stats-${d.id}" class="community-stats-panel"></div>
+            <div id="live-score-${d.id}" style="display:none;"></div>
+          ` : ''}
           <div id="result-${d.id}"></div>
         </div>`;
     });
     container.innerHTML = html;
+
+    // Load community prediction stats for past matches
+    setTimeout(() => {
+      container.querySelectorAll('.community-stats-panel').forEach(panel => {
+        const matchId = panel.id.replace('community-stats-', '');
+        loadCommunityStats(matchId, panel);
+      });
+    }, 100);
 
     // Show/hide live button
     const liveBtn = document.getElementById('live-matches-btn');
@@ -6728,10 +7029,10 @@
     {name:'Lamine Yamal',country:'Spain',flag:'es'},
     {name:'Florian Wirtz',country:'Germany',flag:'de'},
     {name:'Cristiano Ronaldo',country:'Portugal',flag:'pt'},
-    {name:'Son Heung-min',country:'South Korea',flag:'kr'},
+    {name:'Mohamed Salah',country:'Egypt',flag:'eg'},
     {name:'Achraf Hakimi',country:'Morocco',flag:'ma'},
-    {name:'Alphonso Davies',country:'Canada',flag:'ca'},
-    {name:'Martin Odegaard',country:'Norway',flag:'no'},
+    {name:'Federico Valverde',country:'Uruguay',flag:'uy'},
+    {name:'Viktor Gyokeres',country:'Sweden',flag:'se'},
   ];
 
   // ═══ WINNER TEAMS DATA ═══
@@ -6818,44 +7119,114 @@
   // ═══ TOURNAMENT PLAYER CARDS ═══
   // Player data — grouped by country with flag
   const ALL_PLAYERS_DATA = [
-    // Star players shown as cards — top picks
-    {name:'Lionel Messi',country:'Argentina',flag:'ar'},{name:'Julian Alvarez',country:'Argentina',flag:'ar'},{name:'Lautaro Martinez',country:'Argentina',flag:'ar'},{name:'Enzo Fernandez',country:'Argentina',flag:'ar'},{name:'Alejandro Garnacho',country:'Argentina',flag:'ar'},
-    {name:'Kylian Mbappé',country:'France',flag:'fr'},{name:'Antoine Griezmann',country:'France',flag:'fr'},{name:'Ousmane Dembélé',country:'France',flag:'fr'},{name:'Marcus Thuram',country:'France',flag:'fr'},{name:'Adrien Rabiot',country:'France',flag:'fr'},
-    {name:'Vinicius Jr.',country:'Brazil',flag:'br'},{name:'Rodrygo',country:'Brazil',flag:'br'},{name:'Raphinha',country:'Brazil',flag:'br'},{name:'Neymar Jr.',country:'Brazil',flag:'br'},{name:'Lucas Paqueta',country:'Brazil',flag:'br'},
-    {name:'Jude Bellingham',country:'England',flag:'gb-eng'},{name:'Harry Kane',country:'England',flag:'gb-eng'},{name:'Phil Foden',country:'England',flag:'gb-eng'},{name:'Bukayo Saka',country:'England',flag:'gb-eng'},{name:'Marcus Rashford',country:'England',flag:'gb-eng'},
-    {name:'Cristiano Ronaldo',country:'Portugal',flag:'pt'},{name:'Bruno Fernandes',country:'Portugal',flag:'pt'},{name:'Rafael Leão',country:'Portugal',flag:'pt'},{name:'Bernardo Silva',country:'Portugal',flag:'pt'},{name:'Pedro Neto',country:'Portugal',flag:'pt'},
-    {name:'Lamine Yamal',country:'Spain',flag:'es'},{name:'Pedri',country:'Spain',flag:'es'},{name:'Álvaro Morata',country:'Spain',flag:'es'},{name:'Dani Olmo',country:'Spain',flag:'es'},{name:'Ferran Torres',country:'Spain',flag:'es'},
-    {name:'Florian Wirtz',country:'Germany',flag:'de'},{name:'Jamal Musiala',country:'Germany',flag:'de'},{name:'Kai Havertz',country:'Germany',flag:'de'},{name:'Leroy Sané',country:'Germany',flag:'de'},{name:'Serge Gnabry',country:'Germany',flag:'de'},
-    {name:'Cody Gakpo',country:'Netherlands',flag:'nl'},{name:'Memphis Depay',country:'Netherlands',flag:'nl'},{name:'Xavi Simons',country:'Netherlands',flag:'nl'},{name:'Virgil van Dijk',country:'Netherlands',flag:'nl'},{name:'Donyell Malen',country:'Netherlands',flag:'nl'},
-    {name:'Romelu Lukaku',country:'Belgium',flag:'be'},{name:'Kevin De Bruyne',country:'Belgium',flag:'be'},{name:'Leandro Trossard',country:'Belgium',flag:'be'},{name:'Youri Tielemans',country:'Belgium',flag:'be'},
-    {name:'Federico Valverde',country:'Uruguay',flag:'uy'},{name:'Darwin Nunez',country:'Uruguay',flag:'uy'},{name:'Luis Suarez',country:'Uruguay',flag:'uy'},
-    {name:'James Rodriguez',country:'Colombia',flag:'co'},{name:'Luis Diaz',country:'Colombia',flag:'co'},{name:'Jhon Duran',country:'Colombia',flag:'co'},{name:'Richard Rios',country:'Colombia',flag:'co'},
-    {name:'Christian Pulisic',country:'USA',flag:'us'},{name:'Gio Reyna',country:'USA',flag:'us'},{name:'Ricardo Pepi',country:'USA',flag:'us'},{name:'Tim Weah',country:'USA',flag:'us'},
-    {name:'Hirving Lozano',country:'Mexico',flag:'mx'},{name:'Raul Jimenez',country:'Mexico',flag:'mx'},{name:'Edson Alvarez',country:'Mexico',flag:'mx'},{name:'Santiago Gimenez',country:'Mexico',flag:'mx'},
-    {name:'Hakim Ziyech',country:'Morocco',flag:'ma'},{name:'Achraf Hakimi',country:'Morocco',flag:'ma'},{name:'Youssef En-Nesyri',country:'Morocco',flag:'ma'},{name:'Azzedine Ounahi',country:'Morocco',flag:'ma'},
-    {name:'Sadio Mane',country:'Senegal',flag:'sn'},{name:'Ismaila Sarr',country:'Senegal',flag:'sn'},{name:'Pape Gueye',country:'Senegal',flag:'sn'},
-    {name:'Takumi Minamino',country:'Japan',flag:'jp'},{name:'Daichi Kamada',country:'Japan',flag:'jp'},{name:'Ritsu Doan',country:'Japan',flag:'jp'},{name:'Kaoru Mitoma',country:'Japan',flag:'jp'},
-    {name:'Son Heung-min',country:'South Korea',flag:'kr'},{name:'Lee Jae-sung',country:'South Korea',flag:'kr'},
-    {name:'Alphonso Davies',country:'Canada',flag:'ca'},{name:'Jonathan David',country:'Canada',flag:'ca'},{name:'Cyle Larin',country:'Canada',flag:'ca'},
-    {name:'Martin Odegaard',country:'Norway',flag:'no'},{name:'Erling Haaland',country:'Norway',flag:'no'},{name:'Alexander Sorloth',country:'Norway',flag:'no'},
-    {name:'Riyad Mahrez',country:'Algeria',flag:'dz'},{name:'Islam Slimani',country:'Algeria',flag:'dz'},{name:'Sofiane Feghouli',country:'Algeria',flag:'dz'},
-    {name:'Dusan Vlahovic',country:'Serbia',flag:'rs'},{name:'Luka Jovic',country:'Serbia',flag:'rs'},
-    {name:'Luka Modric',country:'Croatia',flag:'hr'},{name:'Ivan Perisic',country:'Croatia',flag:'hr'},{name:'Andrej Kramaric',country:'Croatia',flag:'hr'},
-    {name:'Granit Xhaka',country:'Switzerland',flag:'ch'},{name:'Xherdan Shaqiri',country:'Switzerland',flag:'ch'},{name:'Breel Embolo',country:'Switzerland',flag:'ch'},
-    {name:'Enner Valencia',country:'Ecuador',flag:'ec'},{name:'Moises Caicedo',country:'Ecuador',flag:'ec'},
-    {name:'Sardar Azmoun',country:'Iran',flag:'ir'},{name:'Mehdi Taremi',country:'Iran',flag:'ir'},
-    {name:'Salem Al-Dawsari',country:'Saudi Arabia',flag:'sa'},{name:'Firas Al-Buraikan',country:'Saudi Arabia',flag:'sa'},
-    {name:'Andrew Nabbout',country:'Australia',flag:'au'},{name:'Mathew Leckie',country:'Australia',flag:'au'},{name:'Martin Boyle',country:'Australia',flag:'au'},
-    {name:'Memphis Depay',country:'Netherlands',flag:'nl'},
-    {name:'Roberto Firmino',country:'Brazil',flag:'br'},
-    {name:'Hamza Choudhury',country:'England',flag:'gb-eng'},
-    {name:'Andy Robertson',country:'Scotland',flag:'gb-sct'},{name:'Scott McTominay',country:'Scotland',flag:'gb-sct'},
-    {name:'Arda Güler',country:'Turkey',flag:'tr'},{name:'Hakan Calhanoglu',country:'Turkey',flag:'tr'},
-    {name:'Thomas Partey',country:'Ghana',flag:'gh'},{name:'Jordan Ayew',country:'Ghana',flag:'gh'},{name:'Mohammed Kudus',country:'Ghana',flag:'gh'},
-    {name:'Eric Maxim Choupo-Moting',country:'Cameroon',flag:'cm'},{name:'Andre Onana',country:'Cameroon',flag:'cm'},
-    {name:'Yoane Wissa',country:'DR Congo',flag:'cd'},{name:'Cedric Bakambu',country:'DR Congo',flag:'cd'},
-    {name:'Roberto Firmino',country:'Saudi Arabia',flag:'sa'},
-    {name:'Raul Jimenez',country:'Mexico',flag:'mx'},
+    // ═══ GROUP A ═══
+    // Argentina
+    {name:'Lionel Messi',country:'Argentina',flag:'ar'},{name:'Julian Alvarez',country:'Argentina',flag:'ar'},{name:'Lautaro Martinez',country:'Argentina',flag:'ar'},{name:'Emiliano Martinez',country:'Argentina',flag:'ar'},{name:'Nicolas Otamendi',country:'Argentina',flag:'ar'},{name:'Alexis Mac Allister',country:'Argentina',flag:'ar'},{name:'Rodrigo De Paul',country:'Argentina',flag:'ar'},{name:'Enzo Fernandez',country:'Argentina',flag:'ar'},{name:'Cristian Romero',country:'Argentina',flag:'ar'},{name:'Lisandro Martinez',country:'Argentina',flag:'ar'},{name:'Geronimo Rulli',country:'Argentina',flag:'ar'},{name:'Nicolas Tagliafico',country:'Argentina',flag:'ar'},{name:'Gonzalo Montiel',country:'Argentina',flag:'ar'},{name:'Leonardo Balerdi',country:'Argentina',flag:'ar'},{name:'Nahuel Molina',country:'Argentina',flag:'ar'},{name:'Leandro Paredes',country:'Argentina',flag:'ar'},{name:'Giovani Lo Celso',country:'Argentina',flag:'ar'},{name:'Exequiel Palacios',country:'Argentina',flag:'ar'},{name:'Valentin Barco',country:'Argentina',flag:'ar'},{name:'Nicolas Gonzalez',country:'Argentina',flag:'ar'},{name:'Thiago Almada',country:'Argentina',flag:'ar'},{name:'Giuliano Simeone',country:'Argentina',flag:'ar'},{name:'Nico Paz',country:'Argentina',flag:'ar'},{name:'Facundo Medina',country:'Argentina',flag:'ar'},{name:'Juan Musso',country:'Argentina',flag:'ar'},
+    // Brazil
+    {name:'Vinicius Jr.',country:'Brazil',flag:'br'},{name:'Raphinha',country:'Brazil',flag:'br'},{name:'Neymar Jr.',country:'Brazil',flag:'br'},{name:'Lucas Paqueta',country:'Brazil',flag:'br'},{name:'Bruno Guimaraes',country:'Brazil',flag:'br'},{name:'Rodrygo',country:'Brazil',flag:'br'},{name:'Gabriel Martinelli',country:'Brazil',flag:'br'},{name:'Endrick',country:'Brazil',flag:'br'},{name:'Alisson',country:'Brazil',flag:'br'},{name:'Marquinhos',country:'Brazil',flag:'br'},{name:'Gabriel Magalhaes',country:'Brazil',flag:'br'},{name:'Casemiro',country:'Brazil',flag:'br'},{name:'Ederson',country:'Brazil',flag:'br'},{name:'Bremer',country:'Brazil',flag:'br'},{name:'Danilo Luiz',country:'Brazil',flag:'br'},{name:'Alex Sandro',country:'Brazil',flag:'br'},{name:'Wesley',country:'Brazil',flag:'br'},{name:'Roger Ibanez',country:'Brazil',flag:'br'},{name:'Douglas Santos',country:'Brazil',flag:'br'},{name:'Leo Pereira',country:'Brazil',flag:'br'},{name:'Fabinho',country:'Brazil',flag:'br'},{name:'Danilo Santos',country:'Brazil',flag:'br'},{name:'Matheus Cunha',country:'Brazil',flag:'br'},{name:'Igor Thiago',country:'Brazil',flag:'br'},{name:'Luiz Henrique',country:'Brazil',flag:'br'},{name:'Rayan',country:'Brazil',flag:'br'},
+    // ═══ GROUP B ═══
+    // France
+    {name:'Kylian Mbappé',country:'France',flag:'fr'},{name:'Ousmane Dembélé',country:'France',flag:'fr'},{name:'Marcus Thuram',country:'France',flag:'fr'},{name:'Adrien Rabiot',country:'France',flag:'fr'},{name:'Bradley Barcola',country:'France',flag:'fr'},{name:'Michael Olise',country:'France',flag:'fr'},{name:'Aurelien Tchouameni',country:'France',flag:'fr'},{name:'William Saliba',country:'France',flag:'fr'},{name:'Mike Maignan',country:'France',flag:'fr'},{name:'Jules Kounde',country:'France',flag:'fr'},{name:'Theo Hernandez',country:'France',flag:'fr'},{name:'Lucas Hernandez',country:'France',flag:'fr'},{name:'Dayot Upamecano',country:'France',flag:'fr'},{name:'Ibrahima Konate',country:'France',flag:'fr'},{name:'N Golo Kante',country:'France',flag:'fr'},{name:'Manu Kone',country:'France',flag:'fr'},{name:'Warren Zaire-Emery',country:'France',flag:'fr'},{name:'Desire Doue',country:'France',flag:'fr'},{name:'Rayan Cherki',country:'France',flag:'fr'},{name:'Jean-Philippe Mateta',country:'France',flag:'fr'},{name:'Maghnes Akliouche',country:'France',flag:'fr'},{name:'Lucas Digne',country:'France',flag:'fr'},{name:'Malo Gusto',country:'France',flag:'fr'},{name:'Maxence Lacroix',country:'France',flag:'fr'},{name:'Brice Samba',country:'France',flag:'fr'},
+    // England
+    {name:'Harry Kane',country:'England',flag:'gb-eng'},{name:'Jude Bellingham',country:'England',flag:'gb-eng'},{name:'Bukayo Saka',country:'England',flag:'gb-eng'},{name:'Marcus Rashford',country:'England',flag:'gb-eng'},{name:'Declan Rice',country:'England',flag:'gb-eng'},{name:'Jordan Pickford',country:'England',flag:'gb-eng'},{name:'Ivan Toney',country:'England',flag:'gb-eng'},{name:'Ollie Watkins',country:'England',flag:'gb-eng'},{name:'Anthony Gordon',country:'England',flag:'gb-eng'},{name:'Kobbie Mainoo',country:'England',flag:'gb-eng'},{name:'Elliot Anderson',country:'England',flag:'gb-eng'},{name:'John Stones',country:'England',flag:'gb-eng'},{name:'Marc Guehi',country:'England',flag:'gb-eng'},{name:'Ezri Konsa',country:'England',flag:'gb-eng'},{name:'Reece James',country:'England',flag:'gb-eng'},{name:'Eberechi Eze',country:'England',flag:'gb-eng'},{name:'Morgan Rogers',country:'England',flag:'gb-eng'},{name:'Jarell Quansah',country:'England',flag:'gb-eng'},{name:'Dan Burn',country:'England',flag:'gb-eng'},{name:'Nico O Reilly',country:'England',flag:'gb-eng'},{name:'Djed Spence',country:'England',flag:'gb-eng'},{name:'Tino Livramento',country:'England',flag:'gb-eng'},{name:'Noni Madueke',country:'England',flag:'gb-eng'},{name:'Jordan Henderson',country:'England',flag:'gb-eng'},{name:'Dean Henderson',country:'England',flag:'gb-eng'},
+    // ═══ GROUP C ═══
+    // Spain
+    {name:'Lamine Yamal',country:'Spain',flag:'es'},{name:'Pedri',country:'Spain',flag:'es'},{name:'Rodri',country:'Spain',flag:'es'},{name:'Nico Williams',country:'Spain',flag:'es'},{name:'Dani Olmo',country:'Spain',flag:'es'},{name:'Ferran Torres',country:'Spain',flag:'es'},{name:'Mikel Oyarzabal',country:'Spain',flag:'es'},{name:'Unai Simon',country:'Spain',flag:'es'},{name:'Fabian Ruiz',country:'Spain',flag:'es'},{name:'Mikel Merino',country:'Spain',flag:'es'},{name:'Gavi',country:'Spain',flag:'es'},{name:'Martin Zubimendi',country:'Spain',flag:'es'},{name:'Alex Baena',country:'Spain',flag:'es'},{name:'Aymeric Laporte',country:'Spain',flag:'es'},{name:'Marc Cucurella',country:'Spain',flag:'es'},{name:'Pau Cubarsi',country:'Spain',flag:'es'},{name:'Eric Garcia',country:'Spain',flag:'es'},{name:'Pedro Porro',country:'Spain',flag:'es'},{name:'Alex Grimaldo',country:'Spain',flag:'es'},{name:'Marcos Llorente',country:'Spain',flag:'es'},{name:'David Raya',country:'Spain',flag:'es'},{name:'Yeremy Pino',country:'Spain',flag:'es'},{name:'Borja Iglesias',country:'Spain',flag:'es'},
+    // Germany
+    {name:'Florian Wirtz',country:'Germany',flag:'de'},{name:'Jamal Musiala',country:'Germany',flag:'de'},{name:'Kai Havertz',country:'Germany',flag:'de'},{name:'Leroy Sane',country:'Germany',flag:'de'},{name:'Joshua Kimmich',country:'Germany',flag:'de'},{name:'Manuel Neuer',country:'Germany',flag:'de'},{name:'Antonio Rudiger',country:'Germany',flag:'de'},{name:'Leon Goretzka',country:'Germany',flag:'de'},{name:'Toni Kroos',country:'Germany',flag:'de'},{name:'Jonathan Tah',country:'Germany',flag:'de'},{name:'Nico Schlotterbeck',country:'Germany',flag:'de'},{name:'David Raum',country:'Germany',flag:'de'},{name:'Malick Thiaw',country:'Germany',flag:'de'},{name:'Waldemar Anton',country:'Germany',flag:'de'},{name:'Nathaniel Brown',country:'Germany',flag:'de'},{name:'Aleksandar Pavlovic',country:'Germany',flag:'de'},{name:'Maximilian Beier',country:'Germany',flag:'de'},{name:'Jamie Leweling',country:'Germany',flag:'de'},{name:'Felix Nmecha',country:'Germany',flag:'de'},{name:'Angelo Stiller',country:'Germany',flag:'de'},{name:'Lennart Karl',country:'Germany',flag:'de'},{name:'Denis Undav',country:'Germany',flag:'de'},{name:'Nick Woltemeade',country:'Germany',flag:'de'},{name:'Pascal Gross',country:'Germany',flag:'de'},{name:'Nadiem Amiri',country:'Germany',flag:'de'},
+    // Portugal
+    {name:'Cristiano Ronaldo',country:'Portugal',flag:'pt'},{name:'Bruno Fernandes',country:'Portugal',flag:'pt'},{name:'Rafael Leao',country:'Portugal',flag:'pt'},{name:'Bernardo Silva',country:'Portugal',flag:'pt'},{name:'Pedro Neto',country:'Portugal',flag:'pt'},{name:'Diogo Costa',country:'Portugal',flag:'pt'},{name:'Ruben Dias',country:'Portugal',flag:'pt'},{name:'Joao Cancelo',country:'Portugal',flag:'pt'},{name:'Nuno Mendes',country:'Portugal',flag:'pt'},{name:'Joao Neves',country:'Portugal',flag:'pt'},{name:'Vitinha',country:'Portugal',flag:'pt'},{name:'Joao Felix',country:'Portugal',flag:'pt'},{name:'Goncalo Ramos',country:'Portugal',flag:'pt'},{name:'Francisco Conceicao',country:'Portugal',flag:'pt'},{name:'Diogo Dalot',country:'Portugal',flag:'pt'},{name:'Goncalo Inacio',country:'Portugal',flag:'pt'},{name:'Renato Veiga',country:'Portugal',flag:'pt'},{name:'Matheus Nunes',country:'Portugal',flag:'pt'},{name:'Nelson Semedo',country:'Portugal',flag:'pt'},{name:'Ruben Neves',country:'Portugal',flag:'pt'},{name:'Samu Costa',country:'Portugal',flag:'pt'},{name:'Goncalo Guedes',country:'Portugal',flag:'pt'},{name:'Francisco Trincao',country:'Portugal',flag:'pt'},{name:'Tomas Araujo',country:'Portugal',flag:'pt'},
+    // ═══ GROUP D ═══
+    // Netherlands
+    {name:'Virgil van Dijk',country:'Netherlands',flag:'nl'},{name:'Cody Gakpo',country:'Netherlands',flag:'nl'},{name:'Memphis Depay',country:'Netherlands',flag:'nl'},{name:'Frenkie de Jong',country:'Netherlands',flag:'nl'},{name:'Ryan Gravenberch',country:'Netherlands',flag:'nl'},{name:'Donyell Malen',country:'Netherlands',flag:'nl'},{name:'Wout Weghorst',country:'Netherlands',flag:'nl'},{name:'Teun Koopmeijners',country:'Netherlands',flag:'nl'},{name:'Brian Brobbey',country:'Netherlands',flag:'nl'},{name:'Noa Lang',country:'Netherlands',flag:'nl'},{name:'Nathan Ake',country:'Netherlands',flag:'nl'},{name:'Denzel Dumfries',country:'Netherlands',flag:'nl'},{name:'Jurrien Timber',country:'Netherlands',flag:'nl'},{name:'Tijjani Reijnders',country:'Netherlands',flag:'nl'},{name:'Mark Flekken',country:'Netherlands',flag:'nl'},{name:'Bart Verbruggen',country:'Netherlands',flag:'nl'},{name:'Jorrel Hato',country:'Netherlands',flag:'nl'},{name:'Jan Paul van Hecke',country:'Netherlands',flag:'nl'},{name:'Micky van de Ven',country:'Netherlands',flag:'nl'},{name:'Maarten de Roon',country:'Netherlands',flag:'nl'},{name:'Quinten Timber',country:'Netherlands',flag:'nl'},{name:'Guus Til',country:'Netherlands',flag:'nl'},{name:'Justin Kluivert',country:'Netherlands',flag:'nl'},{name:'Crysencio Summerville',country:'Netherlands',flag:'nl'},{name:'Mats Wieffer',country:'Netherlands',flag:'nl'},
+    // Belgium
+    {name:'Romelu Lukaku',country:'Belgium',flag:'be'},{name:'Kevin De Bruyne',country:'Belgium',flag:'be'},{name:'Leandro Trossard',country:'Belgium',flag:'be'},{name:'Jeremy Doku',country:'Belgium',flag:'be'},{name:'Charles De Ketelaere',country:'Belgium',flag:'be'},{name:'Thibaut Courtois',country:'Belgium',flag:'be'},{name:'Amadou Onana',country:'Belgium',flag:'be'},{name:'Youri Tielemans',country:'Belgium',flag:'be'},{name:'Axel Witsel',country:'Belgium',flag:'be'},{name:'Thomas Meunier',country:'Belgium',flag:'be'},{name:'Timothy Castagne',country:'Belgium',flag:'be'},{name:'Zeno Debast',country:'Belgium',flag:'be'},{name:'Alexis Saelemaekers',country:'Belgium',flag:'be'},{name:'Dodi Lukebakio',country:'Belgium',flag:'be'},{name:'Hans Vanaken',country:'Belgium',flag:'be'},{name:'Nicolas Raskin',country:'Belgium',flag:'be'},{name:'Maxim De Cuyper',country:'Belgium',flag:'be'},{name:'Arthur Theate',country:'Belgium',flag:'be'},{name:'Brandon Mechele',country:'Belgium',flag:'be'},{name:'Koni De Winter',country:'Belgium',flag:'be'},{name:'Joaquin Seys',country:'Belgium',flag:'be'},{name:'Nathan Ngoy',country:'Belgium',flag:'be'},{name:'Diego Moreira',country:'Belgium',flag:'be'},
+    // Morocco
+    {name:'Achraf Hakimi',country:'Morocco',flag:'ma'},{name:'Hakim Ziyech',country:'Morocco',flag:'ma'},{name:'Youssef En-Nesyri',country:'Morocco',flag:'ma'},{name:'Azzedine Ounahi',country:'Morocco',flag:'ma'},{name:'Sofyan Amrabat',country:'Morocco',flag:'ma'},{name:'Brahim Diaz',country:'Morocco',flag:'ma'},{name:'Bilal El Khannouss',country:'Morocco',flag:'ma'},{name:'Ayoub El Kaabi',country:'Morocco',flag:'ma'},{name:'Yassine Bounou',country:'Morocco',flag:'ma'},{name:'Nayef Aguerd',country:'Morocco',flag:'ma'},{name:'Noussair Mazraoui',country:'Morocco',flag:'ma'},{name:'Ismael Saibari',country:'Morocco',flag:'ma'},{name:'Neil El Aynaoui',country:'Morocco',flag:'ma'},{name:'Abde Ezzalzouli',country:'Morocco',flag:'ma'},{name:'Soufiane Rahimi',country:'Morocco',flag:'ma'},{name:'Chadi Riad',country:'Morocco',flag:'ma'},{name:'Issa Diop',country:'Morocco',flag:'ma'},{name:'Zakaria El Ouahdi',country:'Morocco',flag:'ma'},{name:'Ayyoub Bouaddi',country:'Morocco',flag:'ma'},
+    // ═══ GROUP E ═══
+    // Norway
+    {name:'Erling Haaland',country:'Norway',flag:'no'},{name:'Martin Odegaard',country:'Norway',flag:'no'},{name:'Alexander Sorloth',country:'Norway',flag:'no'},{name:'Jorgen Strand Larsen',country:'Norway',flag:'no'},{name:'Antonio Nusa',country:'Norway',flag:'no'},{name:'Oscar Bobb',country:'Norway',flag:'no'},{name:'Sander Berge',country:'Norway',flag:'no'},{name:'Kristoffer Ajer',country:'Norway',flag:'no'},{name:'Orjan Nyland',country:'Norway',flag:'no'},{name:'Fredrik Aursnes',country:'Norway',flag:'no'},{name:'Leo Ostigard',country:'Norway',flag:'no'},{name:'Julian Ryerson',country:'Norway',flag:'no'},{name:'Kristian Thorstvedt',country:'Norway',flag:'no'},{name:'Morten Thorsby',country:'Norway',flag:'no'},{name:'Jens Petter Hauge',country:'Norway',flag:'no'},{name:'Andreas Schjelderup',country:'Norway',flag:'no'},{name:'Patrick Berg',country:'Norway',flag:'no'},
+    // USA
+    {name:'Christian Pulisic',country:'USA',flag:'us'},{name:'Gio Reyna',country:'USA',flag:'us'},{name:'Weston McKennie',country:'USA',flag:'us'},{name:'Tyler Adams',country:'USA',flag:'us'},{name:'Ricardo Pepi',country:'USA',flag:'us'},{name:'Folarin Balogun',country:'USA',flag:'us'},{name:'Tim Weah',country:'USA',flag:'us'},{name:'Brenden Aaronson',country:'USA',flag:'us'},{name:'Haji Wright',country:'USA',flag:'us'},{name:'Matt Turner',country:'USA',flag:'us'},{name:'Antonee Robinson',country:'USA',flag:'us'},{name:'Chris Richards',country:'USA',flag:'us'},{name:'Sergino Dest',country:'USA',flag:'us'},{name:'Auston Trusty',country:'USA',flag:'us'},{name:'Miles Robinson',country:'USA',flag:'us'},{name:'Joe Scally',country:'USA',flag:'us'},{name:'Malik Tillman',country:'USA',flag:'us'},{name:'Cristian Roldan',country:'USA',flag:'us'},{name:'Sebastian Berhalter',country:'USA',flag:'us'},{name:'Alex Freeman',country:'USA',flag:'us'},
+    // Canada
+    {name:'Alphonso Davies',country:'Canada',flag:'ca'},{name:'Jonathan David',country:'Canada',flag:'ca'},{name:'Cyle Larin',country:'Canada',flag:'ca'},{name:'Stephen Eustaquio',country:'Canada',flag:'ca'},{name:'Tajon Buchanan',country:'Canada',flag:'ca'},{name:'Ismael Kone',country:'Canada',flag:'ca'},{name:'Dayne St Clair',country:'Canada',flag:'ca'},{name:'Alistair Johnston',country:'Canada',flag:'ca'},{name:'Moise Bombito',country:'Canada',flag:'ca'},{name:'Derek Cornelius',country:'Canada',flag:'ca'},{name:'Richie Laryea',country:'Canada',flag:'ca'},{name:'Liam Millar',country:'Canada',flag:'ca'},{name:'Jonathan Osorio',country:'Canada',flag:'ca'},{name:'Tani Oluwaseyi',country:'Canada',flag:'ca'},{name:'Marcelo Flores',country:'Canada',flag:'ca'},
+    // ═══ GROUP F ═══
+    // Mexico
+    {name:'Raul Jimenez',country:'Mexico',flag:'mx'},{name:'Santiago Gimenez',country:'Mexico',flag:'mx'},{name:'Edson Alvarez',country:'Mexico',flag:'mx'},{name:'Hirving Lozano',country:'Mexico',flag:'mx'},{name:'Guillermo Ochoa',country:'Mexico',flag:'mx'},{name:'Jesus Gallardo',country:'Mexico',flag:'mx'},{name:'Cesar Montes',country:'Mexico',flag:'mx'},{name:'Jorge Sanchez',country:'Mexico',flag:'mx'},{name:'Johan Vasquez',country:'Mexico',flag:'mx'},{name:'Luis Chavez',country:'Mexico',flag:'mx'},{name:'Orbelin Pineda',country:'Mexico',flag:'mx'},{name:'Brian Gutierrez',country:'Mexico',flag:'mx'},{name:'Obed Vargas',country:'Mexico',flag:'mx'},{name:'Santiago Gimenez',country:'Mexico',flag:'mx'},{name:'Alexis Vega',country:'Mexico',flag:'mx'},{name:'Julian Quinones',country:'Mexico',flag:'mx'},{name:'Roberto Alvarado',country:'Mexico',flag:'mx'},{name:'Alvaro Fidalgo',country:'Mexico',flag:'mx'},
+    // Japan
+    {name:'Takefusa Kubo',country:'Japan',flag:'jp'},{name:'Ritsu Doan',country:'Japan',flag:'jp'},{name:'Daichi Kamada',country:'Japan',flag:'jp'},{name:'Wataru Endo',country:'Japan',flag:'jp'},{name:'Ayase Ueda',country:'Japan',flag:'jp'},{name:'Junya Ito',country:'Japan',flag:'jp'},{name:'Ao Tanaka',country:'Japan',flag:'jp'},{name:'Zion Suzuki',country:'Japan',flag:'jp'},{name:'Ko Itakura',country:'Japan',flag:'jp'},{name:'Takehiro Tomiyasu',country:'Japan',flag:'jp'},{name:'Yukinari Sugawara',country:'Japan',flag:'jp'},{name:'Hiroki Ito',country:'Japan',flag:'jp'},{name:'Daizen Maeda',country:'Japan',flag:'jp'},{name:'Kaoru Mitoma',country:'Japan',flag:'jp'},{name:'Keito Nakamura',country:'Japan',flag:'jp'},{name:'Kaishu Sano',country:'Japan',flag:'jp'},
+    // South Korea
+    {name:'Son Heung-min',country:'South Korea',flag:'kr'},{name:'Lee Jae-sung',country:'South Korea',flag:'kr'},{name:'Hwang Hee-chan',country:'South Korea',flag:'kr'},{name:'Kim Min-jae',country:'South Korea',flag:'kr'},{name:'Lee Kang-in',country:'South Korea',flag:'kr'},{name:'Cho Gue-sung',country:'South Korea',flag:'kr'},{name:'Oh Hyeon-gyu',country:'South Korea',flag:'kr'},{name:'Hwang In-beom',country:'South Korea',flag:'kr'},{name:'Kim Seung-Gyu',country:'South Korea',flag:'kr'},{name:'Kim Moon-hwan',country:'South Korea',flag:'kr'},{name:'Yang Hyun-jun',country:'South Korea',flag:'kr'},{name:'Bae Jun-ho',country:'South Korea',flag:'kr'},{name:'Paik Seung-ho',country:'South Korea',flag:'kr'},
+    // ═══ GROUP G ═══
+    // Uruguay
+    {name:'Federico Valverde',country:'Uruguay',flag:'uy'},{name:'Darwin Nunez',country:'Uruguay',flag:'uy'},{name:'Rodrigo Bentancur',country:'Uruguay',flag:'uy'},{name:'Giorgian de Arrascaeta',country:'Uruguay',flag:'uy'},{name:'Ronald Araujo',country:'Uruguay',flag:'uy'},{name:'Fernando Muslera',country:'Uruguay',flag:'uy'},{name:'Jose Maria Gimenez',country:'Uruguay',flag:'uy'},{name:'Manuel Ugarte',country:'Uruguay',flag:'uy'},{name:'Facundo Pellistri',country:'Uruguay',flag:'uy'},{name:'Rodrigo Aguirre',country:'Uruguay',flag:'uy'},{name:'Nicolas de la Cruz',country:'Uruguay',flag:'uy'},{name:'Brian Rodriguez',country:'Uruguay',flag:'uy'},
+    // Colombia
+    {name:'James Rodriguez',country:'Colombia',flag:'co'},{name:'Luis Diaz',country:'Colombia',flag:'co'},{name:'Jhon Duran',country:'Colombia',flag:'co'},{name:'Cucho Hernandez',country:'Colombia',flag:'co'},{name:'Richard Rios',country:'Colombia',flag:'co'},{name:'Davinson Sanchez',country:'Colombia',flag:'co'},{name:'David Ospina',country:'Colombia',flag:'co'},{name:'Daniel Munoz',country:'Colombia',flag:'co'},{name:'Jefferson Lerma',country:'Colombia',flag:'co'},{name:'Juan Fernando Quintero',country:'Colombia',flag:'co'},{name:'Jhon Arias',country:'Colombia',flag:'co'},{name:'Yerry Mina',country:'Colombia',flag:'co'},{name:'Jhon Cordoba',country:'Colombia',flag:'co'},
+    // Senegal
+    {name:'Sadio Mane',country:'Senegal',flag:'sn'},{name:'Ismaila Sarr',country:'Senegal',flag:'sn'},{name:'Pape Matar Sarr',country:'Senegal',flag:'sn'},{name:'Kalidou Koulibaly',country:'Senegal',flag:'sn'},{name:'Idrissa Gueye',country:'Senegal',flag:'sn'},{name:'Pape Gueye',country:'Senegal',flag:'sn'},{name:'Edouard Mendy',country:'Senegal',flag:'sn'},{name:'Nicolas Jackson',country:'Senegal',flag:'sn'},{name:'Lamine Camara',country:'Senegal',flag:'sn'},{name:'Iliman Ndiaye',country:'Senegal',flag:'sn'},{name:'Krepin Diatta',country:'Senegal',flag:'sn'},
+    // ═══ GROUP H ═══
+    // Switzerland
+    {name:'Granit Xhaka',country:'Switzerland',flag:'ch'},{name:'Breel Embolo',country:'Switzerland',flag:'ch'},{name:'Xherdan Shaqiri',country:'Switzerland',flag:'ch'},{name:'Manuel Akanji',country:'Switzerland',flag:'ch'},{name:'Remo Freuler',country:'Switzerland',flag:'ch'},{name:'Gregor Kobel',country:'Switzerland',flag:'ch'},{name:'Ricardo Rodriguez',country:'Switzerland',flag:'ch'},{name:'Ruben Vargas',country:'Switzerland',flag:'ch'},{name:'Fabian Rieder',country:'Switzerland',flag:'ch'},{name:'Djibril Sow',country:'Switzerland',flag:'ch'},{name:'Dan Ndoye',country:'Switzerland',flag:'ch'},{name:'Noah Okafor',country:'Switzerland',flag:'ch'},{name:'Zeki Amdouni',country:'Switzerland',flag:'ch'},{name:'Ardon Jashari',country:'Switzerland',flag:'ch'},
+    // Scotland
+    {name:'Scott McTominay',country:'Scotland',flag:'gb-sct'},{name:'Andy Robertson',country:'Scotland',flag:'gb-sct'},{name:'Kieran Tierney',country:'Scotland',flag:'gb-sct'},{name:'John McGinn',country:'Scotland',flag:'gb-sct'},{name:'Lawrence Shankland',country:'Scotland',flag:'gb-sct'},{name:'Che Adams',country:'Scotland',flag:'gb-sct'},{name:'Angus Gunn',country:'Scotland',flag:'gb-sct'},{name:'Lewis Ferguson',country:'Scotland',flag:'gb-sct'},{name:'Ryan Christie',country:'Scotland',flag:'gb-sct'},{name:'Aaron Hickey',country:'Scotland',flag:'gb-sct'},{name:'Grant Hanley',country:'Scotland',flag:'gb-sct'},{name:'Jack Hendry',country:'Scotland',flag:'gb-sct'},
+    // Croatia
+    {name:'Luka Modric',country:'Croatia',flag:'hr'},{name:'Ivan Perisic',country:'Croatia',flag:'hr'},{name:'Andrej Kramaric',country:'Croatia',flag:'hr'},{name:'Mateo Kovacic',country:'Croatia',flag:'hr'},{name:'Josko Gvardiol',country:'Croatia',flag:'hr'},{name:'Dominik Livakovic',country:'Croatia',flag:'hr'},{name:'Marcelo Brozovic',country:'Croatia',flag:'hr'},{name:'Bruno Petkovic',country:'Croatia',flag:'hr'},{name:'Lovro Majer',country:'Croatia',flag:'hr'},{name:'Martin Erlic',country:'Croatia',flag:'hr'},{name:'Josip Sutalo',country:'Croatia',flag:'hr'},
+    // Austria
+    {name:'David Alaba',country:'Austria',flag:'at'},{name:'Marcel Sabitzer',country:'Austria',flag:'at'},{name:'Marko Arnautovic',country:'Austria',flag:'at'},{name:'Konrad Laimer',country:'Austria',flag:'at'},{name:'Florian Grillitsch',country:'Austria',flag:'at'},{name:'Kevin Danso',country:'Austria',flag:'at'},{name:'Xaver Schlager',country:'Austria',flag:'at'},{name:'Nicolas Seiwald',country:'Austria',flag:'at'},{name:'Christoph Baumgartner',country:'Austria',flag:'at'},{name:'Patrick Wimmer',country:'Austria',flag:'at'},{name:'Michael Gregoritsch',country:'Austria',flag:'at'},{name:'Sasa Kalajdzic',country:'Austria',flag:'at'},{name:'Paul Wanner',country:'Austria',flag:'at'},
+    // ═══ GROUP I ═══
+    // Ecuador
+    {name:'Moises Caicedo',country:'Ecuador',flag:'ec'},{name:'Enner Valencia',country:'Ecuador',flag:'ec'},{name:'Piero Hincapie',country:'Ecuador',flag:'ec'},{name:'Pervis Estupinan',country:'Ecuador',flag:'ec'},{name:'Willian Pacho',country:'Ecuador',flag:'ec'},{name:'Kendry Paez',country:'Ecuador',flag:'ec'},{name:'Felix Torres',country:'Ecuador',flag:'ec'},{name:'Gonzalo Plata',country:'Ecuador',flag:'ec'},
+    // Ivory Coast
+    {name:'Franck Kessie',country:'Ivory Coast',flag:'ci'},{name:'Nicolas Pepe',country:'Ivory Coast',flag:'ci'},{name:'Simon Adingra',country:'Ivory Coast',flag:'ci'},{name:'Amad Diallo',country:'Ivory Coast',flag:'ci'},{name:'Seko Fofana',country:'Ivory Coast',flag:'ci'},{name:'Wilfried Singo',country:'Ivory Coast',flag:'ci'},{name:'Evan Ndicka',country:'Ivory Coast',flag:'ci'},{name:'Elye Wahi',country:'Ivory Coast',flag:'ci'},{name:'Oumar Diakite',country:'Ivory Coast',flag:'ci'},{name:'Ibrahim Sangare',country:'Ivory Coast',flag:'ci'},
+    // Algeria
+    {name:'Riyad Mahrez',country:'Algeria',flag:'dz'},{name:'Mohamed Amoura',country:'Algeria',flag:'dz'},{name:'Houssem Aouar',country:'Algeria',flag:'dz'},{name:'Ramy Bensebaini',country:'Algeria',flag:'dz'},{name:'Aissa Mandi',country:'Algeria',flag:'dz'},{name:'Ibrahim Maza',country:'Algeria',flag:'dz'},{name:'Amine Gouiri',country:'Algeria',flag:'dz'},{name:'Hicham Boudaoui',country:'Algeria',flag:'dz'},{name:'Fares Chaibi',country:'Algeria',flag:'dz'},
+    // ═══ GROUP J ═══
+    // Egypt
+    {name:'Mohamed Salah',country:'Egypt',flag:'eg'},{name:'Omar Marmoush',country:'Egypt',flag:'eg'},{name:'Mostafa Mohamed',country:'Egypt',flag:'eg'},{name:'Mohamed El Shenawy',country:'Egypt',flag:'eg'},{name:'Emam Ashour',country:'Egypt',flag:'eg'},{name:'Hamdy Fathy',country:'Egypt',flag:'eg'},{name:'Zizo',country:'Egypt',flag:'eg'},
+    // Tunisia
+    {name:'Hannibal Mejbri',country:'Tunisia',flag:'tn'},{name:'Anis Ben Slimane',country:'Tunisia',flag:'tn'},{name:'Ellyes Shkiri',country:'Tunisia',flag:'tn'},{name:'Ismael Gharbi',country:'Tunisia',flag:'tn'},{name:'Rayan Elloumi',country:'Tunisia',flag:'tn'},{name:'Montassar Talbi',country:'Tunisia',flag:'tn'},
+    // Saudi Arabia
+    {name:'Salem Al-Dawsari',country:'Saudi Arabia',flag:'sa'},{name:'Firas Al-Buraikan',country:'Saudi Arabia',flag:'sa'},{name:'Mohammed Al-Owais',country:'Saudi Arabia',flag:'sa'},{name:'Saud Abdulhamid',country:'Saudi Arabia',flag:'sa'},{name:'Saleh Al-Shehri',country:'Saudi Arabia',flag:'sa'},{name:'Nasser Al-Dawsari',country:'Saudi Arabia',flag:'sa'},
+    // Ghana
+    {name:'Mohammed Kudus',country:'Ghana',flag:'gh'},{name:'Thomas Partey',country:'Ghana',flag:'gh'},{name:'Jordan Ayew',country:'Ghana',flag:'gh'},{name:'Inaki Williams',country:'Ghana',flag:'gh'},{name:'Antoine Semenyo',country:'Ghana',flag:'gh'},{name:'Daniel Amartey',country:'Ghana',flag:'gh'},{name:'Chris Wood',country:'New Zealand',flag:'nz'},
+    // Panama
+    {name:'Jose Fajardo',country:'Panama',flag:'pa'},{name:'Adalberto Carrasquilla',country:'Panama',flag:'pa'},{name:'Andres Andrade',country:'Panama',flag:'pa'},{name:'Rolando Blackburn',country:'Panama',flag:'pa'},
+    // ═══ GROUP K ═══
+    // South Africa
+    {name:'Themba Zwane',country:'South Africa',flag:'za'},{name:'Lyle Foster',country:'South Africa',flag:'za'},{name:'Evidence Makgopa',country:'South Africa',flag:'za'},{name:'Oswin Appollis',country:'South Africa',flag:'za'},{name:'Relebohile Mofokeng',country:'South Africa',flag:'za'},{name:'Teboho Mokoena',country:'South Africa',flag:'za'},{name:'Ronwen Williams',country:'South Africa',flag:'za'},{name:'Iqraam Rayners',country:'South Africa',flag:'za'},
+    // Sweden
+    {name:'Alexander Isak',country:'Sweden',flag:'se'},{name:'Viktor Gyokeres',country:'Sweden',flag:'se'},{name:'Victor Lindelof',country:'Sweden',flag:'se'},{name:'Anthony Elanga',country:'Sweden',flag:'se'},{name:'Lucas Bergvall',country:'Sweden',flag:'se'},{name:'Emil Holm',country:'Sweden',flag:'se'},{name:'Yasin Ayari',country:'Sweden',flag:'se'},{name:'Isak Hien',country:'Sweden',flag:'se'},
+    // DR Congo
+    {name:'Yoane Wissa',country:'DR Congo',flag:'cd'},{name:'Cedric Bakambu',country:'DR Congo',flag:'cd'},{name:'Chancel Mbemba',country:'DR Congo',flag:'cd'},{name:'Aaron Wan-Bissaka',country:'DR Congo',flag:'cd'},{name:'Meschak Elia',country:'DR Congo',flag:'cd'},{name:'Gael Kakuta',country:'DR Congo',flag:'cd'},
+    // ═══ GROUP L ═══
+    // Australia
+    {name:'Mathew Leckie',country:'Australia',flag:'au'},{name:'Nestory Irankunda',country:'Australia',flag:'au'},{name:'Jackson Irvine',country:'Australia',flag:'au'},{name:'Harry Souttar',country:'Australia',flag:'au'},{name:'Mathew Ryan',country:'Australia',flag:'au'},{name:'Cristian Volpato',country:'Australia',flag:'au'},
+    // New Zealand
+    {name:'Chris Wood',country:'New Zealand',flag:'nz'},{name:'Libataro Cacace',country:'New Zealand',flag:'nz'},{name:'Joe Bell',country:'New Zealand',flag:'nz'},{name:'Marko Stamenic',country:'New Zealand',flag:'nz'},
+    // Bosnia-Herzegovina
+    {name:'Edin Dzeko',country:'Bosnia-Herzegovina',flag:'ba'},{name:'Ermedin Demirovic',country:'Bosnia-Herzegovina',flag:'ba'},{name:'Sead Kolasinac',country:'Bosnia-Herzegovina',flag:'ba'},{name:'Amar Dedic',country:'Bosnia-Herzegovina',flag:'ba'},{name:'Benjamin Tahirovic',country:'Bosnia-Herzegovina',flag:'ba'},{name:'Haris Tabakovic',country:'Bosnia-Herzegovina',flag:'ba'},
+    // Haiti
+    {name:'Frantzdy Pierrot',country:'Haiti',flag:'ht'},{name:'Jean-Ricner Bellegarde',country:'Haiti',flag:'ht'},{name:'Duckens Nazon',country:'Haiti',flag:'ht'},{name:'Wilson Isidor',country:'Haiti',flag:'ht'},
+    // Cape Verde
+    {name:'Garry Rodrigues',country:'Cape Verde',flag:'cv'},{name:'Jovane Cabral',country:'Cape Verde',flag:'cv'},{name:'Ryan Mendes',country:'Cape Verde',flag:'cv'},{name:'Logan Costa',country:'Cape Verde',flag:'cv'},{name:'Willy Semedo',country:'Cape Verde',flag:'cv'},
+    // Iraq
+    {name:'Aymen Hussein',country:'Iraq',flag:'iq'},{name:'Amjed Attwan',country:'Iraq',flag:'iq'},
+    // Jordan
+    {name:'Yazan Al-Naimat',country:'Jordan',flag:'jo'},{name:'Ahmad Dababneh',country:'Jordan',flag:'jo'},
+    // Uzbekistan
+    {name:'Abbosbek Fayzullaev',country:'Uzbekistan',flag:'uz'},{name:'Jamshid Iskanderov',country:'Uzbekistan',flag:'uz'},
+    // Czechia
+    {name:'Patrik Schick',country:'Czechia',flag:'cz'},{name:'Tomas Soucek',country:'Czechia',flag:'cz'},{name:'Adam Hlozek',country:'Czechia',flag:'cz'},{name:'Vladimir Coufal',country:'Czechia',flag:'cz'},{name:'Matej Kovar',country:'Czechia',flag:'cz'},
+    // Turkey
+    {name:'Arda Guler',country:'Turkey',flag:'tr'},{name:'Hakan Calhanoglu',country:'Turkey',flag:'tr'},{name:'Kenan Yildiz',country:'Turkey',flag:'tr'},{name:'Cenk Tosun',country:'Turkey',flag:'tr'},
+    // Paraguay
+    {name:'Miguel Almiron',country:'Paraguay',flag:'py'},{name:'Gustavo Gomez',country:'Paraguay',flag:'py'},{name:'Antonio Sanabria',country:'Paraguay',flag:'py'},
+    // Qatar
+    {name:'Akram Afif',country:'Qatar',flag:'qa'},{name:'Hassan Al-Haydos',country:'Qatar',flag:'qa'},
+    // Iran
+    {name:'Mehdi Taremi',country:'Iran',flag:'ir'},{name:'Alireza Jahanbakhsh',country:'Iran',flag:'ir'},{name:'Sardar Azmoun',country:'Iran',flag:'ir'},{name:'Morteza Pouraliganji',country:'Iran',flag:'ir'},
+    // Curacao
+    {name:'Leandro Bacuna',country:'Curacao',flag:'cw'},{name:'Juninho Bacuna',country:'Curacao',flag:'cw'},{name:'Sontje Hansen',country:'Curacao',flag:'cw'},
   ];
 
   function initPlayerCardsGrid(currentPlayer) {
