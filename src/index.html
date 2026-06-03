@@ -5372,8 +5372,6 @@
       setTimeout(initAutoSaveToggle, 300);
       // Start live scores polling
       setTimeout(startLiveScoresPolling, 1500);
-      // Check for missing picks after 2s (give time for data to load)
-      setTimeout(checkMissingPicks, 2000);
       // Pulse attention on important picks if not yet filled
       setTimeout(() => {
         const playerCard = document.querySelector('.player-pick');
