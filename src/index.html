@@ -4731,15 +4731,16 @@
 
   window.toggleLineup = async (matchId, homeTeam, awayTeam, btn) => {
     const panel = document.getElementById('lineup-panel-' + matchId);
+    const chevron = document.getElementById('lineup-chevron-' + matchId);
     if (!panel) return;
     const isOpen = panel.style.display !== 'none';
     if (isOpen) {
       panel.style.display = 'none';
-      btn.querySelector('span:last-child').textContent = '▾';
+      if (chevron) chevron.style.transform = '';
       return;
     }
     panel.style.display = 'block';
-    btn.querySelector('span:last-child').textContent = '▴';
+    if (chevron) chevron.style.transform = 'rotate(180deg)';
 
     // Already loaded
     if (lineupCache[matchId]) { panel.innerHTML = lineupCache[matchId]; return; }
@@ -7042,15 +7043,20 @@ Use real known players from these teams. Position codes: GK, RB, CB, LB, CM, CDM
             </div>
             <div class="team"><span class="flag">${teamFlag(m.awayTeam)}</span><span class="name">${m.awayTeam}</span></div>
           </div>
-          <!-- PREDICTED LINEUP BUTTON -->
-          <div style="padding:8px 0 0;border-top:1px solid var(--border);margin-top:8px;">
+          <!-- PREDICTED LINEUP BADGE -->
+          <div style="display:flex;justify-content:center;padding:10px 0 2px;">
             <button onclick="toggleLineup('${d.id}','${m.homeTeam.replace(/'/g,"\\'")}','${m.awayTeam.replace(/'/g,"\\'")}', this)"
-              style="display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:10px;border:1px solid var(--border);background:none;color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;width:100%;justify-content:center;"
-              onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">
-              <span>📋</span><span>Predicted Starting 11</span><span style="font-size:10px;margin-left:auto;">▾</span>
+              style="display:inline-flex;align-items:center;gap:7px;padding:7px 16px;border-radius:99px;border:1.5px solid rgba(139,92,246,0.4);background:linear-gradient(135deg,rgba(139,92,246,0.1),rgba(99,102,241,0.08));color:#a78bfa;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:0.04em;transition:all 0.2s;position:relative;overflow:hidden;"
+              onmouseover="this.style.borderColor='rgba(139,92,246,0.7)';this.style.background='linear-gradient(135deg,rgba(139,92,246,0.2),rgba(99,102,241,0.15))';this.style.boxShadow='0 0 14px rgba(139,92,246,0.3)'"
+              onmouseout="this.style.borderColor='rgba(139,92,246,0.4)';this.style.background='linear-gradient(135deg,rgba(139,92,246,0.1),rgba(99,102,241,0.08))';this.style.boxShadow='none'">
+              <span style="font-size:13px;">🤖</span>
+              <span>AI Predicted XI</span>
+              <span id="lineup-chevron-${d.id}" style="font-size:9px;opacity:0.7;transition:transform 0.2s;">▾</span>
+              <!-- Shimmer effect -->
+              <span style="position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.07),transparent);animation:shimmer 3s linear infinite;"></span>
             </button>
-            <div id="lineup-panel-${d.id}" style="display:none;margin-top:8px;"></div>
           </div>
+          <div id="lineup-panel-${d.id}" style="display:none;margin-top:6px;"></div>
 
           <div class="match-bonus">
             <div class="bonus-row">
