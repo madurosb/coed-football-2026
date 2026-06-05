@@ -7151,11 +7151,11 @@ Use exactly the formation provided. Use real known players.`
             <div style="display:flex;align-items:center;gap:8px;">
               ${liveIndicator}
               <button onclick="showMatchPreview('${d.id}')"
-                style="display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,rgba(16,185,129,0.12),rgba(5,150,105,0.08));border:1px solid rgba(16,185,129,0.35);border-radius:99px;padding:4px 11px;font-size:10px;font-weight:700;color:#10b981;cursor:pointer;white-space:nowrap;letter-spacing:0.04em;transition:all 0.2s;position:relative;overflow:hidden;"
-                onmouseover="this.style.background='linear-gradient(135deg,rgba(16,185,129,0.22),rgba(5,150,105,0.16))';this.style.borderColor='rgba(16,185,129,0.7)';this.style.boxShadow='0 0 10px rgba(16,185,129,0.25)'"
-                onmouseout="this.style.background='linear-gradient(135deg,rgba(16,185,129,0.12),rgba(5,150,105,0.08))';this.style.borderColor='rgba(16,185,129,0.35)';this.style.boxShadow='none'">
-                <span style="font-size:11px;">📊</span>
-                <span>Match Preview</span>
+                style="display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);border:1px solid rgba(99,252,180,0.4);border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;color:#63fcb4;cursor:pointer;white-space:nowrap;letter-spacing:0.06em;text-transform:uppercase;transition:all 0.2s;box-shadow:0 0 8px rgba(99,252,180,0.15),inset 0 1px 0 rgba(255,255,255,0.05);position:relative;overflow:hidden;"
+                onmouseover="this.style.borderColor='rgba(99,252,180,0.8)';this.style.boxShadow='0 0 16px rgba(99,252,180,0.35),inset 0 1px 0 rgba(255,255,255,0.08)';this.style.color='#a7ffe4'"
+                onmouseout="this.style.borderColor='rgba(99,252,180,0.4)';this.style.boxShadow='0 0 8px rgba(99,252,180,0.15),inset 0 1px 0 rgba(255,255,255,0.05)';this.style.color='#63fcb4'">
+                <span style="font-size:12px;">⚡</span>
+                <span>Preview</span>
               </button>
               <div class="match-timing">
                 <div class="kickoff">${kickoff.toLocaleDateString('en-GB', {day:'2-digit',month:'short'})} ${kickoff.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})} <span class="tz">(Israel time)</span></div>
@@ -11780,6 +11780,7 @@ Use exactly the formation provided. Use real known players.`
     popup.style.display = 'flex';
 
     const matchSnap = await getDoc(doc(db, 'matches', matchId));
+    const m = matchSnap.data();
     if (!m) { popup.style.display = 'none'; return; }
 
     const hs = TEAM_STATS[m.homeTeam] || { form:'—', goals: '?', conceded: '?', rank: '?', style: '—' };
