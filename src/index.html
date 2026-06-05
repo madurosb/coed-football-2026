@@ -2919,7 +2919,19 @@
       <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
       <div class="form-card">
         <h2>📦 Predictions backup</h2>
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Full snapshot of all predictions per player. Use this as a reference if you need to manually verify or restore predictions.</p>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Full snapshot of all predictions per player.</p>
+
+        <!-- Delete by userId -->
+        <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:12px;padding:14px;margin-bottom:1rem;">
+          <div style="font-size:13px;font-weight:700;color:#ef4444;margin-bottom:8px;">🗑️ Delete predictions by User ID</div>
+          <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <input id="delete-userid-input" type="text" placeholder="Paste userId here..." style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;"/>
+            <button onclick="searchPredictionsByUser()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--accent);color:white;font-size:13px;font-weight:600;cursor:pointer;">Search</button>
+          </div>
+          <div id="delete-user-preview" style="font-size:12px;color:var(--text-muted);"></div>
+          <button id="delete-user-btn" onclick="deleteUserPredictions()" style="display:none;margin-top:8px;padding:8px 16px;border-radius:8px;border:none;background:#ef4444;color:white;font-size:13px;font-weight:700;cursor:pointer;">🗑️ Delete all predictions for this user</button>
+        </div>
+
         <button class="submit-btn" onclick="loadPredictionsBackup()" style="margin-bottom:1rem;">Load all predictions</button>
         <div id="predictions-backup-content" style="font-size:13px;color:var(--text-muted);">Click the button above to load.</div>
       </div>
@@ -8184,6 +8196,71 @@ Use exactly the formation provided. Use real known players.`
     loadMatches();
   };
 
+  window.searchPredictionsByUser = async () => {
+    const uid = document.getElementById('delete-userid-input')?.value.trim();
+    const preview = document.getElementById('delete-user-preview');
+    const btn = document.getElementById('delete-user-btn');
+    if (!uid) { preview.textContent = 'Please enter a userId.'; return; }
+
+    preview.textContent = 'Searching...';
+    btn.style.display = 'none';
+
+    try {
+      const snap = await getDocs(query(
+        collection(db, 'predictions'),
+        where('userId', '==', uid)
+      ));
+      if (snap.empty) {
+        preview.textContent = '✅ No predictions found for this userId.';
+        return;
+      }
+      preview.innerHTML = `<span style="color:#ef4444;font-weight:700;">Found ${snap.size} predictions</span> for userId: <code style="background:var(--surface2);padding:1px 5px;border-radius:4px;">${uid}</code>`;
+      btn.style.display = 'block';
+      btn.dataset.uid = uid;
+      btn.dataset.count = snap.size;
+    } catch(e) {
+      preview.textContent = 'Error: ' + e.message;
+    }
+  };
+
+  window.deleteUserPredictions = async () => {
+    const btn = document.getElementById('delete-user-btn');
+    const uid = btn.dataset.uid;
+    const count = btn.dataset.count;
+    if (!uid) return;
+
+    if (!confirm(`⚠️ Delete ALL ${count} predictions for userId:\n${uid}\n\nThis cannot be undone!`)) return;
+
+    btn.disabled = true;
+    btn.textContent = 'Deleting...';
+    const preview = document.getElementById('delete-user-preview');
+
+    try {
+      const snap = await getDocs(query(
+        collection(db, 'predictions'),
+        where('userId', '==', uid)
+      ));
+
+      // Delete in batches
+      let deleted = 0;
+      const batchSize = 20;
+      const docs = snap.docs;
+      for (let i = 0; i < docs.length; i += batchSize) {
+        await Promise.all(docs.slice(i, i + batchSize).map(d => deleteDoc(doc(db, 'predictions', d.id))));
+        deleted += Math.min(batchSize, docs.length - i);
+        preview.innerHTML = `Deleting... ${deleted}/${docs.length}`;
+      }
+
+      preview.innerHTML = `<span style="color:#1D9E75;font-weight:700;">✅ Deleted ${deleted} predictions</span> for userId: <code style="background:var(--surface2);padding:1px 5px;border-radius:4px;">${uid}</code>`;
+      btn.style.display = 'none';
+      document.getElementById('delete-userid-input').value = '';
+    } catch(e) {
+      preview.textContent = 'Error: ' + e.message;
+      btn.disabled = false;
+      btn.textContent = '🗑️ Delete all predictions for this user';
+    }
+  };
+
   window.loadPredictionsBackup = async () => {
     const container = document.getElementById('predictions-backup-content');
     container.innerHTML = 'Loading...';
@@ -13185,7 +13262,8 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
             <div style="font-size:11px;color:var(--text-muted);padding:6px 8px;background:var(--surface2);border-radius:6px;">
               😎 Going against the crowd: ${contrarians.map(p => {
                 const u = usersMap[p.userId];
-                return u ? (u.nickname || u.displayName || 'Unknown') : 'Unknown';
+                const name = u ? (u.nickname || u.displayName || u.email || null) : null;
+                return name || `Unknown (${p.userId.substring(0,8)}...)`;
               }).join(', ')}
             </div>` : ''}
         </div>`;
