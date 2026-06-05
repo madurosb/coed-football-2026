@@ -2721,6 +2721,7 @@
         </div>
       </div>
     </div>
+    <div id="admin-results" class="admin-sub">
       <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
       <div class="form-card">
         <h2>Update results</h2>
@@ -8301,7 +8302,7 @@ Use exactly the formation provided. Use real known players.`
       const jokerUsers = new Set(jokerSnap.docs.map(d => d.data().userId).filter(Boolean));
       const donUsers = new Set(donSnap.docs.map(d => d.data().userId || d.id).filter(Boolean));
 
-      // First 3 matches (group stage, sorted by kickoff)
+      // First match only (group stage, sorted by kickoff)
       const allMatches = matchesSnap.docs
         .map(d => ({ id: d.id, ...d.data() }))
         .filter(m => m.homeTeam && !m.homeTeam.includes('Winner') && !m.homeTeam.includes('TBD'))
@@ -8310,7 +8311,7 @@ Use exactly the formation provided. Use real known players.`
           const tB = b.kickoff?.toDate?.().getTime() || 0;
           return tA - tB;
         });
-      const first3MatchIds = new Set(allMatches.slice(0, 3).map(m => m.id));
+      const firstMatchId = allMatches[0]?.id;
 
       const users = usersSnap.docs
         .map(d => ({ id: d.id, ...d.data() }))
@@ -8323,18 +8324,23 @@ Use exactly the formation provided. Use real known players.`
 
       const rows = users.map(u => {
         const preds = predsByUser[u.uid] || [];
-        const predMatchIds = new Set(preds.filter(p => p.homeScore != null).map(p => p.matchId));
+        const predsByMatchId = {};
+        preds.forEach(p => { predsByMatchId[p.matchId] = p; });
 
         // 1. Tournament winner
         const hasWinner = !!u.tournamentWinner;
         // 2. Tournament player
         const hasPlayer = !!u.tournamentPlayer;
-        // 3. First 3 matches filled
-        const has3Matches = [...first3MatchIds].every(id => predMatchIds.has(id));
-        // 4. Scorers on all filled matches
-        const filledPreds = preds.filter(p => p.homeScore != null);
-        const allHaveScorer = filledPreds.length > 0 && filledPreds.every(p => !!p.scorer);
-        const scorerLabel = filledPreds.length === 0 ? '➖' : (allHaveScorer ? '✅' : `<span style="color:#ef4444;font-size:14px;">❌</span><span style="font-size:10px;color:var(--text-muted);"> ${filledPreds.filter(p=>!p.scorer).length} missing</span>`);
+        // 3. First match filled
+        const hasFirstMatch = firstMatchId ? (predsByMatchId[firstMatchId]?.homeScore != null) : false;
+        // 4. Scorers — check all predictions that have scores filled
+        const filledPreds = preds.filter(p => p.homeScore != null && p.awayScore != null);
+        const missingScorer = filledPreds.filter(p => !p.scorer || p.scorer === '').length;
+        const scorerLabel = filledPreds.length === 0
+          ? '<span style="color:var(--text-muted);font-size:12px;">➖</span>'
+          : missingScorer === 0
+            ? '<span style="color:#1D9E75;font-size:14px;">✅</span>'
+            : `<span style="color:#ef4444;font-size:14px;">❌</span><span style="font-size:10px;color:var(--text-muted);"> ${missingScorer} missing</span>`;
         // 5. DON
         const hasDon = donUsers.has(u.uid);
         // 6. Joker
@@ -8348,7 +8354,7 @@ Use exactly the formation provided. Use real known players.`
           <td style="padding:8px 6px;font-size:12px;font-weight:600;white-space:nowrap;">${name}</td>
           <td style="padding:8px 6px;text-align:center;">${check(hasWinner)}</td>
           <td style="padding:8px 6px;text-align:center;">${check(hasPlayer)}</td>
-          <td style="padding:8px 6px;text-align:center;">${check(has3Matches)}<span style="font-size:10px;color:var(--text-muted);display:block;">${totalPreds}/${totalMatches}</span></td>
+          <td style="padding:8px 6px;text-align:center;">${check(hasFirstMatch)}<span style="font-size:10px;color:var(--text-muted);display:block;">${totalPreds}/${totalMatches}</span></td>
           <td style="padding:8px 6px;text-align:center;">${scorerLabel}</td>
           <td style="padding:8px 6px;text-align:center;">${check(hasDon)}</td>
           <td style="padding:8px 6px;text-align:center;">${check(hasJoker)}</td>
@@ -8363,7 +8369,7 @@ Use exactly the formation provided. Use real known players.`
                 <th style="padding:8px 6px;text-align:left;font-size:11px;color:var(--text-muted);font-weight:700;white-space:nowrap;">PLAYER</th>
                 <th style="padding:8px 4px;text-align:center;font-size:11px;color:var(--text-muted);font-weight:700;">🏆<br>Winner</th>
                 <th style="padding:8px 4px;text-align:center;font-size:11px;color:var(--text-muted);font-weight:700;">⭐<br>Player</th>
-                <th style="padding:8px 4px;text-align:center;font-size:11px;color:var(--text-muted);font-weight:700;">⚽<br>First 3</th>
+                <th style="padding:8px 4px;text-align:center;font-size:11px;color:var(--text-muted);font-weight:700;">⚽<br>1st Match</th>
                 <th style="padding:8px 4px;text-align:center;font-size:11px;color:var(--text-muted);font-weight:700;">🎯<br>Scorers</th>
                 <th style="padding:8px 4px;text-align:center;font-size:11px;color:var(--text-muted);font-weight:700;">💰<br>DON</th>
                 <th style="padding:8px 4px;text-align:center;font-size:11px;color:var(--text-muted);font-weight:700;">🃏<br>Joker</th>
