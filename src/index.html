@@ -4802,35 +4802,94 @@ Use real known players from these teams. Position codes: GK, RB, CB, LB, CM, CDM
   };
 
   function renderLineupHTML(home, away) {
-    const posOrder = ['GK','LB','CB','RB','CDM','CM','CAM','LM','RM','LW','RW','ST','CF'];
-    const renderTeam = (team) => {
-      const byPos = {};
-      (team.players || []).forEach(p => {
+    // Position coordinates on a half-pitch (0-100 x, 0-100 y)
+    // y=0 is GK end, y=100 is forward end
+    const posCoords = {
+      'GK':  [{x:50, y:8}],
+      'RB':  [{x:82, y:28}],
+      'CB':  [{x:35, y:24}, {x:65, y:24}],
+      'LB':  [{x:18, y:28}],
+      'CDM': [{x:38, y:44}, {x:62, y:44}],
+      'CM':  [{x:25, y:50}, {x:50, y:48}, {x:75, y:50}],
+      'CAM': [{x:50, y:62}],
+      'RM':  [{x:80, y:55}],
+      'LM':  [{x:20, y:55}],
+      'RW':  [{x:80, y:72}],
+      'LW':  [{x:20, y:72}],
+      'ST':  [{x:50, y:82}],
+      'CF':  [{x:35, y:80}, {x:65, y:80}],
+      'SS':  [{x:50, y:75}],
+    };
+
+    const renderPitch = (team, flipY) => {
+      const players = team.players || [];
+      // Assign coords
+      const usedPos = {};
+      const positioned = players.map(p => {
         const pos = p.position || 'CM';
-        if (!byPos[pos]) byPos[pos] = [];
-        byPos[pos].push(p.name);
+        const coords = posCoords[pos] || [{x:50, y:50}];
+        const idx = usedPos[pos] || 0;
+        usedPos[pos] = idx + 1;
+        const coord = coords[idx % coords.length];
+        const finalY = flipY ? 100 - coord.y : coord.y;
+        return { ...p, x: coord.x, y: finalY };
       });
+
+      const dots = positioned.map(p => {
+        const cx = p.x;
+        const cy = p.y;
+        const lastName = p.name.split(' ').pop();
+        return `
+          <g>
+            <circle cx="${cx}" cy="${cy}" r="4.5" fill="#3b82f6" stroke="white" stroke-width="1.2" opacity="0.95"/>
+            <text x="${cx}" y="${cy + 9.5}" text-anchor="middle" font-size="4.2" fill="white" font-family="system-ui,sans-serif" font-weight="600" opacity="0.92">${lastName}</text>
+          </g>`;
+      }).join('');
+
+      const lastName = (team.team || '').split(' ').pop().toUpperCase();
       return `
         <div style="flex:1;min-width:0;">
-          <div style="text-align:center;font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">${team.team}</div>
-          <div style="font-size:10px;text-align:center;color:var(--accent);font-weight:700;margin-bottom:8px;">${team.formation || ''}</div>
-          ${(team.players || []).map((p,i) => `
-            <div style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:7px;background:${i%2===0?'var(--surface2)':'none'};">
-              <span style="font-size:9px;font-weight:700;color:var(--accent);min-width:28px;">${p.position||''}</span>
-              <span style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</span>
-            </div>`).join('')}
+          <div style="text-align:center;font-size:11px;font-weight:800;color:var(--text);margin-bottom:4px;">${team.team}</div>
+          <div style="text-align:center;font-size:10px;color:#a78bfa;font-weight:700;margin-bottom:6px;">${team.formation || ''}</div>
+          <svg viewBox="0 0 100 115" xmlns="http://www.w3.org/2000/svg" style="width:100%;border-radius:10px;display:block;">
+            <!-- Pitch background -->
+            <rect width="100" height="115" fill="#2d6a2d" rx="6"/>
+            <!-- Grass stripes -->
+            ${[0,1,2,3,4,5,6,7,8,9].map(i=>`<rect x="0" y="${i*11.5}" width="100" height="5.75" fill="#2a632a" opacity="0.5"/>`).join('')}
+            <!-- Pitch markings -->
+            <!-- Outline -->
+            <rect x="5" y="5" width="90" height="105" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="0.8"/>
+            <!-- Center line -->
+            <line x1="5" y1="57.5" x2="95" y2="57.5" stroke="rgba(255,255,255,0.4)" stroke-width="0.8"/>
+            <!-- Center circle -->
+            <circle cx="50" cy="57.5" r="12" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="0.8"/>
+            <circle cx="50" cy="57.5" r="1" fill="rgba(255,255,255,0.5)"/>
+            <!-- Top penalty area -->
+            <rect x="22" y="5" width="56" height="22" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="0.8"/>
+            <!-- Top goal area -->
+            <rect x="34" y="5" width="32" height="9" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="0.8"/>
+            <!-- Top goal -->
+            <rect x="38" y="3" width="24" height="4" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/>
+            <!-- Bottom penalty area -->
+            <rect x="22" y="88" width="56" height="22" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="0.8"/>
+            <!-- Bottom goal area -->
+            <rect x="34" y="101" width="32" height="9" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="0.8"/>
+            <!-- Bottom goal -->
+            <rect x="38" y="108" width="24" height="4" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="0.8"/>
+            <!-- Players -->
+            ${dots}
+          </svg>
         </div>`;
     };
 
     return `
-      <div style="background:var(--surface2);border-radius:12px;padding:12px;border:1px solid var(--border);">
-        <div style="text-align:center;font-size:10px;color:var(--text-muted);margin-bottom:10px;font-weight:600;">🤖 AI PREDICTED STARTING XI</div>
-        <div style="display:flex;gap:12px;">
-          ${renderTeam(home)}
-          <div style="width:1px;background:var(--border);flex-shrink:0;"></div>
-          ${renderTeam(away)}
+      <div style="background:var(--surface2);border-radius:14px;padding:12px;border:1px solid rgba(139,92,246,0.2);">
+        <div style="text-align:center;font-size:10px;color:#a78bfa;margin-bottom:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">🤖 AI Predicted Starting XI</div>
+        <div style="display:flex;gap:10px;">
+          ${renderPitch(home, false)}
+          ${renderPitch(away, true)}
         </div>
-        <div style="text-align:center;font-size:10px;color:var(--text-muted);margin-top:8px;opacity:0.6;">Predictions may change. Based on current form & squad.</div>
+        <div style="text-align:center;font-size:10px;color:var(--text-muted);margin-top:8px;opacity:0.6;">Based on current form & squad. May change.</div>
       </div>`;
   }
 
@@ -7050,7 +7109,7 @@ Use real known players from these teams. Position codes: GK, RB, CB, LB, CM, CDM
               onmouseover="this.style.borderColor='rgba(139,92,246,0.7)';this.style.background='linear-gradient(135deg,rgba(139,92,246,0.2),rgba(99,102,241,0.15))';this.style.boxShadow='0 0 14px rgba(139,92,246,0.3)'"
               onmouseout="this.style.borderColor='rgba(139,92,246,0.4)';this.style.background='linear-gradient(135deg,rgba(139,92,246,0.1),rgba(99,102,241,0.08))';this.style.boxShadow='none'">
               <span style="font-size:13px;">🤖</span>
-              <span>AI Predicted XI</span>
+              <span>See predicted Starting XI for both teams</span>
               <span id="lineup-chevron-${d.id}" style="font-size:9px;opacity:0.7;transition:transform 0.2s;">▾</span>
               <!-- Shimmer effect -->
               <span style="position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.07),transparent);animation:shimmer 3s linear infinite;"></span>
