@@ -4727,6 +4727,26 @@
   setInterval(() => { if (currentUser) updateMsgBadge(); }, 30000);
 
   // ═══ PREDICTED LINEUPS ═══
+  const TEAM_FORMATIONS = {
+    'Algeria': '4-2-3-1', 'Saudi Arabia': '4-3-3', 'Argentina': '4-3-3',
+    'Australia': '5-4-1', 'Austria': '4-2-3-1', 'Belgium': '4-2-3-1',
+    'Bosnia-Herzegovina': '4-4-2', 'Brazil': '4-4-2', 'Canada': '4-4-2',
+    'Cape Verde': '4-2-3-1', 'Colombia': '4-2-3-1', 'South Korea': '4-2-3-1',
+    'Ivory Coast': '4-3-3', 'Curacao': '4-3-3', 'Croatia': '4-2-3-1',
+    'Ecuador': '4-3-3', 'Egypt': '3-4-1-2', 'France': '4-2-3-1',
+    'Germany': '4-2-3-1', 'Ghana': '3-4-3', 'Japan': '3-4-2-1',
+    'Jordan': '3-4-3', 'Haiti': '4-3-3', 'England': '4-2-3-1',
+    'Iran': '4-2-3-1', 'Iraq': '4-2-3-1', 'Morocco': '4-2-3-1',
+    'Mexico': '4-3-3', 'Norway': '4-3-3', 'New Zealand': '4-2-3-1',
+    'Netherlands': '4-2-3-1', 'Panama': '3-4-2-1', 'Paraguay': '4-4-2',
+    'Portugal': '4-3-3', 'Qatar': '4-3-3', 'Czechia': '3-4-2-1',
+    'DR Congo': '4-2-3-1', 'Scotland': '4-1-4-1', 'Senegal': '4-2-3-1',
+    'Spain': '4-3-3', 'USA': '4-3-3', 'United States': '4-3-3',
+    'South Africa': '4-2-3-1', 'Sweden': '3-4-2-1', 'Switzerland': '4-3-3',
+    'Tunisia': '4-3-3', 'Turkey': '3-4-2-1', 'Uruguay': '4-3-3',
+    'Uzbekistan': '3-4-2-1',
+  };
+
   const lineupCache = {};
 
   window.toggleLineup = async (matchId, homeTeam, awayTeam, btn) => {
@@ -4748,6 +4768,9 @@
     panel.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px;">🤖 Predicting lineups...</div>';
 
     try {
+      const homeFormation = TEAM_FORMATIONS[homeTeam] || '4-3-3';
+      const awayFormation = TEAM_FORMATIONS[awayTeam] || '4-3-3';
+
       const resp = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -4757,33 +4780,30 @@
             role: 'user',
             content: `Predict the most likely starting 11 for both teams in this World Cup 2026 match: ${homeTeam} vs ${awayTeam}.
 
-Return ONLY this JSON structure:
+${homeTeam} plays ${homeFormation}. ${awayTeam} plays ${awayFormation}.
+
+Return ONLY this JSON:
 {
   "home": {
     "team": "${homeTeam}",
-    "formation": "4-3-3",
+    "formation": "${homeFormation}",
     "players": [
       {"name":"Player Name","position":"GK"},
-      {"name":"Player Name","position":"RB"},
-      {"name":"Player Name","position":"CB"},
-      {"name":"Player Name","position":"CB"},
-      {"name":"Player Name","position":"LB"},
-      {"name":"Player Name","position":"CM"},
-      {"name":"Player Name","position":"CM"},
-      {"name":"Player Name","position":"CM"},
-      {"name":"Player Name","position":"RW"},
-      {"name":"Player Name","position":"ST"},
-      {"name":"Player Name","position":"LW"}
+      ... 10 more players matching the ${homeFormation} formation exactly
     ]
   },
   "away": {
     "team": "${awayTeam}",
-    "formation": "4-2-3-1",
-    "players": [...]
+    "formation": "${awayFormation}",
+    "players": [
+      {"name":"Player Name","position":"GK"},
+      ... 10 more players matching the ${awayFormation} formation exactly
+    ]
   }
 }
 
-Use real known players from these teams. Position codes: GK, RB, CB, LB, CM, CDM, CAM, RM, LM, RW, LW, ST, CF`
+Position codes: GK, RB, CB, LB, LWB, RWB, CDM, CM, CAM, RM, LM, RW, LW, ST, CF
+Use exactly the formation provided. Use real known players.`
           }],
           maxTokens: 1200
         })
