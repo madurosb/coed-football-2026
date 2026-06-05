@@ -4802,67 +4802,120 @@ Use real known players from these teams. Position codes: GK, RB, CB, LB, CM, CDM
   };
 
   function renderLineupHTML(home, away) {
-    function getFormationLayout(players) {
-      const gk = players.filter(p => p.position === 'GK');
-      const def = players.filter(p => ['RB','CB','LB','LWB','RWB'].includes(p.position));
-      const mid = players.filter(p => ['CM','CDM','CAM','RM','LM','DM'].includes(p.position));
-      const att = players.filter(p => ['ST','CF','RW','LW','SS','FW'].includes(p.position));
-      const other = players.filter(p => !['GK','RB','CB','LB','LWB','RWB','CM','CDM','CAM','RM','LM','DM','ST','CF','RW','LW','SS','FW'].includes(p.position));
-      mid.push(...other);
+    // Parse formation string e.g. "4-3-3" -> [4,3,3]
+    function parseFormation(str) {
+      if (!str) return null;
+      const parts = str.split('-').map(Number).filter(n => !isNaN(n) && n > 0);
+      return parts.length >= 2 ? parts : null;
+    }
 
+    // Layout players by formation rows
+    // rows = [4,3,3] means 4 defenders, 3 mid, 3 attackers
+    // GK always at bottom (y=88), then rows go upward
+    function layoutByFormation(players, formationStr) {
+      const rows = parseFormation(formationStr);
       const positioned = [];
+
+      // Sort players by position category
+      const isGK  = p => p.position === 'GK';
+      const isDef = p => ['RB','CB','LB','LWB','RWB','SW'].includes(p.position);
+      const isMid = p => ['CM','CDM','CAM','RM','LM','DM','AM','MF'].includes(p.position);
+      const isAtt = p => ['ST','CF','RW','LW','SS','FW','SS'].includes(p.position);
+
+      const gks   = players.filter(isGK);
+      const defs  = players.filter(isDef);
+      const mids  = players.filter(isMid);
+      const atts  = players.filter(isAtt);
+      const rest  = players.filter(p => !isGK(p) && !isDef(p) && !isMid(p) && !isAtt(p));
+
+      // Fill missing from rest
+      const fill = (arr, target) => {
+        while (arr.length < target && rest.length) arr.push(rest.shift());
+      };
+
+      let rowGroups = [];
+      if (rows) {
+        // Use formation to determine rows (bottom to top = def to att)
+        const total = rows.reduce((a,b)=>a+b,0);
+        let pool = [...defs, ...mids, ...atts, ...rest];
+        // Make sure we have 10 outfield
+        while (pool.length < total) pool.push({ name:'?', position:'?' });
+        pool = pool.slice(0, total);
+
+        let idx = 0;
+        for (const count of rows) {
+          rowGroups.push(pool.slice(idx, idx+count));
+          idx += count;
+        }
+      } else {
+        // Fallback: auto group
+        rowGroups = [defs, mids, atts];
+      }
+
       const spreadRow = (group, y) => {
         const n = group.length;
+        if (n === 0) return;
         group.forEach((p, i) => {
-          const x = n === 1 ? 50 : 15 + (i * 70 / Math.max(n - 1, 1));
-          positioned.push({ ...p, x, y });
+          const x = n === 1 ? 50 : 12 + (i * 76 / (n - 1));
+          positioned.push({ ...p, x: Math.round(x), y });
         });
       };
 
-      spreadRow(gk, 88);
-      spreadRow(def, 70);
-      if (mid.length > 5) {
-        spreadRow(mid.slice(0, Math.ceil(mid.length/2)), 54);
-        spreadRow(mid.slice(Math.ceil(mid.length/2)), 38);
-      } else {
-        spreadRow(mid, 48);
-      }
-      spreadRow(att, 20);
+      // GK at y=88, then rows from y=72 upward
+      spreadRow(gks.length ? gks : [{name:'GK', position:'GK'}], 88);
+
+      const rowCount = rowGroups.length;
+      const yStart = 72;
+      const yStep = rowCount > 1 ? (yStart - 16) / (rowCount - 1) : 0;
+
+      rowGroups.forEach((group, i) => {
+        const y = Math.round(yStart - i * yStep);
+        spreadRow(group, y);
+      });
+
       return positioned;
     }
 
     const renderPitch = (team) => {
-      const positioned = getFormationLayout(team.players || []);
+      const positioned = layoutByFormation(team.players || [], team.formation);
       const dots = positioned.map(p => {
-        const lastName = p.name.split(' ').pop();
+        const lastName = (p.name || '').split(' ').pop();
         return `<g>
-          <circle cx="${p.x}" cy="${p.y}" r="2.8" fill="#3b82f6" stroke="white" stroke-width="0.9" opacity="0.97"/>
-          <text x="${p.x}" y="${p.y + 6.5}" text-anchor="middle" font-size="3.4" fill="white" font-family="system-ui,sans-serif" font-weight="600" opacity="0.92">${lastName}</text>
+          <circle cx="${p.x}" cy="${p.y}" r="2.2" fill="#3b82f6" stroke="white" stroke-width="0.8" opacity="0.97"/>
+          <text x="${p.x}" y="${p.y + 5.8}" text-anchor="middle" font-size="3.2" fill="white" font-family="system-ui,sans-serif" font-weight="600" opacity="0.95">${lastName}</text>
         </g>`;
       }).join('');
 
       return `<div style="flex:1;min-width:0;">
         <div style="text-align:center;font-size:11px;font-weight:800;color:var(--text);margin-bottom:2px;">${team.team}</div>
-        <div style="text-align:center;font-size:10px;color:#a78bfa;font-weight:700;margin-bottom:6px;">${team.formation || ''}</div>
-        <svg viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg" style="width:100%;border-radius:10px;display:block;">
-          <rect width="100" height="110" fill="#2a6229" rx="8"/>
-          <rect x="0" y="0" width="100" height="11" fill="#286027"/>
-          <rect x="0" y="22" width="100" height="11" fill="#286027"/>
-          <rect x="0" y="44" width="100" height="11" fill="#286027"/>
-          <rect x="0" y="66" width="100" height="11" fill="#286027"/>
-          <rect x="0" y="88" width="100" height="11" fill="#286027"/>
-          <rect x="4" y="4" width="92" height="102" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="0.7" rx="2"/>
-          <line x1="4" y1="55" x2="96" y2="55" stroke="rgba(255,255,255,0.4)" stroke-width="0.7"/>
-          <circle cx="50" cy="55" r="11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="0.7"/>
-          <circle cx="50" cy="55" r="0.8" fill="rgba(255,255,255,0.4)"/>
-          <rect x="24" y="4" width="52" height="20" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="0.7"/>
-          <rect x="36" y="4" width="28" height="9" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="0.7"/>
-          <rect x="40" y="2" width="20" height="4" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="0.7"/>
-          <rect x="24" y="86" width="52" height="20" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="0.7"/>
-          <rect x="36" y="97" width="28" height="9" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="0.7"/>
-          <rect x="40" y="104" width="20" height="4" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="0.7"/>
-          <text x="50" y="100" text-anchor="middle" font-size="3.2" fill="rgba(255,255,255,0.35)" font-family="system-ui,sans-serif">GK</text>
-          <text x="50" y="13" text-anchor="middle" font-size="3.2" fill="rgba(255,255,255,0.35)" font-family="system-ui,sans-serif">ATK</text>
+        <div style="text-align:center;font-size:10px;color:#a78bfa;font-weight:700;margin-bottom:5px;">${team.formation || ''}</div>
+        <svg viewBox="0 0 100 108" xmlns="http://www.w3.org/2000/svg" style="width:100%;border-radius:10px;display:block;">
+          <!-- Pitch green -->
+          <rect width="100" height="108" fill="#2a6229" rx="8"/>
+          <!-- Alternating stripes -->
+          <rect x="0" y="0"  width="100" height="10.8" fill="#286027"/>
+          <rect x="0" y="21.6" width="100" height="10.8" fill="#286027"/>
+          <rect x="0" y="43.2" width="100" height="10.8" fill="#286027"/>
+          <rect x="0" y="64.8" width="100" height="10.8" fill="#286027"/>
+          <rect x="0" y="86.4" width="100" height="10.8" fill="#286027"/>
+          <!-- Border -->
+          <rect x="4" y="3" width="92" height="102" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="0.6" rx="2"/>
+          <!-- Center line -->
+          <line x1="4" y1="54" x2="96" y2="54" stroke="rgba(255,255,255,0.35)" stroke-width="0.6"/>
+          <!-- Center circle -->
+          <circle cx="50" cy="54" r="10" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.6"/>
+          <circle cx="50" cy="54" r="0.7" fill="rgba(255,255,255,0.35)"/>
+          <!-- Top box -->
+          <rect x="25" y="3" width="50" height="18" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.6"/>
+          <rect x="37" y="3" width="26" height="8" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.6"/>
+          <rect x="41" y="1.5" width="18" height="4" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.6"/>
+          <!-- Bottom box -->
+          <rect x="25" y="87" width="50" height="18" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.6"/>
+          <rect x="37" y="97" width="26" height="8" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.6"/>
+          <rect x="41" y="102.5" width="18" height="4" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.6"/>
+          <!-- GK / ATK labels -->
+          <text x="50" y="100.5" text-anchor="middle" font-size="3" fill="rgba(255,255,255,0.3)" font-family="system-ui,sans-serif">GK</text>
+          <text x="50" y="11" text-anchor="middle" font-size="3" fill="rgba(255,255,255,0.3)" font-family="system-ui,sans-serif">ATK</text>
           ${dots}
         </svg>
       </div>`;
