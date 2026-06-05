@@ -8335,7 +8335,7 @@ Use exactly the formation provided. Use real known players.`
         const hasFirstMatch = firstMatchId ? (predsByMatchId[firstMatchId]?.homeScore != null) : false;
         // 4. Scorers — check all predictions that have scores filled
         const filledPreds = preds.filter(p => p.homeScore != null && p.awayScore != null);
-        const missingScorer = filledPreds.filter(p => !p.scorer || p.scorer === '').length;
+        const missingScorer = filledPreds.filter(p => !p.firstScorer || p.firstScorer === '').length;
         const scorerLabel = filledPreds.length === 0
           ? '<span style="color:var(--text-muted);font-size:12px;">➖</span>'
           : missingScorer === 0
