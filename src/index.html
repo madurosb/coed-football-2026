@@ -4726,6 +4726,113 @@
   // Poll for new messages every 30s
   setInterval(() => { if (currentUser) updateMsgBadge(); }, 30000);
 
+  // ═══ PREDICTED LINEUPS ═══
+  const lineupCache = {};
+
+  window.toggleLineup = async (matchId, homeTeam, awayTeam, btn) => {
+    const panel = document.getElementById('lineup-panel-' + matchId);
+    if (!panel) return;
+    const isOpen = panel.style.display !== 'none';
+    if (isOpen) {
+      panel.style.display = 'none';
+      btn.querySelector('span:last-child').textContent = '▾';
+      return;
+    }
+    panel.style.display = 'block';
+    btn.querySelector('span:last-child').textContent = '▴';
+
+    // Already loaded
+    if (lineupCache[matchId]) { panel.innerHTML = lineupCache[matchId]; return; }
+
+    panel.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px;">🤖 Predicting lineups...</div>';
+
+    try {
+      const resp = await fetch('/api/coach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemPrompt: 'You are a football tactics expert. Return ONLY valid JSON, no markdown, no explanation.',
+          messages: [{
+            role: 'user',
+            content: `Predict the most likely starting 11 for both teams in this World Cup 2026 match: ${homeTeam} vs ${awayTeam}.
+
+Return ONLY this JSON structure:
+{
+  "home": {
+    "team": "${homeTeam}",
+    "formation": "4-3-3",
+    "players": [
+      {"name":"Player Name","position":"GK"},
+      {"name":"Player Name","position":"RB"},
+      {"name":"Player Name","position":"CB"},
+      {"name":"Player Name","position":"CB"},
+      {"name":"Player Name","position":"LB"},
+      {"name":"Player Name","position":"CM"},
+      {"name":"Player Name","position":"CM"},
+      {"name":"Player Name","position":"CM"},
+      {"name":"Player Name","position":"RW"},
+      {"name":"Player Name","position":"ST"},
+      {"name":"Player Name","position":"LW"}
+    ]
+  },
+  "away": {
+    "team": "${awayTeam}",
+    "formation": "4-2-3-1",
+    "players": [...]
+  }
+}
+
+Use real known players from these teams. Position codes: GK, RB, CB, LB, CM, CDM, CAM, RM, LM, RW, LW, ST, CF`
+          }],
+          maxTokens: 1200
+        })
+      });
+      const data = await resp.json();
+      let text = (data.text || '').trim();
+      const m = text.match(/\{[\s\S]*\}/);
+      if (m) text = m[0];
+      const lineup = JSON.parse(text);
+      const html = renderLineupHTML(lineup.home, lineup.away);
+      lineupCache[matchId] = html;
+      panel.innerHTML = html;
+    } catch(e) {
+      panel.innerHTML = '<div style="text-align:center;padding:12px;color:#ef4444;font-size:12px;">Could not load lineups. Try again.</div>';
+    }
+  };
+
+  function renderLineupHTML(home, away) {
+    const posOrder = ['GK','LB','CB','RB','CDM','CM','CAM','LM','RM','LW','RW','ST','CF'];
+    const renderTeam = (team) => {
+      const byPos = {};
+      (team.players || []).forEach(p => {
+        const pos = p.position || 'CM';
+        if (!byPos[pos]) byPos[pos] = [];
+        byPos[pos].push(p.name);
+      });
+      return `
+        <div style="flex:1;min-width:0;">
+          <div style="text-align:center;font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">${team.team}</div>
+          <div style="font-size:10px;text-align:center;color:var(--accent);font-weight:700;margin-bottom:8px;">${team.formation || ''}</div>
+          ${(team.players || []).map((p,i) => `
+            <div style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:7px;background:${i%2===0?'var(--surface2)':'none'};">
+              <span style="font-size:9px;font-weight:700;color:var(--accent);min-width:28px;">${p.position||''}</span>
+              <span style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</span>
+            </div>`).join('')}
+        </div>`;
+    };
+
+    return `
+      <div style="background:var(--surface2);border-radius:12px;padding:12px;border:1px solid var(--border);">
+        <div style="text-align:center;font-size:10px;color:var(--text-muted);margin-bottom:10px;font-weight:600;">🤖 AI PREDICTED STARTING XI</div>
+        <div style="display:flex;gap:12px;">
+          ${renderTeam(home)}
+          <div style="width:1px;background:var(--border);flex-shrink:0;"></div>
+          ${renderTeam(away)}
+        </div>
+        <div style="text-align:center;font-size:10px;color:var(--text-muted);margin-top:8px;opacity:0.6;">Predictions may change. Based on current form & squad.</div>
+      </div>`;
+  }
+
   // ═══ COMMUNITY PREDICTION STATS ═══
   const communityStatsCache = {};
 
@@ -6935,6 +7042,16 @@
             </div>
             <div class="team"><span class="flag">${teamFlag(m.awayTeam)}</span><span class="name">${m.awayTeam}</span></div>
           </div>
+          <!-- PREDICTED LINEUP BUTTON -->
+          <div style="padding:8px 0 0;border-top:1px solid var(--border);margin-top:8px;">
+            <button onclick="toggleLineup('${d.id}','${m.homeTeam.replace(/'/g,"\\'")}','${m.awayTeam.replace(/'/g,"\\'")}', this)"
+              style="display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:10px;border:1px solid var(--border);background:none;color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;width:100%;justify-content:center;"
+              onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">
+              <span>📋</span><span>Predicted Starting 11</span><span style="font-size:10px;margin-left:auto;">▾</span>
+            </button>
+            <div id="lineup-panel-${d.id}" style="display:none;margin-top:8px;"></div>
+          </div>
+
           <div class="match-bonus">
             <div class="bonus-row">
               <div><div class="bonus-label">First goalscorer</div><div class="bonus-pts">+2 pts if correct</div></div>
