@@ -8333,14 +8333,15 @@ Use exactly the formation provided. Use real known players.`
         const hasPlayer = !!u.tournamentPlayer;
         // 3. First match filled
         const hasFirstMatch = firstMatchId ? (predsByMatchId[firstMatchId]?.homeScore != null) : false;
-        // 4. Scorers — check all predictions that have scores filled
+        // 4. Scorers — exclude 0-0 predictions (no scorer needed)
         const filledPreds = preds.filter(p => p.homeScore != null && p.awayScore != null);
-        const missingScorer = filledPreds.filter(p => !p.firstScorer || p.firstScorer === '').length;
-        const scorerLabel = filledPreds.length === 0
+        const scorerRequired = filledPreds.filter(p => !(parseInt(p.homeScore) === 0 && parseInt(p.awayScore) === 0));
+        const missingScorer = scorerRequired.filter(p => !p.firstScorer || p.firstScorer === '').length;
+        const scorerLabel = scorerRequired.length === 0
           ? '<span style="color:var(--text-muted);font-size:12px;">➖</span>'
           : missingScorer === 0
             ? '<span style="color:#1D9E75;font-size:14px;">✅</span>'
-            : `<span style="color:#ef4444;font-size:14px;">❌</span><span style="font-size:10px;color:var(--text-muted);"> ${missingScorer} missing</span>`;
+            : `<span style="color:#ef4444;font-size:14px;">❌</span><span style="font-size:10px;color:var(--text-muted);"> ${missingScorer}</span>`;
         // 5. DON
         const hasDon = donUsers.has(u.uid);
         // 6. Joker
@@ -8350,8 +8351,19 @@ Use exactly the formation provided. Use real known players.`
         const totalPreds = filledPreds.length;
         const totalMatches = allMatches.length;
 
-        return `<tr style="border-bottom:1px solid var(--border);">
-          <td style="padding:8px 6px;font-size:12px;font-weight:600;white-space:nowrap;">${name}</td>
+        // Count total missing items for row color
+        const totalMissing = [!hasWinner, !hasPlayer, !hasFirstMatch, missingScorer > 0].filter(Boolean).length;
+        const rowBg = totalMissing === 0 ? '' :
+          totalMissing === 1 ? 'background:rgba(239,68,68,0.04);' :
+          totalMissing === 2 ? 'background:rgba(239,68,68,0.09);' :
+          totalMissing === 3 ? 'background:rgba(239,68,68,0.16);' :
+                               'background:rgba(239,68,68,0.24);';
+        const nameColor = totalMissing >= 3 ? 'color:#ef4444;font-weight:800;' :
+                          totalMissing >= 2 ? 'color:#f97316;font-weight:700;' :
+                          totalMissing >= 1 ? 'color:#fbbf24;font-weight:600;' : '';
+
+        return `<tr style="border-bottom:1px solid var(--border);${rowBg}">
+          <td style="padding:8px 6px;font-size:12px;${nameColor}white-space:nowrap;">${name}${totalMissing > 0 ? ` <span style="font-size:10px;background:rgba(239,68,68,0.15);color:#ef4444;padding:1px 5px;border-radius:99px;">${totalMissing}</span>` : ''}</td>
           <td style="padding:8px 6px;text-align:center;">${check(hasWinner)}</td>
           <td style="padding:8px 6px;text-align:center;">${check(hasPlayer)}</td>
           <td style="padding:8px 6px;text-align:center;">${check(hasFirstMatch)}<span style="font-size:10px;color:var(--text-muted);display:block;">${totalPreds}/${totalMatches}</span></td>
@@ -11703,22 +11715,56 @@ Use exactly the formation provided. Use real known players.`
 
   // ========== MATCH PREVIEW POPUP ==========
   const TEAM_STATS = {
-    'Argentina':   { form:'WWWDW', goals: 2.8, conceded: 0.7, rank: 1,  style: '🎭 Tiki-taka + Messi magic' },
-    'France':      { form:'WWDWW', goals: 2.5, conceded: 0.9, rank: 2,  style: '⚡ Counter-attack kings' },
-    'Brazil':      { form:'WWWWW', goals: 3.1, conceded: 0.6, rank: 3,  style: '🎨 Samba football' },
-    'England':     { form:'WWWDW', goals: 2.2, conceded: 0.8, rank: 4,  style: '🦁 Physical & direct' },
-    'Spain':       { form:'WWWWD', goals: 2.6, conceded: 0.5, rank: 5,  style: '🎯 Possession masters' },
-    'Portugal':    { form:'WWDWW', goals: 2.9, conceded: 1.0, rank: 6,  style: '🐐 Ronaldo-powered' },
-    'Germany':     { form:'WDWWW', goals: 2.4, conceded: 1.1, rank: 7,  style: '⚙️ High press machine' },
-    'Netherlands': { form:'WWWDW', goals: 2.3, conceded: 0.9, rank: 8,  style: '🌷 Total football heirs' },
-    'Morocco':     { form:'DWWWD', goals: 1.8, conceded: 0.6, rank: 13, style: '🛡️ Defensive masterclass' },
-    'Japan':       { form:'WWDWL', goals: 2.0, conceded: 1.2, rank: 17, style: '🎌 Fast transitions' },
-    'USA':         { form:'WDWWL', goals: 1.9, conceded: 1.3, rank: 11, style: '🦅 Athletic & physical' },
-    'Mexico':      { form:'WWDLW', goals: 2.1, conceded: 1.4, rank: 15, style: '🌮 Technical + passion' },
-    'Senegal':     { form:'WWWLD', goals: 2.0, conceded: 0.8, rank: 20, style: '🦁 Athletic & direct' },
-    'Colombia':    { form:'WDWWL', goals: 2.2, conceded: 1.1, rank: 12, style: '☕ Technical + flair' },
-    'Uruguay':     { form:'WWDLW', goals: 1.7, conceded: 0.9, rank: 18, style: '💪 Garra Charrúa' },
-    'South Korea': { form:'WDWLW', goals: 1.8, conceded: 1.2, rank: 22, style: '🏃 High intensity press' },
+    'Argentina':          { form:'WWWDW', goals:2.8, conceded:0.7, rank:1,  style:'🎭 Messi magic + tactical genius' },
+    'France':             { form:'WWDWW', goals:2.5, conceded:0.9, rank:2,  style:'⚡ Counter-attack kings' },
+    'Brazil':             { form:'WWWWW', goals:3.1, conceded:0.6, rank:3,  style:'🎨 Samba football, total attack' },
+    'England':            { form:'WWWDW', goals:2.2, conceded:0.8, rank:4,  style:'🦁 Physical, direct, set pieces' },
+    'Spain':              { form:'WWWWD', goals:2.6, conceded:0.5, rank:5,  style:'🎯 Possession masters, Yamal era' },
+    'Portugal':           { form:'WWDWW', goals:2.9, conceded:1.0, rank:6,  style:'🐐 Ronaldo + Bruno firepower' },
+    'Germany':            { form:'WDWWW', goals:2.4, conceded:1.1, rank:7,  style:'⚙️ High press, Wirtz & Musiala' },
+    'Netherlands':        { form:'WWWDW', goals:2.3, conceded:0.9, rank:8,  style:'🌷 Total football heirs' },
+    'Belgium':            { form:'WDWWL', goals:2.0, conceded:1.2, rank:10, style:'👑 Golden gen twilight, still dangerous' },
+    'Uruguay':            { form:'WWDLW', goals:1.7, conceded:0.9, rank:18, style:'💪 Garra Charrúa, Valverde engine' },
+    'Colombia':           { form:'WDWWL', goals:2.2, conceded:1.1, rank:12, style:'☕ James Rodriguez flair' },
+    'USA':                { form:'WDWWL', goals:1.9, conceded:1.3, rank:11, style:'🦅 Athletic, Pulisic-led attack' },
+    'Mexico':             { form:'WWDLW', goals:2.1, conceded:1.4, rank:15, style:'🌮 Technical + passionate crowds' },
+    'Morocco':            { form:'DWWWD', goals:1.8, conceded:0.6, rank:13, style:'🛡️ Defensive masterclass, Hakimi pace' },
+    'Senegal':            { form:'WWWLD', goals:2.0, conceded:0.8, rank:20, style:'🦁 Athletic, Mane-inspired' },
+    'Japan':              { form:'WWDWL', goals:2.0, conceded:1.2, rank:17, style:'🎌 Fast transitions, world cup giant-killers' },
+    'South Korea':        { form:'WDWLW', goals:1.8, conceded:1.2, rank:22, style:'🏃 Son Heung-min + high press' },
+    'Canada':             { form:'WDWWD', goals:1.8, conceded:1.1, rank:40, style:'🍁 Alphonso Davies pace, physical' },
+    'Australia':          { form:'LWDWW', goals:1.5, conceded:1.3, rank:25, style:'🦘 Aggressive pressing, set pieces' },
+    'Croatia':            { form:'DWWDL', goals:1.6, conceded:1.0, rank:10, style:'🔵 Modric maestro, disciplined' },
+    'Switzerland':        { form:'WDWWD', goals:1.7, conceded:0.9, rank:19, style:'🏔️ Organized, Xhaka discipline' },
+    'Sweden':             { form:'WWDWL', goals:2.2, conceded:1.0, rank:24, style:'🔶 Isak/Gyokeres lethal strike duo' },
+    'Norway':             { form:'WWWDW', goals:2.8, conceded:1.1, rank:14, style:'💛 Haaland + Odegaard unstoppable' },
+    'Denmark':            { form:'WDWWL', goals:1.9, conceded:0.9, rank:21, style:'🇩🇰 Organized, Eriksen creator' },
+    'Austria':            { form:'WDWWL', goals:1.8, conceded:1.2, rank:23, style:'🔴 Sabitzer & Laimer midfield engine' },
+    'Czechia':            { form:'DLWWW', goals:1.7, conceded:1.1, rank:30, style:'🎯 Schick clinical, 3-4-2-1 press' },
+    'Scotland':           { form:'WDLWW', goals:1.6, conceded:1.1, rank:35, style:'🏴󠁧󠁢󠁳󠁣󠁴󠁿 McTominay box-to-box energy' },
+    'Turkey':             { form:'WDWLW', goals:1.8, conceded:1.3, rank:28, style:'🔴 Guler & Calhanoglu creativity' },
+    'Serbia':             { form:'WDWLW', goals:1.9, conceded:1.4, rank:29, style:'🦅 Vlahovic power, physical' },
+    'Ecuador':            { form:'LWWDW', goals:1.7, conceded:1.2, rank:32, style:'🇪🇨 Caicedo work rate, direct play' },
+    'Iran':               { form:'WDLWW', goals:1.5, conceded:1.0, rank:23, style:'🦁 Defensive solidity, set pieces' },
+    'Saudi Arabia':       { form:'WDLWL', goals:1.4, conceded:1.5, rank:55, style:'⚡ Al-Dawsari flair, compact block' },
+    'Iraq':               { form:'WDWLW', goals:1.5, conceded:1.3, rank:58, style:'🌙 Organized, Hussein finishing' },
+    'Algeria':            { form:'WDWWL', goals:1.8, conceded:1.0, rank:36, style:'🟢 Mahrez creativity, dangerous' },
+    'Ivory Coast':        { form:'WDWLW', goals:1.8, conceded:1.2, rank:38, style:'🐘 Kessie engine, Adingra pace' },
+    'South Africa':       { form:'DWWLW', goals:1.6, conceded:1.1, rank:60, style:'🌍 Zwane flair, passionate attack' },
+    'Ghana':              { form:'LWDWW', goals:1.6, conceded:1.4, rank:50, style:'⭐ Kudus skill, Partey anchor' },
+    'Cameroon':           { form:'WDLWL', goals:1.5, conceded:1.5, rank:44, style:'🦁 Powerful athletes, unpredictable' },
+    'DR Congo':           { form:'WDWLW', goals:1.7, conceded:1.3, rank:42, style:'🦍 Wissa & Bakambu goals' },
+    'Panama':             { form:'DWLWW', goals:1.3, conceded:1.1, rank:65, style:'🔵 Defensive, set piece threat' },
+    'Haiti':              { form:'LWDWW', goals:1.4, conceded:1.6, rank:78, style:'🇭🇹 Bellegarde energy, improving' },
+    'Tunisia':            { form:'WDLWL', goals:1.3, conceded:1.2, rank:48, style:'🇹🇳 Organized, Mejbri talent' },
+    'Jordan':             { form:'WDWLW', goals:1.4, conceded:1.1, rank:70, style:'🦅 Al-Naimat + solid defense' },
+    'Paraguay':           { form:'LDWWL', goals:1.4, conceded:1.4, rank:56, style:'🇵🇾 Almiron engine, gritty' },
+    'Uzbekistan':         { form:'WWDWL', goals:1.6, conceded:1.1, rank:62, style:'🇺🇿 Fayzullaev talent, improving' },
+    'Qatar':              { form:'WDLWL', goals:1.4, conceded:1.5, rank:68, style:'🏟️ Akram Afif skill, home passion' },
+    'Cape Verde':         { form:'WWDLW', goals:1.5, conceded:1.2, rank:75, style:'🇨🇻 Rodrigues flair, organised' },
+    'Bosnia-Herzegovina': { form:'WDWLW', goals:1.6, conceded:1.4, rank:60, style:'🐉 Dzeko experience, unpredictable' },
+    'New Zealand':        { form:'LWDWL', goals:1.2, conceded:1.6, rank:90, style:'🥝 Chris Wood target man' },
+    'Curacao':            { form:'WLDWL', goals:1.3, conceded:1.5, rank:85, style:'🌊 Bacuna brothers, creative' },
   };
 
   window.showMatchPreview = async (matchId) => {
