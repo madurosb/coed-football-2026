@@ -2703,10 +2703,24 @@
         <div class="admin-card" onclick="showAdminSub('score-verify')"><div class="icon">🔍</div><div class="title">Score verification</div><div class="desc">Check that all points are calculated correctly. Compare predicted vs actual results and audit per player.</div></div>
         <div class="admin-card" onclick="showAdminSub('picks-overview')"><div class="icon">📋</div><div class="title">Picks overview</div><div class="desc">See who picked which tournament player and World Cup winner. Verify everyone submitted before June 10.</div></div>
         <div class="admin-card" onclick="showAdminSub('joker-don-overview')"><div class="icon">🃏</div><div class="title">Joker & DON overview</div><div class="desc">See which players activated their Joker card and Double or Nothing bets this tournament.</div></div>
+        <div class="admin-card" onclick="showAdminSub('readiness-overview');loadReadinessOverview()"><div class="icon">✅</div><div class="title">Player readiness</div><div class="desc">Quick overview of every player — who picked their winner, tournament player, filled predictions, scorers, Joker & DON.</div></div>
 
       </div>
     </div>
-    <div id="admin-results" class="admin-sub">
+    <div id="admin-readiness-overview" class="admin-sub">
+      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
+      <div class="form-card">
+        <h2>✅ Player Readiness Overview</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Quick check — who's ready and who's missing something.</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;font-size:11px;">
+          <span style="background:rgba(29,158,117,0.15);color:#1D9E75;padding:3px 8px;border-radius:99px;font-weight:600;">✅ Done</span>
+          <span style="background:rgba(239,68,68,0.12);color:#ef4444;padding:3px 8px;border-radius:99px;font-weight:600;">❌ Missing</span>
+        </div>
+        <div id="readiness-overview-content">
+          <div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:13px;">Loading...</div>
+        </div>
+      </div>
+    </div>
       <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
       <div class="form-card">
         <h2>Update results</h2>
@@ -8258,6 +8272,110 @@ Use exactly the formation provided. Use real known players.`
       preview.textContent = 'Error: ' + e.message;
       btn.disabled = false;
       btn.textContent = '🗑️ Delete all predictions for this user';
+    }
+  };
+
+  window.loadReadinessOverview = async () => {
+    const container = document.getElementById('readiness-overview-content');
+    if (!container) return;
+    container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:13px;">Loading...</div>';
+
+    try {
+      // Load all data in parallel
+      const [usersSnap, predsSnap, matchesSnap, jokerSnap, donSnap] = await Promise.all([
+        getDocs(collection(db, 'users')),
+        getDocs(collection(db, 'predictions')),
+        getDocs(query(collection(db, 'matches'), orderBy('kickoff'))),
+        getDocs(collection(db, 'jokerCards')),
+        getDocs(collection(db, 'donOptIns'))
+      ]);
+
+      // Build lookups
+      const predsByUser = {};
+      predsSnap.forEach(d => {
+        const p = d.data();
+        if (!predsByUser[p.userId]) predsByUser[p.userId] = [];
+        predsByUser[p.userId].push(p);
+      });
+
+      const jokerUsers = new Set(jokerSnap.docs.map(d => d.data().userId).filter(Boolean));
+      const donUsers = new Set(donSnap.docs.map(d => d.data().userId || d.id).filter(Boolean));
+
+      // First 3 matches (group stage, sorted by kickoff)
+      const allMatches = matchesSnap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(m => m.homeTeam && !m.homeTeam.includes('Winner') && !m.homeTeam.includes('TBD'))
+        .sort((a, b) => {
+          const tA = a.kickoff?.toDate?.().getTime() || 0;
+          const tB = b.kickoff?.toDate?.().getTime() || 0;
+          return tA - tB;
+        });
+      const first3MatchIds = new Set(allMatches.slice(0, 3).map(m => m.id));
+
+      const users = usersSnap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(u => !u.removed && u.uid)
+        .sort((a, b) => (a.nickname || a.displayName || '').localeCompare(b.nickname || b.displayName || ''));
+
+      const check = (ok) => ok
+        ? '<span style="color:#1D9E75;font-size:14px;">✅</span>'
+        : '<span style="color:#ef4444;font-size:14px;">❌</span>';
+
+      const rows = users.map(u => {
+        const preds = predsByUser[u.uid] || [];
+        const predMatchIds = new Set(preds.filter(p => p.homeScore != null).map(p => p.matchId));
+
+        // 1. Tournament winner
+        const hasWinner = !!u.tournamentWinner;
+        // 2. Tournament player
+        const hasPlayer = !!u.tournamentPlayer;
+        // 3. First 3 matches filled
+        const has3Matches = [...first3MatchIds].every(id => predMatchIds.has(id));
+        // 4. Scorers on all filled matches
+        const filledPreds = preds.filter(p => p.homeScore != null);
+        const allHaveScorer = filledPreds.length > 0 && filledPreds.every(p => !!p.scorer);
+        const scorerLabel = filledPreds.length === 0 ? '➖' : (allHaveScorer ? '✅' : `<span style="color:#ef4444;font-size:14px;">❌</span><span style="font-size:10px;color:var(--text-muted);"> ${filledPreds.filter(p=>!p.scorer).length} missing</span>`);
+        // 5. DON
+        const hasDon = donUsers.has(u.uid);
+        // 6. Joker
+        const hasJoker = jokerUsers.has(u.uid);
+
+        const name = u.nickname || u.displayName || u.email || u.uid.substring(0,8);
+        const totalPreds = filledPreds.length;
+        const totalMatches = allMatches.length;
+
+        return `<tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:8px 6px;font-size:12px;font-weight:600;white-space:nowrap;">${name}</td>
+          <td style="padding:8px 6px;text-align:center;">${check(hasWinner)}</td>
+          <td style="padding:8px 6px;text-align:center;">${check(hasPlayer)}</td>
+          <td style="padding:8px 6px;text-align:center;">${check(has3Matches)}<span style="font-size:10px;color:var(--text-muted);display:block;">${totalPreds}/${totalMatches}</span></td>
+          <td style="padding:8px 6px;text-align:center;">${scorerLabel}</td>
+          <td style="padding:8px 6px;text-align:center;">${check(hasDon)}</td>
+          <td style="padding:8px 6px;text-align:center;">${check(hasJoker)}</td>
+        </tr>`;
+      }).join('');
+
+      container.innerHTML = `
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead>
+              <tr style="border-bottom:2px solid var(--border);background:var(--surface2);">
+                <th style="padding:8px 6px;text-align:left;font-size:11px;color:var(--text-muted);font-weight:700;white-space:nowrap;">PLAYER</th>
+                <th style="padding:8px 4px;text-align:center;font-size:11px;color:var(--text-muted);font-weight:700;">🏆<br>Winner</th>
+                <th style="padding:8px 4px;text-align:center;font-size:11px;color:var(--text-muted);font-weight:700;">⭐<br>Player</th>
+                <th style="padding:8px 4px;text-align:center;font-size:11px;color:var(--text-muted);font-weight:700;">⚽<br>First 3</th>
+                <th style="padding:8px 4px;text-align:center;font-size:11px;color:var(--text-muted);font-weight:700;">🎯<br>Scorers</th>
+                <th style="padding:8px 4px;text-align:center;font-size:11px;color:var(--text-muted);font-weight:700;">💰<br>DON</th>
+                <th style="padding:8px 4px;text-align:center;font-size:11px;color:var(--text-muted);font-weight:700;">🃏<br>Joker</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:10px;text-align:center;">${users.length} players · ➖ = no predictions yet</div>`;
+
+    } catch(e) {
+      container.innerHTML = `<div style="color:#ef4444;font-size:13px;">Error: ${e.message}</div>`;
     }
   };
 
