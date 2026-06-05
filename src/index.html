@@ -2701,6 +2701,7 @@
       </div>
       <div class="admin-card" onclick="showAdminSub('knockout-admin')"><div class="icon">⚡</div><div class="title">Knockout stages</div><div class="desc">Enable predictions for Round of 16, Quarter-finals, Semi-finals and Final once the group stage is done.</div></div>
         <div class="admin-card" onclick="showAdminSub('score-verify')"><div class="icon">🔍</div><div class="title">Score verification</div><div class="desc">Check that all points are calculated correctly. Compare predicted vs actual results and audit per player.</div></div>
+        <div class="admin-card" onclick="showAdminSub('sniper-table');loadSniperTable()"><div class="icon">🎯</div><div class="title">Sniper table</div><div class="desc">Who's got the most exact score predictions? Live ranking for the Sniper prize at end of tournament.</div></div>
         <div class="admin-card" onclick="showAdminSub('picks-overview')"><div class="icon">📋</div><div class="title">Picks overview</div><div class="desc">See who picked which tournament player and World Cup winner. Verify everyone submitted before June 10.</div></div>
         <div class="admin-card" onclick="showAdminSub('joker-don-overview')"><div class="icon">🃏</div><div class="title">Joker & DON overview</div><div class="desc">See which players activated their Joker card and Double or Nothing bets this tournament.</div></div>
         <div class="admin-card" onclick="showAdminSub('readiness-overview');loadReadinessOverview()"><div class="icon">✅</div><div class="title">Player readiness</div><div class="desc">Quick overview of every player — who picked their winner, tournament player, filled predictions, scorers, Joker & DON.</div></div>
@@ -2721,7 +2722,15 @@
         </div>
       </div>
     </div>
-    <div id="admin-results" class="admin-sub">
+    <div id="admin-sniper-table" class="admin-sub">
+      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
+      <div class="form-card">
+        <h2>🎯 Sniper Table</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Exact score predictions — highest count wins the Sniper prize at end of tournament.</p>
+        <button class="submit-btn" onclick="loadSniperTable()" style="margin-bottom:1rem;">🔄 Refresh</button>
+        <div id="sniper-table-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div></div>
+      </div>
+    </div>
       <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
       <div class="form-card">
         <h2>Update results</h2>
@@ -3309,17 +3318,24 @@
     if (!container) return;
     container.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div>';
 
-    const [usersSnap, matchesSnap, predsSnap] = await Promise.all([
+    const [usersSnap, matchesSnap, predsSnap, jokerSnap, donSnap, donSettingSnap] = await Promise.all([
       getDocs(collection(db, 'users')),
       getDocs(collection(db, 'matches')),
-      getDocs(collection(db, 'predictions'))
+      getDocs(collection(db, 'predictions')),
+      getDocs(collection(db, 'jokerCards')),
+      getDocs(collection(db, 'donOptIns')),
+      getDoc(doc(db, 'doubleOrNothing', 'current'))
     ]);
 
     const users = {}, matches = {}, userPreds = {};
     usersSnap.forEach(d => { users[d.id] = d.data(); });
     matchesSnap.forEach(d => { matches[d.id] = d.data(); });
 
-    // Group predictions by user
+    const jokerByUser = {};
+    jokerSnap.forEach(d => { const jd = d.data(); jokerByUser[jd.userId] = jd.matchId; });
+    const donUsers = new Set(donSnap.docs.map(d => d.data().userId || d.id));
+    const donMatchId = donSettingSnap.exists() ? donSettingSnap.data().matchId : null;
+
     predsSnap.forEach(d => {
       const p = d.data();
       if (!userPreds[p.userId]) userPreds[p.userId] = [];
@@ -3328,31 +3344,45 @@
 
     let html = `
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">
-        Shows stored points vs recalculated points. ⚠️ = mismatch found.
+        Stored pts vs recalculated. Includes: W/D/L, exact score, first scorer, Joker (×2), DON (+50% or -50%), tournament player bonus.<br>
+        ⚠️ = mismatch · ℹ️ = Joker/DON adjustment expected
       </div>
-      <div style="background:var(--surface2);border-radius:10px;overflow:hidden;">
-        <div style="display:grid;grid-template-columns:1fr 60px 60px 40px;font-size:11px;color:var(--text-muted);text-transform:uppercase;padding:6px 10px;font-weight:500;">
-          <div>Player</div><div style="text-align:center">Stored</div><div style="text-align:center">Calc.</div><div style="text-align:center">Status</div>
-        </div>`;
+      <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead><tr style="background:var(--surface2);font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">
+          <th style="padding:7px 8px;text-align:left;">Player</th>
+          <th style="padding:7px 4px;text-align:center;">Stored</th>
+          <th style="padding:7px 4px;text-align:center;">Match pts</th>
+          <th style="padding:7px 4px;text-align:center;">Scorer pts</th>
+          <th style="padding:7px 4px;text-align:center;">Bonus</th>
+          <th style="padding:7px 4px;text-align:center;">Joker</th>
+          <th style="padding:7px 4px;text-align:center;">DON</th>
+          <th style="padding:7px 4px;text-align:center;">Total calc</th>
+          <th style="padding:7px 4px;text-align:center;">Status</th>
+        </tr></thead><tbody>`;
 
     let anyMismatch = false;
+    const mismatches = []; // track for auto-fix
 
     for (const uid of Object.keys(users)) {
       const u = users[uid];
+      if (u.removed) continue;
       const preds = userPreds[uid] || [];
-      let calcPts = 0;
+      let matchPts = 0, scorerPts = 0;
+      let jokerMatchId = jokerByUser[uid] || null;
+      let jokerBonus = 0;
+      let donBonus = 0;
+      let donApplied = false;
 
       for (const pred of preds) {
         const m = matches[pred.matchId];
-        if (!m || m.homeScore === null || m.homeScore === undefined) continue;
-        if (m.status !== 'FINISHED') continue;
+        if (!m || m.homeScore == null || m.status !== 'FINISHED') continue;
 
         const grp = (m.group || '').toUpperCase();
         const isFinal = grp.includes('FINAL') && !grp.includes('QUARTER') && !grp.includes('SEMI');
         const isSemi = grp.includes('SEMI');
         const isQuarter = grp.includes('QUARTER');
         const isR16 = grp.includes('16') || grp.includes('ROUND_OF_16') || grp.includes('32');
-        const multiplier = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
+        const mult = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
 
         const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
         const predicted = pred.homeScore > pred.awayScore ? 'H' : pred.homeScore < pred.awayScore ? 'A' : 'D';
@@ -3361,38 +3391,213 @@
           if (pred.homeScore === m.homeScore && pred.awayScore === m.awayScore) pts = 20;
           else if (actual === predicted) pts = 10;
         } else {
-          if (actual === predicted) pts += 1 * multiplier;
-          if (pred.homeScore === m.homeScore && pred.awayScore === m.awayScore) pts += 3 * multiplier;
+          if (actual === predicted) pts += 1 * mult;
+          if (pred.homeScore === m.homeScore && pred.awayScore === m.awayScore) pts += 3 * mult;
         }
-        if (m.firstGoalscorer && pred.firstScorer === m.firstGoalscorer) pts += 2 * multiplier;
-        calcPts += pts;
+
+        // Scorer points
+        let sPts = 0;
+        if (m.firstGoalscorer && pred.firstScorer === m.firstGoalscorer) sPts = 2 * mult;
+
+        // Joker — doubles total pts for that match
+        if (jokerMatchId && pred.matchId === jokerMatchId && pts > 0) {
+          jokerBonus += pts + sPts; // extra copy
+        }
+
+        matchPts += pts;
+        scorerPts += sPts;
+
+        // DON — +50% if won, -50% if lost (applied to that match pts)
+        if (donMatchId && pred.matchId === donMatchId && donUsers.has(uid)) {
+          donApplied = true;
+          const won = pts > 0;
+          donBonus = won ? Math.round((pts + sPts) * 0.5) : -Math.round((pts + sPts) * 0.5);
+        }
       }
-      // Add bonus points (tournament player goals/assists etc)
-      calcPts += (u.bonusPoints || 0);
 
+      const bonusPts = u.bonusPoints || 0;
+      const calcTotal = matchPts + scorerPts + bonusPts + jokerBonus + donBonus;
       const stored = u.points || 0;
-      const diff = stored - calcPts;
-      const ok = Math.abs(diff) <= 1; // allow 1pt tolerance for joker/DON adjustments
-      if (!ok) anyMismatch = true;
+      const diff = Math.abs(stored - calcTotal);
+      const ok = diff <= 0;
+      if (!ok) {
+        anyMismatch = true;
+        mismatches.push({ uid, name: u.nickname||u.displayName||uid.substring(0,8), stored, calcTotal, diff: calcTotal - stored });
+      }
 
-      html += `<div style="display:grid;grid-template-columns:1fr 60px 60px 40px;align-items:center;padding:7px 10px;border-top:0.5px solid var(--border);background:${ok?'none':'#FCEBEB'};">
-        <div style="font-size:12px;font-weight:500;">${u.nickname||u.displayName||uid}</div>
-        <div style="text-align:center;font-size:13px;font-weight:600;">${stored}</div>
-        <div style="text-align:center;font-size:13px;color:${ok?'var(--text-muted)':'#E24B4A'};font-weight:${ok?'400':'600'};">${calcPts}</div>
-        <div style="text-align:center;font-size:15px;">${ok ? '✅' : '⚠️'}</div>
-      </div>`;
+      const rowBg = ok ? '' : 'background:rgba(239,68,68,0.08);';
+      const hasJoker = !!jokerMatchId;
+      const hasDon = donUsers.has(uid);
+      const jokerCell = hasJoker ? `<span style="color:#d4af37;font-weight:700;">+${jokerBonus}</span>` : '<span style="color:var(--text-muted);">—</span>';
+      const donCell = hasDon ? `<span style="color:${donBonus>=0?'#1D9E75':'#ef4444'};font-weight:700;">${donBonus>=0?'+':''}${donBonus}</span>` : '<span style="color:var(--text-muted);">—</span>';
+
+      html += `<tr style="border-bottom:1px solid var(--border);${rowBg}">
+        <td style="padding:7px 8px;font-size:12px;font-weight:600;">${u.nickname||u.displayName||uid.substring(0,8)}</td>
+        <td style="padding:7px 4px;text-align:center;font-weight:600;">${stored}</td>
+        <td style="padding:7px 4px;text-align:center;">${matchPts}</td>
+        <td style="padding:7px 4px;text-align:center;">${scorerPts > 0 ? `<span style="color:#1D9E75;">+${scorerPts}</span>` : '0'}</td>
+        <td style="padding:7px 4px;text-align:center;">${bonusPts > 0 ? `<span style="color:#a78bfa;">+${bonusPts}</span>` : '0'}</td>
+        <td style="padding:7px 4px;text-align:center;">${jokerCell}</td>
+        <td style="padding:7px 4px;text-align:center;">${donCell}</td>
+        <td style="padding:7px 4px;text-align:center;font-weight:700;color:${ok?'var(--text)':'#ef4444'};">${calcTotal}</td>
+        <td style="padding:7px 4px;text-align:center;font-size:15px;">${ok ? '✅' : '⚠️'}</td>
+      </tr>`;
     }
 
-    html += `</div>`;
+    html += `</tbody></table></div>`;
 
     if (!anyMismatch) {
-      html += `<div style="background:var(--badge-green-bg);border-radius:8px;padding:10px 12px;margin-top:10px;font-size:13px;color:var(--badge-green-text);font-weight:500;">✅ All scores look correct!</div>`;
+      html += `<div style="background:rgba(29,158,117,0.12);border:1px solid rgba(29,158,117,0.3);border-radius:12px;padding:14px 16px;margin-top:12px;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:24px;">✅</span>
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#1D9E75;">All points are correct!</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Every player's stored points match the recalculated total exactly.</div>
+        </div>
+      </div>`;
     } else {
-      html += `<div style="background:var(--badge-red-bg);border-radius:8px;padding:10px 12px;margin-top:10px;font-size:13px;color:var(--badge-red-text);">⚠️ Mismatches found. These may be due to Joker/Double or Nothing bonuses — check manually.</div>`;
-    }
+      const mismatchList = mismatches.map(mm => {
+        const sign = mm.diff > 0 ? '+' : '';
+        const color = mm.diff > 0 ? '#1D9E75' : '#ef4444';
+        const reason = mm.diff > 0
+          ? 'Missing points — they should have more'
+          : 'Extra points — they have too many';
+        return `<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;">
+          <strong>${mm.name}</strong>: stored <strong>${mm.stored}</strong> → should be <strong>${mm.calcTotal}</strong>
+          <span style="color:${color};font-weight:700;"> (${sign}${mm.diff})</span>
+          <span style="color:var(--text-muted);font-size:11px;"> · ${reason}</span>
+        </div>`;
+      }).join('');
 
+      html += `<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:12px;padding:14px 16px;margin-top:12px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-size:20px;">⚠️</span>
+          <div>
+            <div style="font-size:14px;font-weight:700;color:#ef4444;">${mismatches.length} mismatch${mismatches.length>1?'es':''} found</div>
+            <div style="font-size:12px;color:var(--text-muted);">These players have incorrect point totals stored in the database.</div>
+          </div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px;margin-bottom:12px;">
+          ${mismatchList}
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button onclick="autoFixPoints()" style="flex:1;padding:10px 16px;border-radius:10px;border:none;background:linear-gradient(135deg,#ef4444,#dc2626);color:white;font-size:13px;font-weight:700;cursor:pointer;min-width:140px;">
+            🔧 Auto-fix all mismatches
+          </button>
+          <button onclick="showManualFixGuide()" style="flex:1;padding:10px 16px;border-radius:10px;border:1px solid var(--border);background:none;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;min-width:140px;">
+            📋 Manual fix guide
+          </button>
+        </div>
+        <div id="fix-status" style="margin-top:8px;font-size:12px;color:var(--text-muted);"></div>
+      </div>`;
+
+      // Store mismatches for auto-fix
+      window._pendingFixes = mismatches;
+    }
     container.innerHTML = html;
   }
+
+  window.autoFixPoints = async () => {
+    const fixes = window._pendingFixes || [];
+    if (!fixes.length) return;
+    const statusEl = document.getElementById('fix-status');
+    if (!confirm(`⚠️ This will update points for ${fixes.length} player${fixes.length>1?'s':''} in the database.\n\nPlayers affected:\n${fixes.map(f=>`• ${f.name}: ${f.stored} → ${f.calcTotal}`).join('\n')}\n\nProceed?`)) return;
+
+    if (statusEl) statusEl.innerHTML = '<span style="color:#fbbf24;">Fixing...</span>';
+    let fixed = 0;
+    for (const fix of fixes) {
+      try {
+        await updateDoc(doc(db, 'users', fix.uid), { points: fix.calcTotal });
+        fixed++;
+      } catch(e) {
+        console.error('Fix failed for', fix.uid, e);
+      }
+    }
+    if (statusEl) statusEl.innerHTML = `<span style="color:#1D9E75;font-weight:600;">✅ Fixed ${fixed}/${fixes.length} players. Refreshing...</span>`;
+    setTimeout(() => loadScoreVerification(), 1500);
+  };
+
+  window.showManualFixGuide = () => {
+    const fixes = window._pendingFixes || [];
+    const guide = fixes.map(f => {
+      const action = f.diff > 0
+        ? `Go to Firebase → users → ${f.uid} → set points to ${f.calcTotal}`
+        : `Go to Firebase → users → ${f.uid} → set points to ${f.calcTotal}`;
+      return `• ${f.name}: change ${f.stored} → ${f.calcTotal} (${f.diff > 0 ? '+' : ''}${f.diff} pts)`;
+    }).join('\n');
+    alert(`Manual Fix Guide:\n\n${guide}\n\nFirebase Console → Firestore → users → find by UID → edit points field.`);
+  };
+
+  window.loadSniperTable = async () => {
+    const container = document.getElementById('sniper-table-content');
+    if (!container) return;
+    container.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div>';
+
+    const [usersSnap, matchesSnap, predsSnap] = await Promise.all([
+      getDocs(collection(db, 'users')),
+      getDocs(collection(db, 'matches')),
+      getDocs(collection(db, 'predictions'))
+    ]);
+
+    const users = {}, matches = {};
+    usersSnap.forEach(d => { users[d.id] = d.data(); });
+    matchesSnap.forEach(d => { matches[d.id] = d.data(); });
+
+    const stats = {}; // uid -> { exact, correct, total, exactMatches[] }
+    predsSnap.forEach(d => {
+      const p = d.data();
+      const m = matches[p.matchId];
+      if (!m || m.homeScore == null || m.status !== 'FINISHED') return;
+      if (!stats[p.userId]) stats[p.userId] = { exact: 0, correct: 0, total: 0, scorer: 0, exactMatches: [] };
+      stats[p.userId].total++;
+      const actualDir = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
+      const predDir   = p.homeScore  > p.awayScore  ? 'H' : p.homeScore  < p.awayScore  ? 'A' : 'D';
+      if (actualDir === predDir) stats[p.userId].correct++;
+      if (p.homeScore === m.homeScore && p.awayScore === m.awayScore) {
+        stats[p.userId].exact++;
+        stats[p.userId].exactMatches.push(`${m.homeTeam} ${m.homeScore}-${m.awayScore} ${m.awayTeam}`);
+      }
+      if (m.firstGoalscorer && p.firstScorer === m.firstGoalscorer) stats[p.userId].scorer++;
+    });
+
+    const ranked = Object.entries(stats)
+      .map(([uid, s]) => ({ uid, ...s, user: users[uid] }))
+      .filter(r => r.user && !r.user.removed)
+      .sort((a,b) => b.exact - a.exact || b.correct - a.correct);
+
+    const medals = ['🥇','🥈','🥉'];
+    container.innerHTML = `
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr style="background:var(--surface2);font-size:10px;color:var(--text-muted);text-transform:uppercase;">
+            <th style="padding:7px 8px;text-align:left;">#</th>
+            <th style="padding:7px 8px;text-align:left;">Player</th>
+            <th style="padding:7px 4px;text-align:center;">🎯 Exact</th>
+            <th style="padding:7px 4px;text-align:center;">✅ Correct</th>
+            <th style="padding:7px 4px;text-align:center;">⚽ Scorer</th>
+            <th style="padding:7px 4px;text-align:center;">📊 Total</th>
+            <th style="padding:7px 4px;text-align:center;">% Exact</th>
+          </tr></thead>
+          <tbody>
+            ${ranked.map((r, i) => {
+              const exactPct = r.total > 0 ? Math.round(r.exact/r.total*100) : 0;
+              const isTop = i === 0 && r.exact > 0;
+              return `<tr style="border-bottom:1px solid var(--border);${isTop?'background:rgba(212,175,55,0.08);':''}">
+                <td style="padding:7px 8px;font-size:14px;">${medals[i] || i+1}</td>
+                <td style="padding:7px 8px;font-weight:${isTop?'800':'600'};color:${isTop?'#d4af37':'var(--text)'};">${r.user.nickname||r.user.displayName||r.uid.substring(0,8)}</td>
+                <td style="padding:7px 4px;text-align:center;font-weight:800;font-size:14px;color:${r.exact>0?'#1D9E75':'var(--text-muted)'};">${r.exact}</td>
+                <td style="padding:7px 4px;text-align:center;">${r.correct}</td>
+                <td style="padding:7px 4px;text-align:center;color:${r.scorer>0?'#a78bfa':'var(--text-muted)'};">${r.scorer}</td>
+                <td style="padding:7px 4px;text-align:center;color:var(--text-muted);">${r.total}</td>
+                <td style="padding:7px 4px;text-align:center;font-weight:600;color:${exactPct>=20?'#1D9E75':exactPct>=10?'#fbbf24':'var(--text-muted)'};">${exactPct}%</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text-muted);">
+        🎯 Exact = predicted exact score · ✅ Correct = right W/D/L · ⚽ Scorer = first goalscorer correct
+      </div>`;
+  };
 
   window.verifyAllScores = loadScoreVerification;
 
@@ -8052,7 +8257,7 @@ Use exactly the formation provided. Use real known players.`
           const reds = redMap[tp] || 0;
           const tpPts = (goals * 2) + (assists * 1) - (reds * 1);
           pts += tpPts;
-          bonus += goals + assists; // track in bonusPoints for display
+          bonus += tpPts; // track actual net pts (goals*2 + assists - reds)
         }
 
         // Joker card — double points if activated for this match
