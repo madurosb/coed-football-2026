@@ -1333,6 +1333,7 @@
 <div id="view-app" style="display:none;">
   <nav class="nav">
     <a class="nav-logo" onclick="showPage('home')"><img src="https://coed-football-2026.vercel.app/logo-icon.png" alt="logo" style="height:32px; width:32px; object-fit:contain;"> <span>COED&FOOTBALL</span> <span class="nav-wc-text" style="font-size:11px;font-weight:600;color:var(--badge-gold-text);letter-spacing:0.04em;">🏆 WORLD CUP</span> <span class="badge">2026</span></a>
+    <button id="live-nav-btn" onclick="showPage('live')" style="display:none;align-items:center;gap:5px;background:#E24B4A;border:none;border-radius:8px;padding:5px 12px;color:white;font-size:12px;font-weight:700;cursor:pointer;animation:pulse 1.5s infinite;letter-spacing:0.04em;flex-shrink:0;">🔴 LIVE</button>
     <div class="nav-links">
       <button class="nav-btn" data-page="home" onclick="showPage('home')"><span class="nav-icon">🏠</span>Home</button>
       <button class="nav-btn" data-page="matches" onclick="showPage('matches')"><span class="nav-icon">⚽</span>Predictions</button>
@@ -1341,7 +1342,6 @@
       <button class="nav-btn" data-page="tips" onclick="showPage('tips')"><span class="nav-icon">💡</span>Tips</button>
       <button class="nav-btn" data-page="grouppred" onclick="showPage('grouppred')"><span class="nav-icon">🏅</span>Inner Circle</button>
       <button class="nav-btn" data-page="watch" onclick="showPage('watch')"><span class="nav-icon">👀</span>Watch</button>
-      <button class="nav-btn" data-page="live" onclick="showPage('live')"><span class="nav-icon">🔴</span>Live</button>
       <button class="nav-btn" data-page="trash" onclick="showPage('trash')"><span class="nav-icon">💬</span>Trash Talk</button>
       <button class="nav-btn" data-page="highlights" onclick="showPage('highlights')"><span class="nav-icon">🎬</span>Highlights</button>
       <button class="nav-btn" data-page="hof" onclick="showPage('hof')"><span class="nav-icon">🏅</span>Hall of Fame</button>
@@ -5425,7 +5425,18 @@ Use exactly the formation provided. Use real known players.`
   }).catch(()=>{});
   const db = getFirestore(app);
 
-  // Show opening video — after DOM is fully ready
+  // Show LIVE button in nav only from June 11, 2026
+  function checkLiveNavBtn() {
+    const btn = document.getElementById('live-nav-btn');
+    if (!btn) return;
+    const now = new Date();
+    const tournamentStart = new Date('2026-06-11T19:00:00Z');
+    if (now >= tournamentStart) {
+      btn.style.display = 'flex';
+    }
+  }
+  checkLiveNavBtn();
+  setInterval(checkLiveNavBtn, 60000);
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       checkOpeningVideo();
@@ -8870,11 +8881,34 @@ Use exactly the formation provided. Use real known players.`
     const candidates = [...new Map([...liveMatches, ...recentMatches].map(m => [m.id, m])).values()];
 
     if (candidates.length === 0) {
+      // Find next upcoming matches
+      const upcoming = matches
+        .filter(m => {
+          const k = m.kickoff?.toDate?.() || new Date(m.kickoff);
+          return k > now && m.homeTeam && !m.homeTeam.includes('TBD') && !m.homeTeam.includes('Winner');
+        })
+        .slice(0, 3);
+
+      const upcomingHtml = upcoming.length > 0 ? `
+        <div style="margin-top:1.5rem;text-align:left;max-width:320px;margin-left:auto;margin-right:auto;">
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">📅 Next matches:</div>
+          ${upcoming.map(m => {
+            const k = m.kickoff?.toDate?.() || new Date(m.kickoff);
+            const dateStr = k.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
+            const timeStr = k.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+            return `<div style="padding:10px 14px;background:var(--surface);border-radius:10px;margin-bottom:8px;border:1px solid var(--border);">
+              <div style="font-size:13px;font-weight:600;">${m.homeTeam} vs ${m.awayTeam}</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${dateStr} · ${timeStr} (Israel time)</div>
+            </div>`;
+          }).join('')}
+        </div>` : '';
+
       container.innerHTML = `
         <div style="text-align:center;padding:3rem 1rem;">
-          <div style="font-size:40px;margin-bottom:1rem;">😴</div>
-          <div style="font-size:16px;font-weight:500;margin-bottom:8px;">No live matches right now</div>
-          <div style="font-size:13px;color:var(--text-muted);">Come back when a match is in play - this page updates every 30 seconds.</div>
+          <div style="font-size:48px;margin-bottom:1rem;">😴</div>
+          <div style="font-size:16px;font-weight:700;margin-bottom:8px;">No live matches right now</div>
+          <div style="font-size:13px;color:var(--text-muted);">This page updates automatically when a match kicks off.</div>
+          ${upcomingHtml}
         </div>`;
       return;
     }
