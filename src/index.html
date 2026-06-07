@@ -1431,7 +1431,6 @@
     <button class="mobile-menu-btn" data-page="tips" onclick="mobileNav('tips')">💡 &nbsp; Tips</button>
     <button class="mobile-menu-btn" data-page="grouppred" onclick="mobileNav('grouppred')">🏅 &nbsp; Inner Circle Bets</button>
     <button class="mobile-menu-btn" data-page="watch" onclick="mobileNav('watch')">📺 &nbsp; Watch Together</button>
-    <button class="mobile-menu-btn" data-page="live" onclick="mobileNav('live')">🔴 &nbsp; Live</button>
     <button class="mobile-menu-btn" data-page="trash" onclick="mobileNav('trash')">💬 &nbsp; Trash Talk</button>
     <button class="mobile-menu-btn" data-page="highlights" onclick="mobileNav('highlights')">🎬 &nbsp; Highlights</button>
     <button class="mobile-menu-btn" data-page="hof" onclick="mobileNav('hof')">🏅 &nbsp; Hall of Fame</button>
@@ -1481,7 +1480,6 @@
         <div class="drawer-item" data-page="grouppred" onclick="smartNav('grouppred')"><span class="d-icon">🏅</span><span class="d-label">Inner Circle</span></div>
         <div class="drawer-item" data-page="trash" onclick="smartNav('trash')"><span class="d-icon">💬</span><span class="d-label">Trash Talk</span></div>
         <div class="drawer-item" data-page="watch" onclick="smartNav('watch')"><span class="d-icon">👀</span><span class="d-label">Watch</span></div>
-        <div class="drawer-item" data-page="live" onclick="smartNav('live')"><span class="d-icon">🔴</span><span class="d-label">Live</span></div>
         <div class="drawer-item" data-page="hof" onclick="smartNav('hof')"><span class="d-icon">🏅</span><span class="d-label">Hall of Fame</span></div>
         <div class="drawer-item" data-page="h2h" onclick="smartNav('h2h')"><span class="d-icon">⚔️</span><span class="d-label">H2H</span></div>
         <div class="drawer-item" data-page="analysis" onclick="smartNav('analysis')"><span class="d-icon">📈</span><span class="d-label">Analysis</span></div>
@@ -1974,11 +1972,12 @@
 
   <!-- LIVE GAME -->
   <div class="page" id="page-live">
-    <div id="live-match-selector" style="margin-bottom:1rem;">
-      <p class="section-title" style="margin-bottom:0.5rem;">🔴 Live Game</p>
-      <div id="live-match-list" style="font-size:13px;color:var(--text-muted);text-align:center;padding:1rem;">Loading matches...</div>
+    <div id="live-content">
+      <div style="text-align:center;padding:3rem 1rem;">
+        <div style="font-size:48px;margin-bottom:1rem;">⏳</div>
+        <div style="font-size:15px;color:var(--text-muted);">Loading...</div>
+      </div>
     </div>
-    <div id="live-content" style="display:none;"></div>
   </div>
 
   <!-- GROUP PREDICTIONS -->
