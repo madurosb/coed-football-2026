@@ -10029,7 +10029,6 @@ Use exactly the formation provided. Use real known players.`
     // Avatar reminder banner — check all possible avatar fields
     // Also cross-check with currentUserData (loaded at login) as fallback
     const userData = { ...user, ...(currentUserData || {}) };
-    console.log('[Avatar debug]', { avatar: userData.avatar, avatarUrl: userData.avatarUrl, avatarChanged: userData.avatarChanged });
     const hasAvatar = !!(userData.avatarUrl) || userData.avatarChanged === true || (userData.avatar !== null && userData.avatar !== undefined && userData.avatar !== '');
     const avatarBanner = !hasAvatar ? `
       <div onclick="showAvatarChangeModal()" style="display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,rgba(251,191,36,0.12),rgba(245,158,11,0.08));border:1.5px solid rgba(251,191,36,0.35);border-radius:14px;padding:12px 16px;margin-bottom:1rem;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='rgba(251,191,36,0.6)'" onmouseout="this.style.borderColor='rgba(251,191,36,0.35)'">
