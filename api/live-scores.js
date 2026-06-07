@@ -1,5 +1,5 @@
 // /api/live-scores.js
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -10,18 +10,14 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
 
   try {
-    // Try WC (World Cup code on football-data.org)
     const response = await fetch(
       'https://api.football-data.org/v4/competitions/WC/matches?status=IN_PLAY,PAUSED,HALFTIME,FINISHED',
-      {
-        headers: { 'X-Auth-Token': API_KEY }
-      }
+      { headers: { 'X-Auth-Token': API_KEY } }
     );
 
     const text = await response.text();
-
     if (!response.ok) {
-      return res.status(200).json({ matches: [], error: `API ${response.status}: ${text}` });
+      return res.status(200).json({ matches: [], error: `API ${response.status}: ${text.substring(0,200)}` });
     }
 
     const data = JSON.parse(text);
@@ -38,7 +34,6 @@ export default async function handler(req, res) {
     }));
 
     return res.status(200).json({ matches, updated: new Date().toISOString() });
-
   } catch(e) {
     return res.status(200).json({ matches: [], error: e.message });
   }
