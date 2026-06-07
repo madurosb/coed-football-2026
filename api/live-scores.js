@@ -1,13 +1,10 @@
 // /api/live-scores.js
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const API_KEY = process.env.FOOTBALL_DATA_API_KEY;
-  if (!API_KEY) return res.status(500).json({ error: 'Missing API key' });
-
-  res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
+  if (!API_KEY) return res.status(200).json({ matches: [], error: 'Missing API key' });
 
   try {
     const response = await fetch(
@@ -17,7 +14,7 @@ module.exports = async function handler(req, res) {
 
     const text = await response.text();
     if (!response.ok) {
-      return res.status(200).json({ matches: [], error: `API ${response.status}: ${text.substring(0,200)}` });
+      return res.status(200).json({ matches: [], error: `football-data ${response.status}: ${text.substring(0,300)}` });
     }
 
     const data = JSON.parse(text);
