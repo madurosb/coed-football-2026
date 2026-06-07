@@ -13931,14 +13931,23 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
 
   // Auto dark mode 07:00-19:00 light, 19:00-07:00 dark
   function checkAutoDarkMode() {
+    const manual = localStorage.getItem('manualThemeExpiry');
+    // If manual override still valid (hasn't expired) — skip auto
+    if (manual && Date.now() < parseInt(manual)) return;
+    // Auto: dark between 19:00 and 07:00
     const hour = new Date().getHours();
     applyDarkMode(hour >= 19 || hour < 7);
   }
 
-  // Manual toggle — just flips for the session, auto resets next minute
+  // Manual toggle — overrides auto until midnight
   window.toggleDarkMode = () => {
     const isDark = document.body.classList.contains('dark-mode');
-    applyDarkMode(!isDark);
+    const newDark = !isDark;
+    // Set expiry to midnight tonight
+    const midnight = new Date();
+    midnight.setHours(24, 0, 0, 0);
+    localStorage.setItem('manualThemeExpiry', midnight.getTime());
+    applyDarkMode(newDark);
   };
 
   checkAutoDarkMode();
