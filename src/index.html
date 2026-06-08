@@ -4846,8 +4846,9 @@
       }, { matchId: null, score: -1 });
 
       if (best.matchId && best.score >= 2) {
-        // Only write to donOptIns (user's own doc) — not to doubleOrNothing/current (admin-only)
-        await setDoc(doc(db, 'donOptIns', currentUser.uid), {
+        // Use same doc ID format as toggleDON: {uid}_{matchId}
+        const docId = `${currentUser.uid}_${best.matchId}`;
+        await setDoc(doc(db, 'donOptIns', docId), {
           userId: currentUser.uid, matchId: best.matchId, activatedAt: new Date(), aiActivated: true
         });
         setTimeout(() => { if (typeof loadDONStatus === 'function') loadDONStatus(); }, 800);
@@ -11512,16 +11513,23 @@ Use exactly the formation provided. Use real known players.`
       'DR Congo (Congo DR)': 'DR Congo',
       'Republique du Congo': 'DR Congo',
       'Republic of Congo': 'DR Congo',
-      'Cape Verde': 'Cabo Verde',
-      'Cape Verde Islands': 'Cabo Verde',
-      'Bosnia and Herzegovina': 'Bosnia & Herzegovina',
-      'Bosnia And Herzegovina': 'Bosnia & Herzegovina',
-      'Bosnia-Herzegovina': 'Bosnia & Herzegovina',
-      'Curacao': 'Curaçao',
+      'Cape Verde': 'Cape Verde',
+      'Cape Verde Islands': 'Cape Verde',
+      'Bosnia and Herzegovina': 'Bosnia-Herzegovina',
+      'Bosnia And Herzegovina': 'Bosnia-Herzegovina',
+      'Bosnia & Herzegovina': 'Bosnia-Herzegovina',
+      'Curacao': 'Curacao',
+      'Curaçao': 'Curacao',
       'Korea Republic': 'South Korea',
       'United States': 'USA',
-      'Ivory Coast': "Côte d'Ivoire",
+      'USA': 'USA',
+      'Ivory Coast': 'Ivory Coast',
       "Côte d'Ivoire": 'Ivory Coast',
+      "Cote d'Ivoire": 'Ivory Coast',
+      'Czech Republic': 'Czechia',
+      'IR Iran': 'Iran',
+      'South Africa': 'South Africa',
+      'New Zealand': 'New Zealand',
     };
     return map[name] || name;
   }
@@ -14508,15 +14516,11 @@ Rules: realistic scores (0-4 range per team), scorer must be a real known player
       const donChecked = document.getElementById('ai-fill-don')?.checked;
 
       if (jokerChecked && window._aiSetJoker) {
-        console.log('[AI Fill] Calling _aiSetJoker with', window._aiFillPredictions?.length, 'predictions');
         const msg = await window._aiSetJoker(window._aiFillPredictions);
-        console.log('[AI Fill] Joker result:', msg);
         status.textContent += ' ' + msg;
       }
       if (donChecked && window._aiSetDON) {
-        console.log('[AI Fill] Calling _aiSetDON with', window._aiFillPredictions?.length, 'predictions');
         const msg = await window._aiSetDON(window._aiFillPredictions);
-        console.log('[AI Fill] DON result:', msg);
         status.textContent += ' ' + msg;
       }
 
