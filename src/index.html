@@ -4837,7 +4837,7 @@
         ? (sorted.find(p => p.matchId !== jokerMatchId) || sorted[0])
         : sorted[0];
 
-      if (best?.matchId && best.score >= 2) {
+      if (best?.matchId && best.score >= 1) {
         const docId = `${currentUser.uid}_${best.matchId}`;
         await setDoc(doc(db,'donOptIns',docId),{userId:currentUser.uid,matchId:best.matchId,activatedAt:new Date(),aiActivated:true});
         setTimeout(() => { if (typeof loadDONStatus==='function') loadDONStatus(); }, 800);
@@ -14281,24 +14281,24 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
     const jokerChecked = document.getElementById('ai-jd-joker').checked;
     const donChecked = document.getElementById('ai-jd-don').checked;
 
-    // Get current week predictions from UI
+    // Get current week predictions from UI — only filled ones
     const matchCards = document.querySelectorAll('.match-card[data-match-id]');
     const weekPreds = [];
     matchCards.forEach(card => {
-      if (card.offsetParent === null) return;
       const matchId = card.dataset.matchId;
       const homeEl = document.getElementById('home-' + matchId);
       const awayEl = document.getElementById('away-' + matchId);
       if (!homeEl || !awayEl) return;
-      weekPreds.push({
-        matchId,
-        homeScore: parseInt(homeEl.dataset.val || '0'),
-        awayScore: parseInt(awayEl.dataset.val || '0'),
-      });
+      const h = parseInt(homeEl.dataset.val || '0');
+      const a = parseInt(awayEl.dataset.val || '0');
+      // Only include if user actually touched this match
+      if (window._touchedMatches?.has(matchId) || h > 0 || a > 0) {
+        weekPreds.push({ matchId, homeScore: h, awayScore: a });
+      }
     });
 
     if (weekPreds.length === 0) {
-      status.textContent = '⚠️ No predictions found for this week. Fill in picks first!';
+      status.textContent = '⚠️ Fill in some predictions first, then come back here!';
       btn.disabled = false; btn.textContent = '🚀 Let AI decide!';
       return;
     }
@@ -14320,6 +14320,9 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
     setTimeout(() => { document.getElementById('ai-joker-don-overlay').style.display = 'none'; }, 2500);
   };
   </script>
+
+  <script>
+  window.showAIFillModal = () => {
     const el = document.getElementById('ai-fill-overlay');
     el.style.display = 'flex';
     document.getElementById('ai-fill-status').style.display = 'none';
@@ -14356,10 +14359,14 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
         const home = card.dataset.home;
         const away = card.dataset.away;
         const matchId = card.dataset.matchId;
-        // Only upcoming (inputs not disabled)
-        const inputs = card.querySelectorAll('.score-input');
-        const isLocked = inputs.length > 0 && inputs[0].disabled;
-        if (home && away && !isLocked) matches.push({ matchId, home, away });
+        if (!home || !away || !matchId) return;
+        // Only visible cards (on current tab)
+        const rect = card.getBoundingClientRect();
+        const isVisible = rect.width > 0 || card.offsetParent !== null;
+        // Only unlocked — minus button not disabled
+        const minusBtn = card.querySelector('button[onclick*="adjustScore"]');
+        const isLocked = minusBtn && minusBtn.disabled;
+        if (isVisible && !isLocked) matches.push({ matchId, home, away });
       });
 
       if (matches.length === 0) {
