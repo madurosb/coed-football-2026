@@ -2701,26 +2701,54 @@
       </div>
       <div class="admin-card" onclick="showAdminSub('knockout-admin')"><div class="icon">⚡</div><div class="title">Knockout stages</div><div class="desc">Enable predictions for Round of 16, Quarter-finals, Semi-finals and Final once the group stage is done.</div></div>
         <div class="admin-card" onclick="showAdminSub('score-verify')"><div class="icon">🔍</div><div class="title">Score verification</div><div class="desc">Check that all points are calculated correctly. Compare predicted vs actual results and audit per player.</div></div>
-        <div class="admin-card" onclick="showAdminSub('picks-overview')"><div class="icon">📋</div><div class="title">Picks overview</div><div class="desc">See who picked which tournament player and World Cup winner. Verify everyone submitted before June 10.</div></div>
-        <div class="admin-card" onclick="showAdminSub('joker-don-overview')"><div class="icon">🃏</div><div class="title">Joker & DON overview</div><div class="desc">See which players activated their Joker card and Double or Nothing bets this tournament.</div></div>
-        <div class="admin-card" onclick="showAdminSub('readiness-overview');loadReadinessOverview()"><div class="icon">✅</div><div class="title">Player readiness</div><div class="desc">Quick overview of every player — who picked their winner, tournament player, filled predictions, scorers, Joker & DON.</div></div>
+        <div class="admin-card" onclick="showAdminSub('player-hub');loadReadinessOverview()"><div class="icon">👥</div><div class="title">Player Hub</div><div class="desc">Readiness overview, tournament picks (winner & player), and Joker & DON status — all in one place.</div></div>
 
       </div>
     </div>
-    <div id="admin-readiness-overview" class="admin-sub">
+    <div id="admin-player-hub" class="admin-sub">
       <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
       <div class="form-card">
-        <h2>✅ Player Readiness Overview</h2>
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Quick check — who's ready and who's missing something.</p>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;font-size:11px;">
-          <span style="background:rgba(29,158,117,0.15);color:#1D9E75;padding:3px 8px;border-radius:99px;font-weight:600;">✅ Done</span>
-          <span style="background:rgba(239,68,68,0.12);color:#ef4444;padding:3px 8px;border-radius:99px;font-weight:600;">❌ Missing</span>
+        <h2>👥 Player Hub</h2>
+        <!-- Tabs -->
+        <div style="display:flex;gap:6px;margin-bottom:1.25rem;border-bottom:1px solid var(--border);padding-bottom:10px;flex-wrap:wrap;">
+          <button id="hub-tab-readiness" onclick="switchHubTab('readiness')" style="padding:7px 14px;border-radius:8px;border:none;background:var(--accent);color:white;font-size:12px;font-weight:700;cursor:pointer;">✅ Readiness</button>
+          <button id="hub-tab-picks" onclick="switchHubTab('picks')" style="padding:7px 14px;border-radius:8px;border:none;background:var(--surface2);color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;">📋 Picks</button>
+          <button id="hub-tab-joker" onclick="switchHubTab('joker')" style="padding:7px 14px;border-radius:8px;border:none;background:var(--surface2);color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;">🃏 Joker & DON</button>
         </div>
-        <div id="readiness-overview-content">
-          <div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:13px;">Loading...</div>
+
+        <!-- Readiness tab -->
+        <div id="hub-content-readiness">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;font-size:11px;">
+            <span style="background:rgba(29,158,117,0.15);color:#1D9E75;padding:3px 8px;border-radius:99px;font-weight:600;">✅ Done</span>
+            <span style="background:rgba(239,68,68,0.12);color:#ef4444;padding:3px 8px;border-radius:99px;font-weight:600;">❌ Missing</span>
+            <button onclick="loadReadinessOverview()" style="margin-left:auto;padding:4px 12px;border-radius:8px;border:none;background:var(--green);color:white;font-size:11px;font-weight:600;cursor:pointer;">🔄 Refresh</button>
+          </div>
+          <div id="readiness-overview-content">
+            <div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:13px;">Loading...</div>
+          </div>
+        </div>
+
+        <!-- Picks tab -->
+        <div id="hub-content-picks" style="display:none;">
+          <div style="margin-bottom:1rem;">
+            <button onclick="loadPicksOverview()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">🔄 Refresh</button>
+          </div>
+          <div id="picks-overview-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Click Refresh to load.</div></div>
+        </div>
+
+        <!-- Joker & DON tab -->
+        <div id="hub-content-joker" style="display:none;">
+          <div style="margin-bottom:1rem;">
+            <button onclick="loadJokerDonOverview()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">🔄 Load</button>
+          </div>
+          <div id="joker-don-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Click Load to see all Joker & DON data.</div></div>
         </div>
       </div>
     </div>
+
+    <div id="admin-picks-overview" class="admin-sub" style="display:none!important;"></div>
+    <div id="admin-joker-don-overview" class="admin-sub" style="display:none!important;"></div>
+    <div id="admin-readiness-overview" class="admin-sub" style="display:none!important;"></div>
     <div id="admin-results" class="admin-sub">
       <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
       <div class="form-card">
@@ -2794,26 +2822,6 @@
           <div class="stat-big"><div class="num" id="stat-accuracy">-</div><div class="lbl">Avg accuracy</div></div>
         </div>
         <div id="admin-stats-detail" style="font-size:13px;color:var(--text-muted);">Loading statistics...</div>
-      </div>
-    </div>
-
-    <div id="admin-picks-overview" class="admin-sub">
-      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
-      <div class="form-card">
-        <h2>📋 Picks overview</h2>
-        <div style="display:flex;gap:8px;margin-bottom:1rem;">
-          <button onclick="loadPicksOverview()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">🔄 Refresh</button>
-        </div>
-        <div id="picks-overview-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Click Refresh to load.</div></div>
-      </div>
-    </div>
-
-    <div id="admin-joker-don-overview" class="admin-sub">
-      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
-      <div class="form-card">
-        <h2>🃏 Joker & DON Overview</h2>
-        <button onclick="loadJokerDonOverview()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;margin-bottom:1rem;">🔄 Load</button>
-        <div id="joker-don-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Click Load to see all Joker & DON data.</div></div>
       </div>
     </div>
 
@@ -3397,6 +3405,30 @@
 
     container.innerHTML = html;
   }
+
+  window.switchHubTab = (tab) => {
+    ['readiness','picks','joker'].forEach(t => {
+      const content = document.getElementById('hub-content-' + t);
+      const btn = document.getElementById('hub-tab-' + t);
+      if (!content || !btn) return;
+      const active = t === tab;
+      content.style.display = active ? 'block' : 'none';
+      btn.style.background = active ? 'var(--accent)' : 'var(--surface2)';
+      btn.style.color = active ? 'white' : 'var(--text-muted)';
+    });
+    // Auto-load
+    if (tab === 'picks') loadPicksOverview();
+    if (tab === 'joker') loadJokerDonOverview();
+  };
+
+  // Legacy routing — redirect old panel IDs to new hub
+  const _origShowAdminSub = window.showAdminSub;
+  window.showAdminSub = (id) => {
+    if (id === 'picks-overview') { _origShowAdminSub('player-hub'); switchHubTab('picks'); return; }
+    if (id === 'joker-don-overview') { _origShowAdminSub('player-hub'); switchHubTab('joker'); return; }
+    if (id === 'readiness-overview') { _origShowAdminSub('player-hub'); loadReadinessOverview(); return; }
+    _origShowAdminSub(id);
+  };
 
   window.verifyAllScores = loadScoreVerification;
 
@@ -4753,6 +4785,51 @@
     if (liveScoresInterval) clearInterval(liveScoresInterval);
     liveScoresInterval = setInterval(updateLiveScoreCards, 60000);
   }
+
+  // AI Joker/DON helpers — need Firebase access from module scope
+  window._aiSetJoker = async (predictions) => {
+    if (!currentUser) return 'No user';
+    if (!predictions?.length) return '🃏 No predictions';
+    try {
+      const best = predictions.reduce((b, p) => {
+        const s = Math.abs((p.homeScore||0)-(p.awayScore||0))*2 + (p.homeScore||0) + (p.awayScore||0);
+        return s > b.score ? {matchId:p.matchId, score:s} : b;
+      }, {matchId:null, score:-1});
+      if (best.matchId) {
+        await setDoc(doc(db,'jokerCards',currentUser.uid),{userId:currentUser.uid,matchId:best.matchId,setAt:new Date()});
+        setTimeout(() => { if (typeof loadJokerStatus==='function') loadJokerStatus(); }, 800);
+        return '🃏 Joker set!';
+      }
+      return '🃏 No match found';
+    } catch(e) { return '🃏 Error: '+e.message; }
+  };
+
+  window._aiSetDON = async (predictions) => {
+    if (!currentUser) return 'No user';
+    if (!predictions?.length) return '💰 No predictions';
+    try {
+      // Get Joker match to avoid picking same one
+      let jokerMatchId = null;
+      try {
+        const js = await getDoc(doc(db,'jokerCards',currentUser.uid));
+        if (js.exists()) jokerMatchId = js.data().matchId;
+      } catch(e) {}
+
+      const sorted = [...predictions]
+        .map(p => ({...p, score: Math.abs((p.homeScore||0)-(p.awayScore||0))*2+(p.homeScore||0)+(p.awayScore||0)}))
+        .sort((a,b) => b.score - a.score);
+
+      const best = sorted.find(p => p.matchId !== jokerMatchId) || sorted[0];
+
+      if (best?.matchId && best.score >= 2) {
+        const docId = `${currentUser.uid}_${best.matchId}`;
+        await setDoc(doc(db,'donOptIns',docId),{userId:currentUser.uid,matchId:best.matchId,activatedAt:new Date(),aiActivated:true});
+        setTimeout(() => { if (typeof loadDONStatus==='function') loadDONStatus(); }, 800);
+        return '💰 DON activated!';
+      }
+      return '💰 DON skipped';
+    } catch(e) { return '💰 Error: '+e.message; }
+  };
 
   // Poll for new messages every 30s
   setInterval(() => { if (currentUser) updateMsgBadge(); }, 30000);
@@ -14142,6 +14219,11 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
     document.getElementById('ai-fill-status').style.display = 'none';
     document.getElementById('ai-fill-confirm-btn').disabled = false;
     document.getElementById('ai-fill-confirm-btn').textContent = '🚀 Fill my predictions!';
+    // Reset checkboxes on each open
+    const jokerCb = document.getElementById('ai-fill-joker');
+    const donCb = document.getElementById('ai-fill-don');
+    if (jokerCb) jokerCb.checked = false;
+    if (donCb) donCb.checked = false;
   };
   window.closeAIFillModal = () => {
     document.getElementById('ai-fill-overlay').style.display = 'none';
