@@ -8279,20 +8279,59 @@ Use exactly the formation provided. Use real known players.`
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           <span class="status-badge status-active">Active</span>
-          ${u.isAdmin ? '<span style="font-size:11px;color:var(--green);font-weight:500;">Admin</span>' : `<button class="danger-btn" onclick="removeUser('${u.uid}')">Remove</button>`}
+          ${u.isAdmin ? '<span style="font-size:11px;color:var(--green);font-weight:500;">Admin</span>' : `<button class="danger-btn" onclick="removeUser('${u.uid}','${(u.nickname||u.displayName||'').replace(/'/g,"\\'")}')">Remove</button>`}
         </div>
       </div>`;
     });
     list.innerHTML = html || '<div style="font-size:13px;color:var(--text-muted);">No users yet</div>';
   }
 
-  window.removeUser = async (uid) => {
-    if (!confirm('Remove this user? This cannot be undone.')) return;
+  window.removeUser = async (uid, nickname) => {
+    const name = nickname || uid.substring(0, 8);
+    if (!confirm(`⚠️ Delete "${name}" and ALL their data?\n\nThis will permanently delete:\n• User profile\n• All predictions\n• Joker card\n• DON opt-in\n• Messages\n• Trash talk\n\nThis cannot be undone!`)) return;
+
+    const statusEl = document.createElement('div');
+    statusEl.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#1a1a2e;border:1px solid #3b82f6;color:white;padding:12px 18px;border-radius:10px;font-size:13px;z-index:9999;';
+    statusEl.textContent = '🗑️ Deleting user data...';
+    document.body.appendChild(statusEl);
+
     try {
+      const collections = ['predictions', 'jokerCards', 'donOptIns', 'trashTalk', 'groupPredVotes', 'boldPredictions'];
+      let deleted = 0;
+
+      for (const col of collections) {
+        try {
+          // Try by userId field
+          const snap = await getDocs(query(collection(db, col), where('userId', '==', uid)));
+          for (const d of snap.docs) { await deleteDoc(d.ref); deleted++; }
+        } catch(e) {}
+        try {
+          // Try by direct doc id (jokerCards, donOptIns use uid as doc id)
+          const directRef = doc(db, col, uid);
+          const directSnap = await getDoc(directRef);
+          if (directSnap.exists()) { await deleteDoc(directRef); deleted++; }
+        } catch(e) {}
+      }
+
+      // Messages — from or to
+      try {
+        const fromSnap = await getDocs(query(collection(db, 'messages'), where('from', '==', uid)));
+        for (const d of fromSnap.docs) { await deleteDoc(d.ref); deleted++; }
+        const toSnap = await getDocs(query(collection(db, 'messages'), where('to', '==', uid)));
+        for (const d of toSnap.docs) { await deleteDoc(d.ref); deleted++; }
+      } catch(e) {}
+
+      // Finally delete user doc
       await deleteDoc(doc(db, 'users', uid));
-      loadAdminUsers();
+      deleted++;
+
+      statusEl.style.borderColor = '#1D9E75';
+      statusEl.textContent = `✅ Deleted "${name}" and ${deleted} records`;
+      setTimeout(() => { statusEl.remove(); loadAdminUsers(); }, 2500);
     } catch(e) {
-      alert('Error removing user: ' + e.message);
+      statusEl.style.borderColor = '#ef4444';
+      statusEl.textContent = '❌ Error: ' + e.message;
+      setTimeout(() => statusEl.remove(), 3000);
     }
   };
 
@@ -14477,11 +14516,15 @@ Rules: realistic scores (0-4 range per team), scorer must be a real known player
       const donChecked = document.getElementById('ai-fill-don')?.checked;
 
       if (jokerChecked && window._aiSetJoker) {
+        console.log('[AI Fill] Calling _aiSetJoker with', window._aiFillPredictions?.length, 'predictions');
         const msg = await window._aiSetJoker(window._aiFillPredictions);
+        console.log('[AI Fill] Joker result:', msg);
         status.textContent += ' ' + msg;
       }
       if (donChecked && window._aiSetDON) {
+        console.log('[AI Fill] Calling _aiSetDON with', window._aiFillPredictions?.length, 'predictions');
         const msg = await window._aiSetDON(window._aiFillPredictions);
+        console.log('[AI Fill] DON result:', msg);
         status.textContent += ' ' + msg;
       }
 
