@@ -4817,30 +4817,22 @@
   // AI Joker/DON helpers — need access to db/Firebase from module scope
   window._aiSetJoker = async (predictions) => {
     if (!currentUser) return 'No user';
+    if (!predictions?.length) return '🃏 No predictions';
     try {
-      const allMatchesSnap = await getDocs(collection(db, 'matches'));
-      const allPredsSnap = await getDocs(query(collection(db, 'predictions'), where('userId', '==', currentUser.uid)));
-      const allMyPreds = {};
-      allPredsSnap.forEach(d => { allMyPreds[d.data().matchId] = d.data(); });
+      // Use in-memory predictions (just filled by AI) — no need to re-read Firestore
+      const best = predictions.reduce((b, p) => {
+        const s = Math.abs((p.homeScore||0) - (p.awayScore||0)) * 2 + (p.homeScore||0) + (p.awayScore||0);
+        return s > b.score ? { matchId: p.matchId, score: s } : b;
+      }, { matchId: null, score: -1 });
 
-      let bestMatchId = null, bestScore = -1;
-      allMatchesSnap.forEach(d => {
-        const m = d.data();
-        if (!m.homeTeam || m.homeTeam.includes('TBD') || m.homeTeam.includes('Winner')) return;
-        const pred = allMyPreds[d.id];
-        if (!pred || pred.homeScore == null) return;
-        const s = Math.abs(pred.homeScore - pred.awayScore) * 2 + pred.homeScore + pred.awayScore;
-        if (s > bestScore) { bestScore = s; bestMatchId = d.id; }
-      });
-
-      if (bestMatchId) {
+      if (best.matchId) {
         await setDoc(doc(db, 'jokerCards', currentUser.uid), {
-          userId: currentUser.uid, matchId: bestMatchId, setAt: new Date()
+          userId: currentUser.uid, matchId: best.matchId, setAt: new Date()
         });
         setTimeout(() => { if (typeof loadJokerStatus === 'function') loadJokerStatus(); }, 800);
-        return '🃏 Joker set on best match!';
+        return '🃏 Joker set!';
       }
-      return '🃏 No suitable match found for Joker';
+      return '🃏 No match found for Joker';
     } catch(e) { return '🃏 Joker error: ' + e.message; }
   };
 
@@ -4854,14 +4846,14 @@
       }, { matchId: null, score: -1 });
 
       if (best.matchId && best.score >= 2) {
+        // Only write to donOptIns (user's own doc) — not to doubleOrNothing/current (admin-only)
         await setDoc(doc(db, 'donOptIns', currentUser.uid), {
           userId: currentUser.uid, matchId: best.matchId, activatedAt: new Date(), aiActivated: true
         });
-        await setDoc(doc(db, 'doubleOrNothing', 'current'), { matchId: best.matchId }, { merge: true });
         setTimeout(() => { if (typeof loadDONStatus === 'function') loadDONStatus(); }, 800);
         return '💰 DON activated!';
       }
-      return '💰 DON skipped (not confident enough)';
+      return '💰 DON skipped (score diff not high enough)';
     } catch(e) { return '💰 DON error: ' + e.message; }
   };
 
