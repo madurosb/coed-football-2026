@@ -4797,6 +4797,7 @@
       }, {matchId:null, score:-1});
       if (best.matchId) {
         await setDoc(doc(db,'jokerCards',currentUser.uid),{userId:currentUser.uid,matchId:best.matchId,setAt:new Date()});
+        window._lastAiJokerMatchId = best.matchId; // store so DON avoids same match
         setTimeout(() => { if (typeof loadJokerStatus==='function') loadJokerStatus(); }, 800);
         return '🃏 Joker set!';
       }
@@ -4808,27 +4809,27 @@
     if (!currentUser) return 'No user';
     if (!predictions?.length) return '💰 No predictions';
     try {
-      // Get Joker match to avoid picking same one
-      let jokerMatchId = null;
-      try {
-        const js = await getDoc(doc(db,'jokerCards',currentUser.uid));
-        if (js.exists()) jokerMatchId = js.data().matchId;
-      } catch(e) {}
+      // Use in-memory joker matchId set moments ago — no Firestore race condition
+      const jokerMatchId = window._lastAiJokerMatchId || null;
 
       const sorted = [...predictions]
         .map(p => ({...p, score: Math.abs((p.homeScore||0)-(p.awayScore||0))*2+(p.homeScore||0)+(p.awayScore||0)}))
         .sort((a,b) => b.score - a.score);
 
-      const best = sorted.find(p => p.matchId !== jokerMatchId) || sorted[0];
+      // Pick best match that is NOT the Joker match
+      const best = jokerMatchId
+        ? (sorted.find(p => p.matchId !== jokerMatchId) || sorted[0])
+        : sorted[0];
 
       if (best?.matchId && best.score >= 2) {
         const docId = `${currentUser.uid}_${best.matchId}`;
         await setDoc(doc(db,'donOptIns',docId),{userId:currentUser.uid,matchId:best.matchId,activatedAt:new Date(),aiActivated:true});
+        window._lastAiJokerMatchId = null; // reset
         setTimeout(() => { if (typeof loadDONStatus==='function') loadDONStatus(); }, 800);
         return '💰 DON activated!';
       }
       return '💰 DON skipped';
-    } catch(e) { return '💰 Error: '+e.message; }
+    } catch(e) { return '💰 DON error: '+e.message; }
   };
 
   // Poll for new messages every 30s
@@ -14202,7 +14203,24 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
       <div style="text-align:center;margin-bottom:1.25rem;">
         <div style="font-size:48px;margin-bottom:8px;">🤖</div>
         <div style="font-size:18px;font-weight:800;margin-bottom:6px;">AI Auto-fill Predictions</div>
-        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">The AI will analyze team form, stats and tournament history to fill in score predictions and first goalscorers for all upcoming matches in the current week.<br><br><strong style="color:var(--text);">⚠️ This will overwrite your current picks for this week.</strong> You can edit them after.</div>
+        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">The AI will analyze team form, stats and tournament history to fill in score predictions and first goalscorers for all upcoming matches.<br><br><strong style="color:var(--text);">⚠️ This will overwrite your current picks for this week.</strong> You can edit them after.</div>
+      </div>
+      <!-- Joker & DON checkboxes -->
+      <div style="background:var(--surface2);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;flex-direction:column;gap:10px;">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+          <input type="checkbox" id="ai-fill-joker" style="width:18px;height:18px;cursor:pointer;accent-color:#7c3aed;">
+          <div>
+            <div style="font-size:13px;font-weight:700;">🃏 Also pick best match for Joker</div>
+            <div style="font-size:11px;color:var(--text-muted);">AI picks the match where doubling points makes most sense</div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+          <input type="checkbox" id="ai-fill-don" style="width:18px;height:18px;cursor:pointer;accent-color:#d4af37;">
+          <div>
+            <div style="font-size:13px;font-weight:700;">💰 Also activate Double or Nothing</div>
+            <div style="font-size:11px;color:var(--text-muted);">AI picks a different match from Joker for best DON value</div>
+          </div>
+        </label>
       </div>
       <div id="ai-fill-status" style="display:none;padding:10px;background:var(--surface2);border-radius:10px;font-size:13px;text-align:center;margin-bottom:1rem;color:var(--text-muted);">🤖 AI is thinking...</div>
       <div style="display:flex;gap:8px;">
