@@ -860,7 +860,7 @@
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
-    @keyframes slideUp { from{opacity:0;transform:translateY(24px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+    @keyframes badgePop { 0%{transform:scale(0.5);opacity:0} 70%{transform:scale(1.15)} 100%{transform:scale(1);opacity:1} }
     @keyframes badgeShine { 0%,100%{background-position:200% center} 50%{background-position:-200% center} }
     /* Force wizard to always be dark theme regardless of day/night mode */
     #wizard-overlay, #wizard-overlay * {
@@ -1333,7 +1333,6 @@
 <div id="view-app" style="display:none;">
   <nav class="nav">
     <a class="nav-logo" onclick="showPage('home')"><img src="https://coed-football-2026.vercel.app/logo-icon.png" alt="logo" style="height:32px; width:32px; object-fit:contain;"> <span>COED&FOOTBALL</span> <span class="nav-wc-text" style="font-size:11px;font-weight:600;color:var(--badge-gold-text);letter-spacing:0.04em;">🏆 WORLD CUP</span> <span class="badge">2026</span></a>
-    <button id="live-nav-btn" onclick="showPage('live')" style="display:none;align-items:center;gap:5px;background:#E24B4A;border:none;border-radius:8px;padding:5px 12px;color:white;font-size:12px;font-weight:700;cursor:pointer;animation:pulse 1.5s infinite;letter-spacing:0.04em;flex-shrink:0;">🔴 LIVE</button>
     <div class="nav-links">
       <button class="nav-btn" data-page="home" onclick="showPage('home')"><span class="nav-icon">🏠</span>Home</button>
       <button class="nav-btn" data-page="matches" onclick="showPage('matches')"><span class="nav-icon">⚽</span>Predictions</button>
@@ -1972,12 +1971,11 @@
 
   <!-- LIVE GAME -->
   <div class="page" id="page-live">
-    <div id="live-content">
-      <div style="text-align:center;padding:3rem 1rem;">
-        <div style="font-size:48px;margin-bottom:1rem;">⏳</div>
-        <div style="font-size:15px;color:var(--text-muted);">Loading...</div>
-      </div>
+    <div id="live-match-selector" style="margin-bottom:1rem;">
+      <p class="section-title" style="margin-bottom:0.5rem;">🔴 Live Game</p>
+      <div id="live-match-list" style="font-size:13px;color:var(--text-muted);text-align:center;padding:1rem;">Loading matches...</div>
     </div>
+    <div id="live-content" style="display:none;"></div>
   </div>
 
   <!-- GROUP PREDICTIONS -->
@@ -1996,6 +1994,16 @@
     <p style="font-size:13px;color:var(--text-muted);margin-bottom:1.25rem;">Vote on which matches you want to watch with the group. Minimum 4 people needed to make it happen!</p>
     <div id="watch-content">
       <div style="text-align:center;padding:2rem;font-size:13px;color:var(--text-muted);">Loading...</div>
+    </div>
+  </div>
+
+  <!-- LIVE -->
+  <div class="page" id="page-live">
+    <div id="live-content">
+      <div style="text-align:center;padding:3rem 1rem;">
+        <div style="font-size:40px;margin-bottom:1rem;">🔴</div>
+        <div style="font-size:15px;color:var(--text-muted);">Loading live matches...</div>
+      </div>
     </div>
   </div>
 
@@ -2605,8 +2613,8 @@
   </div>
 
   <!-- MATCH PREVIEW POPUP -->
-  <div id="match-preview-popup" style="display:none;position:fixed;inset:0;z-index:1002;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:16px;">
-    <div style="background:var(--surface);border-radius:20px;width:100%;max-width:420px;max-height:88vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.06);animation:slideUp 0.25s cubic-bezier(0.34,1.56,0.64,1);">
+  <div id="match-preview-popup" class="modal-overlay" style="display:none;">
+    <div class="modal" style="max-width:420px;width:92vw;padding:0;overflow:hidden;border-radius:16px;">
       <div id="match-preview-content"></div>
     </div>
   </div>
@@ -2693,7 +2701,6 @@
       </div>
       <div class="admin-card" onclick="showAdminSub('knockout-admin')"><div class="icon">⚡</div><div class="title">Knockout stages</div><div class="desc">Enable predictions for Round of 16, Quarter-finals, Semi-finals and Final once the group stage is done.</div></div>
         <div class="admin-card" onclick="showAdminSub('score-verify')"><div class="icon">🔍</div><div class="title">Score verification</div><div class="desc">Check that all points are calculated correctly. Compare predicted vs actual results and audit per player.</div></div>
-        <div class="admin-card" onclick="showAdminSub('sniper-table');loadSniperTable()"><div class="icon">🎯</div><div class="title">Sniper table</div><div class="desc">Who's got the most exact score predictions? Live ranking for the Sniper prize at end of tournament.</div></div>
         <div class="admin-card" onclick="showAdminSub('picks-overview')"><div class="icon">📋</div><div class="title">Picks overview</div><div class="desc">See who picked which tournament player and World Cup winner. Verify everyone submitted before June 10.</div></div>
         <div class="admin-card" onclick="showAdminSub('joker-don-overview')"><div class="icon">🃏</div><div class="title">Joker & DON overview</div><div class="desc">See which players activated their Joker card and Double or Nothing bets this tournament.</div></div>
         <div class="admin-card" onclick="showAdminSub('readiness-overview');loadReadinessOverview()"><div class="icon">✅</div><div class="title">Player readiness</div><div class="desc">Quick overview of every player — who picked their winner, tournament player, filled predictions, scorers, Joker & DON.</div></div>
@@ -2712,15 +2719,6 @@
         <div id="readiness-overview-content">
           <div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:13px;">Loading...</div>
         </div>
-      </div>
-    </div>
-    <div id="admin-sniper-table" class="admin-sub">
-      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
-      <div class="form-card">
-        <h2>🎯 Sniper Table</h2>
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Exact score predictions — highest count wins the Sniper prize at end of tournament.</p>
-        <button class="submit-btn" onclick="loadSniperTable()" style="margin-bottom:1rem;">🔄 Refresh</button>
-        <div id="sniper-table-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div></div>
       </div>
     </div>
     <div id="admin-results" class="admin-sub">
@@ -3311,24 +3309,17 @@
     if (!container) return;
     container.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div>';
 
-    const [usersSnap, matchesSnap, predsSnap, jokerSnap, donSnap, donSettingSnap] = await Promise.all([
+    const [usersSnap, matchesSnap, predsSnap] = await Promise.all([
       getDocs(collection(db, 'users')),
       getDocs(collection(db, 'matches')),
-      getDocs(collection(db, 'predictions')),
-      getDocs(collection(db, 'jokerCards')),
-      getDocs(collection(db, 'donOptIns')),
-      getDoc(doc(db, 'doubleOrNothing', 'current'))
+      getDocs(collection(db, 'predictions'))
     ]);
 
     const users = {}, matches = {}, userPreds = {};
     usersSnap.forEach(d => { users[d.id] = d.data(); });
     matchesSnap.forEach(d => { matches[d.id] = d.data(); });
 
-    const jokerByUser = {};
-    jokerSnap.forEach(d => { const jd = d.data(); jokerByUser[jd.userId] = jd.matchId; });
-    const donUsers = new Set(donSnap.docs.map(d => d.data().userId || d.id));
-    const donMatchId = donSettingSnap.exists() ? donSettingSnap.data().matchId : null;
-
+    // Group predictions by user
     predsSnap.forEach(d => {
       const p = d.data();
       if (!userPreds[p.userId]) userPreds[p.userId] = [];
@@ -3337,45 +3328,31 @@
 
     let html = `
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">
-        Stored pts vs recalculated. Includes: W/D/L, exact score, first scorer, Joker (×2), DON (+50% or -50%), tournament player bonus.<br>
-        ⚠️ = mismatch · ℹ️ = Joker/DON adjustment expected
+        Shows stored points vs recalculated points. ⚠️ = mismatch found.
       </div>
-      <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
-        <thead><tr style="background:var(--surface2);font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">
-          <th style="padding:7px 8px;text-align:left;">Player</th>
-          <th style="padding:7px 4px;text-align:center;">Stored</th>
-          <th style="padding:7px 4px;text-align:center;">Match pts</th>
-          <th style="padding:7px 4px;text-align:center;">Scorer pts</th>
-          <th style="padding:7px 4px;text-align:center;">Bonus</th>
-          <th style="padding:7px 4px;text-align:center;">Joker</th>
-          <th style="padding:7px 4px;text-align:center;">DON</th>
-          <th style="padding:7px 4px;text-align:center;">Total calc</th>
-          <th style="padding:7px 4px;text-align:center;">Status</th>
-        </tr></thead><tbody>`;
+      <div style="background:var(--surface2);border-radius:10px;overflow:hidden;">
+        <div style="display:grid;grid-template-columns:1fr 60px 60px 40px;font-size:11px;color:var(--text-muted);text-transform:uppercase;padding:6px 10px;font-weight:500;">
+          <div>Player</div><div style="text-align:center">Stored</div><div style="text-align:center">Calc.</div><div style="text-align:center">Status</div>
+        </div>`;
 
     let anyMismatch = false;
-    const mismatches = []; // track for auto-fix
 
     for (const uid of Object.keys(users)) {
       const u = users[uid];
-      if (u.removed) continue;
       const preds = userPreds[uid] || [];
-      let matchPts = 0, scorerPts = 0;
-      let jokerMatchId = jokerByUser[uid] || null;
-      let jokerBonus = 0;
-      let donBonus = 0;
-      let donApplied = false;
+      let calcPts = 0;
 
       for (const pred of preds) {
         const m = matches[pred.matchId];
-        if (!m || m.homeScore == null || m.status !== 'FINISHED') continue;
+        if (!m || m.homeScore === null || m.homeScore === undefined) continue;
+        if (m.status !== 'FINISHED') continue;
 
         const grp = (m.group || '').toUpperCase();
         const isFinal = grp.includes('FINAL') && !grp.includes('QUARTER') && !grp.includes('SEMI');
         const isSemi = grp.includes('SEMI');
         const isQuarter = grp.includes('QUARTER');
         const isR16 = grp.includes('16') || grp.includes('ROUND_OF_16') || grp.includes('32');
-        const mult = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
+        const multiplier = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
 
         const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
         const predicted = pred.homeScore > pred.awayScore ? 'H' : pred.homeScore < pred.awayScore ? 'A' : 'D';
@@ -3384,213 +3361,38 @@
           if (pred.homeScore === m.homeScore && pred.awayScore === m.awayScore) pts = 20;
           else if (actual === predicted) pts = 10;
         } else {
-          if (actual === predicted) pts += 1 * mult;
-          if (pred.homeScore === m.homeScore && pred.awayScore === m.awayScore) pts += 3 * mult;
+          if (actual === predicted) pts += 1 * multiplier;
+          if (pred.homeScore === m.homeScore && pred.awayScore === m.awayScore) pts += 3 * multiplier;
         }
-
-        // Scorer points
-        let sPts = 0;
-        if (m.firstGoalscorer && pred.firstScorer === m.firstGoalscorer) sPts = 2 * mult;
-
-        // Joker — doubles total pts for that match
-        if (jokerMatchId && pred.matchId === jokerMatchId && pts > 0) {
-          jokerBonus += pts + sPts; // extra copy
-        }
-
-        matchPts += pts;
-        scorerPts += sPts;
-
-        // DON — +50% if won, -50% if lost (applied to that match pts)
-        if (donMatchId && pred.matchId === donMatchId && donUsers.has(uid)) {
-          donApplied = true;
-          const won = pts > 0;
-          donBonus = won ? Math.round((pts + sPts) * 0.5) : -Math.round((pts + sPts) * 0.5);
-        }
+        if (m.firstGoalscorer && pred.firstScorer === m.firstGoalscorer) pts += 2 * multiplier;
+        calcPts += pts;
       }
+      // Add bonus points (tournament player goals/assists etc)
+      calcPts += (u.bonusPoints || 0);
 
-      const bonusPts = u.bonusPoints || 0;
-      const calcTotal = matchPts + scorerPts + bonusPts + jokerBonus + donBonus;
       const stored = u.points || 0;
-      const diff = Math.abs(stored - calcTotal);
-      const ok = diff <= 0;
-      if (!ok) {
-        anyMismatch = true;
-        mismatches.push({ uid, name: u.nickname||u.displayName||uid.substring(0,8), stored, calcTotal, diff: calcTotal - stored });
-      }
+      const diff = stored - calcPts;
+      const ok = Math.abs(diff) <= 1; // allow 1pt tolerance for joker/DON adjustments
+      if (!ok) anyMismatch = true;
 
-      const rowBg = ok ? '' : 'background:rgba(239,68,68,0.08);';
-      const hasJoker = !!jokerMatchId;
-      const hasDon = donUsers.has(uid);
-      const jokerCell = hasJoker ? `<span style="color:#d4af37;font-weight:700;">+${jokerBonus}</span>` : '<span style="color:var(--text-muted);">—</span>';
-      const donCell = hasDon ? `<span style="color:${donBonus>=0?'#1D9E75':'#ef4444'};font-weight:700;">${donBonus>=0?'+':''}${donBonus}</span>` : '<span style="color:var(--text-muted);">—</span>';
-
-      html += `<tr style="border-bottom:1px solid var(--border);${rowBg}">
-        <td style="padding:7px 8px;font-size:12px;font-weight:600;">${u.nickname||u.displayName||uid.substring(0,8)}</td>
-        <td style="padding:7px 4px;text-align:center;font-weight:600;">${stored}</td>
-        <td style="padding:7px 4px;text-align:center;">${matchPts}</td>
-        <td style="padding:7px 4px;text-align:center;">${scorerPts > 0 ? `<span style="color:#1D9E75;">+${scorerPts}</span>` : '0'}</td>
-        <td style="padding:7px 4px;text-align:center;">${bonusPts > 0 ? `<span style="color:#a78bfa;">+${bonusPts}</span>` : '0'}</td>
-        <td style="padding:7px 4px;text-align:center;">${jokerCell}</td>
-        <td style="padding:7px 4px;text-align:center;">${donCell}</td>
-        <td style="padding:7px 4px;text-align:center;font-weight:700;color:${ok?'var(--text)':'#ef4444'};">${calcTotal}</td>
-        <td style="padding:7px 4px;text-align:center;font-size:15px;">${ok ? '✅' : '⚠️'}</td>
-      </tr>`;
+      html += `<div style="display:grid;grid-template-columns:1fr 60px 60px 40px;align-items:center;padding:7px 10px;border-top:0.5px solid var(--border);background:${ok?'none':'#FCEBEB'};">
+        <div style="font-size:12px;font-weight:500;">${u.nickname||u.displayName||uid}</div>
+        <div style="text-align:center;font-size:13px;font-weight:600;">${stored}</div>
+        <div style="text-align:center;font-size:13px;color:${ok?'var(--text-muted)':'#E24B4A'};font-weight:${ok?'400':'600'};">${calcPts}</div>
+        <div style="text-align:center;font-size:15px;">${ok ? '✅' : '⚠️'}</div>
+      </div>`;
     }
 
-    html += `</tbody></table></div>`;
+    html += `</div>`;
 
     if (!anyMismatch) {
-      html += `<div style="background:rgba(29,158,117,0.12);border:1px solid rgba(29,158,117,0.3);border-radius:12px;padding:14px 16px;margin-top:12px;display:flex;align-items:center;gap:10px;">
-        <span style="font-size:24px;">✅</span>
-        <div>
-          <div style="font-size:14px;font-weight:700;color:#1D9E75;">All points are correct!</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Every player's stored points match the recalculated total exactly.</div>
-        </div>
-      </div>`;
+      html += `<div style="background:var(--badge-green-bg);border-radius:8px;padding:10px 12px;margin-top:10px;font-size:13px;color:var(--badge-green-text);font-weight:500;">✅ All scores look correct!</div>`;
     } else {
-      const mismatchList = mismatches.map(mm => {
-        const sign = mm.diff > 0 ? '+' : '';
-        const color = mm.diff > 0 ? '#1D9E75' : '#ef4444';
-        const reason = mm.diff > 0
-          ? 'Missing points — they should have more'
-          : 'Extra points — they have too many';
-        return `<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;">
-          <strong>${mm.name}</strong>: stored <strong>${mm.stored}</strong> → should be <strong>${mm.calcTotal}</strong>
-          <span style="color:${color};font-weight:700;"> (${sign}${mm.diff})</span>
-          <span style="color:var(--text-muted);font-size:11px;"> · ${reason}</span>
-        </div>`;
-      }).join('');
-
-      html += `<div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:12px;padding:14px 16px;margin-top:12px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-          <span style="font-size:20px;">⚠️</span>
-          <div>
-            <div style="font-size:14px;font-weight:700;color:#ef4444;">${mismatches.length} mismatch${mismatches.length>1?'es':''} found</div>
-            <div style="font-size:12px;color:var(--text-muted);">These players have incorrect point totals stored in the database.</div>
-          </div>
-        </div>
-        <div style="background:var(--surface2);border-radius:8px;padding:10px;margin-bottom:12px;">
-          ${mismatchList}
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button onclick="autoFixPoints()" style="flex:1;padding:10px 16px;border-radius:10px;border:none;background:linear-gradient(135deg,#ef4444,#dc2626);color:white;font-size:13px;font-weight:700;cursor:pointer;min-width:140px;">
-            🔧 Auto-fix all mismatches
-          </button>
-          <button onclick="showManualFixGuide()" style="flex:1;padding:10px 16px;border-radius:10px;border:1px solid var(--border);background:none;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;min-width:140px;">
-            📋 Manual fix guide
-          </button>
-        </div>
-        <div id="fix-status" style="margin-top:8px;font-size:12px;color:var(--text-muted);"></div>
-      </div>`;
-
-      // Store mismatches for auto-fix
-      window._pendingFixes = mismatches;
+      html += `<div style="background:var(--badge-red-bg);border-radius:8px;padding:10px 12px;margin-top:10px;font-size:13px;color:var(--badge-red-text);">⚠️ Mismatches found. These may be due to Joker/Double or Nothing bonuses — check manually.</div>`;
     }
+
     container.innerHTML = html;
   }
-
-  window.autoFixPoints = async () => {
-    const fixes = window._pendingFixes || [];
-    if (!fixes.length) return;
-    const statusEl = document.getElementById('fix-status');
-    if (!confirm(`⚠️ This will update points for ${fixes.length} player${fixes.length>1?'s':''} in the database.\n\nPlayers affected:\n${fixes.map(f=>`• ${f.name}: ${f.stored} → ${f.calcTotal}`).join('\n')}\n\nProceed?`)) return;
-
-    if (statusEl) statusEl.innerHTML = '<span style="color:#fbbf24;">Fixing...</span>';
-    let fixed = 0;
-    for (const fix of fixes) {
-      try {
-        await updateDoc(doc(db, 'users', fix.uid), { points: fix.calcTotal });
-        fixed++;
-      } catch(e) {
-        console.error('Fix failed for', fix.uid, e);
-      }
-    }
-    if (statusEl) statusEl.innerHTML = `<span style="color:#1D9E75;font-weight:600;">✅ Fixed ${fixed}/${fixes.length} players. Refreshing...</span>`;
-    setTimeout(() => loadScoreVerification(), 1500);
-  };
-
-  window.showManualFixGuide = () => {
-    const fixes = window._pendingFixes || [];
-    const guide = fixes.map(f => {
-      const action = f.diff > 0
-        ? `Go to Firebase → users → ${f.uid} → set points to ${f.calcTotal}`
-        : `Go to Firebase → users → ${f.uid} → set points to ${f.calcTotal}`;
-      return `• ${f.name}: change ${f.stored} → ${f.calcTotal} (${f.diff > 0 ? '+' : ''}${f.diff} pts)`;
-    }).join('\n');
-    alert(`Manual Fix Guide:\n\n${guide}\n\nFirebase Console → Firestore → users → find by UID → edit points field.`);
-  };
-
-  window.loadSniperTable = async () => {
-    const container = document.getElementById('sniper-table-content');
-    if (!container) return;
-    container.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div>';
-
-    const [usersSnap, matchesSnap, predsSnap] = await Promise.all([
-      getDocs(collection(db, 'users')),
-      getDocs(collection(db, 'matches')),
-      getDocs(collection(db, 'predictions'))
-    ]);
-
-    const users = {}, matches = {};
-    usersSnap.forEach(d => { users[d.id] = d.data(); });
-    matchesSnap.forEach(d => { matches[d.id] = d.data(); });
-
-    const stats = {}; // uid -> { exact, correct, total, exactMatches[] }
-    predsSnap.forEach(d => {
-      const p = d.data();
-      const m = matches[p.matchId];
-      if (!m || m.homeScore == null || m.status !== 'FINISHED') return;
-      if (!stats[p.userId]) stats[p.userId] = { exact: 0, correct: 0, total: 0, scorer: 0, exactMatches: [] };
-      stats[p.userId].total++;
-      const actualDir = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
-      const predDir   = p.homeScore  > p.awayScore  ? 'H' : p.homeScore  < p.awayScore  ? 'A' : 'D';
-      if (actualDir === predDir) stats[p.userId].correct++;
-      if (p.homeScore === m.homeScore && p.awayScore === m.awayScore) {
-        stats[p.userId].exact++;
-        stats[p.userId].exactMatches.push(`${m.homeTeam} ${m.homeScore}-${m.awayScore} ${m.awayTeam}`);
-      }
-      if (m.firstGoalscorer && p.firstScorer === m.firstGoalscorer) stats[p.userId].scorer++;
-    });
-
-    const ranked = Object.entries(stats)
-      .map(([uid, s]) => ({ uid, ...s, user: users[uid] }))
-      .filter(r => r.user && !r.user.removed)
-      .sort((a,b) => b.exact - a.exact || b.correct - a.correct);
-
-    const medals = ['🥇','🥈','🥉'];
-    container.innerHTML = `
-      <div style="overflow-x:auto;">
-        <table style="width:100%;border-collapse:collapse;font-size:12px;">
-          <thead><tr style="background:var(--surface2);font-size:10px;color:var(--text-muted);text-transform:uppercase;">
-            <th style="padding:7px 8px;text-align:left;">#</th>
-            <th style="padding:7px 8px;text-align:left;">Player</th>
-            <th style="padding:7px 4px;text-align:center;">🎯 Exact</th>
-            <th style="padding:7px 4px;text-align:center;">✅ Correct</th>
-            <th style="padding:7px 4px;text-align:center;">⚽ Scorer</th>
-            <th style="padding:7px 4px;text-align:center;">📊 Total</th>
-            <th style="padding:7px 4px;text-align:center;">% Exact</th>
-          </tr></thead>
-          <tbody>
-            ${ranked.map((r, i) => {
-              const exactPct = r.total > 0 ? Math.round(r.exact/r.total*100) : 0;
-              const isTop = i === 0 && r.exact > 0;
-              return `<tr style="border-bottom:1px solid var(--border);${isTop?'background:rgba(212,175,55,0.08);':''}">
-                <td style="padding:7px 8px;font-size:14px;">${medals[i] || i+1}</td>
-                <td style="padding:7px 8px;font-weight:${isTop?'800':'600'};color:${isTop?'#d4af37':'var(--text)'};">${r.user.nickname||r.user.displayName||r.uid.substring(0,8)}</td>
-                <td style="padding:7px 4px;text-align:center;font-weight:800;font-size:14px;color:${r.exact>0?'#1D9E75':'var(--text-muted)'};">${r.exact}</td>
-                <td style="padding:7px 4px;text-align:center;">${r.correct}</td>
-                <td style="padding:7px 4px;text-align:center;color:${r.scorer>0?'#a78bfa':'var(--text-muted)'};">${r.scorer}</td>
-                <td style="padding:7px 4px;text-align:center;color:var(--text-muted);">${r.total}</td>
-                <td style="padding:7px 4px;text-align:center;font-weight:600;color:${exactPct>=20?'#1D9E75':exactPct>=10?'#fbbf24':'var(--text-muted)'};">${exactPct}%</td>
-              </tr>`;
-            }).join('')}
-          </tbody>
-        </table>
-      </div>
-      <div style="margin-top:10px;font-size:11px;color:var(--text-muted);">
-        🎯 Exact = predicted exact score · ✅ Correct = right W/D/L · ⚽ Scorer = first goalscorer correct
-      </div>`;
-  };
 
   window.verifyAllScores = loadScoreVerification;
 
@@ -4948,6 +4750,70 @@
     liveScoresInterval = setInterval(updateLiveScoreCards, 60000);
   }
 
+  // ═══ MISSING PREDICTIONS REMINDER (48h-24h window) ═══
+  async function checkUpcomingMissingPreds() {
+    if (!currentUser) return;
+    const now = new Date();
+    const in48h = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+    const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+    try {
+      const [matchesSnap, predsSnap] = await Promise.all([
+        getDocs(collection(db, 'matches')),
+        getDocs(query(collection(db, 'predictions'), where('userId', '==', currentUser.uid)))
+      ]);
+
+      const myPreds = {};
+      predsSnap.forEach(d => { myPreds[d.data().matchId] = d.data(); });
+
+      const missing = [];
+      matchesSnap.forEach(d => {
+        const m = d.data();
+        if (!m.kickoff || !m.homeTeam || m.homeTeam.includes('TBD') || m.homeTeam.includes('Winner')) return;
+        const kickoff = m.kickoff.toDate ? m.kickoff.toDate() : new Date(m.kickoff);
+        // Only matches in 24h-48h window
+        if (kickoff < in24h || kickoff > in48h) return;
+
+        const pred = myPreds[d.id];
+        const missingScore = !pred || pred.homeScore == null;
+        const missingScorer = pred && pred.homeScore != null &&
+          !(parseInt(pred.homeScore) === 0 && parseInt(pred.awayScore) === 0) &&
+          !pred.firstScorer;
+
+        if (missingScore || missingScorer) {
+          const timeStr = kickoff.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+          const dateStr = kickoff.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+          missing.push({
+            match: `${m.homeTeam} vs ${m.awayTeam}`,
+            time: `${dateStr} ${timeStr}`,
+            missingScore,
+            missingScorer
+          });
+        }
+      });
+
+      if (missing.length === 0) return;
+
+      const list = document.getElementById('missing-preds-list');
+      const popup = document.getElementById('missing-preds-popup');
+      if (!list || !popup) return;
+
+      list.innerHTML = missing.map(item => `
+        <div style="padding:10px 0;border-bottom:1px solid var(--border);">
+          <div style="font-size:13px;font-weight:700;">${item.match}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">⏰ ${item.time}</div>
+          <div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;">
+            ${item.missingScore ? '<span style="background:rgba(239,68,68,0.12);color:#ef4444;font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;">❌ No prediction</span>' : ''}
+            ${item.missingScorer ? '<span style="background:rgba(245,158,11,0.12);color:#d97706;font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;">⚽ No scorer picked</span>' : ''}
+          </div>
+        </div>`).join('');
+
+      popup.style.display = 'flex';
+    } catch(e) {
+      console.log('Missing preds check error:', e.message);
+    }
+  }
+
   // Poll for new messages every 30s
   setInterval(() => { if (currentUser) updateMsgBadge(); }, 30000);
 
@@ -5424,18 +5290,7 @@ Use exactly the formation provided. Use real known players.`
   }).catch(()=>{});
   const db = getFirestore(app);
 
-  // Show LIVE button in nav only from June 11, 2026
-  function checkLiveNavBtn() {
-    const btn = document.getElementById('live-nav-btn');
-    if (!btn) return;
-    const now = new Date();
-    const tournamentStart = new Date('2026-06-11T19:00:00Z');
-    if (now >= tournamentStart) {
-      btn.style.display = 'flex';
-    }
-  }
-  checkLiveNavBtn();
-  setInterval(checkLiveNavBtn, 60000);
+  // Show opening video — after DOM is fully ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       checkOpeningVideo();
@@ -5833,6 +5688,8 @@ Use exactly the formation provided. Use real known players.`
       setTimeout(initAutoSaveToggle, 300);
       // Start live scores polling
       setTimeout(startLiveScoresPolling, 1500);
+      // Check for upcoming missing predictions (48h-24h window)
+      setTimeout(checkUpcomingMissingPreds, 3000);
       // Pulse attention on important picks if not yet filled
       setTimeout(() => {
         const playerCard = document.querySelector('.player-pick');
@@ -7359,13 +7216,7 @@ Use exactly the formation provided. Use real known players.`
             <span class="group">${(m.group || '').replace(/_/g, ' ')}</span>
             <div style="display:flex;align-items:center;gap:8px;">
               ${liveIndicator}
-              <button onclick="showMatchPreview('${d.id}')"
-                style="display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);border:1px solid rgba(99,252,180,0.4);border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;color:#63fcb4;cursor:pointer;white-space:nowrap;letter-spacing:0.06em;text-transform:uppercase;transition:all 0.2s;box-shadow:0 0 8px rgba(99,252,180,0.15),inset 0 1px 0 rgba(255,255,255,0.05);position:relative;overflow:hidden;"
-                onmouseover="this.style.borderColor='rgba(99,252,180,0.8)';this.style.boxShadow='0 0 16px rgba(99,252,180,0.35),inset 0 1px 0 rgba(255,255,255,0.08)';this.style.color='#a7ffe4'"
-                onmouseout="this.style.borderColor='rgba(99,252,180,0.4)';this.style.boxShadow='0 0 8px rgba(99,252,180,0.15),inset 0 1px 0 rgba(255,255,255,0.05)';this.style.color='#63fcb4'">
-                <span style="font-size:12px;">⚡</span>
-                <span>Preview</span>
-              </button>
+              <button onclick="showMatchPreview('${d.id}')" style="background:none;border:0.5px solid var(--border);border-radius:6px;padding:3px 8px;font-size:10px;color:var(--text-muted);cursor:pointer;white-space:nowrap;">📋 Preview</button>
               <div class="match-timing">
                 <div class="kickoff">${kickoff.toLocaleDateString('en-GB', {day:'2-digit',month:'short'})} ${kickoff.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})} <span class="tz">(Israel time)</span></div>
                 <div class="deadline">Deadline: ${deadline.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})} ${deadline.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})} (Israel time)</div>
@@ -7517,9 +7368,6 @@ Use exactly the formation provided. Use real known players.`
       if (homeEl) { homeEl.dataset.val = pred.homeScore ?? 0; homeEl.textContent = pred.homeScore ?? 0; }
       if (awayEl) { awayEl.dataset.val = pred.awayScore ?? 0; awayEl.textContent = pred.awayScore ?? 0; }
       if (scorerEl) scorerEl.value = pred.firstScorer || '';
-      // Mark as touched — this prediction already exists in DB
-      if (!window._touchedMatches) window._touchedMatches = new Set();
-      window._touchedMatches.add(d.id);
       // Update scorer button label
       if (pred.firstScorer) {
         const scorerBtn = document.getElementById('scorer-btn-' + d.id);
@@ -7618,10 +7466,8 @@ Use exactly the formation provided. Use real known players.`
     el.style.transform = 'scale(1.2)';
     el.style.color = delta > 0 ? 'var(--green)' : '#E24B4A';
     setTimeout(() => { el.style.transform = ''; el.style.color = ''; }, 200);
-    // Mark this match as touched by the user
-    if (!window._touchedMatches) window._touchedMatches = new Set();
+    // AutoSave trigger — extract matchId from element id
     const matchId = id.replace('home-','').replace('away-','');
-    window._touchedMatches.add(matchId);
     const card = el.closest('.match-card');
     if (card) {
       const homeTeam = card.querySelector('.team .name')?.textContent || '';
@@ -7790,7 +7636,7 @@ Use exactly the formation provided. Use real known players.`
     // Argentina
     {name:'Lionel Messi',country:'Argentina',flag:'ar'},{name:'Julian Alvarez',country:'Argentina',flag:'ar'},{name:'Lautaro Martinez',country:'Argentina',flag:'ar'},{name:'Emiliano Martinez',country:'Argentina',flag:'ar'},{name:'Nicolas Otamendi',country:'Argentina',flag:'ar'},{name:'Alexis Mac Allister',country:'Argentina',flag:'ar'},{name:'Rodrigo De Paul',country:'Argentina',flag:'ar'},{name:'Enzo Fernandez',country:'Argentina',flag:'ar'},{name:'Cristian Romero',country:'Argentina',flag:'ar'},{name:'Lisandro Martinez',country:'Argentina',flag:'ar'},{name:'Geronimo Rulli',country:'Argentina',flag:'ar'},{name:'Nicolas Tagliafico',country:'Argentina',flag:'ar'},{name:'Gonzalo Montiel',country:'Argentina',flag:'ar'},{name:'Leonardo Balerdi',country:'Argentina',flag:'ar'},{name:'Nahuel Molina',country:'Argentina',flag:'ar'},{name:'Leandro Paredes',country:'Argentina',flag:'ar'},{name:'Giovani Lo Celso',country:'Argentina',flag:'ar'},{name:'Exequiel Palacios',country:'Argentina',flag:'ar'},{name:'Valentin Barco',country:'Argentina',flag:'ar'},{name:'Nicolas Gonzalez',country:'Argentina',flag:'ar'},{name:'Thiago Almada',country:'Argentina',flag:'ar'},{name:'Giuliano Simeone',country:'Argentina',flag:'ar'},{name:'Nico Paz',country:'Argentina',flag:'ar'},{name:'Facundo Medina',country:'Argentina',flag:'ar'},{name:'Juan Musso',country:'Argentina',flag:'ar'},
     // Brazil
-    {name:'Vinicius Jr.',country:'Brazil',flag:'br'},{name:'Raphinha',country:'Brazil',flag:'br'},{name:'Neymar Jr.',country:'Brazil',flag:'br'},{name:'Lucas Paqueta',country:'Brazil',flag:'br'},{name:'Bruno Guimaraes',country:'Brazil',flag:'br'},{name:'Gabriel Martinelli',country:'Brazil',flag:'br'},{name:'Endrick',country:'Brazil',flag:'br'},{name:'Alisson',country:'Brazil',flag:'br'},{name:'Marquinhos',country:'Brazil',flag:'br'},{name:'Gabriel Magalhaes',country:'Brazil',flag:'br'},{name:'Casemiro',country:'Brazil',flag:'br'},{name:'Ederson',country:'Brazil',flag:'br'},{name:'Bremer',country:'Brazil',flag:'br'},{name:'Danilo Luiz',country:'Brazil',flag:'br'},{name:'Alex Sandro',country:'Brazil',flag:'br'},{name:'Wesley',country:'Brazil',flag:'br'},{name:'Roger Ibanez',country:'Brazil',flag:'br'},{name:'Douglas Santos',country:'Brazil',flag:'br'},{name:'Leo Pereira',country:'Brazil',flag:'br'},{name:'Fabinho',country:'Brazil',flag:'br'},{name:'Danilo Santos',country:'Brazil',flag:'br'},{name:'Matheus Cunha',country:'Brazil',flag:'br'},{name:'Igor Thiago',country:'Brazil',flag:'br'},{name:'Luiz Henrique',country:'Brazil',flag:'br'},{name:'Rayan',country:'Brazil',flag:'br'},
+    {name:'Vinicius Jr.',country:'Brazil',flag:'br'},{name:'Raphinha',country:'Brazil',flag:'br'},{name:'Neymar Jr.',country:'Brazil',flag:'br'},{name:'Lucas Paqueta',country:'Brazil',flag:'br'},{name:'Bruno Guimaraes',country:'Brazil',flag:'br'},{name:'Rodrygo',country:'Brazil',flag:'br'},{name:'Gabriel Martinelli',country:'Brazil',flag:'br'},{name:'Endrick',country:'Brazil',flag:'br'},{name:'Alisson',country:'Brazil',flag:'br'},{name:'Marquinhos',country:'Brazil',flag:'br'},{name:'Gabriel Magalhaes',country:'Brazil',flag:'br'},{name:'Casemiro',country:'Brazil',flag:'br'},{name:'Ederson',country:'Brazil',flag:'br'},{name:'Bremer',country:'Brazil',flag:'br'},{name:'Danilo Luiz',country:'Brazil',flag:'br'},{name:'Alex Sandro',country:'Brazil',flag:'br'},{name:'Wesley',country:'Brazil',flag:'br'},{name:'Roger Ibanez',country:'Brazil',flag:'br'},{name:'Douglas Santos',country:'Brazil',flag:'br'},{name:'Leo Pereira',country:'Brazil',flag:'br'},{name:'Fabinho',country:'Brazil',flag:'br'},{name:'Danilo Santos',country:'Brazil',flag:'br'},{name:'Matheus Cunha',country:'Brazil',flag:'br'},{name:'Igor Thiago',country:'Brazil',flag:'br'},{name:'Luiz Henrique',country:'Brazil',flag:'br'},{name:'Rayan',country:'Brazil',flag:'br'},
     // ═══ GROUP B ═══
     // France
     {name:'Kylian Mbappé',country:'France',flag:'fr'},{name:'Ousmane Dembélé',country:'France',flag:'fr'},{name:'Marcus Thuram',country:'France',flag:'fr'},{name:'Adrien Rabiot',country:'France',flag:'fr'},{name:'Bradley Barcola',country:'France',flag:'fr'},{name:'Michael Olise',country:'France',flag:'fr'},{name:'Aurelien Tchouameni',country:'France',flag:'fr'},{name:'William Saliba',country:'France',flag:'fr'},{name:'Mike Maignan',country:'France',flag:'fr'},{name:'Jules Kounde',country:'France',flag:'fr'},{name:'Theo Hernandez',country:'France',flag:'fr'},{name:'Lucas Hernandez',country:'France',flag:'fr'},{name:'Dayot Upamecano',country:'France',flag:'fr'},{name:'Ibrahima Konate',country:'France',flag:'fr'},{name:'N Golo Kante',country:'France',flag:'fr'},{name:'Manu Kone',country:'France',flag:'fr'},{name:'Warren Zaire-Emery',country:'France',flag:'fr'},{name:'Desire Doue',country:'France',flag:'fr'},{name:'Rayan Cherki',country:'France',flag:'fr'},{name:'Jean-Philippe Mateta',country:'France',flag:'fr'},{name:'Maghnes Akliouche',country:'France',flag:'fr'},{name:'Lucas Digne',country:'France',flag:'fr'},{name:'Malo Gusto',country:'France',flag:'fr'},{name:'Maxence Lacroix',country:'France',flag:'fr'},{name:'Brice Samba',country:'France',flag:'fr'},
@@ -7800,7 +7646,7 @@ Use exactly the formation provided. Use real known players.`
     // Spain
     {name:'Lamine Yamal',country:'Spain',flag:'es'},{name:'Pedri',country:'Spain',flag:'es'},{name:'Rodri',country:'Spain',flag:'es'},{name:'Nico Williams',country:'Spain',flag:'es'},{name:'Dani Olmo',country:'Spain',flag:'es'},{name:'Ferran Torres',country:'Spain',flag:'es'},{name:'Mikel Oyarzabal',country:'Spain',flag:'es'},{name:'Unai Simon',country:'Spain',flag:'es'},{name:'Fabian Ruiz',country:'Spain',flag:'es'},{name:'Mikel Merino',country:'Spain',flag:'es'},{name:'Gavi',country:'Spain',flag:'es'},{name:'Martin Zubimendi',country:'Spain',flag:'es'},{name:'Alex Baena',country:'Spain',flag:'es'},{name:'Aymeric Laporte',country:'Spain',flag:'es'},{name:'Marc Cucurella',country:'Spain',flag:'es'},{name:'Pau Cubarsi',country:'Spain',flag:'es'},{name:'Eric Garcia',country:'Spain',flag:'es'},{name:'Pedro Porro',country:'Spain',flag:'es'},{name:'Alex Grimaldo',country:'Spain',flag:'es'},{name:'Marcos Llorente',country:'Spain',flag:'es'},{name:'David Raya',country:'Spain',flag:'es'},{name:'Yeremy Pino',country:'Spain',flag:'es'},{name:'Borja Iglesias',country:'Spain',flag:'es'},
     // Germany
-    {name:'Florian Wirtz',country:'Germany',flag:'de'},{name:'Jamal Musiala',country:'Germany',flag:'de'},{name:'Kai Havertz',country:'Germany',flag:'de'},{name:'Leroy Sane',country:'Germany',flag:'de'},{name:'Joshua Kimmich',country:'Germany',flag:'de'},{name:'Manuel Neuer',country:'Germany',flag:'de'},{name:'Antonio Rudiger',country:'Germany',flag:'de'},{name:'Leon Goretzka',country:'Germany',flag:'de'},{name:'Toni Kroos',country:'Germany',flag:'de'},{name:'Jonathan Tah',country:'Germany',flag:'de'},{name:'Nico Schlotterbeck',country:'Germany',flag:'de'},{name:'David Raum',country:'Germany',flag:'de'},{name:'Malick Thiaw',country:'Germany',flag:'de'},{name:'Waldemar Anton',country:'Germany',flag:'de'},{name:'Nathaniel Brown',country:'Germany',flag:'de'},{name:'Aleksandar Pavlovic',country:'Germany',flag:'de'},{name:'Maximilian Beier',country:'Germany',flag:'de'},{name:'Jamie Leweling',country:'Germany',flag:'de'},{name:'Felix Nmecha',country:'Germany',flag:'de'},{name:'Angelo Stiller',country:'Germany',flag:'de'},{name:'Assan Ouedraogo',country:'Germany',flag:'de'},{name:'Denis Undav',country:'Germany',flag:'de'},{name:'Nick Woltemeade',country:'Germany',flag:'de'},{name:'Pascal Gross',country:'Germany',flag:'de'},{name:'Nadiem Amiri',country:'Germany',flag:'de'},
+    {name:'Florian Wirtz',country:'Germany',flag:'de'},{name:'Jamal Musiala',country:'Germany',flag:'de'},{name:'Kai Havertz',country:'Germany',flag:'de'},{name:'Leroy Sane',country:'Germany',flag:'de'},{name:'Joshua Kimmich',country:'Germany',flag:'de'},{name:'Manuel Neuer',country:'Germany',flag:'de'},{name:'Antonio Rudiger',country:'Germany',flag:'de'},{name:'Leon Goretzka',country:'Germany',flag:'de'},{name:'Toni Kroos',country:'Germany',flag:'de'},{name:'Jonathan Tah',country:'Germany',flag:'de'},{name:'Nico Schlotterbeck',country:'Germany',flag:'de'},{name:'David Raum',country:'Germany',flag:'de'},{name:'Malick Thiaw',country:'Germany',flag:'de'},{name:'Waldemar Anton',country:'Germany',flag:'de'},{name:'Nathaniel Brown',country:'Germany',flag:'de'},{name:'Aleksandar Pavlovic',country:'Germany',flag:'de'},{name:'Maximilian Beier',country:'Germany',flag:'de'},{name:'Jamie Leweling',country:'Germany',flag:'de'},{name:'Felix Nmecha',country:'Germany',flag:'de'},{name:'Angelo Stiller',country:'Germany',flag:'de'},{name:'Lennart Karl',country:'Germany',flag:'de'},{name:'Denis Undav',country:'Germany',flag:'de'},{name:'Nick Woltemeade',country:'Germany',flag:'de'},{name:'Pascal Gross',country:'Germany',flag:'de'},{name:'Nadiem Amiri',country:'Germany',flag:'de'},
     // Portugal
     {name:'Cristiano Ronaldo',country:'Portugal',flag:'pt'},{name:'Bruno Fernandes',country:'Portugal',flag:'pt'},{name:'Rafael Leao',country:'Portugal',flag:'pt'},{name:'Bernardo Silva',country:'Portugal',flag:'pt'},{name:'Pedro Neto',country:'Portugal',flag:'pt'},{name:'Diogo Costa',country:'Portugal',flag:'pt'},{name:'Ruben Dias',country:'Portugal',flag:'pt'},{name:'Joao Cancelo',country:'Portugal',flag:'pt'},{name:'Nuno Mendes',country:'Portugal',flag:'pt'},{name:'Joao Neves',country:'Portugal',flag:'pt'},{name:'Vitinha',country:'Portugal',flag:'pt'},{name:'Joao Felix',country:'Portugal',flag:'pt'},{name:'Goncalo Ramos',country:'Portugal',flag:'pt'},{name:'Francisco Conceicao',country:'Portugal',flag:'pt'},{name:'Diogo Dalot',country:'Portugal',flag:'pt'},{name:'Goncalo Inacio',country:'Portugal',flag:'pt'},{name:'Renato Veiga',country:'Portugal',flag:'pt'},{name:'Matheus Nunes',country:'Portugal',flag:'pt'},{name:'Nelson Semedo',country:'Portugal',flag:'pt'},{name:'Ruben Neves',country:'Portugal',flag:'pt'},{name:'Samu Costa',country:'Portugal',flag:'pt'},{name:'Goncalo Guedes',country:'Portugal',flag:'pt'},{name:'Francisco Trincao',country:'Portugal',flag:'pt'},{name:'Tomas Araujo',country:'Portugal',flag:'pt'},
     // ═══ GROUP D ═══
@@ -8266,7 +8112,7 @@ Use exactly the formation provided. Use real known players.`
           const reds = redMap[tp] || 0;
           const tpPts = (goals * 2) + (assists * 1) - (reds * 1);
           pts += tpPts;
-          bonus += tpPts; // track actual net pts (goals*2 + assists - reds)
+          bonus += goals + assists; // track in bonusPoints for display
         }
 
         // Joker card — double points if activated for this match
@@ -8553,15 +8399,14 @@ Use exactly the formation provided. Use real known players.`
         const hasPlayer = !!u.tournamentPlayer;
         // 3. First match filled
         const hasFirstMatch = firstMatchId ? (predsByMatchId[firstMatchId]?.homeScore != null) : false;
-        // 4. Scorers — exclude 0-0 predictions (no scorer needed)
+        // 4. Scorers — check all predictions that have scores filled
         const filledPreds = preds.filter(p => p.homeScore != null && p.awayScore != null);
-        const scorerRequired = filledPreds.filter(p => !(parseInt(p.homeScore) === 0 && parseInt(p.awayScore) === 0));
-        const missingScorer = scorerRequired.filter(p => !p.firstScorer || p.firstScorer === '').length;
-        const scorerLabel = scorerRequired.length === 0
+        const missingScorer = filledPreds.filter(p => !p.scorer || p.scorer === '').length;
+        const scorerLabel = filledPreds.length === 0
           ? '<span style="color:var(--text-muted);font-size:12px;">➖</span>'
           : missingScorer === 0
             ? '<span style="color:#1D9E75;font-size:14px;">✅</span>'
-            : `<span style="color:#ef4444;font-size:14px;">❌</span><span style="font-size:10px;color:var(--text-muted);"> ${missingScorer}</span>`;
+            : `<span style="color:#ef4444;font-size:14px;">❌</span><span style="font-size:10px;color:var(--text-muted);"> ${missingScorer} missing</span>`;
         // 5. DON
         const hasDon = donUsers.has(u.uid);
         // 6. Joker
@@ -8571,19 +8416,8 @@ Use exactly the formation provided. Use real known players.`
         const totalPreds = filledPreds.length;
         const totalMatches = allMatches.length;
 
-        // Count total missing items for row color
-        const totalMissing = [!hasWinner, !hasPlayer, !hasFirstMatch, missingScorer > 0].filter(Boolean).length;
-        const rowBg = totalMissing === 0 ? '' :
-          totalMissing === 1 ? 'background:rgba(239,68,68,0.04);' :
-          totalMissing === 2 ? 'background:rgba(239,68,68,0.09);' :
-          totalMissing === 3 ? 'background:rgba(239,68,68,0.16);' :
-                               'background:rgba(239,68,68,0.24);';
-        const nameColor = totalMissing >= 3 ? 'color:#ef4444;font-weight:800;' :
-                          totalMissing >= 2 ? 'color:#f97316;font-weight:700;' :
-                          totalMissing >= 1 ? 'color:#fbbf24;font-weight:600;' : '';
-
-        return `<tr style="border-bottom:1px solid var(--border);${rowBg}">
-          <td style="padding:8px 6px;font-size:12px;${nameColor}white-space:nowrap;">${name}${totalMissing > 0 ? ` <span style="font-size:10px;background:rgba(239,68,68,0.15);color:#ef4444;padding:1px 5px;border-radius:99px;">${totalMissing}</span>` : ''}</td>
+        return `<tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:8px 6px;font-size:12px;font-weight:600;white-space:nowrap;">${name}</td>
           <td style="padding:8px 6px;text-align:center;">${check(hasWinner)}</td>
           <td style="padding:8px 6px;text-align:center;">${check(hasPlayer)}</td>
           <td style="padding:8px 6px;text-align:center;">${check(hasFirstMatch)}<span style="font-size:10px;color:var(--text-muted);display:block;">${totalPreds}/${totalMatches}</span></td>
@@ -8880,34 +8714,11 @@ Use exactly the formation provided. Use real known players.`
     const candidates = [...new Map([...liveMatches, ...recentMatches].map(m => [m.id, m])).values()];
 
     if (candidates.length === 0) {
-      // Find next upcoming matches
-      const upcoming = matches
-        .filter(m => {
-          const k = m.kickoff?.toDate?.() || new Date(m.kickoff);
-          return k > now && m.homeTeam && !m.homeTeam.includes('TBD') && !m.homeTeam.includes('Winner');
-        })
-        .slice(0, 3);
-
-      const upcomingHtml = upcoming.length > 0 ? `
-        <div style="margin-top:1.5rem;text-align:left;max-width:320px;margin-left:auto;margin-right:auto;">
-          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">📅 Next matches:</div>
-          ${upcoming.map(m => {
-            const k = m.kickoff?.toDate?.() || new Date(m.kickoff);
-            const dateStr = k.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
-            const timeStr = k.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
-            return `<div style="padding:10px 14px;background:var(--surface);border-radius:10px;margin-bottom:8px;border:1px solid var(--border);">
-              <div style="font-size:13px;font-weight:600;">${m.homeTeam} vs ${m.awayTeam}</div>
-              <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${dateStr} · ${timeStr} (Israel time)</div>
-            </div>`;
-          }).join('')}
-        </div>` : '';
-
       container.innerHTML = `
         <div style="text-align:center;padding:3rem 1rem;">
-          <div style="font-size:48px;margin-bottom:1rem;">😴</div>
-          <div style="font-size:16px;font-weight:700;margin-bottom:8px;">No live matches right now</div>
-          <div style="font-size:13px;color:var(--text-muted);">This page updates automatically when a match kicks off.</div>
-          ${upcomingHtml}
+          <div style="font-size:40px;margin-bottom:1rem;">😴</div>
+          <div style="font-size:16px;font-weight:500;margin-bottom:8px;">No live matches right now</div>
+          <div style="font-size:13px;color:var(--text-muted);">Come back when a match is in play - this page updates every 30 seconds.</div>
         </div>`;
       return;
     }
@@ -10052,10 +9863,8 @@ Use exactly the formation provided. Use real known players.`
       user.jokerMatchId = jokerSnap.docs[0].data().matchId;
     }
 
-    // Avatar reminder banner — check all possible avatar fields
-    // Also cross-check with currentUserData (loaded at login) as fallback
-    const userData = { ...user, ...(currentUserData || {}) };
-    const hasAvatar = !!(userData.avatarUrl) || userData.avatarChanged === true || (userData.avatar !== null && userData.avatar !== undefined && userData.avatar !== '');
+    // Avatar reminder banner
+    const hasAvatar = user.avatar || user.avatarUrl;
     const avatarBanner = !hasAvatar ? `
       <div onclick="showAvatarChangeModal()" style="display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,rgba(251,191,36,0.12),rgba(245,158,11,0.08));border:1.5px solid rgba(251,191,36,0.35);border-radius:14px;padding:12px 16px;margin-bottom:1rem;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='rgba(251,191,36,0.6)'" onmouseout="this.style.borderColor='rgba(251,191,36,0.35)'">
         <div style="font-size:32px;flex-shrink:0;">🎭</div>
@@ -11793,7 +11602,7 @@ Use exactly the formation provided. Use real known players.`
     'Argentina':   [{name:'Lionel Messi',goals:672,team:'Inter Miami'},{name:'Lautaro Martinez',goals:135,team:'Inter Milan'},{name:'Julian Alvarez',goals:65,team:'Atletico Madrid'},{name:'Alejandro Garnacho',goals:22,team:'Man United'},{name:'Rodrigo De Paul',goals:25,team:'Atletico Madrid'}],
     'France':      [{name:'Kylian Mbappe',goals:350,team:'Real Madrid'},{name:'Antoine Griezmann',goals:326,team:'Atletico Madrid'},{name:'Marcus Thuram',goals:40,team:'Inter Milan'},{name:'Randal Kolo Muani',goals:28,team:'PSG'},{name:'Ousmane Dembele',goals:70,team:'PSG'}],
     'Brazil':      [{name:'Vinicius Jr.',goals:130,team:'Real Madrid'},{name:'Endrick',goals:18,team:'Real Madrid'},{name:'Raphinha',goals:85,team:'Barcelona'},{name:'Gabriel Jesus',goals:120,team:'Arsenal'},{name:'Gabriel Martinelli',goals:55,team:'Arsenal'}],
-    'England':     [{name:'Harry Kane',goals:315,team:'Bayern Munich'},{name:'Bukayo Saka',goals:90,team:'Arsenal'},{name:'Jude Bellingham',goals:55,team:'Real Madrid'},{name:'Phil Foden',goals:80,team:'Man City'},{name:'Morgan Rogers',goals:30,team:'Aston Villa'}],
+    'England':     [{name:'Harry Kane',goals:315,team:'Bayern Munich'},{name:'Bukayo Saka',goals:90,team:'Arsenal'},{name:'Jude Bellingham',goals:55,team:'Real Madrid'},{name:'Phil Foden',goals:80,team:'Man City'},{name:'Cole Palmer',goals:45,team:'Chelsea'}],
     'Spain':       [{name:'Lamine Yamal',goals:22,team:'Barcelona'},{name:'Alvaro Morata',goals:185,team:'AC Milan'},{name:'Nico Williams',goals:20,team:'Athletic Club'},{name:'Dani Olmo',goals:28,team:'Barcelona'},{name:'Mikel Oyarzabal',goals:95,team:'Real Sociedad'}],
     'Portugal':    [{name:'Cristiano Ronaldo',goals:912,team:'Al-Nassr'},{name:'Bruno Fernandes',goals:120,team:'Man United'},{name:'Goncalo Ramos',goals:45,team:'PSG'},{name:'Rafael Leao',goals:55,team:'AC Milan'},{name:'Diogo Jota',goals:80,team:'Liverpool'}],
     'Germany':     [{name:'Kai Havertz',goals:80,team:'Arsenal'},{name:'Florian Wirtz',goals:55,team:'Bayer Leverkusen'},{name:'Jamal Musiala',goals:40,team:'Bayern Munich'},{name:'Niclas Fullkrug',goals:65,team:'West Ham'},{name:'Leroy Sane',goals:90,team:'Bayern Munich'}],
@@ -11816,7 +11625,7 @@ Use exactly the formation provided. Use real known players.`
     'Norway':      [{name:'Erling Haaland',goals:180,team:'Man City'},{name:'Alexander Sorloth',goals:65,team:'Atletico Madrid'},{name:'Alexander Isak',goals:55,team:'Newcastle'},{name:'Jorgen Strand Larsen',goals:30,team:'Wolves'},{name:'Antonio Nusa',goals:15,team:'Leipzig'}],
     'Denmark':     [{name:'Rasmus Hojlund',goals:30,team:'Man United'},{name:'Jonas Wind',goals:35,team:'Wolfsburg'},{name:'Andreas Skov Olsen',goals:30,team:'Club Brugge'},{name:'Kasper Dolberg',goals:60,team:'Anderlecht'},{name:'Martin Braithwaite',goals:75,team:'Espanyol'}],
     'Austria':     [{name:'Marko Arnautovic',goals:115,team:'Inter Milan'},{name:'Michael Gregoritsch',goals:55,team:'Freiburg'},{name:'Christoph Baumgartner',goals:35,team:'Leipzig'},{name:'Patrick Wimmer',goals:20,team:'Wolfsburg'},{name:'Marcel Sabitzer',goals:55,team:'Dortmund'}],
-    'Scotland':    [{name:'Lawrence Shankland',goals:75,team:'Hearts'},{name:'Che Adams',goals:50,team:'Torino'},{name:'Scott McTominay',goals:25,team:'Napoli'},{name:'Ryan Christie',goals:35,team:'Bournemouth'},{name:'Lewis Ferguson',goals:20,team:'Bologna'}],
+    'Scotland':    [{name:'Lawrence Shankland',goals:75,team:'Hearts'},{name:'Che Adams',goals:50,team:'Torino'},{name:'Scott McTominay',goals:25,team:'Napoli'},{name:'Ryan Christie',goals:35,team:'Bournemouth'},{name:'Billy Gilmour',goals:10,team:'Brighton'}],
     'Turkey':      [{name:'Hakan Calhanoglu',goals:70,team:'Inter Milan'},{name:'Arda Guler',goals:15,team:'Real Madrid'},{name:'Kerem Akturkoglu',goals:45,team:'Benfica'},{name:'Baris Alper Yilmaz',goals:28,team:'Galatasaray'},{name:'Cengiz Under',goals:60,team:'Fenerbahce'}],
     'Iran':        [{name:'Mehdi Taremi',goals:120,team:'Inter Milan'},{name:'Sardar Azmoun',goals:65,team:'Bayer Leverkusen'},{name:'Alireza Jahanbakhsh',goals:50,team:'Feyenoord'},{name:'Karim Ansarifard',goals:80,team:'Omonia'},{name:'Saman Ghoddos',goals:25,team:'Brentford'}],
     'Saudi Arabia':[{name:'Firas Al-Buraikan',goals:45,team:'Al-Fateh'},{name:'Salem Al-Dawsari',goals:55,team:'Al-Hilal'},{name:'Saleh Al-Shehri',goals:38,team:'Al-Hilal'},{name:'Hattan Bahebri',goals:28,team:'Al-Shabab'},{name:'Abdullah Al-Hamdan',goals:25,team:'Al-Qadsiah'}],
@@ -11830,7 +11639,7 @@ Use exactly the formation provided. Use real known players.`
     'Curaçao':     [{name:'Leandro Bacuna',goals:35,team:'Cardiff'},{name:'Gino van Kessel',goals:28,team:'Omonia'},{name:'Rangelo Janga',goals:25,team:'Roda JC'},{name:'Brandley Kuwas',goals:20,team:'Twente'},{name:'Delano Burgzorg',goals:18,team:'Hertha'}],
     'Cabo Verde':  [{name:'Garry Rodrigues',goals:25,team:'Al-Rayyan'},{name:'Ryan Mendes',goals:20,team:'Unattached'},{name:'Julio Tavares',goals:35,team:'Vitoria Guimaraes'},{name:'Kenny Rocha Santos',goals:15,team:'Pacos Ferreira'},{name:'Jamiro Monteiro',goals:18,team:'Unattached'}],
     'New Zealand': [{name:'Chris Wood',goals:110,team:'Nottm Forest'},{name:'Liberato Cacace',goals:15,team:'Empoli'},{name:'Clayton Lewis',goals:18,team:'Portland Timbers'},{name:'Elijah Just',goals:12,team:'Barnsley'},{name:'Matthew Garbett',goals:10,team:'Portland'}],
-    'Paraguay':    [{name:'Antonio Sanabria',goals:45,team:'Torino'},{name:'Miguel Almiron',goals:45,team:'Newcastle'},{name:'Matias Rojas',goals:20,team:'Racing Club'},{name:'Carlos Gonzalez',goals:25,team:'Olimpia'}],
+    'Paraguay':    [{name:'Antonio Sanabria',goals:45,team:'Torino'},{name:'Miguel Almiron',goals:45,team:'Newcastle'},{name:'Julio Enciso',goals:15,team:'Brighton'},{name:'Matias Rojas',goals:20,team:'Racing Club'},{name:'Carlos Gonzalez',goals:25,team:'Olimpia'}],
     'Panama':      [{name:'Cecilio Waterman',goals:28,team:'Portland Timbers'},{name:'Ismael Diaz',goals:18,team:'FC Cincinnati'},{name:'Jose Fajardo',goals:22,team:'Portland Timbers'},{name:'Abdiel Arroyo',goals:15,team:'Nashville SC'},{name:'Rolando Blackburn',goals:20,team:'CF Montreal'}],
     'Haiti':       [{name:'Duckens Nazon',goals:30,team:'Sint-Truiden'},{name:'Frantzdy Pierrot',goals:18,team:'Hammarby'},{name:'Kevin Laventure',goals:12,team:'Valenciennes'},{name:'Wilde-Donald Guerrier',goals:15,team:'Unattached'},{name:'Steeven Saba',goals:10,team:'Caen'}],
     'Jordan':      [{name:'Musa Al-Taamari',goals:25,team:'Montpellier'},{name:'Hamza Al-Dardour',goals:20,team:'Al-Faisaly'},{name:'Yazan Al-Naimat',goals:15,team:'Al-Wehdat'},{name:'Baha Faisal',goals:12,team:'Al-Ramtha'},{name:'Ahmad Gharaibeh',goals:10,team:'Al-Jazeera'}],
@@ -11960,56 +11769,22 @@ Use exactly the formation provided. Use real known players.`
 
   // ========== MATCH PREVIEW POPUP ==========
   const TEAM_STATS = {
-    'Argentina':          { form:'WWWDW', goals:2.8, conceded:0.7, rank:1,  style:'🎭 Messi magic + tactical genius' },
-    'France':             { form:'WWDWW', goals:2.5, conceded:0.9, rank:2,  style:'⚡ Counter-attack kings' },
-    'Brazil':             { form:'WWWWW', goals:3.1, conceded:0.6, rank:3,  style:'🎨 Samba football, total attack' },
-    'England':            { form:'WWWDW', goals:2.2, conceded:0.8, rank:4,  style:'🦁 Physical, direct, set pieces' },
-    'Spain':              { form:'WWWWD', goals:2.6, conceded:0.5, rank:5,  style:'🎯 Possession masters, Yamal era' },
-    'Portugal':           { form:'WWDWW', goals:2.9, conceded:1.0, rank:6,  style:'🐐 Ronaldo + Bruno firepower' },
-    'Germany':            { form:'WDWWW', goals:2.4, conceded:1.1, rank:7,  style:'⚙️ High press, Wirtz & Musiala' },
-    'Netherlands':        { form:'WWWDW', goals:2.3, conceded:0.9, rank:8,  style:'🌷 Total football heirs' },
-    'Belgium':            { form:'WDWWL', goals:2.0, conceded:1.2, rank:10, style:'👑 Golden gen twilight, still dangerous' },
-    'Uruguay':            { form:'WWDLW', goals:1.7, conceded:0.9, rank:18, style:'💪 Garra Charrúa, Valverde engine' },
-    'Colombia':           { form:'WDWWL', goals:2.2, conceded:1.1, rank:12, style:'☕ James Rodriguez flair' },
-    'USA':                { form:'WDWWL', goals:1.9, conceded:1.3, rank:11, style:'🦅 Athletic, Pulisic-led attack' },
-    'Mexico':             { form:'WWDLW', goals:2.1, conceded:1.4, rank:15, style:'🌮 Technical + passionate crowds' },
-    'Morocco':            { form:'DWWWD', goals:1.8, conceded:0.6, rank:13, style:'🛡️ Defensive masterclass, Hakimi pace' },
-    'Senegal':            { form:'WWWLD', goals:2.0, conceded:0.8, rank:20, style:'🦁 Athletic, Mane-inspired' },
-    'Japan':              { form:'WWDWL', goals:2.0, conceded:1.2, rank:17, style:'🎌 Fast transitions, world cup giant-killers' },
-    'South Korea':        { form:'WDWLW', goals:1.8, conceded:1.2, rank:22, style:'🏃 Son Heung-min + high press' },
-    'Canada':             { form:'WDWWD', goals:1.8, conceded:1.1, rank:40, style:'🍁 Alphonso Davies pace, physical' },
-    'Australia':          { form:'LWDWW', goals:1.5, conceded:1.3, rank:25, style:'🦘 Aggressive pressing, set pieces' },
-    'Croatia':            { form:'DWWDL', goals:1.6, conceded:1.0, rank:10, style:'🔵 Modric maestro, disciplined' },
-    'Switzerland':        { form:'WDWWD', goals:1.7, conceded:0.9, rank:19, style:'🏔️ Organized, Xhaka discipline' },
-    'Sweden':             { form:'WWDWL', goals:2.2, conceded:1.0, rank:24, style:'🔶 Isak/Gyokeres lethal strike duo' },
-    'Norway':             { form:'WWWDW', goals:2.8, conceded:1.1, rank:14, style:'💛 Haaland + Odegaard unstoppable' },
-    'Denmark':            { form:'WDWWL', goals:1.9, conceded:0.9, rank:21, style:'🇩🇰 Organized, Eriksen creator' },
-    'Austria':            { form:'WDWWL', goals:1.8, conceded:1.2, rank:23, style:'🔴 Sabitzer & Laimer midfield engine' },
-    'Czechia':            { form:'DLWWW', goals:1.7, conceded:1.1, rank:30, style:'🎯 Schick clinical, 3-4-2-1 press' },
-    'Scotland':           { form:'WDLWW', goals:1.6, conceded:1.1, rank:35, style:'🏴󠁧󠁢󠁳󠁣󠁴󠁿 McTominay box-to-box energy' },
-    'Turkey':             { form:'WDWLW', goals:1.8, conceded:1.3, rank:28, style:'🔴 Guler & Calhanoglu creativity' },
-    'Serbia':             { form:'WDWLW', goals:1.9, conceded:1.4, rank:29, style:'🦅 Vlahovic power, physical' },
-    'Ecuador':            { form:'LWWDW', goals:1.7, conceded:1.2, rank:32, style:'🇪🇨 Caicedo work rate, direct play' },
-    'Iran':               { form:'WDLWW', goals:1.5, conceded:1.0, rank:23, style:'🦁 Defensive solidity, set pieces' },
-    'Saudi Arabia':       { form:'WDLWL', goals:1.4, conceded:1.5, rank:55, style:'⚡ Al-Dawsari flair, compact block' },
-    'Iraq':               { form:'WDWLW', goals:1.5, conceded:1.3, rank:58, style:'🌙 Organized, Hussein finishing' },
-    'Algeria':            { form:'WDWWL', goals:1.8, conceded:1.0, rank:36, style:'🟢 Mahrez creativity, dangerous' },
-    'Ivory Coast':        { form:'WDWLW', goals:1.8, conceded:1.2, rank:38, style:'🐘 Kessie engine, Adingra pace' },
-    'South Africa':       { form:'DWWLW', goals:1.6, conceded:1.1, rank:60, style:'🌍 Zwane flair, passionate attack' },
-    'Ghana':              { form:'LWDWW', goals:1.6, conceded:1.4, rank:50, style:'⭐ Kudus skill, Partey anchor' },
-    'Cameroon':           { form:'WDLWL', goals:1.5, conceded:1.5, rank:44, style:'🦁 Powerful athletes, unpredictable' },
-    'DR Congo':           { form:'WDWLW', goals:1.7, conceded:1.3, rank:42, style:'🦍 Wissa & Bakambu goals' },
-    'Panama':             { form:'DWLWW', goals:1.3, conceded:1.1, rank:65, style:'🔵 Defensive, set piece threat' },
-    'Haiti':              { form:'LWDWW', goals:1.4, conceded:1.6, rank:78, style:'🇭🇹 Bellegarde energy, improving' },
-    'Tunisia':            { form:'WDLWL', goals:1.3, conceded:1.2, rank:48, style:'🇹🇳 Organized, Mejbri talent' },
-    'Jordan':             { form:'WDWLW', goals:1.4, conceded:1.1, rank:70, style:'🦅 Al-Naimat + solid defense' },
-    'Paraguay':           { form:'LDWWL', goals:1.4, conceded:1.4, rank:56, style:'🇵🇾 Almiron engine, gritty' },
-    'Uzbekistan':         { form:'WWDWL', goals:1.6, conceded:1.1, rank:62, style:'🇺🇿 Fayzullaev talent, improving' },
-    'Qatar':              { form:'WDLWL', goals:1.4, conceded:1.5, rank:68, style:'🏟️ Akram Afif skill, home passion' },
-    'Cape Verde':         { form:'WWDLW', goals:1.5, conceded:1.2, rank:75, style:'🇨🇻 Rodrigues flair, organised' },
-    'Bosnia-Herzegovina': { form:'WDWLW', goals:1.6, conceded:1.4, rank:60, style:'🐉 Dzeko experience, unpredictable' },
-    'New Zealand':        { form:'LWDWL', goals:1.2, conceded:1.6, rank:90, style:'🥝 Chris Wood target man' },
-    'Curacao':            { form:'WLDWL', goals:1.3, conceded:1.5, rank:85, style:'🌊 Bacuna brothers, creative' },
+    'Argentina':   { form:'WWWDW', goals: 2.8, conceded: 0.7, rank: 1,  style: '🎭 Tiki-taka + Messi magic' },
+    'France':      { form:'WWDWW', goals: 2.5, conceded: 0.9, rank: 2,  style: '⚡ Counter-attack kings' },
+    'Brazil':      { form:'WWWWW', goals: 3.1, conceded: 0.6, rank: 3,  style: '🎨 Samba football' },
+    'England':     { form:'WWWDW', goals: 2.2, conceded: 0.8, rank: 4,  style: '🦁 Physical & direct' },
+    'Spain':       { form:'WWWWD', goals: 2.6, conceded: 0.5, rank: 5,  style: '🎯 Possession masters' },
+    'Portugal':    { form:'WWDWW', goals: 2.9, conceded: 1.0, rank: 6,  style: '🐐 Ronaldo-powered' },
+    'Germany':     { form:'WDWWW', goals: 2.4, conceded: 1.1, rank: 7,  style: '⚙️ High press machine' },
+    'Netherlands': { form:'WWWDW', goals: 2.3, conceded: 0.9, rank: 8,  style: '🌷 Total football heirs' },
+    'Morocco':     { form:'DWWWD', goals: 1.8, conceded: 0.6, rank: 13, style: '🛡️ Defensive masterclass' },
+    'Japan':       { form:'WWDWL', goals: 2.0, conceded: 1.2, rank: 17, style: '🎌 Fast transitions' },
+    'USA':         { form:'WDWWL', goals: 1.9, conceded: 1.3, rank: 11, style: '🦅 Athletic & physical' },
+    'Mexico':      { form:'WWDLW', goals: 2.1, conceded: 1.4, rank: 15, style: '🌮 Technical + passion' },
+    'Senegal':     { form:'WWWLD', goals: 2.0, conceded: 0.8, rank: 20, style: '🦁 Athletic & direct' },
+    'Colombia':    { form:'WDWWL', goals: 2.2, conceded: 1.1, rank: 12, style: '☕ Technical + flair' },
+    'Uruguay':     { form:'WWDLW', goals: 1.7, conceded: 0.9, rank: 18, style: '💪 Garra Charrúa' },
+    'South Korea': { form:'WDWLW', goals: 1.8, conceded: 1.2, rank: 22, style: '🏃 High intensity press' },
   };
 
   window.showMatchPreview = async (matchId) => {
@@ -13071,12 +12846,6 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
       const homeScore = parseInt(homeEl.dataset?.val ?? homeEl.textContent ?? 0);
       const awayScore = parseInt(awayEl.dataset?.val ?? awayEl.textContent ?? 0);
       const firstScorer = document.getElementById('scorer-' + matchId)?.value || '';
-
-      // Only save if user explicitly interacted with this match
-      // (touched flag set by adjustScore) or if scorer was picked
-      const touched = window._touchedMatches?.has(matchId);
-      if (!touched && !firstScorer) return;
-
       try {
         await setDoc(doc(db, 'predictions', `${currentUser.uid}_${matchId}`), {
           userId: currentUser.uid, matchId, homeScore, awayScore, firstScorer,
@@ -13958,23 +13727,14 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
 
   // Auto dark mode 07:00-19:00 light, 19:00-07:00 dark
   function checkAutoDarkMode() {
-    const manual = localStorage.getItem('manualThemeExpiry');
-    // If manual override still valid (hasn't expired) — skip auto
-    if (manual && Date.now() < parseInt(manual)) return;
-    // Auto: dark between 19:00 and 07:00
     const hour = new Date().getHours();
     applyDarkMode(hour >= 19 || hour < 7);
   }
 
-  // Manual toggle — overrides auto until midnight
+  // Manual toggle — just flips for the session, auto resets next minute
   window.toggleDarkMode = () => {
     const isDark = document.body.classList.contains('dark-mode');
-    const newDark = !isDark;
-    // Set expiry to midnight tonight
-    const midnight = new Date();
-    midnight.setHours(24, 0, 0, 0);
-    localStorage.setItem('manualThemeExpiry', midnight.getTime());
-    applyDarkMode(newDark);
+    applyDarkMode(!isDark);
   };
 
   checkAutoDarkMode();
@@ -14427,7 +14187,24 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
       <div style="text-align:center;margin-bottom:1.25rem;">
         <div style="font-size:48px;margin-bottom:8px;">🤖</div>
         <div style="font-size:18px;font-weight:800;margin-bottom:6px;">AI Auto-fill Predictions</div>
-        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">The AI will analyze team form, stats and tournament history to fill in score predictions and first goalscorers for all upcoming matches in the current week.<br><br><strong style="color:var(--text);">⚠️ This will overwrite your current picks for this week.</strong> You can edit them after.</div>
+        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">The AI will analyze team form, stats and tournament history to fill in score predictions and first goalscorers for all upcoming matches.<br><br><strong style="color:var(--text);">⚠️ This will overwrite your current picks for this week.</strong> You can edit them after.</div>
+      </div>
+      <!-- Joker & DON checkboxes -->
+      <div style="background:var(--surface2);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;flex-direction:column;gap:10px;">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+          <input type="checkbox" id="ai-fill-joker" style="width:18px;height:18px;cursor:pointer;accent-color:#7c3aed;">
+          <div>
+            <div style="font-size:13px;font-weight:700;">🃏 Also pick best match for Joker</div>
+            <div style="font-size:11px;color:var(--text-muted);">AI picks the match where doubling points makes most sense</div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+          <input type="checkbox" id="ai-fill-don" style="width:18px;height:18px;cursor:pointer;accent-color:#d4af37;">
+          <div>
+            <div style="font-size:13px;font-weight:700;">💰 Also activate Double or Nothing</div>
+            <div style="font-size:11px;color:var(--text-muted);">AI decides whether DON is worth the risk based on predictions</div>
+          </div>
+        </label>
       </div>
       <div id="ai-fill-status" style="display:none;padding:10px;background:var(--surface2);border-radius:10px;font-size:13px;text-align:center;margin-bottom:1rem;color:var(--text-muted);">🤖 AI is thinking...</div>
       <div style="display:flex;gap:8px;">
@@ -14624,7 +14401,27 @@ Rules: realistic scores (0-4 range per team), scorer must be a real known player
       status.style.color = '#166534';
       status.textContent = `✅ Filled ${filled} matches, ${scorerFilled} scorers! Review and save.`;
       btn.textContent = '✅ Done!';
-      setTimeout(() => closeAIFillModal(), 2500);
+
+      // Handle Joker/DON checkboxes
+      const jokerChecked = document.getElementById('ai-fill-joker')?.checked;
+      const donChecked = document.getElementById('ai-fill-don')?.checked;
+      if (jokerChecked && window._aiFillPredictions?.length) {
+        const best = window._aiFillPredictions.reduce((b, p) => {
+          const s = Math.abs((p.homeScore||0)-(p.awayScore||0)) + (p.homeScore||0) + (p.awayScore||0);
+          return s > b.score ? {matchId:p.matchId, score:s} : b;
+        }, {matchId:null, score:-1});
+        if (best.matchId) {
+          try { await setDoc(doc(db,'jokerCards',currentUser.uid),{userId:currentUser.uid,matchId:best.matchId,setAt:new Date()}); status.textContent += ' 🃏'; } catch(e){}
+        }
+      }
+      if (donChecked && window._aiFillPredictions?.length) {
+        const confident = window._aiFillPredictions.filter(p=>Math.abs((p.homeScore||0)-(p.awayScore||0))>=2).length;
+        if (confident >= 2) {
+          try { await setDoc(doc(db,'donOptIns',currentUser.uid),{userId:currentUser.uid,activatedAt:new Date(),aiActivated:true}); status.textContent += ' 💰'; } catch(e){}
+        } else { status.textContent += ' 💰 DON skipped (not confident)'; }
+      }
+
+      setTimeout(() => closeAIFillModal(), 3000);
 
     } catch(e) {
       console.error('AI fill error:', e);
@@ -14636,5 +14433,26 @@ Rules: realistic scores (0-4 range per team), scorer must be a real known player
     }
   };
   </script>
+
+  <!-- MISSING PREDICTIONS REMINDER POPUP -->
+  <div id="missing-preds-popup" style="display:none;position:fixed;inset:0;z-index:1050;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;">
+    <div style="background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:0 0 1.5rem;box-shadow:0 -8px 40px rgba(0,0,0,0.3);max-height:75vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:center;padding:12px 0 4px;">
+        <div style="width:36px;height:4px;border-radius:99px;background:var(--border);"></div>
+      </div>
+      <div style="padding:12px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-size:16px;font-weight:800;">⏰ Upcoming matches need your picks!</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Don't miss out on points</div>
+        </div>
+        <button onclick="document.getElementById('missing-preds-popup').style.display='none'" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:20px;">✕</button>
+      </div>
+      <div id="missing-preds-list" style="padding:12px 20px;"></div>
+      <div style="padding:0 20px;">
+        <button onclick="document.getElementById('missing-preds-popup').style.display='none';showPage('matches');" style="width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;font-size:15px;font-weight:700;cursor:pointer;">Go fill them in! ⚽</button>
+        <button onclick="document.getElementById('missing-preds-popup').style.display='none'" style="width:100%;padding:10px;border-radius:12px;border:none;background:none;color:var(--text-muted);font-size:12px;cursor:pointer;margin-top:6px;">Dismiss</button>
+      </div>
+    </div>
+  </div>
 
 </body>
