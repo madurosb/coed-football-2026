@@ -4814,6 +4814,57 @@
     }
   }
 
+  // AI Joker/DON helpers — need access to db/Firebase from module scope
+  window._aiSetJoker = async (predictions) => {
+    if (!currentUser) return 'No user';
+    try {
+      const allMatchesSnap = await getDocs(collection(db, 'matches'));
+      const allPredsSnap = await getDocs(query(collection(db, 'predictions'), where('userId', '==', currentUser.uid)));
+      const allMyPreds = {};
+      allPredsSnap.forEach(d => { allMyPreds[d.data().matchId] = d.data(); });
+
+      let bestMatchId = null, bestScore = -1;
+      allMatchesSnap.forEach(d => {
+        const m = d.data();
+        if (!m.homeTeam || m.homeTeam.includes('TBD') || m.homeTeam.includes('Winner')) return;
+        const pred = allMyPreds[d.id];
+        if (!pred || pred.homeScore == null) return;
+        const s = Math.abs(pred.homeScore - pred.awayScore) * 2 + pred.homeScore + pred.awayScore;
+        if (s > bestScore) { bestScore = s; bestMatchId = d.id; }
+      });
+
+      if (bestMatchId) {
+        await setDoc(doc(db, 'jokerCards', currentUser.uid), {
+          userId: currentUser.uid, matchId: bestMatchId, setAt: new Date()
+        });
+        setTimeout(() => { if (typeof loadJokerStatus === 'function') loadJokerStatus(); }, 800);
+        return '🃏 Joker set on best match!';
+      }
+      return '🃏 No suitable match found for Joker';
+    } catch(e) { return '🃏 Joker error: ' + e.message; }
+  };
+
+  window._aiSetDON = async (predictions) => {
+    if (!currentUser) return 'No user';
+    if (!predictions?.length) return '💰 No predictions';
+    try {
+      const best = predictions.reduce((b, p) => {
+        const s = Math.abs((p.homeScore||0) - (p.awayScore||0)) * 2 + (p.homeScore||0) + (p.awayScore||0);
+        return s > b.score ? { matchId: p.matchId, score: s } : b;
+      }, { matchId: null, score: -1 });
+
+      if (best.matchId && best.score >= 2) {
+        await setDoc(doc(db, 'donOptIns', currentUser.uid), {
+          userId: currentUser.uid, matchId: best.matchId, activatedAt: new Date(), aiActivated: true
+        });
+        await setDoc(doc(db, 'doubleOrNothing', 'current'), { matchId: best.matchId }, { merge: true });
+        setTimeout(() => { if (typeof loadDONStatus === 'function') loadDONStatus(); }, 800);
+        return '💰 DON activated!';
+      }
+      return '💰 DON skipped (not confident enough)';
+    } catch(e) { return '💰 DON error: ' + e.message; }
+  };
+
   // Poll for new messages every 30s
   setInterval(() => { if (currentUser) updateMsgBadge(); }, 30000);
 
@@ -14250,10 +14301,13 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
         const home = card.dataset.home;
         const away = card.dataset.away;
         const matchId = card.dataset.matchId;
-        // Only upcoming (inputs not disabled)
-        const inputs = card.querySelectorAll('.score-input');
-        const isLocked = inputs.length > 0 && inputs[0].disabled;
-        if (home && away && !isLocked) matches.push({ matchId, home, away });
+        if (!home || !away || !matchId) return;
+        // Only if card is visible (on current day/week tab)
+        if (card.offsetParent === null) return;
+        // Only unlocked — check if score buttons are disabled
+        const minusBtn = card.querySelector('button[onclick*="adjustScore"]');
+        const isLocked = minusBtn && minusBtn.disabled;
+        if (!isLocked) matches.push({ matchId, home, away });
       });
 
       if (matches.length === 0) {
@@ -14418,68 +14472,17 @@ Rules: realistic scores (0-4 range per team), scorer must be a real known player
       status.textContent = `✅ Filled ${filled} matches, ${scorerFilled} scorers! Review and save.`;
       btn.textContent = '✅ Done!';
 
-      // Handle Joker/DON checkboxes
+      // Handle Joker/DON — delegate to module functions that have Firebase access
       const jokerChecked = document.getElementById('ai-fill-joker')?.checked;
       const donChecked = document.getElementById('ai-fill-don')?.checked;
 
-      if (jokerChecked) {
-        // Scan ALL group stage matches (not just this week) for best Joker candidate
-        try {
-          const allMatchesSnap = await getDocs(collection(db, 'matches'));
-          const allPredsSnap = await getDocs(query(collection(db, 'predictions'), where('userId', '==', currentUser.uid)));
-          const allMyPreds = {};
-          allPredsSnap.forEach(d => { allMyPreds[d.data().matchId] = d.data(); });
-
-          let bestMatchId = null, bestScore = -1;
-          allMatchesSnap.forEach(d => {
-            const m = d.data();
-            if (!m.homeTeam || m.homeTeam.includes('TBD') || m.homeTeam.includes('Winner')) return;
-            const pred = allMyPreds[d.id];
-            if (!pred || pred.homeScore == null) return;
-            // Score = goal diff + total goals (high scoring confident prediction)
-            const s = Math.abs(pred.homeScore - pred.awayScore) * 2 + pred.homeScore + pred.awayScore;
-            if (s > bestScore) { bestScore = s; bestMatchId = d.id; }
-          });
-
-          if (bestMatchId) {
-            await setDoc(doc(db, 'jokerCards', currentUser.uid), {
-              userId: currentUser.uid, matchId: bestMatchId, setAt: new Date()
-            });
-            // Update UI badge on that match card
-            const jokerCard = document.querySelector(`.match-card[data-match-id="${bestMatchId}"]`);
-            if (jokerCard) {
-              const badge = jokerCard.querySelector('.joker-badge');
-              if (badge) badge.style.display = 'flex';
-            }
-            status.textContent += ' 🃏 Joker set!';
-              // Reload joker UI to show badge on card
-              setTimeout(() => { if (typeof loadJokerStatus === 'function') loadJokerStatus(); }, 800);
-          }
-        } catch(e) { console.log('Joker error:', e); }
+      if (jokerChecked && window._aiSetJoker) {
+        const msg = await window._aiSetJoker(window._aiFillPredictions);
+        status.textContent += ' ' + msg;
       }
-
-      if (donChecked) {
-        // DON = one per week — find the week's most confident prediction
-        try {
-          const donPreds = window._aiFillPredictions || [];
-          if (donPreds.length > 0) {
-            const best = donPreds.reduce((b, p) => {
-              const s = Math.abs(p.homeScore - p.awayScore) * 2 + p.homeScore + p.awayScore;
-              return s > b.score ? { matchId: p.matchId, score: s } : b;
-            }, { matchId: null, score: -1 });
-
-            if (best.matchId) {
-              await setDoc(doc(db, 'donOptIns', currentUser.uid), {
-                userId: currentUser.uid, matchId: best.matchId, activatedAt: new Date(), aiActivated: true
-              });
-              // Update DON setting
-              await setDoc(doc(db, 'doubleOrNothing', 'current'), { matchId: best.matchId }, { merge: true });
-              status.textContent += ' 💰 DON activated!';
-              // Reload DON UI
-              setTimeout(() => { if (typeof loadDONStatus === 'function') loadDONStatus(); }, 800);
-            }
-          }
-        } catch(e) { console.log('DON error:', e); }
+      if (donChecked && window._aiSetDON) {
+        const msg = await window._aiSetDON(window._aiFillPredictions);
+        status.textContent += ' ' + msg;
       }
 
       setTimeout(() => closeAIFillModal(), 3000);
