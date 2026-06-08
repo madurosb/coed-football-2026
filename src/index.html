@@ -3294,7 +3294,11 @@
             <div style="font-weight:600;">${u.nickname||u.displayName}</div>
             <div style="color:${bets.length > 0 ? 'var(--badge-blue-text)' : 'var(--text-muted)'};">
               ${bets.length > 0
-                ? bets.map(b => `🎰 ${b.matchTeams || 'Match'} <span style="font-size:10px;color:var(--text-muted);">(${(b.week||'').replace('wc2026-week-','Wk ')})</span>`).join('<br>')
+                ? bets.map(b => {
+                    const m = b.matchId ? matches[b.matchId] : null;
+                    const matchStr = m ? `${m.homeTeam} vs ${m.awayTeam}` : (b.matchTeams || b.matchId || '?');
+                    return `🎰 ${matchStr}`;
+                  }).join('<br>')
                 : '❌ None yet'}
             </div>
           </div>`;
@@ -4750,114 +4754,6 @@
     liveScoresInterval = setInterval(updateLiveScoreCards, 60000);
   }
 
-  // ═══ MISSING PREDICTIONS REMINDER (48h-24h window) ═══
-  async function checkUpcomingMissingPreds() {
-    if (!currentUser) return;
-    const now = new Date();
-    const in48h = new Date(now.getTime() + 48 * 60 * 60 * 1000);
-    const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-
-    try {
-      const [matchesSnap, predsSnap] = await Promise.all([
-        getDocs(collection(db, 'matches')),
-        getDocs(query(collection(db, 'predictions'), where('userId', '==', currentUser.uid)))
-      ]);
-
-      const myPreds = {};
-      predsSnap.forEach(d => { myPreds[d.data().matchId] = d.data(); });
-
-      const missing = [];
-      matchesSnap.forEach(d => {
-        const m = d.data();
-        if (!m.kickoff || !m.homeTeam || m.homeTeam.includes('TBD') || m.homeTeam.includes('Winner')) return;
-        const kickoff = m.kickoff.toDate ? m.kickoff.toDate() : new Date(m.kickoff);
-        // Only matches in 24h-48h window
-        if (kickoff < in24h || kickoff > in48h) return;
-
-        const pred = myPreds[d.id];
-        const missingScore = !pred || pred.homeScore == null;
-        const missingScorer = pred && pred.homeScore != null &&
-          !(parseInt(pred.homeScore) === 0 && parseInt(pred.awayScore) === 0) &&
-          !pred.firstScorer;
-
-        if (missingScore || missingScorer) {
-          const timeStr = kickoff.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-          const dateStr = kickoff.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-          missing.push({
-            match: `${m.homeTeam} vs ${m.awayTeam}`,
-            time: `${dateStr} ${timeStr}`,
-            missingScore,
-            missingScorer
-          });
-        }
-      });
-
-      if (missing.length === 0) return;
-
-      const list = document.getElementById('missing-preds-list');
-      const popup = document.getElementById('missing-preds-popup');
-      if (!list || !popup) return;
-
-      list.innerHTML = missing.map(item => `
-        <div style="padding:10px 0;border-bottom:1px solid var(--border);">
-          <div style="font-size:13px;font-weight:700;">${item.match}</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">⏰ ${item.time}</div>
-          <div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;">
-            ${item.missingScore ? '<span style="background:rgba(239,68,68,0.12);color:#ef4444;font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;">❌ No prediction</span>' : ''}
-            ${item.missingScorer ? '<span style="background:rgba(245,158,11,0.12);color:#d97706;font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;">⚽ No scorer picked</span>' : ''}
-          </div>
-        </div>`).join('');
-
-      popup.style.display = 'flex';
-    } catch(e) {
-      console.log('Missing preds check error:', e.message);
-    }
-  }
-
-  // AI Joker/DON helpers — need access to db/Firebase from module scope
-  window._aiSetJoker = async (predictions) => {
-    if (!currentUser) return 'No user';
-    if (!predictions?.length) return '🃏 No predictions';
-    try {
-      // Use in-memory predictions (just filled by AI) — no need to re-read Firestore
-      const best = predictions.reduce((b, p) => {
-        const s = Math.abs((p.homeScore||0) - (p.awayScore||0)) * 2 + (p.homeScore||0) + (p.awayScore||0);
-        return s > b.score ? { matchId: p.matchId, score: s } : b;
-      }, { matchId: null, score: -1 });
-
-      if (best.matchId) {
-        await setDoc(doc(db, 'jokerCards', currentUser.uid), {
-          userId: currentUser.uid, matchId: best.matchId, setAt: new Date()
-        });
-        setTimeout(() => { if (typeof loadJokerStatus === 'function') loadJokerStatus(); }, 800);
-        return '🃏 Joker set!';
-      }
-      return '🃏 No match found for Joker';
-    } catch(e) { return '🃏 Joker error: ' + e.message; }
-  };
-
-  window._aiSetDON = async (predictions) => {
-    if (!currentUser) return 'No user';
-    if (!predictions?.length) return '💰 No predictions';
-    try {
-      const best = predictions.reduce((b, p) => {
-        const s = Math.abs((p.homeScore||0) - (p.awayScore||0)) * 2 + (p.homeScore||0) + (p.awayScore||0);
-        return s > b.score ? { matchId: p.matchId, score: s } : b;
-      }, { matchId: null, score: -1 });
-
-      if (best.matchId && best.score >= 2) {
-        // Use same doc ID format as toggleDON: {uid}_{matchId}
-        const docId = `${currentUser.uid}_${best.matchId}`;
-        await setDoc(doc(db, 'donOptIns', docId), {
-          userId: currentUser.uid, matchId: best.matchId, activatedAt: new Date(), aiActivated: true
-        });
-        setTimeout(() => { if (typeof loadDONStatus === 'function') loadDONStatus(); }, 800);
-        return '💰 DON activated!';
-      }
-      return '💰 DON skipped (score diff not high enough)';
-    } catch(e) { return '💰 DON error: ' + e.message; }
-  };
-
   // Poll for new messages every 30s
   setInterval(() => { if (currentUser) updateMsgBadge(); }, 30000);
 
@@ -5328,12 +5224,10 @@ Use exactly the formation provided. Use real known players.`
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
-  // Ensure auth persists across page refreshes — use same version as imports
-  import('https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js').then(({browserLocalPersistence, setPersistence}) => {
-    setPersistence(auth, browserLocalPersistence)
-      .then(() => console.log('Auth persistence set to LOCAL'))
-      .catch(e => console.warn('Persistence set failed:', e));
-  }).catch(e => console.warn('Persistence import failed:', e));
+  // Ensure auth persists across page refreshes
+  import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js').then(({browserLocalPersistence, setPersistence}) => {
+    setPersistence(auth, browserLocalPersistence).catch(()=>{});
+  }).catch(()=>{});
   const db = getFirestore(app);
 
   // Show opening video — after DOM is fully ready
@@ -5734,8 +5628,6 @@ Use exactly the formation provided. Use real known players.`
       setTimeout(initAutoSaveToggle, 300);
       // Start live scores polling
       setTimeout(startLiveScoresPolling, 1500);
-      // Check for upcoming missing predictions (48h-24h window)
-      setTimeout(checkUpcomingMissingPreds, 3000);
       // Pulse attention on important picks if not yet filled
       setTimeout(() => {
         const playerCard = document.querySelector('.player-pick');
@@ -8272,59 +8164,20 @@ Use exactly the formation provided. Use real known players.`
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           <span class="status-badge status-active">Active</span>
-          ${u.isAdmin ? '<span style="font-size:11px;color:var(--green);font-weight:500;">Admin</span>' : `<button class="danger-btn" onclick="removeUser('${u.uid}','${(u.nickname||u.displayName||'').replace(/'/g,"\\'")}')">Remove</button>`}
+          ${u.isAdmin ? '<span style="font-size:11px;color:var(--green);font-weight:500;">Admin</span>' : `<button class="danger-btn" onclick="removeUser('${u.uid}')">Remove</button>`}
         </div>
       </div>`;
     });
     list.innerHTML = html || '<div style="font-size:13px;color:var(--text-muted);">No users yet</div>';
   }
 
-  window.removeUser = async (uid, nickname) => {
-    const name = nickname || uid.substring(0, 8);
-    if (!confirm(`⚠️ Delete "${name}" and ALL their data?\n\nThis will permanently delete:\n• User profile\n• All predictions\n• Joker card\n• DON opt-in\n• Messages\n• Trash talk\n\nThis cannot be undone!`)) return;
-
-    const statusEl = document.createElement('div');
-    statusEl.style.cssText = 'position:fixed;bottom:20px;right:20px;background:#1a1a2e;border:1px solid #3b82f6;color:white;padding:12px 18px;border-radius:10px;font-size:13px;z-index:9999;';
-    statusEl.textContent = '🗑️ Deleting user data...';
-    document.body.appendChild(statusEl);
-
+  window.removeUser = async (uid) => {
+    if (!confirm('Remove this user? This cannot be undone.')) return;
     try {
-      const collections = ['predictions', 'jokerCards', 'donOptIns', 'trashTalk', 'groupPredVotes', 'boldPredictions'];
-      let deleted = 0;
-
-      for (const col of collections) {
-        try {
-          // Try by userId field
-          const snap = await getDocs(query(collection(db, col), where('userId', '==', uid)));
-          for (const d of snap.docs) { await deleteDoc(d.ref); deleted++; }
-        } catch(e) {}
-        try {
-          // Try by direct doc id (jokerCards, donOptIns use uid as doc id)
-          const directRef = doc(db, col, uid);
-          const directSnap = await getDoc(directRef);
-          if (directSnap.exists()) { await deleteDoc(directRef); deleted++; }
-        } catch(e) {}
-      }
-
-      // Messages — from or to
-      try {
-        const fromSnap = await getDocs(query(collection(db, 'messages'), where('from', '==', uid)));
-        for (const d of fromSnap.docs) { await deleteDoc(d.ref); deleted++; }
-        const toSnap = await getDocs(query(collection(db, 'messages'), where('to', '==', uid)));
-        for (const d of toSnap.docs) { await deleteDoc(d.ref); deleted++; }
-      } catch(e) {}
-
-      // Finally delete user doc
       await deleteDoc(doc(db, 'users', uid));
-      deleted++;
-
-      statusEl.style.borderColor = '#1D9E75';
-      statusEl.textContent = `✅ Deleted "${name}" and ${deleted} records`;
-      setTimeout(() => { statusEl.remove(); loadAdminUsers(); }, 2500);
+      loadAdminUsers();
     } catch(e) {
-      statusEl.style.borderColor = '#ef4444';
-      statusEl.textContent = '❌ Error: ' + e.message;
-      setTimeout(() => statusEl.remove(), 3000);
+      alert('Error removing user: ' + e.message);
     }
   };
 
@@ -8484,11 +8337,10 @@ Use exactly the formation provided. Use real known players.`
         const hasPlayer = !!u.tournamentPlayer;
         // 3. First match filled
         const hasFirstMatch = firstMatchId ? (predsByMatchId[firstMatchId]?.homeScore != null) : false;
-        // 4. Scorers — check filled predictions, exclude 0-0 (no scorer needed)
+        // 4. Scorers — check all predictions that have scores filled
         const filledPreds = preds.filter(p => p.homeScore != null && p.awayScore != null);
-        const scorerRequired = filledPreds.filter(p => !(parseInt(p.homeScore) === 0 && parseInt(p.awayScore) === 0));
-        const missingScorer = scorerRequired.filter(p => !p.firstScorer || p.firstScorer === '').length;
-        const scorerLabel = scorerRequired.length === 0
+        const missingScorer = filledPreds.filter(p => !p.scorer || p.scorer === '').length;
+        const scorerLabel = filledPreds.length === 0
           ? '<span style="color:var(--text-muted);font-size:12px;">➖</span>'
           : missingScorer === 0
             ? '<span style="color:#1D9E75;font-size:14px;">✅</span>'
@@ -11513,23 +11365,16 @@ Use exactly the formation provided. Use real known players.`
       'DR Congo (Congo DR)': 'DR Congo',
       'Republique du Congo': 'DR Congo',
       'Republic of Congo': 'DR Congo',
-      'Cape Verde': 'Cape Verde',
-      'Cape Verde Islands': 'Cape Verde',
-      'Bosnia and Herzegovina': 'Bosnia-Herzegovina',
-      'Bosnia And Herzegovina': 'Bosnia-Herzegovina',
-      'Bosnia & Herzegovina': 'Bosnia-Herzegovina',
-      'Curacao': 'Curacao',
-      'Curaçao': 'Curacao',
+      'Cape Verde': 'Cabo Verde',
+      'Cape Verde Islands': 'Cabo Verde',
+      'Bosnia and Herzegovina': 'Bosnia & Herzegovina',
+      'Bosnia And Herzegovina': 'Bosnia & Herzegovina',
+      'Bosnia-Herzegovina': 'Bosnia & Herzegovina',
+      'Curacao': 'Curaçao',
       'Korea Republic': 'South Korea',
       'United States': 'USA',
-      'USA': 'USA',
-      'Ivory Coast': 'Ivory Coast',
+      'Ivory Coast': "Côte d'Ivoire",
       "Côte d'Ivoire": 'Ivory Coast',
-      "Cote d'Ivoire": 'Ivory Coast',
-      'Czech Republic': 'Czechia',
-      'IR Iran': 'Iran',
-      'South Africa': 'South Africa',
-      'New Zealand': 'New Zealand',
     };
     return map[name] || name;
   }
@@ -14280,24 +14125,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
       <div style="text-align:center;margin-bottom:1.25rem;">
         <div style="font-size:48px;margin-bottom:8px;">🤖</div>
         <div style="font-size:18px;font-weight:800;margin-bottom:6px;">AI Auto-fill Predictions</div>
-        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">The AI will analyze team form, stats and tournament history to fill in score predictions and first goalscorers for all upcoming matches.<br><br><strong style="color:var(--text);">⚠️ This will overwrite your current picks for this week.</strong> You can edit them after.</div>
-      </div>
-      <!-- Joker & DON checkboxes -->
-      <div style="background:var(--surface2);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;flex-direction:column;gap:10px;">
-        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-          <input type="checkbox" id="ai-fill-joker" style="width:18px;height:18px;cursor:pointer;accent-color:#7c3aed;">
-          <div>
-            <div style="font-size:13px;font-weight:700;">🃏 Also pick best match for Joker</div>
-            <div style="font-size:11px;color:var(--text-muted);">AI picks the match where doubling points makes most sense</div>
-          </div>
-        </label>
-        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-          <input type="checkbox" id="ai-fill-don" style="width:18px;height:18px;cursor:pointer;accent-color:#d4af37;">
-          <div>
-            <div style="font-size:13px;font-weight:700;">💰 Also activate Double or Nothing</div>
-            <div style="font-size:11px;color:var(--text-muted);">AI decides whether DON is worth the risk based on predictions</div>
-          </div>
-        </label>
+        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">The AI will analyze team form, stats and tournament history to fill in score predictions and first goalscorers for all upcoming matches in the current week.<br><br><strong style="color:var(--text);">⚠️ This will overwrite your current picks for this week.</strong> You can edit them after.</div>
       </div>
       <div id="ai-fill-status" style="display:none;padding:10px;background:var(--surface2);border-radius:10px;font-size:13px;text-align:center;margin-bottom:1rem;color:var(--text-muted);">🤖 AI is thinking...</div>
       <div style="display:flex;gap:8px;">
@@ -14340,13 +14168,10 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
         const home = card.dataset.home;
         const away = card.dataset.away;
         const matchId = card.dataset.matchId;
-        if (!home || !away || !matchId) return;
-        // Only if card is visible (on current day/week tab)
-        if (card.offsetParent === null) return;
-        // Only unlocked — check if score buttons are disabled
-        const minusBtn = card.querySelector('button[onclick*="adjustScore"]');
-        const isLocked = minusBtn && minusBtn.disabled;
-        if (!isLocked) matches.push({ matchId, home, away });
+        // Only upcoming (inputs not disabled)
+        const inputs = card.querySelectorAll('.score-input');
+        const isLocked = inputs.length > 0 && inputs[0].disabled;
+        if (home && away && !isLocked) matches.push({ matchId, home, away });
       });
 
       if (matches.length === 0) {
@@ -14493,38 +14318,11 @@ Rules: realistic scores (0-4 range per team), scorer must be a real known player
     }
   });
 
-      // Save predictions for Joker/DON use
-      window._aiFillPredictions = predictions.map((pred, idx) => {
-        let card = document.querySelector(`.match-card[data-match-id="${pred.matchId}"]`);
-        if (!card && pred.home_team && pred.away_team) card = cardsByTeams[`${pred.home_team}|${pred.away_team}`];
-        if (!card && idx < unlockedCards.length) card = unlockedCards[idx];
-        if (!card) return null;
-        return {
-          matchId: card.dataset.matchId,
-          homeScore: typeof pred.home === 'number' ? pred.home : parseInt(pred.home) || 0,
-          awayScore: typeof pred.away === 'number' ? pred.away : parseInt(pred.away) || 0,
-        };
-      }).filter(Boolean);
-
       status.style.background = 'rgba(29,158,117,0.1)';
       status.style.color = '#166534';
       status.textContent = `✅ Filled ${filled} matches, ${scorerFilled} scorers! Review and save.`;
       btn.textContent = '✅ Done!';
-
-      // Handle Joker/DON — delegate to module functions that have Firebase access
-      const jokerChecked = document.getElementById('ai-fill-joker')?.checked;
-      const donChecked = document.getElementById('ai-fill-don')?.checked;
-
-      if (jokerChecked && window._aiSetJoker) {
-        const msg = await window._aiSetJoker(window._aiFillPredictions);
-        status.textContent += ' ' + msg;
-      }
-      if (donChecked && window._aiSetDON) {
-        const msg = await window._aiSetDON(window._aiFillPredictions);
-        status.textContent += ' ' + msg;
-      }
-
-      setTimeout(() => closeAIFillModal(), 3000);
+      setTimeout(() => closeAIFillModal(), 2500);
 
     } catch(e) {
       console.error('AI fill error:', e);
@@ -14536,26 +14334,5 @@ Rules: realistic scores (0-4 range per team), scorer must be a real known player
     }
   };
   </script>
-
-  <!-- MISSING PREDICTIONS REMINDER POPUP -->
-  <div id="missing-preds-popup" style="display:none;position:fixed;inset:0;z-index:1050;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;">
-    <div style="background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:0 0 1.5rem;box-shadow:0 -8px 40px rgba(0,0,0,0.3);max-height:75vh;overflow-y:auto;">
-      <div style="display:flex;justify-content:center;padding:12px 0 4px;">
-        <div style="width:36px;height:4px;border-radius:99px;background:var(--border);"></div>
-      </div>
-      <div style="padding:12px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-        <div>
-          <div style="font-size:16px;font-weight:800;">⏰ Upcoming matches need your picks!</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Don't miss out on points</div>
-        </div>
-        <button onclick="document.getElementById('missing-preds-popup').style.display='none'" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:20px;">✕</button>
-      </div>
-      <div id="missing-preds-list" style="padding:12px 20px;"></div>
-      <div style="padding:0 20px;">
-        <button onclick="document.getElementById('missing-preds-popup').style.display='none';showPage('matches');" style="width:100%;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;font-size:15px;font-weight:700;cursor:pointer;">Go fill them in! ⚽</button>
-        <button onclick="document.getElementById('missing-preds-popup').style.display='none'" style="width:100%;padding:10px;border-radius:12px;border:none;background:none;color:var(--text-muted);font-size:12px;cursor:pointer;margin-top:6px;">Dismiss</button>
-      </div>
-    </div>
-  </div>
 
 </body>
