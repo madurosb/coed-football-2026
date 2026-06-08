@@ -1253,27 +1253,24 @@
   </style>
 </div>
 
-<div id="notif-panel" style="display:none;position:fixed;top:54px;right:0;width:min(400px,100vw);max-height:75vh;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 0 16px;z-index:999;box-shadow:-4px 8px 32px rgba(0,0,0,0.18);">
+<div id="notif-panel" style="display:none;position:fixed;top:54px;right:0;width:min(380px,100vw);max-height:70vh;overflow-y:auto;background:var(--surface);border-left:0.5px solid var(--border);border-bottom:0.5px solid var(--border);border-radius:0 0 0 14px;z-index:999;box-shadow:-4px 4px 24px rgba(0,0,0,0.12);">
   <!-- Header -->
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:1;backdrop-filter:blur(8px);">
-    <div style="display:flex;align-items:center;gap:8px;">
-      <span style="font-size:18px;">🔔</span>
-      <span style="font-size:15px;font-weight:800;">Notifications</span>
-    </div>
-    <div style="display:flex;gap:6px;align-items:center;">
-      <button onclick="markAllNotifsRead()" style="font-size:11px;font-weight:600;color:var(--accent);background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:6px;cursor:pointer;padding:4px 8px;">✓ All read</button>
-      <button onclick="deleteAllNotifs()" style="font-size:11px;font-weight:600;color:#ef4444;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:6px;cursor:pointer;padding:4px 8px;">🗑️</button>
-      <button onclick="toggleNotifPanel()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:14px;color:var(--text-muted);padding:4px 8px;line-height:1;">✕</button>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px;border-bottom:0.5px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:1;">
+    <div style="font-size:14px;font-weight:600;">🔔 Notifications</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button onclick="markAllNotifsRead()" style="font-size:11px;color:var(--green);background:none;border:none;cursor:pointer;padding:0;">Mark all read</button>
+      <button onclick="deleteAllNotifs()" style="font-size:11px;color:#E24B4A;background:none;border:none;cursor:pointer;padding:0;">Delete all</button>
+      <button onclick="toggleNotifPanel()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text-muted);padding:0;">×</button>
     </div>
   </div>
   <!-- Category tabs -->
-  <div style="display:flex;gap:4px;padding:8px 12px;border-bottom:1px solid var(--border);position:sticky;top:49px;background:var(--surface);z-index:1;">
-    <button id="ntab-all" onclick="setNotifTab('all')" style="flex:1;padding:6px 4px;font-size:11px;font-weight:700;border:none;border-radius:8px;background:var(--accent);color:white;cursor:pointer;">All</button>
-    <button id="ntab-game" onclick="setNotifTab('game')" style="flex:1;padding:6px 4px;font-size:11px;font-weight:600;border:none;border-radius:8px;background:none;color:var(--text-muted);cursor:pointer;">⚽ Game</button>
-    <button id="ntab-social" onclick="setNotifTab('social')" style="flex:1;padding:6px 4px;font-size:11px;font-weight:600;border:none;border-radius:8px;background:none;color:var(--text-muted);cursor:pointer;">💬 Social</button>
-    <button id="ntab-system" onclick="setNotifTab('system')" style="flex:1;padding:6px 4px;font-size:11px;font-weight:600;border:none;border-radius:8px;background:none;color:var(--text-muted);cursor:pointer;">🔔 System</button>
+  <div style="display:flex;gap:0;border-bottom:0.5px solid var(--border);position:sticky;top:45px;background:var(--surface);z-index:1;">
+    <button id="ntab-all" onclick="setNotifTab('all')" style="flex:1;padding:8px 4px;font-size:11px;font-weight:500;border:none;border-bottom:2px solid var(--green);background:none;color:var(--text);cursor:pointer;">All</button>
+    <button id="ntab-game" onclick="setNotifTab('game')" style="flex:1;padding:8px 4px;font-size:11px;font-weight:500;border:none;border-bottom:2px solid transparent;background:none;color:var(--text-muted);cursor:pointer;">⚽ Game</button>
+    <button id="ntab-social" onclick="setNotifTab('social')" style="flex:1;padding:8px 4px;font-size:11px;font-weight:500;border:none;border-bottom:2px solid transparent;background:none;color:var(--text-muted);cursor:pointer;">💬 Social</button>
+    <button id="ntab-system" onclick="setNotifTab('system')" style="flex:1;padding:8px 4px;font-size:11px;font-weight:500;border:none;border-bottom:2px solid transparent;background:none;color:var(--text-muted);cursor:pointer;">🔔 System</button>
   </div>
-  <div id="notif-list" style="padding:8px 0;">
+  <div id="notif-list" style="padding:0;">
     <div style="text-align:center;padding:2rem;font-size:13px;color:var(--text-muted);">Loading...</div>
   </div>
 </div>
@@ -1607,15 +1604,18 @@
         <div style="font-size:22px;font-weight:800;margin-bottom:4px;">Predictions</div>
         <div style="font-size:13px;color:var(--text-muted);">Pick scores &amp; first goalscorers · Deadline: 24h before kickoff</div>
       </div>
-      <!-- AI Auto-fill buttons -->
-      <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
-        <button onclick="showAIFillModal()" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:10px;padding:8px 12px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(124,58,237,0.4);white-space:nowrap;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+      <!-- AI Auto-fill button -->
+      <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
+        <button onclick="showAIFillModal()" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:10px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:0 3px 10px rgba(124,58,237,0.4);white-space:nowrap;">
           <span>🤖</span><span>AI Fill picks</span>
         </button>
-        <button onclick="showAIJokerDonModal()" style="background:linear-gradient(135deg,#d97706,#b45309);color:white;border:none;border-radius:10px;padding:8px 12px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(217,119,6,0.4);white-space:nowrap;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+        <button onclick="runAIScorerFill()" style="background:linear-gradient(135deg,#0891b2,#0e7490);color:white;border:none;border-radius:10px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:0 3px 10px rgba(8,145,178,0.4);white-space:nowrap;">
+          <span>🎯</span><span>AI Fill scorers</span>
+        </button>
+        <button onclick="showAIJokerDonModal()" style="background:linear-gradient(135deg,#d97706,#b45309);color:white;border:none;border-radius:10px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:0 3px 10px rgba(217,119,6,0.4);white-space:nowrap;">
           <span>🃏</span><span>AI Joker & DON</span>
         </button>
-        <button onclick="showDummiesWizard()" style="background:linear-gradient(135deg,#059669,#047857);color:white;border:none;border-radius:10px;padding:8px 12px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(5,150,105,0.4);white-space:nowrap;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+        <button onclick="showDummiesWizard()" style="background:linear-gradient(135deg,#059669,#047857);color:white;border:none;border-radius:10px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:0 3px 10px rgba(5,150,105,0.4);white-space:nowrap;">
           <span>🎮</span><span>COED for Dummies</span>
         </button>
       </div>
@@ -2711,54 +2711,26 @@
       </div>
       <div class="admin-card" onclick="showAdminSub('knockout-admin')"><div class="icon">⚡</div><div class="title">Knockout stages</div><div class="desc">Enable predictions for Round of 16, Quarter-finals, Semi-finals and Final once the group stage is done.</div></div>
         <div class="admin-card" onclick="showAdminSub('score-verify')"><div class="icon">🔍</div><div class="title">Score verification</div><div class="desc">Check that all points are calculated correctly. Compare predicted vs actual results and audit per player.</div></div>
-        <div class="admin-card" onclick="showAdminSub('player-hub');loadReadinessOverview()"><div class="icon">👥</div><div class="title">Player Hub</div><div class="desc">Readiness overview, tournament picks (winner & player), and Joker & DON status — all in one place.</div></div>
+        <div class="admin-card" onclick="showAdminSub('picks-overview')"><div class="icon">📋</div><div class="title">Picks overview</div><div class="desc">See who picked which tournament player and World Cup winner. Verify everyone submitted before June 10.</div></div>
+        <div class="admin-card" onclick="showAdminSub('joker-don-overview')"><div class="icon">🃏</div><div class="title">Joker & DON overview</div><div class="desc">See which players activated their Joker card and Double or Nothing bets this tournament.</div></div>
+        <div class="admin-card" onclick="showAdminSub('readiness-overview');loadReadinessOverview()"><div class="icon">✅</div><div class="title">Player readiness</div><div class="desc">Quick overview of every player — who picked their winner, tournament player, filled predictions, scorers, Joker & DON.</div></div>
 
       </div>
     </div>
-    <div id="admin-player-hub" class="admin-sub">
+    <div id="admin-readiness-overview" class="admin-sub">
       <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
       <div class="form-card">
-        <h2>👥 Player Hub</h2>
-        <!-- Tabs -->
-        <div style="display:flex;gap:6px;margin-bottom:1.25rem;border-bottom:1px solid var(--border);padding-bottom:10px;flex-wrap:wrap;">
-          <button id="hub-tab-readiness" onclick="switchHubTab('readiness')" style="padding:7px 14px;border-radius:8px;border:none;background:var(--accent);color:white;font-size:12px;font-weight:700;cursor:pointer;">✅ Readiness</button>
-          <button id="hub-tab-picks" onclick="switchHubTab('picks')" style="padding:7px 14px;border-radius:8px;border:none;background:var(--surface2);color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;">📋 Picks</button>
-          <button id="hub-tab-joker" onclick="switchHubTab('joker')" style="padding:7px 14px;border-radius:8px;border:none;background:var(--surface2);color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;">🃏 Joker & DON</button>
+        <h2>✅ Player Readiness Overview</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Quick check — who's ready and who's missing something.</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;font-size:11px;">
+          <span style="background:rgba(29,158,117,0.15);color:#1D9E75;padding:3px 8px;border-radius:99px;font-weight:600;">✅ Done</span>
+          <span style="background:rgba(239,68,68,0.12);color:#ef4444;padding:3px 8px;border-radius:99px;font-weight:600;">❌ Missing</span>
         </div>
-
-        <!-- Readiness tab -->
-        <div id="hub-content-readiness">
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;font-size:11px;">
-            <span style="background:rgba(29,158,117,0.15);color:#1D9E75;padding:3px 8px;border-radius:99px;font-weight:600;">✅ Done</span>
-            <span style="background:rgba(239,68,68,0.12);color:#ef4444;padding:3px 8px;border-radius:99px;font-weight:600;">❌ Missing</span>
-            <button onclick="loadReadinessOverview()" style="margin-left:auto;padding:4px 12px;border-radius:8px;border:none;background:var(--green);color:white;font-size:11px;font-weight:600;cursor:pointer;">🔄 Refresh</button>
-          </div>
-          <div id="readiness-overview-content">
-            <div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:13px;">Loading...</div>
-          </div>
-        </div>
-
-        <!-- Picks tab -->
-        <div id="hub-content-picks" style="display:none;">
-          <div style="margin-bottom:1rem;">
-            <button onclick="loadPicksOverview()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">🔄 Refresh</button>
-          </div>
-          <div id="picks-overview-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Click Refresh to load.</div></div>
-        </div>
-
-        <!-- Joker & DON tab -->
-        <div id="hub-content-joker" style="display:none;">
-          <div style="margin-bottom:1rem;">
-            <button onclick="loadJokerDonOverview()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">🔄 Load</button>
-          </div>
-          <div id="joker-don-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Click Load to see all Joker & DON data.</div></div>
+        <div id="readiness-overview-content">
+          <div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:13px;">Loading...</div>
         </div>
       </div>
     </div>
-
-    <div id="admin-picks-overview" class="admin-sub" style="display:none!important;"></div>
-    <div id="admin-joker-don-overview" class="admin-sub" style="display:none!important;"></div>
-    <div id="admin-readiness-overview" class="admin-sub" style="display:none!important;"></div>
     <div id="admin-results" class="admin-sub">
       <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
       <div class="form-card">
@@ -2832,6 +2804,26 @@
           <div class="stat-big"><div class="num" id="stat-accuracy">-</div><div class="lbl">Avg accuracy</div></div>
         </div>
         <div id="admin-stats-detail" style="font-size:13px;color:var(--text-muted);">Loading statistics...</div>
+      </div>
+    </div>
+
+    <div id="admin-picks-overview" class="admin-sub">
+      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
+      <div class="form-card">
+        <h2>📋 Picks overview</h2>
+        <div style="display:flex;gap:8px;margin-bottom:1rem;">
+          <button onclick="loadPicksOverview()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">🔄 Refresh</button>
+        </div>
+        <div id="picks-overview-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Click Refresh to load.</div></div>
+      </div>
+    </div>
+
+    <div id="admin-joker-don-overview" class="admin-sub">
+      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
+      <div class="form-card">
+        <h2>🃏 Joker & DON Overview</h2>
+        <button onclick="loadJokerDonOverview()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;margin-bottom:1rem;">🔄 Load</button>
+        <div id="joker-don-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Click Load to see all Joker & DON data.</div></div>
       </div>
     </div>
 
@@ -3312,11 +3304,7 @@
             <div style="font-weight:600;">${u.nickname||u.displayName}</div>
             <div style="color:${bets.length > 0 ? 'var(--badge-blue-text)' : 'var(--text-muted)'};">
               ${bets.length > 0
-                ? bets.map(b => {
-                    const m = b.matchId ? matches[b.matchId] : null;
-                    const matchStr = m ? `${m.homeTeam} vs ${m.awayTeam}` : (b.matchTeams || b.matchId || '?');
-                    return `🎰 ${matchStr}`;
-                  }).join('<br>')
+                ? bets.map(b => `🎰 ${b.matchTeams || 'Match'} <span style="font-size:10px;color:var(--text-muted);">(${(b.week||'').replace('wc2026-week-','Wk ')})</span>`).join('<br>')
                 : '❌ None yet'}
             </div>
           </div>`;
@@ -3415,30 +3403,6 @@
 
     container.innerHTML = html;
   }
-
-  window.switchHubTab = (tab) => {
-    ['readiness','picks','joker'].forEach(t => {
-      const content = document.getElementById('hub-content-' + t);
-      const btn = document.getElementById('hub-tab-' + t);
-      if (!content || !btn) return;
-      const active = t === tab;
-      content.style.display = active ? 'block' : 'none';
-      btn.style.background = active ? 'var(--accent)' : 'var(--surface2)';
-      btn.style.color = active ? 'white' : 'var(--text-muted)';
-    });
-    // Auto-load
-    if (tab === 'picks') loadPicksOverview();
-    if (tab === 'joker') loadJokerDonOverview();
-  };
-
-  // Legacy routing — redirect old panel IDs to new hub
-  const _origShowAdminSub = window.showAdminSub;
-  window.showAdminSub = (id) => {
-    if (id === 'picks-overview') { _origShowAdminSub('player-hub'); switchHubTab('picks'); return; }
-    if (id === 'joker-don-overview') { _origShowAdminSub('player-hub'); switchHubTab('joker'); return; }
-    if (id === 'readiness-overview') { _origShowAdminSub('player-hub'); loadReadinessOverview(); return; }
-    _origShowAdminSub(id);
-  };
 
   window.verifyAllScores = loadScoreVerification;
 
@@ -4796,77 +4760,53 @@
     liveScoresInterval = setInterval(updateLiveScoreCards, 60000);
   }
 
-  // AI Joker/DON helpers — need Firebase access from module scope
-  window._aiSetJoker = async (predictions, forceReplace) => {
-    if (!currentUser) return 'No user';
-    if (!predictions?.length) return '🃏 No predictions';
+  // AI Fill Scorers only
+  window.runAIScorerFill = async () => {
+    const matchCards = Array.from(document.querySelectorAll('.match-card[data-match-id]'));
+    const toFill = matchCards.filter(card => {
+      const matchId = card.dataset.matchId;
+      const h = parseInt(document.getElementById('home-'+matchId)?.dataset.val||'0');
+      const a = parseInt(document.getElementById('away-'+matchId)?.dataset.val||'0');
+      // Only matches with score filled and not 0-0
+      return (h > 0 || a > 0) && !(h === 0 && a === 0);
+    });
+    if (!toFill.length) { alert('No matches with scores found. Fill in scores first!'); return; }
+
+    const btn = event?.target;
+    if (btn) { btn.disabled = true; btn.textContent = '⏳...'; }
+
+    const matches = toFill.map(c => ({ matchId: c.dataset.matchId, home: c.dataset.home, away: c.dataset.away }));
     try {
-      // Check if Joker already set
-      const existing = await getDoc(doc(db,'jokerCards',currentUser.uid));
-      if (existing.exists() && !forceReplace) {
-        window._lastAiJokerMatchId = existing.data().matchId;
-        return '🃏 Joker already set (check "Replace" to change it)';
+      const resp = await fetch('/api/coach', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemPrompt: 'World Cup 2026 expert. Return ONLY JSON array.',
+          messages: [{ role: 'user', content: `For each match, pick 1 likely first goalscorer. JSON array:\n[{"matchId":"ID","scorer":"First Last"}]\n\n${matches.map(m=>`matchId="${m.matchId}" | ${m.home} vs ${m.away}`).join('\n')}` }],
+          maxTokens: 800
+        })
+      });
+      const data = await resp.json();
+      let preds = null;
+      const text = (data.text||'').trim();
+      try { preds = JSON.parse(text); } catch(e) {}
+      if (!preds) { const m=text.match(/\[[\s\S]*\]/); if(m) try{preds=JSON.parse(m[0]);}catch(e){} }
+      if (preds) {
+        let filled = 0;
+        preds.forEach((pred, idx) => {
+          let card = document.querySelector(`.match-card[data-match-id="${pred.matchId}"]`);
+          if (!card && idx < toFill.length) card = toFill[idx];
+          if (!card || !pred.scorer) return;
+          const matchId = card.dataset.matchId;
+          const sel = card.querySelector(`#scorer-${matchId}`);
+          if (!sel) return;
+          const lc = pred.scorer.toLowerCase(), last = lc.split(' ').pop();
+          const opt = Array.from(sel.options).find(o => o.value.toLowerCase()===lc || o.value.toLowerCase().split(' ').pop()===last);
+          if (opt) { sel.value=opt.value; sel.dispatchEvent(new Event('change',{bubbles:true})); const lbl=document.getElementById(`scorer-label-${matchId}`); if(lbl)lbl.textContent=opt.value; filled++; }
+        });
+        alert(`✅ Filled ${filled} scorers!`);
       }
-      const best = predictions.reduce((b, p) => {
-        const s = Math.abs((p.homeScore||0)-(p.awayScore||0))*2 + (p.homeScore||0) + (p.awayScore||0);
-        return s > b.score ? {matchId:p.matchId, score:s} : b;
-      }, {matchId:null, score:-1});
-      if (best.matchId) {
-        await setDoc(doc(db,'jokerCards',currentUser.uid),{userId:currentUser.uid,matchId:best.matchId,setAt:new Date()});
-        window._lastAiJokerMatchId = best.matchId;
-        setTimeout(() => { if (typeof loadJokerStatus==='function') loadJokerStatus(); }, 800);
-        return forceReplace ? '🃏 Joker replaced!' : '🃏 Joker set!';
-      }
-      return '🃏 No match found';
-    } catch(e) { return '🃏 Error: '+e.message; }
-  };
-
-  window._aiSetDON = async (predictions) => {
-    if (!currentUser) return 'No user';
-    if (!predictions?.length) return '💰 No predictions';
-    try {
-      // Always fetch current Joker from Firestore (could be from any previous week)
-      let jokerMatchId = null;
-      try {
-        const js = await getDoc(doc(db,'jokerCards',currentUser.uid));
-        if (js.exists()) jokerMatchId = js.data().matchId;
-      } catch(e) {}
-
-      const sorted = [...predictions]
-        .map(p => ({...p, score: Math.abs((p.homeScore||0)-(p.awayScore||0))*2+(p.homeScore||0)+(p.awayScore||0)}))
-        .sort((a,b) => b.score - a.score);
-
-      // Pick best match from THIS WEEK that isn't the Joker match
-      const best = jokerMatchId
-        ? (sorted.find(p => p.matchId !== jokerMatchId) || sorted[0])
-        : sorted[0];
-
-      if (best?.matchId && best.score >= 1) {
-        // Delete any existing DON for this week first
-        try {
-          const existing = await getDocs(query(collection(db,'donOptIns'), where('userId','==',currentUser.uid)));
-          for (const d of existing.docs) {
-            const dMatchId = d.data().matchId;
-            if (!dMatchId) continue;
-            // Check if this DON is for same week as our new pick
-            const mSnap = await getDoc(doc(db,'matches',dMatchId));
-            const newMSnap = await getDoc(doc(db,'matches',best.matchId));
-            if (mSnap.exists() && newMSnap.exists()) {
-              const dKick = mSnap.data().kickoff?.toDate?.() || new Date(mSnap.data().kickoff);
-              const nKick = newMSnap.data().kickoff?.toDate?.() || new Date(newMSnap.data().kickoff);
-              if (typeof getMatchWeekKey === 'function' && getMatchWeekKey(dKick) === getMatchWeekKey(nKick)) {
-                await deleteDoc(d.ref);
-              }
-            }
-          }
-        } catch(e) {}
-        const docId = `${currentUser.uid}_${best.matchId}`;
-        await setDoc(doc(db,'donOptIns',docId),{userId:currentUser.uid,matchId:best.matchId,activatedAt:new Date(),aiActivated:true});
-        setTimeout(() => { if (typeof loadDONStatus==='function') loadDONStatus(); }, 800);
-        return '💰 DON activated!';
-      }
-      return '💰 DON skipped (not confident enough)';
-    } catch(e) { return '💰 DON error: '+e.message; }
+    } catch(e) { alert('Error: ' + e.message); }
+    if (btn) { btn.disabled=false; btn.innerHTML='<span>🎯</span><span>AI Fill scorers</span>'; }
   };
 
   // Poll for new messages every 30s
@@ -7776,55 +7716,23 @@ Use exactly the formation provided. Use real known players.`
     // Cape Verde
     {name:'Garry Rodrigues',country:'Cape Verde',flag:'cv'},{name:'Jovane Cabral',country:'Cape Verde',flag:'cv'},{name:'Ryan Mendes',country:'Cape Verde',flag:'cv'},{name:'Logan Costa',country:'Cape Verde',flag:'cv'},{name:'Willy Semedo',country:'Cape Verde',flag:'cv'},
     // Iraq
-    {name:'Aymen Hussein',country:'Iraq',flag:'iq'},{name:'Amjed Attwan',country:'Iraq',flag:'iq'},{name:'Alaa Abbas',country:'Iraq',flag:'iq'},{name:'Mohanad Ali',country:'Iraq',flag:'iq'},{name:'Bashar Resan',country:'Iraq',flag:'iq'},{name:'Hussein Ali',country:'Iraq',flag:'iq'},{name:'Osama Rashid',country:'Iraq',flag:'iq'},{name:'Ahmed Yasin',country:'Iraq',flag:'iq'},{name:'Ali Adnan',country:'Iraq',flag:'iq'},{name:'Saad Natiq',country:'Iraq',flag:'iq'},
+    {name:'Aymen Hussein',country:'Iraq',flag:'iq'},{name:'Amjed Attwan',country:'Iraq',flag:'iq'},
     // Jordan
-    {name:'Yazan Al-Naimat',country:'Jordan',flag:'jo'},{name:'Ahmad Dababneh',country:'Jordan',flag:'jo'},{name:'Musa Al-Taamari',country:'Jordan',flag:'jo'},{name:'Baha Faisal',country:'Jordan',flag:'jo'},{name:'Hamza Al-Dardour',country:'Jordan',flag:'jo'},{name:'Odai Al-Rashid',country:'Jordan',flag:'jo'},{name:'Ahmad Al-Saify',country:'Jordan',flag:'jo'},{name:'Ali Olwan',country:'Jordan',flag:'jo'},{name:'Mohammad Abu Hasna',country:'Jordan',flag:'jo'},{name:'Hassan Abdel-Fattah',country:'Jordan',flag:'jo'},
+    {name:'Yazan Al-Naimat',country:'Jordan',flag:'jo'},{name:'Ahmad Dababneh',country:'Jordan',flag:'jo'},
     // Uzbekistan
-    {name:'Abbosbek Fayzullaev',country:'Uzbekistan',flag:'uz'},{name:'Jamshid Iskanderov',country:'Uzbekistan',flag:'uz'},{name:'Eldor Shomurodov',country:'Uzbekistan',flag:'uz'},{name:'Jaloliddin Masharipov',country:'Uzbekistan',flag:'uz'},{name:'Otabek Shukurov',country:'Uzbekistan',flag:'uz'},{name:'Dostonbek Khamdamov',country:'Uzbekistan',flag:'uz'},{name:'Islom Tukhtamurodov',country:'Uzbekistan',flag:'uz'},{name:'Jasurbek Yakhshiboev',country:'Uzbekistan',flag:'uz'},{name:'Bunyod Isoqov',country:'Uzbekistan',flag:'uz'},{name:'Muhammadkodir Hamrobekov',country:'Uzbekistan',flag:'uz'},
-    // Qatar
-    {name:'Akram Afif',country:'Qatar',flag:'qa'},{name:'Hassan Al-Haydos',country:'Qatar',flag:'qa'},{name:'Almoez Ali',country:'Qatar',flag:'qa'},{name:'Assim Madibo',country:'Qatar',flag:'qa'},{name:'Karim Boudiaf',country:'Qatar',flag:'qa'},{name:'Pedro Miguel',country:'Qatar',flag:'qa'},{name:'Abdulaziz Hatem',country:'Qatar',flag:'qa'},{name:'Boualem Khoukhi',country:'Qatar',flag:'qa'},{name:'Mohammed Waad',country:'Qatar',flag:'qa'},{name:'Salmin Al-Afif',country:'Qatar',flag:'qa'},
-    // Paraguay
-    {name:'Miguel Almiron',country:'Paraguay',flag:'py'},{name:'Gustavo Gomez',country:'Paraguay',flag:'py'},{name:'Antonio Sanabria',country:'Paraguay',flag:'py'},{name:'Julio Enciso',country:'Paraguay',flag:'py'},{name:'Richard Sanchez',country:'Paraguay',flag:'py'},{name:'Fabian Balbuena',country:'Paraguay',flag:'py'},{name:'Omar Alderete',country:'Paraguay',flag:'py'},{name:'Jorge Morel',country:'Paraguay',flag:'py'},{name:'Robert Rojas',country:'Paraguay',flag:'py'},{name:'Andres Cubas',country:'Paraguay',flag:'py'},
-    // Curacao
-    {name:'Leandro Bacuna',country:'Curacao',flag:'cw'},{name:'Juninho Bacuna',country:'Curacao',flag:'cw'},{name:'Sontje Hansen',country:'Curacao',flag:'cw'},{name:'Rangelo Janga',country:'Curacao',flag:'cw'},{name:'Cuco Martina',country:'Curacao',flag:'cw'},{name:'Gilmar Mejeur',country:'Curacao',flag:'cw'},{name:'Delano Burgzorg',country:'Curacao',flag:'cw'},{name:'Elson Hooi',country:'Curacao',flag:'cw'},{name:'Jarchinio Antonia',country:'Curacao',flag:'cw'},{name:'Gino van Kessel',country:'Curacao',flag:'cw'},
-    // Panama
-    {name:'Jose Fajardo',country:'Panama',flag:'pa'},{name:'Adalberto Carrasquilla',country:'Panama',flag:'pa'},{name:'Andres Andrade',country:'Panama',flag:'pa'},{name:'Rolando Blackburn',country:'Panama',flag:'pa'},{name:'Cecilio Waterman',country:'Panama',flag:'pa'},{name:'Edgar Barcenas',country:'Panama',flag:'pa'},{name:'Alberto Quintero',country:'Panama',flag:'pa'},{name:'Roderick Miller',country:'Panama',flag:'pa'},{name:'Michael Murillo',country:'Panama',flag:'pa'},{name:'Ivan Anderson',country:'Panama',flag:'pa'},
-    // Haiti
-    {name:'Frantzdy Pierrot',country:'Haiti',flag:'ht'},{name:'Jean-Ricner Bellegarde',country:'Haiti',flag:'ht'},{name:'Duckens Nazon',country:'Haiti',flag:'ht'},{name:'Wilson Isidor',country:'Haiti',flag:'ht'},{name:'Steeven Saba',country:'Haiti',flag:'ht'},{name:'Mechack Jerome',country:'Haiti',flag:'ht'},{name:'Derrick Etienne',country:'Haiti',flag:'ht'},{name:'Wilde-Donald Guerrier',country:'Haiti',flag:'ht'},{name:'Kevin Laventure',country:'Haiti',flag:'ht'},{name:'Jeffrey Doret',country:'Haiti',flag:'ht'},
-    // Turkey
-    {name:'Arda Guler',country:'Turkey',flag:'tr'},{name:'Hakan Calhanoglu',country:'Turkey',flag:'tr'},{name:'Kenan Yildiz',country:'Turkey',flag:'tr'},{name:'Cenk Tosun',country:'Turkey',flag:'tr'},{name:'Baris Alper Yilmaz',country:'Turkey',flag:'tr'},{name:'Irfan Can Kahveci',country:'Turkey',flag:'tr'},{name:'Ferdi Kadioglu',country:'Turkey',flag:'tr'},{name:'Merih Demiral',country:'Turkey',flag:'tr'},{name:'Samet Akaydin',country:'Turkey',flag:'tr'},{name:'Zeki Celik',country:'Turkey',flag:'tr'},
-    // Iran
-    {name:'Mehdi Taremi',country:'Iran',flag:'ir'},{name:'Alireza Jahanbakhsh',country:'Iran',flag:'ir'},{name:'Sardar Azmoun',country:'Iran',flag:'ir'},{name:'Morteza Pouraliganji',country:'Iran',flag:'ir'},{name:'Ali Gholizadeh',country:'Iran',flag:'ir'},{name:'Saman Ghoddos',country:'Iran',flag:'ir'},{name:'Shojae Khalilzadeh',country:'Iran',flag:'ir'},{name:'Majid Hosseini',country:'Iran',flag:'ir'},{name:'Ahmad Noorollahi',country:'Iran',flag:'ir'},{name:'Ehsan Hajsafi',country:'Iran',flag:'ir'},
-    // New Zealand
-    {name:'Chris Wood',country:'New Zealand',flag:'nz'},{name:'Libataro Cacace',country:'New Zealand',flag:'nz'},{name:'Joe Bell',country:'New Zealand',flag:'nz'},{name:'Marko Stamenic',country:'New Zealand',flag:'nz'},{name:'Matthew Garbett',country:'New Zealand',flag:'nz'},{name:'Callum McCowatt',country:'New Zealand',flag:'nz'},{name:'Lukas MacNaughton',country:'New Zealand',flag:'nz'},{name:'Michael Boxall',country:'New Zealand',flag:'nz'},{name:'Bill Tuilagi',country:'New Zealand',flag:'nz'},{name:'Max Mata',country:'New Zealand',flag:'nz'},
-    // Cape Verde
-    {name:'Garry Rodrigues',country:'Cape Verde',flag:'cv'},{name:'Jovane Cabral',country:'Cape Verde',flag:'cv'},{name:'Ryan Mendes',country:'Cape Verde',flag:'cv'},{name:'Logan Costa',country:'Cape Verde',flag:'cv'},{name:'Willy Semedo',country:'Cape Verde',flag:'cv'},{name:'Kenny Rocha Santos',country:'Cape Verde',flag:'cv'},{name:'Dylan Tavares',country:'Cape Verde',flag:'cv'},{name:'Julio Tavares',country:'Cape Verde',flag:'cv'},{name:'Kevin Pina',country:'Cape Verde',flag:'cv'},{name:'Diney',country:'Cape Verde',flag:'cv'},
+    {name:'Abbosbek Fayzullaev',country:'Uzbekistan',flag:'uz'},{name:'Jamshid Iskanderov',country:'Uzbekistan',flag:'uz'},
     // Czechia
-    {name:'Patrik Schick',country:'Czechia',flag:'cz'},{name:'Tomas Soucek',country:'Czechia',flag:'cz'},{name:'Adam Hlozek',country:'Czechia',flag:'cz'},{name:'Vladimir Coufal',country:'Czechia',flag:'cz'},{name:'Matej Kovar',country:'Czechia',flag:'cz'},{name:'Alex Kral',country:'Czechia',flag:'cz'},{name:'Ondrej Lingr',country:'Czechia',flag:'cz'},{name:'Lukas Provod',country:'Czechia',flag:'cz'},{name:'Ladislav Krejci',country:'Czechia',flag:'cz'},{name:'David Jurasek',country:'Czechia',flag:'cz'},
-    // Tunisia
-    {name:'Hannibal Mejbri',country:'Tunisia',flag:'tn'},{name:'Anis Ben Slimane',country:'Tunisia',flag:'tn'},{name:'Ellyes Shkiri',country:'Tunisia',flag:'tn'},{name:'Ismael Gharbi',country:'Tunisia',flag:'tn'},{name:'Rayan Elloumi',country:'Tunisia',flag:'tn'},{name:'Montassar Talbi',country:'Tunisia',flag:'tn'},{name:'Ali Maaloul',country:'Tunisia',flag:'tn'},{name:'Yassine Meriah',country:'Tunisia',flag:'tn'},{name:'Wahbi Khazri',country:'Tunisia',flag:'tn'},{name:'Saif-Eddine Khaoui',country:'Tunisia',flag:'tn'},
-    // Saudi Arabia
-    {name:'Salem Al-Dawsari',country:'Saudi Arabia',flag:'sa'},{name:'Firas Al-Buraikan',country:'Saudi Arabia',flag:'sa'},{name:'Mohammed Al-Owais',country:'Saudi Arabia',flag:'sa'},{name:'Saud Abdulhamid',country:'Saudi Arabia',flag:'sa'},{name:'Saleh Al-Shehri',country:'Saudi Arabia',flag:'sa'},{name:'Nasser Al-Dawsari',country:'Saudi Arabia',flag:'sa'},{name:'Ali Al-Hassan',country:'Saudi Arabia',flag:'sa'},{name:'Abdullah Al-Khaibari',country:'Saudi Arabia',flag:'sa'},{name:'Hattan Bahbir',country:'Saudi Arabia',flag:'sa'},{name:'Mohammed Al-Burayk',country:'Saudi Arabia',flag:'sa'},
-    // Ghana
-    {name:'Mohammed Kudus',country:'Ghana',flag:'gh'},{name:'Thomas Partey',country:'Ghana',flag:'gh'},{name:'Jordan Ayew',country:'Ghana',flag:'gh'},{name:'Inaki Williams',country:'Ghana',flag:'gh'},{name:'Antoine Semenyo',country:'Ghana',flag:'gh'},{name:'Daniel Amartey',country:'Ghana',flag:'gh'},{name:'Andre Ayew',country:'Ghana',flag:'gh'},{name:'Kamaldeen Sulemana',country:'Ghana',flag:'gh'},{name:'Abdul Fatawu',country:'Ghana',flag:'gh'},{name:'Daniel Afriyie',country:'Ghana',flag:'gh'},
-    // DR Congo
-    {name:'Yoane Wissa',country:'DR Congo',flag:'cd'},{name:'Cedric Bakambu',country:'DR Congo',flag:'cd'},{name:'Chancel Mbemba',country:'DR Congo',flag:'cd'},{name:'Aaron Wan-Bissaka',country:'DR Congo',flag:'cd'},{name:'Meschak Elia',country:'DR Congo',flag:'cd'},{name:'Gael Kakuta',country:'DR Congo',flag:'cd'},{name:'Arthur Masuaku',country:'DR Congo',flag:'cd'},{name:'Paul-Jose Mpoku',country:'DR Congo',flag:'cd'},{name:'Dodi Lukebakio',country:'DR Congo',flag:'cd'},{name:'Fiston Mayele',country:'DR Congo',flag:'cd'},
-    // Australia
-    {name:'Mathew Leckie',country:'Australia',flag:'au'},{name:'Nestory Irankunda',country:'Australia',flag:'au'},{name:'Jackson Irvine',country:'Australia',flag:'au'},{name:'Harry Souttar',country:'Australia',flag:'au'},{name:'Mathew Ryan',country:'Australia',flag:'au'},{name:'Cristian Volpato',country:'Australia',flag:'au'},{name:'Mitchell Duke',country:'Australia',flag:'au'},{name:'Craig Goodwin',country:'Australia',flag:'au'},{name:'Aziz Behich',country:'Australia',flag:'au'},{name:'Keanu Baccus',country:'Australia',flag:'au'},
-    // Bosnia-Herzegovina
-    {name:'Edin Dzeko',country:'Bosnia-Herzegovina',flag:'ba'},{name:'Ermedin Demirovic',country:'Bosnia-Herzegovina',flag:'ba'},{name:'Sead Kolasinac',country:'Bosnia-Herzegovina',flag:'ba'},{name:'Amar Dedic',country:'Bosnia-Herzegovina',flag:'ba'},{name:'Benjamin Tahirovic',country:'Bosnia-Herzegovina',flag:'ba'},{name:'Haris Tabakovic',country:'Bosnia-Herzegovina',flag:'ba'},{name:'Rade Krunic',country:'Bosnia-Herzegovina',flag:'ba'},{name:'Nedim Bajrami',country:'Bosnia-Herzegovina',flag:'ba'},{name:'Anel Ahmedhodzic',country:'Bosnia-Herzegovina',flag:'ba'},{name:'Denis Huseinbasic',country:'Bosnia-Herzegovina',flag:'ba'},
-    // Egypt
-    {name:'Mohamed Salah',country:'Egypt',flag:'eg'},{name:'Omar Marmoush',country:'Egypt',flag:'eg'},{name:'Mostafa Mohamed',country:'Egypt',flag:'eg'},{name:'Mohamed El Shenawy',country:'Egypt',flag:'eg'},{name:'Emam Ashour',country:'Egypt',flag:'eg'},{name:'Hamdy Fathy',country:'Egypt',flag:'eg'},{name:'Zizo',country:'Egypt',flag:'eg'},{name:'Ahmed Sayed Zizo',country:'Egypt',flag:'eg'},{name:'Mahmoud Trezeguet',country:'Egypt',flag:'eg'},{name:'Omar Kamal',country:'Egypt',flag:'eg'},
-    // Ecuador
-    {name:'Moises Caicedo',country:'Ecuador',flag:'ec'},{name:'Enner Valencia',country:'Ecuador',flag:'ec'},{name:'Piero Hincapie',country:'Ecuador',flag:'ec'},{name:'Pervis Estupinan',country:'Ecuador',flag:'ec'},{name:'Willian Pacho',country:'Ecuador',flag:'ec'},{name:'Kendry Paez',country:'Ecuador',flag:'ec'},{name:'Felix Torres',country:'Ecuador',flag:'ec'},{name:'Gonzalo Plata',country:'Ecuador',flag:'ec'},{name:'Jeremy Sarmiento',country:'Ecuador',flag:'ec'},{name:'Jhon Julio',country:'Ecuador',flag:'ec'},
-    // South Africa
-    {name:'Themba Zwane',country:'South Africa',flag:'za'},{name:'Lyle Foster',country:'South Africa',flag:'za'},{name:'Evidence Makgopa',country:'South Africa',flag:'za'},{name:'Oswin Appollis',country:'South Africa',flag:'za'},{name:'Relebohile Mofokeng',country:'South Africa',flag:'za'},{name:'Teboho Mokoena',country:'South Africa',flag:'za'},{name:'Ronwen Williams',country:'South Africa',flag:'za'},{name:'Iqraam Rayners',country:'South Africa',flag:'za'},{name:'Percy Tau',country:'South Africa',flag:'za'},{name:'Bongokuhle Hlongwane',country:'South Africa',flag:'za'},
-    // Sweden
-    {name:'Alexander Isak',country:'Sweden',flag:'se'},{name:'Viktor Gyokeres',country:'Sweden',flag:'se'},{name:'Victor Lindelof',country:'Sweden',flag:'se'},{name:'Anthony Elanga',country:'Sweden',flag:'se'},{name:'Lucas Bergvall',country:'Sweden',flag:'se'},{name:'Emil Holm',country:'Sweden',flag:'se'},{name:'Yasin Ayari',country:'Sweden',flag:'se'},{name:'Isak Hien',country:'Sweden',flag:'se'},{name:'Dejan Kulusevski',country:'Sweden',flag:'se'},{name:'Robin Quaison',country:'Sweden',flag:'se'},
-    // Algeria
-    {name:'Riyad Mahrez',country:'Algeria',flag:'dz'},{name:'Mohamed Amoura',country:'Algeria',flag:'dz'},{name:'Houssem Aouar',country:'Algeria',flag:'dz'},{name:'Ramy Bensebaini',country:'Algeria',flag:'dz'},{name:'Aissa Mandi',country:'Algeria',flag:'dz'},{name:'Ibrahim Maza',country:'Algeria',flag:'dz'},{name:'Amine Gouiri',country:'Algeria',flag:'dz'},{name:'Hicham Boudaoui',country:'Algeria',flag:'dz'},{name:'Fares Chaibi',country:'Algeria',flag:'dz'},{name:'Youcef Atal',country:'Algeria',flag:'dz'},
-    // Brazil - add Marquinhos and more
-    {name:'Marquinhos',country:'Brazil',flag:'br'},
+    {name:'Patrik Schick',country:'Czechia',flag:'cz'},{name:'Tomas Soucek',country:'Czechia',flag:'cz'},{name:'Adam Hlozek',country:'Czechia',flag:'cz'},{name:'Vladimir Coufal',country:'Czechia',flag:'cz'},{name:'Matej Kovar',country:'Czechia',flag:'cz'},
+    // Turkey
+    {name:'Arda Guler',country:'Turkey',flag:'tr'},{name:'Hakan Calhanoglu',country:'Turkey',flag:'tr'},{name:'Kenan Yildiz',country:'Turkey',flag:'tr'},{name:'Cenk Tosun',country:'Turkey',flag:'tr'},
+    // Paraguay
+    {name:'Miguel Almiron',country:'Paraguay',flag:'py'},{name:'Gustavo Gomez',country:'Paraguay',flag:'py'},{name:'Antonio Sanabria',country:'Paraguay',flag:'py'},
+    // Qatar
+    {name:'Akram Afif',country:'Qatar',flag:'qa'},{name:'Hassan Al-Haydos',country:'Qatar',flag:'qa'},
+    // Iran
+    {name:'Mehdi Taremi',country:'Iran',flag:'ir'},{name:'Alireza Jahanbakhsh',country:'Iran',flag:'ir'},{name:'Sardar Azmoun',country:'Iran',flag:'ir'},{name:'Morteza Pouraliganji',country:'Iran',flag:'ir'},
+    // Curacao
+    {name:'Leandro Bacuna',country:'Curacao',flag:'cw'},{name:'Juninho Bacuna',country:'Curacao',flag:'cw'},{name:'Sontje Hansen',country:'Curacao',flag:'cw'},
   ];
 
   function initPlayerCardsGrid(currentPlayer) {
@@ -10727,10 +10635,9 @@ Use exactly the formation provided. Use real known players.`
     ['all','game','social','system'].forEach(t => {
       const btn = document.getElementById(`ntab-${t}`);
       if (!btn) return;
-      const active = t === tab;
-      btn.style.background = active ? 'var(--accent)' : 'none';
-      btn.style.color = active ? 'white' : 'var(--text-muted)';
-      btn.style.fontWeight = active ? '700' : '600';
+      btn.style.borderBottomColor = t === tab ? 'var(--green)' : 'transparent';
+      btn.style.color = t === tab ? 'var(--text)' : 'var(--text-muted)';
+      btn.style.fontWeight = t === tab ? '600' : '500';
     });
     renderNotifList(cachedNotifs);
   };
@@ -11528,17 +11435,10 @@ Use exactly the formation provided. Use real known players.`
   }
 
   function getPlayersForTeam(teamName, apiPlayers) {
-    if (apiPlayers && apiPlayers.length >= 10) return apiPlayers;
-    // Build from ALL_PLAYERS_DATA — most complete source
-    const normalized = normalizeTeamName(teamName);
-    const fromData = ALL_PLAYERS_DATA
-      .filter(p => p.country === teamName || p.country === normalized)
-      .map(p => p.name);
-    if (fromData.length >= 5) return fromData;
-    // Fallback to FALLBACK_PLAYERS
-    return FALLBACK_PLAYERS[teamName]
-      || FALLBACK_PLAYERS[normalized]
-      || apiPlayers
+    if (apiPlayers && apiPlayers.length > 0) return apiPlayers;
+    // Try direct match first, then normalized
+    return FALLBACK_PLAYERS[teamName] 
+      || FALLBACK_PLAYERS[normalizeTeamName(teamName)] 
       || [];
   }
 
@@ -14280,7 +14180,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
       <div style="text-align:center;margin-bottom:1.25rem;">
         <div style="font-size:48px;margin-bottom:8px;">🤖</div>
         <div style="font-size:18px;font-weight:800;margin-bottom:6px;">AI Auto-fill Predictions</div>
-        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">The AI will fill in score predictions and first goalscorers for all upcoming matches this week.<br><br><strong style="color:var(--text);">⚠️ This will overwrite your current picks for this week.</strong></div>
+        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">The AI will analyze team form, stats and tournament history to fill in score predictions and first goalscorers for all upcoming matches in the current week.<br><br><strong style="color:var(--text);">⚠️ This will overwrite your current picks for this week.</strong> You can edit them after.</div>
       </div>
       <div id="ai-fill-status" style="display:none;padding:10px;background:var(--surface2);border-radius:10px;font-size:13px;text-align:center;margin-bottom:1rem;color:var(--text-muted);">🤖 AI is thinking...</div>
       <div style="display:flex;gap:8px;">
@@ -14290,311 +14190,6 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
     </div>
   </div>
 
-  <!-- AI JOKER & DON MODAL -->
-  <div id="ai-joker-don-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:1001;align-items:center;justify-content:center;backdrop-filter:blur(4px);">
-    <div style="background:var(--surface);border-radius:20px;padding:1.75rem 1.5rem;width:340px;max-width:92vw;border:1px solid rgba(217,119,6,0.3);box-shadow:0 20px 60px rgba(0,0,0,0.4);">
-      <div style="text-align:center;margin-bottom:1.25rem;">
-        <div style="font-size:48px;margin-bottom:8px;">🃏💰</div>
-        <div style="font-size:18px;font-weight:800;margin-bottom:6px;">AI Joker & DON</div>
-        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">AI will analyze your predictions and pick the best matches for your Joker (once per tournament) and Double or Nothing (once per week).</div>
-      </div>
-      <div style="background:var(--surface2);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;flex-direction:column;gap:10px;">
-        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-          <input type="checkbox" id="ai-jd-joker" checked style="width:18px;height:18px;cursor:pointer;accent-color:#7c3aed;">
-          <div>
-            <div style="font-size:13px;font-weight:700;">🃏 Set Joker</div>
-            <div style="font-size:11px;color:var(--text-muted);">Best match across entire tournament</div>
-          </div>
-        </label>
-        <label id="ai-jd-replace-label" style="display:flex;align-items:center;gap:10px;cursor:pointer;padding-left:28px;">
-          <input type="checkbox" id="ai-jd-replace-joker" style="width:16px;height:16px;cursor:pointer;accent-color:#7c3aed;">
-          <div style="font-size:12px;color:var(--text-muted);">↳ Replace existing Joker if already set</div>
-        </label>
-        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-          <input type="checkbox" id="ai-jd-don" checked style="width:18px;height:18px;cursor:pointer;accent-color:#d4af37;">
-          <div>
-            <div style="font-size:13px;font-weight:700;">💰 Set DON this week</div>
-            <div style="font-size:11px;color:var(--text-muted);">Best match this week (different from Joker)</div>
-          </div>
-        </label>
-      </div>
-      <div id="ai-jd-status" style="display:none;padding:10px;background:var(--surface2);border-radius:10px;font-size:13px;text-align:center;margin-bottom:1rem;color:var(--text-muted);"></div>
-      <div style="display:flex;gap:8px;">
-        <button onclick="document.getElementById('ai-joker-don-overlay').style.display='none'" style="flex:1;padding:11px;border-radius:10px;border:1px solid var(--border);background:none;color:var(--text-muted);font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>
-        <button onclick="runAIJokerDon()" id="ai-jd-confirm-btn" style="flex:2;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#d97706,#b45309);color:white;font-size:14px;font-weight:700;cursor:pointer;">🚀 Let AI decide!</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- COED FOR DUMMIES WIZARD -->
-  <div id="dummies-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1002;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px);">
-    <div style="background:var(--surface);border-radius:20px;width:100%;max-width:420px;max-height:88vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,0.5);border:1px solid rgba(5,150,105,0.3);">
-      <!-- Header -->
-      <div style="background:linear-gradient(135deg,#059669,#047857);padding:20px;border-radius:20px 20px 0 0;text-align:center;">
-        <div style="font-size:40px;margin-bottom:6px;">🎮</div>
-        <div style="font-size:18px;font-weight:800;color:white;">COED for Dummies</div>
-        <div style="font-size:12px;color:rgba(255,255,255,0.8);margin-top:4px;">Let AI handle everything. Just sit back and enjoy! 🏆</div>
-      </div>
-      <!-- Steps -->
-      <div style="padding:16px 20px;">
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">Select what AI should fill for you:</div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <label style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface2);border-radius:12px;cursor:pointer;border:1px solid var(--border);">
-            <input type="checkbox" id="dum-scores" checked style="width:20px;height:20px;accent-color:#059669;cursor:pointer;flex-shrink:0;">
-            <div><div style="font-size:13px;font-weight:700;">⚽ All match predictions</div><div style="font-size:11px;color:var(--text-muted);">Score for every group stage match</div></div>
-          </label>
-          <label style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface2);border-radius:12px;cursor:pointer;border:1px solid var(--border);">
-            <input type="checkbox" id="dum-scorers" checked style="width:20px;height:20px;accent-color:#059669;cursor:pointer;flex-shrink:0;">
-            <div><div style="font-size:13px;font-weight:700;">🎯 First goalscorers</div><div style="font-size:11px;color:var(--text-muted);">+2 bonus pts if correct</div></div>
-          </label>
-          <label style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface2);border-radius:12px;cursor:pointer;border:1px solid var(--border);">
-            <input type="checkbox" id="dum-joker" checked style="width:20px;height:20px;accent-color:#7c3aed;cursor:pointer;flex-shrink:0;">
-            <div><div style="font-size:13px;font-weight:700;">🃏 Joker card</div><div style="font-size:11px;color:var(--text-muted);">Double points on 1 match (once per tournament)</div></div>
-          </label>
-          <label style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface2);border-radius:12px;cursor:pointer;border:1px solid var(--border);">
-            <input type="checkbox" id="dum-don" checked style="width:20px;height:20px;accent-color:#d97706;cursor:pointer;flex-shrink:0;">
-            <div><div style="font-size:13px;font-weight:700;">💰 Double or Nothing (all weeks)</div><div style="font-size:11px;color:var(--text-muted);">+50% or -50% per week</div></div>
-          </label>
-          <label style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface2);border-radius:12px;cursor:pointer;border:1px solid var(--border);">
-            <input type="checkbox" id="dum-player" checked style="width:20px;height:20px;accent-color:#f59e0b;cursor:pointer;flex-shrink:0;">
-            <div><div style="font-size:13px;font-weight:700;">⭐ Tournament player</div><div style="font-size:11px;color:var(--text-muted);">Goals/assists = bonus points all tournament</div></div>
-          </label>
-          <label style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface2);border-radius:12px;cursor:pointer;border:1px solid var(--border);">
-            <input type="checkbox" id="dum-winner" checked style="width:20px;height:20px;accent-color:#d4af37;cursor:pointer;flex-shrink:0;">
-            <div><div style="font-size:13px;font-weight:700;">🏆 World Cup winner</div><div style="font-size:11px;color:var(--text-muted);">+15 pts if you pick correctly</div></div>
-          </label>
-        </div>
-        <div id="dummies-status" style="display:none;margin-top:12px;padding:12px;background:var(--surface2);border-radius:10px;font-size:12px;color:var(--text-muted);line-height:1.6;"></div>
-        <div style="display:flex;gap:8px;margin-top:16px;">
-          <button onclick="document.getElementById('dummies-overlay').style.display='none'" style="flex:1;padding:12px;border-radius:12px;border:1px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:600;cursor:pointer;">Cancel</button>
-          <button id="dummies-go-btn" onclick="runDummiesWizard()" style="flex:2;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#059669,#047857);color:white;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(5,150,105,0.35);">🚀 Do it all for me!</button>
-        </div>
-        <div style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:8px;">You can edit any prediction after. Results are AI-generated.</div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-  window.showDummiesWizard = () => {
-    document.getElementById('dummies-overlay').style.display = 'flex';
-    document.getElementById('dummies-status').style.display = 'none';
-    document.getElementById('dummies-go-btn').disabled = false;
-    document.getElementById('dummies-go-btn').textContent = '🚀 Do it all for me!';
-  };
-
-  window.runDummiesWizard = async () => {
-    const btn = document.getElementById('dummies-go-btn');
-    const status = document.getElementById('dummies-status');
-    btn.disabled = true;
-    btn.textContent = '⏳ Working...';
-    status.style.display = 'block';
-
-    const doScores   = document.getElementById('dum-scores').checked;
-    const doScorers  = document.getElementById('dum-scorers').checked;
-    const doJoker    = document.getElementById('dum-joker').checked;
-    const doDON      = document.getElementById('dum-don').checked;
-    const doPlayer   = document.getElementById('dum-player').checked;
-    const doWinner   = document.getElementById('dum-winner').checked;
-
-    const log = (msg) => { status.innerHTML += msg + '<br>'; };
-
-    try {
-      // STEP 1: Fill all match scores + scorers (all visible + all weeks)
-      if (doScores || doScorers) {
-        log('⚽ Getting AI predictions for all matches...');
-        const allCards = Array.from(document.querySelectorAll('.match-card[data-match-id]'));
-        const matches = [];
-        allCards.forEach(card => {
-          const minusBtn = card.querySelector('button[onclick*="adjustScore"]');
-          if (minusBtn && minusBtn.disabled) return;
-          matches.push({ matchId: card.dataset.matchId, home: card.dataset.home, away: card.dataset.away });
-        });
-
-        if (matches.length > 0) {
-          const CHUNK = 18; // API limit
-          let filled = 0, scorerFilled = 0;
-          for (let i = 0; i < matches.length; i += CHUNK) {
-            const chunk = matches.slice(i, i + CHUNK);
-            log(`🤖 Processing matches ${i+1}–${Math.min(i+CHUNK, matches.length)}...`);
-            try {
-              const resp = await fetch('/api/coach', {
-                method:'POST', headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({
-                  systemPrompt: 'World Cup 2026 expert. Return ONLY valid JSON array, no markdown.',
-                  messages: [{ role: 'user', content: `Predict World Cup 2026 matches. Return ONLY JSON array:\n[{"matchId":"ID","home_team":"Name","away_team":"Name","home":N,"away":N,"scorer":"Firstname Lastname"}]\n\nMatches:\n${chunk.map(m=>`matchId="${m.matchId}" | ${m.home} vs ${m.away}`).join('\n')}\n\nRules: realistic scores 0-4, varied results, scorer = real player from one of those teams.` }],
-                  maxTokens: 1200
-                })
-              });
-              const data = await resp.json();
-              let preds = null;
-              const text = (data.text||'').trim();
-              try { preds = JSON.parse(text); } catch(e) {}
-              if (!preds) { const m = text.match(/\[[\s\S]*\]/); if (m) try { preds = JSON.parse(m[0]); } catch(e) {} }
-              if (preds && Array.isArray(preds)) {
-                preds.forEach((pred, idx) => {
-                  let card = document.querySelector(`.match-card[data-match-id="${pred.matchId}"]`);
-                  if (!card && pred.home_team && pred.away_team) card = allCards.find(c => c.dataset.home === pred.home_team && c.dataset.away === pred.away_team);
-                  if (!card && idx < chunk.length) card = document.querySelector(`.match-card[data-match-id="${chunk[idx].matchId}"]`);
-                  if (!card) return;
-                  const matchId = card.dataset.matchId;
-                  if (doScores) {
-                    const h = typeof pred.home === 'number' ? pred.home : parseInt(pred.home)||0;
-                    const a = typeof pred.away === 'number' ? pred.away : parseInt(pred.away)||0;
-                    ['home','away'].forEach((side, si) => {
-                      const el = document.getElementById(`${side}-${matchId}`);
-                      if (!el) return;
-                      const cur = parseInt(el.dataset.val||'0');
-                      const target = si===0 ? h : a;
-                      const delta = target - cur;
-                      if (delta !== 0) for (let d=0;d<Math.abs(delta);d++) adjustScore(`${side}-${matchId}`, delta>0?1:-1);
-                    });
-                    filled++;
-                  }
-                  if (doScorers && pred.scorer) {
-                    const sel = card.querySelector(`#scorer-${matchId}`);
-                    if (sel) {
-                      const lc = pred.scorer.toLowerCase();
-                      const last = lc.split(' ').pop();
-                      const opt = Array.from(sel.options).find(o => o.value.toLowerCase() === lc || o.value.toLowerCase().split(' ').pop() === last);
-                      if (opt) { sel.value = opt.value; sel.dispatchEvent(new Event('change',{bubbles:true})); const lbl=document.getElementById(`scorer-label-${matchId}`); if(lbl) lbl.textContent=opt.value; scorerFilled++; }
-                    }
-                  }
-                });
-              }
-            } catch(e) { log(`⚠️ Chunk error: ${e.message}`); }
-          }
-          log(`✅ Filled ${filled} matches, ${scorerFilled} scorers`);
-        }
-      }
-
-      // STEP 2: Joker
-      if (doJoker && window._aiSetJoker) {
-        const allPreds = Array.from(document.querySelectorAll('.match-card[data-match-id]')).map(card => {
-          const matchId = card.dataset.matchId;
-          const h = parseInt(document.getElementById('home-'+matchId)?.dataset.val||'0');
-          const a = parseInt(document.getElementById('away-'+matchId)?.dataset.val||'0');
-          return {matchId, homeScore:h, awayScore:a};
-        }).filter(p => p.homeScore > 0 || p.awayScore > 0);
-        const msg = await window._aiSetJoker(allPreds);
-        log(msg);
-      }
-
-      // STEP 3: DON for all weeks
-      if (doDON && window._aiSetDON) {
-        const allPreds = Array.from(document.querySelectorAll('.match-card[data-match-id]')).map(card => {
-          const matchId = card.dataset.matchId;
-          const h = parseInt(document.getElementById('home-'+matchId)?.dataset.val||'0');
-          const a = parseInt(document.getElementById('away-'+matchId)?.dataset.val||'0');
-          return {matchId, homeScore:h, awayScore:a};
-        }).filter(p => p.homeScore > 0 || p.awayScore > 0);
-        const msg = await window._aiSetDON(allPreds);
-        log(msg);
-      }
-
-      // STEP 4: Tournament player
-      if (doPlayer && window._aiSetTournamentPlayer) {
-        const msg = await window._aiSetTournamentPlayer();
-        log(msg);
-      } else if (doPlayer) {
-        // Pick a top striker from a strong team
-        const topPlayers = ['Kylian Mbappé','Erling Haaland','Lionel Messi','Vinicius Jr.','Harry Kane','Lamine Yamal'];
-        const pick = topPlayers[Math.floor(Math.random() * topPlayers.length)];
-        try {
-          if (window.currentUser && window.currentUserData && !window.currentUserData.tournamentPlayer) {
-            const {updateDoc, doc: fd} = await import('https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js');
-            // call saveTournamentPlayer equivalent
-            if (typeof selectPlayerCard === 'function') selectPlayerCard(pick, '', '');
-            log(`⭐ Tournament player set: ${pick}`);
-          } else { log(`⭐ Tournament player: already set`); }
-        } catch(e) { log(`⭐ Player: ${e.message}`); }
-      }
-
-      // STEP 5: World Cup winner
-      if (doWinner) {
-        const contenders = ['Argentina','France','Brazil','Spain','England','Germany','Portugal'];
-        const pick = contenders[Math.floor(Math.random() * contenders.length)];
-        try {
-          if (typeof selectWinner === 'function' && window.currentUserData && !window.currentUserData.tournamentWinner) {
-            selectWinner(pick);
-            if (typeof saveWinnerPick === 'function') await saveWinnerPick();
-            log(`🏆 World Cup winner set: ${pick}`);
-          } else { log(`🏆 Winner: already set`); }
-        } catch(e) { log(`🏆 Winner: ${e.message}`); }
-      }
-
-      status.style.background = 'rgba(5,150,105,0.1)';
-      status.style.color = '#059669';
-      log('🎉 All done! You\'re ready for the World Cup!');
-      btn.textContent = '✅ All set!';
-      setTimeout(() => { document.getElementById('dummies-overlay').style.display = 'none'; }, 3500);
-
-    } catch(e) {
-      log(`❌ Error: ${e.message}`);
-      btn.disabled = false;
-      btn.textContent = '🔄 Try again';
-    }
-  };
-  </script>
-    document.getElementById('ai-joker-don-overlay').style.display = 'flex';
-    document.getElementById('ai-jd-status').style.display = 'none';
-    document.getElementById('ai-jd-confirm-btn').disabled = false;
-    document.getElementById('ai-jd-confirm-btn').textContent = '🚀 Let AI decide!';
-    document.getElementById('ai-jd-joker').checked = true;
-    document.getElementById('ai-jd-don').checked = true;
-  };
-
-  window.runAIJokerDon = async () => {
-    const btn = document.getElementById('ai-jd-confirm-btn');
-    const status = document.getElementById('ai-jd-status');
-    btn.disabled = true;
-    btn.textContent = '⏳ Working...';
-    status.style.display = 'block';
-    status.textContent = '🤖 Analyzing your predictions...';
-
-    const jokerChecked = document.getElementById('ai-jd-joker').checked;
-    const donChecked = document.getElementById('ai-jd-don').checked;
-
-    // Get current week predictions from UI — only filled ones
-    const matchCards = document.querySelectorAll('.match-card[data-match-id]');
-    const weekPreds = [];
-    matchCards.forEach(card => {
-      const matchId = card.dataset.matchId;
-      const homeEl = document.getElementById('home-' + matchId);
-      const awayEl = document.getElementById('away-' + matchId);
-      if (!homeEl || !awayEl) return;
-      const h = parseInt(homeEl.dataset.val || '0');
-      const a = parseInt(awayEl.dataset.val || '0');
-      // Only include if user actually touched this match
-      if (window._touchedMatches?.has(matchId) || h > 0 || a > 0) {
-        weekPreds.push({ matchId, homeScore: h, awayScore: a });
-      }
-    });
-
-    if (weekPreds.length === 0) {
-      status.textContent = '⚠️ Fill in some predictions first, then come back here!';
-      btn.disabled = false; btn.textContent = '🚀 Let AI decide!';
-      return;
-    }
-
-    let results = [];
-    if (jokerChecked && window._aiSetJoker) {
-      const replaceJoker = document.getElementById('ai-jd-replace-joker')?.checked || false;
-      const msg = await window._aiSetJoker(weekPreds, replaceJoker);
-      results.push(msg);
-    }
-    if (donChecked && window._aiSetDON) {
-      const msg = await window._aiSetDON(weekPreds);
-      results.push(msg);
-    }
-
-    status.style.background = 'rgba(29,158,117,0.1)';
-    status.style.color = '#166534';
-    status.textContent = results.join(' · ') || 'Done!';
-    btn.textContent = '✅ Done!';
-    setTimeout(() => { document.getElementById('ai-joker-don-overlay').style.display = 'none'; }, 2500);
-  };
-  </script>
-
   <script>
   window.showAIFillModal = () => {
     const el = document.getElementById('ai-fill-overlay');
@@ -14602,11 +14197,6 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
     document.getElementById('ai-fill-status').style.display = 'none';
     document.getElementById('ai-fill-confirm-btn').disabled = false;
     document.getElementById('ai-fill-confirm-btn').textContent = '🚀 Fill my predictions!';
-    // Reset checkboxes on each open
-    const jokerCb = document.getElementById('ai-fill-joker');
-    const donCb = document.getElementById('ai-fill-don');
-    if (jokerCb) jokerCb.checked = false;
-    if (donCb) donCb.checked = false;
   };
   window.closeAIFillModal = () => {
     document.getElementById('ai-fill-overlay').style.display = 'none';
@@ -14633,14 +14223,10 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
         const home = card.dataset.home;
         const away = card.dataset.away;
         const matchId = card.dataset.matchId;
-        if (!home || !away || !matchId) return;
-        // Only visible cards (on current tab)
-        const rect = card.getBoundingClientRect();
-        const isVisible = rect.width > 0 || card.offsetParent !== null;
-        // Only unlocked — minus button not disabled
-        const minusBtn = card.querySelector('button[onclick*="adjustScore"]');
-        const isLocked = minusBtn && minusBtn.disabled;
-        if (isVisible && !isLocked) matches.push({ matchId, home, away });
+        // Only upcoming (inputs not disabled)
+        const inputs = card.querySelectorAll('.score-input');
+        const isLocked = inputs.length > 0 && inputs[0].disabled;
+        if (home && away && !isLocked) matches.push({ matchId, home, away });
       });
 
       if (matches.length === 0) {
@@ -14800,6 +14386,190 @@ Rules: realistic scores (0-4 range per team), scorer must be a real known player
       status.textContent = '❌ Error: ' + e.message;
       btn.disabled = false;
       btn.textContent = '🔄 Try again';
+    }
+  };
+  </script>
+
+  <!-- AI JOKER & DON MODAL -->
+  <div id="ai-joker-don-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:1001;align-items:center;justify-content:center;backdrop-filter:blur(4px);">
+    <div style="background:var(--surface);border-radius:20px;padding:1.75rem 1.5rem;width:340px;max-width:92vw;border:1px solid rgba(217,119,6,0.3);box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+      <div style="text-align:center;margin-bottom:1.25rem;">
+        <div style="font-size:48px;margin-bottom:8px;">🃏💰</div>
+        <div style="font-size:18px;font-weight:800;margin-bottom:6px;">AI Joker & DON</div>
+        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">AI picks the best matches for Joker and Double or Nothing.</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;flex-direction:column;gap:10px;">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+          <input type="checkbox" id="ai-jd-joker" checked style="width:18px;height:18px;cursor:pointer;accent-color:#7c3aed;">
+          <div><div style="font-size:13px;font-weight:700;">🃏 Set Joker</div><div style="font-size:11px;color:var(--text-muted);">Best match across entire tournament</div></div>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding-left:28px;">
+          <input type="checkbox" id="ai-jd-replace-joker" style="width:16px;height:16px;cursor:pointer;accent-color:#7c3aed;">
+          <div style="font-size:12px;color:var(--text-muted);">↳ Replace existing Joker if already set</div>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+          <input type="checkbox" id="ai-jd-don" checked style="width:18px;height:18px;cursor:pointer;accent-color:#d4af37;">
+          <div><div style="font-size:13px;font-weight:700;">💰 Set DON this week</div><div style="font-size:11px;color:var(--text-muted);">Best match this week (different from Joker)</div></div>
+        </label>
+      </div>
+      <div id="ai-jd-status" style="display:none;padding:10px;background:var(--surface2);border-radius:10px;font-size:13px;text-align:center;margin-bottom:1rem;color:var(--text-muted);"></div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="document.getElementById('ai-joker-don-overlay').style.display='none'" style="flex:1;padding:11px;border-radius:10px;border:1px solid var(--border);background:none;color:var(--text-muted);font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>
+        <button id="ai-jd-confirm-btn" onclick="runAIJokerDon()" style="flex:2;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#d97706,#b45309);color:white;font-size:14px;font-weight:700;cursor:pointer;">🚀 Let AI decide!</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  window.showAIJokerDonModal = () => {
+    document.getElementById('ai-joker-don-overlay').style.display = 'flex';
+    document.getElementById('ai-jd-status').style.display = 'none';
+    const btn = document.getElementById('ai-jd-confirm-btn');
+    btn.disabled = false; btn.textContent = '🚀 Let AI decide!';
+    document.getElementById('ai-jd-joker').checked = true;
+    document.getElementById('ai-jd-don').checked = true;
+    document.getElementById('ai-jd-replace-joker').checked = false;
+  };
+
+  window.showDummiesWizard = () => {
+    document.getElementById('dummies-overlay').style.display = 'flex';
+    document.getElementById('dummies-status').style.display = 'none';
+    const btn = document.getElementById('dummies-go-btn');
+    btn.disabled = false; btn.textContent = '🚀 Do it all for me!';
+  };
+
+  window.runDummiesWizard = async () => {
+    const btn = document.getElementById('dummies-go-btn');
+    const status = document.getElementById('dummies-status');
+    btn.disabled = true; btn.textContent = '⏳ Working...';
+    status.style.display = 'block'; status.innerHTML = '';
+
+    const doScores  = document.getElementById('dum-scores').checked;
+    const doScorers = document.getElementById('dum-scorers').checked;
+    const doJoker   = document.getElementById('dum-joker').checked;
+    const doDON     = document.getElementById('dum-don').checked;
+    const doPlayer  = document.getElementById('dum-player').checked;
+    const doWinner  = document.getElementById('dum-winner').checked;
+
+    const log = (msg) => { status.innerHTML += msg + '<br>'; };
+
+    try {
+      // STEP 1: All matches (all weeks) in chunks
+      if (doScores || doScorers) {
+        const allCards = Array.from(document.querySelectorAll('.match-card[data-match-id]'));
+        const matches = allCards.map(c => ({matchId:c.dataset.matchId, home:c.dataset.home, away:c.dataset.away})).filter(m=>m.home&&m.away&&m.matchId);
+        log(`⚽ Filling ${matches.length} matches...`);
+        const CHUNK = 16;
+        for (let i = 0; i < matches.length; i += CHUNK) {
+          const chunk = matches.slice(i, i+CHUNK);
+          log(`🤖 Batch ${Math.floor(i/CHUNK)+1}/${Math.ceil(matches.length/CHUNK)}...`);
+          try {
+            const resp = await fetch('/api/coach', {
+              method:'POST', headers:{'Content-Type':'application/json'},
+              body: JSON.stringify({
+                systemPrompt: 'World Cup 2026 expert. Respond ONLY with a valid JSON array, no markdown.',
+                messages:[{role:'user',content:`Predict World Cup 2026 matches. JSON array only:\n[{"matchId":"ID","home_team":"Name","away_team":"Name","home":N,"away":N,"scorer":"First Last"}]\n\n${chunk.map(m=>`matchId="${m.matchId}" | ${m.home} vs ${m.away}`).join('\n')}\n\nRules: varied realistic scores 0-4, scorer = real known player from one of the two teams.`}],
+                maxTokens: 1200
+              })
+            });
+            const data = await resp.json();
+            let preds = null;
+            const text = (data.text||'').trim();
+            try { preds = JSON.parse(text); } catch(e) {}
+            if (!preds) { const m=text.match(/\[[\s\S]*\]/); if(m) try{preds=JSON.parse(m[0]);}catch(e){} }
+            if (preds && Array.isArray(preds)) {
+              preds.forEach((pred,idx) => {
+                let card = document.querySelector(`.match-card[data-match-id="${pred.matchId}"]`);
+                if (!card) card = allCards.find(c=>c.dataset.home===pred.home_team&&c.dataset.away===pred.away_team);
+                if (!card && idx < chunk.length) card = document.querySelector(`.match-card[data-match-id="${chunk[idx].matchId}"]`);
+                if (!card) return;
+                const matchId = card.dataset.matchId;
+                if (doScores) {
+                  const h = Math.max(0,Math.min(10,typeof pred.home==='number'?pred.home:parseInt(pred.home)||0));
+                  const a = Math.max(0,Math.min(10,typeof pred.away==='number'?pred.away:parseInt(pred.away)||0));
+                  ['home','away'].forEach((side,si)=>{
+                    const el=document.getElementById(`${side}-${matchId}`);
+                    if(!el)return;
+                    const cur=parseInt(el.dataset.val||'0'),target=si===0?h:a,delta=target-cur;
+                    if(delta!==0)for(let d=0;d<Math.abs(delta);d++)adjustScore(`${side}-${matchId}`,delta>0?1:-1);
+                  });
+                  if(!window._touchedMatches)window._touchedMatches=new Set();
+                  window._touchedMatches.add(matchId);
+                }
+                if (doScorers && pred.scorer) {
+                  const sel = card.querySelector(`#scorer-${matchId}`);
+                  if (sel) {
+                    const lc=pred.scorer.toLowerCase(), last=lc.split(' ').pop();
+                    const opt=Array.from(sel.options).find(o=>o.value.toLowerCase()===lc||o.value.toLowerCase().split(' ').pop()===last);
+                    if(opt){sel.value=opt.value;sel.dispatchEvent(new Event('change',{bubbles:true}));const lbl=document.getElementById(`scorer-label-${matchId}`);if(lbl)lbl.textContent=opt.value;}
+                  }
+                }
+              });
+            }
+          } catch(e) { log(`⚠️ Batch error: ${e.message}`); }
+          await new Promise(r=>setTimeout(r,300));
+        }
+        log('✅ Matches filled!');
+      }
+
+      // STEP 2: Joker
+      if (doJoker && window._aiSetJoker) {
+        const preds = Array.from(document.querySelectorAll('.match-card[data-match-id]')).map(c=>{
+          const id=c.dataset.matchId,h=parseInt(document.getElementById('home-'+id)?.dataset.val||'0'),a=parseInt(document.getElementById('away-'+id)?.dataset.val||'0');
+          return {matchId:id,homeScore:h,awayScore:a};
+        }).filter(p=>p.homeScore>0||p.awayScore>0);
+        log(await window._aiSetJoker(preds));
+      }
+
+      // STEP 3: DON
+      if (doDON && window._aiSetDON) {
+        const preds = Array.from(document.querySelectorAll('.match-card[data-match-id]')).map(c=>{
+          const id=c.dataset.matchId,h=parseInt(document.getElementById('home-'+id)?.dataset.val||'0'),a=parseInt(document.getElementById('away-'+id)?.dataset.val||'0');
+          return {matchId:id,homeScore:h,awayScore:a};
+        }).filter(p=>p.homeScore>0||p.awayScore>0);
+        log(await window._aiSetDON(preds));
+      }
+
+      // STEP 4: Tournament player — random from SUGGESTED_PLAYERS
+      if (doPlayer) {
+        try {
+          if (window.currentUserData && !window.currentUserData.tournamentPlayer && typeof SUGGESTED_PLAYERS !== 'undefined') {
+            const pick = SUGGESTED_PLAYERS[Math.floor(Math.random()*SUGGESTED_PLAYERS.length)];
+            const sel = document.getElementById('tournament-player-select');
+            if (sel) { sel.value = pick.name; }
+            if (typeof saveTournamentPlayer === 'function') {
+              // Set value directly and save
+              const playerSel = document.getElementById('tournament-player-select');
+              if (playerSel) playerSel.value = pick.name;
+              await saveTournamentPlayer();
+              log(`⭐ Tournament player: ${pick.name}`);
+            }
+          } else { log('⭐ Tournament player: already set'); }
+        } catch(e) { log(`⭐ Player error: ${e.message}`); }
+      }
+
+      // STEP 5: World Cup winner — weighted random from top contenders
+      if (doWinner) {
+        try {
+          if (window.currentUserData && !window.currentUserData.tournamentWinner) {
+            const contenders = ['Brazil','France','Argentina','Spain','England','Germany','Portugal','Netherlands','Uruguay'];
+            const pick = contenders[Math.floor(Math.random()*contenders.length)];
+            const sel = document.getElementById('winner-pick-select');
+            if (sel) { sel.value = pick; if(typeof selectWinner==='function') selectWinner(pick); }
+            if (typeof saveWinnerPick === 'function') await saveWinnerPick();
+            log(`🏆 World Cup winner: ${pick}`);
+          } else { log('🏆 Winner: already set'); }
+        } catch(e) { log(`🏆 Winner error: ${e.message}`); }
+      }
+
+      status.style.background = 'rgba(5,150,105,0.1)';
+      status.style.color = '#059669';
+      log("🎉 All done! You're ready for the World Cup!");
+      btn.textContent = '✅ All set!';
+      setTimeout(() => { document.getElementById('dummies-overlay').style.display='none'; }, 4000);
+    } catch(e) {
+      log(`❌ Error: ${e.message}`);
+      btn.disabled = false; btn.textContent = '🔄 Try again';
     }
   };
   </script>
