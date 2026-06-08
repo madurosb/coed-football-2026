@@ -5284,10 +5284,12 @@ Use exactly the formation provided. Use real known players.`
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
-  // Ensure auth persists across page refreshes
-  import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js').then(({browserLocalPersistence, setPersistence}) => {
-    setPersistence(auth, browserLocalPersistence).catch(()=>{});
-  }).catch(()=>{});
+  // Ensure auth persists across page refreshes — use same version as imports
+  import('https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js').then(({browserLocalPersistence, setPersistence}) => {
+    setPersistence(auth, browserLocalPersistence)
+      .then(() => console.log('Auth persistence set to LOCAL'))
+      .catch(e => console.warn('Persistence set failed:', e));
+  }).catch(e => console.warn('Persistence import failed:', e));
   const db = getFirestore(app);
 
   // Show opening video — after DOM is fully ready
@@ -8399,10 +8401,11 @@ Use exactly the formation provided. Use real known players.`
         const hasPlayer = !!u.tournamentPlayer;
         // 3. First match filled
         const hasFirstMatch = firstMatchId ? (predsByMatchId[firstMatchId]?.homeScore != null) : false;
-        // 4. Scorers — check all predictions that have scores filled
+        // 4. Scorers — check filled predictions, exclude 0-0 (no scorer needed)
         const filledPreds = preds.filter(p => p.homeScore != null && p.awayScore != null);
-        const missingScorer = filledPreds.filter(p => !p.scorer || p.scorer === '').length;
-        const scorerLabel = filledPreds.length === 0
+        const scorerRequired = filledPreds.filter(p => !(parseInt(p.homeScore) === 0 && parseInt(p.awayScore) === 0));
+        const missingScorer = scorerRequired.filter(p => !p.firstScorer || p.firstScorer === '').length;
+        const scorerLabel = scorerRequired.length === 0
           ? '<span style="color:var(--text-muted);font-size:12px;">➖</span>'
           : missingScorer === 0
             ? '<span style="color:#1D9E75;font-size:14px;">✅</span>'
@@ -14397,6 +14400,19 @@ Rules: realistic scores (0-4 range per team), scorer must be a real known player
     }
   });
 
+      // Save predictions for Joker/DON use
+      window._aiFillPredictions = predictions.map((pred, idx) => {
+        let card = document.querySelector(`.match-card[data-match-id="${pred.matchId}"]`);
+        if (!card && pred.home_team && pred.away_team) card = cardsByTeams[`${pred.home_team}|${pred.away_team}`];
+        if (!card && idx < unlockedCards.length) card = unlockedCards[idx];
+        if (!card) return null;
+        return {
+          matchId: card.dataset.matchId,
+          homeScore: typeof pred.home === 'number' ? pred.home : parseInt(pred.home) || 0,
+          awayScore: typeof pred.away === 'number' ? pred.away : parseInt(pred.away) || 0,
+        };
+      }).filter(Boolean);
+
       status.style.background = 'rgba(29,158,117,0.1)';
       status.style.color = '#166534';
       status.textContent = `✅ Filled ${filled} matches, ${scorerFilled} scorers! Review and save.`;
@@ -14405,20 +14421,65 @@ Rules: realistic scores (0-4 range per team), scorer must be a real known player
       // Handle Joker/DON checkboxes
       const jokerChecked = document.getElementById('ai-fill-joker')?.checked;
       const donChecked = document.getElementById('ai-fill-don')?.checked;
-      if (jokerChecked && window._aiFillPredictions?.length) {
-        const best = window._aiFillPredictions.reduce((b, p) => {
-          const s = Math.abs((p.homeScore||0)-(p.awayScore||0)) + (p.homeScore||0) + (p.awayScore||0);
-          return s > b.score ? {matchId:p.matchId, score:s} : b;
-        }, {matchId:null, score:-1});
-        if (best.matchId) {
-          try { await setDoc(doc(db,'jokerCards',currentUser.uid),{userId:currentUser.uid,matchId:best.matchId,setAt:new Date()}); status.textContent += ' 🃏'; } catch(e){}
-        }
+
+      if (jokerChecked) {
+        // Scan ALL group stage matches (not just this week) for best Joker candidate
+        try {
+          const allMatchesSnap = await getDocs(collection(db, 'matches'));
+          const allPredsSnap = await getDocs(query(collection(db, 'predictions'), where('userId', '==', currentUser.uid)));
+          const allMyPreds = {};
+          allPredsSnap.forEach(d => { allMyPreds[d.data().matchId] = d.data(); });
+
+          let bestMatchId = null, bestScore = -1;
+          allMatchesSnap.forEach(d => {
+            const m = d.data();
+            if (!m.homeTeam || m.homeTeam.includes('TBD') || m.homeTeam.includes('Winner')) return;
+            const pred = allMyPreds[d.id];
+            if (!pred || pred.homeScore == null) return;
+            // Score = goal diff + total goals (high scoring confident prediction)
+            const s = Math.abs(pred.homeScore - pred.awayScore) * 2 + pred.homeScore + pred.awayScore;
+            if (s > bestScore) { bestScore = s; bestMatchId = d.id; }
+          });
+
+          if (bestMatchId) {
+            await setDoc(doc(db, 'jokerCards', currentUser.uid), {
+              userId: currentUser.uid, matchId: bestMatchId, setAt: new Date()
+            });
+            // Update UI badge on that match card
+            const jokerCard = document.querySelector(`.match-card[data-match-id="${bestMatchId}"]`);
+            if (jokerCard) {
+              const badge = jokerCard.querySelector('.joker-badge');
+              if (badge) badge.style.display = 'flex';
+            }
+            status.textContent += ' 🃏 Joker set!';
+              // Reload joker UI to show badge on card
+              setTimeout(() => { if (typeof loadJokerStatus === 'function') loadJokerStatus(); }, 800);
+          }
+        } catch(e) { console.log('Joker error:', e); }
       }
-      if (donChecked && window._aiFillPredictions?.length) {
-        const confident = window._aiFillPredictions.filter(p=>Math.abs((p.homeScore||0)-(p.awayScore||0))>=2).length;
-        if (confident >= 2) {
-          try { await setDoc(doc(db,'donOptIns',currentUser.uid),{userId:currentUser.uid,activatedAt:new Date(),aiActivated:true}); status.textContent += ' 💰'; } catch(e){}
-        } else { status.textContent += ' 💰 DON skipped (not confident)'; }
+
+      if (donChecked) {
+        // DON = one per week — find the week's most confident prediction
+        try {
+          const donPreds = window._aiFillPredictions || [];
+          if (donPreds.length > 0) {
+            const best = donPreds.reduce((b, p) => {
+              const s = Math.abs(p.homeScore - p.awayScore) * 2 + p.homeScore + p.awayScore;
+              return s > b.score ? { matchId: p.matchId, score: s } : b;
+            }, { matchId: null, score: -1 });
+
+            if (best.matchId) {
+              await setDoc(doc(db, 'donOptIns', currentUser.uid), {
+                userId: currentUser.uid, matchId: best.matchId, activatedAt: new Date(), aiActivated: true
+              });
+              // Update DON setting
+              await setDoc(doc(db, 'doubleOrNothing', 'current'), { matchId: best.matchId }, { merge: true });
+              status.textContent += ' 💰 DON activated!';
+              // Reload DON UI
+              setTimeout(() => { if (typeof loadDONStatus === 'function') loadDONStatus(); }, 800);
+            }
+          }
+        } catch(e) { console.log('DON error:', e); }
       }
 
       setTimeout(() => closeAIFillModal(), 3000);
