@@ -4923,7 +4923,11 @@
       const added = d.added||[];
       if (!added.find(p => p.name===name && p.country===country)) added.push({name, country, flag});
       await setDoc(doc(db, 'config', 'squadOverrides'), {removed, added, lastUpdated: new Date()});
-    } catch(e) { console.warn('Add override failed:', e.message); }
+      console.log('✅ Squad add saved to Firestore:', name, country);
+    } catch(e) {
+      console.error('Add override failed:', e);
+      alert('❌ Save failed: ' + e.message + '\n\nCheck Firestore rules for "config" collection.');
+    }
   };
 
   window._squadRemoveOverride = async (name, country) => {
@@ -4934,7 +4938,11 @@
       const removed = d.removed||[];
       if (!removed.find(p => p.name===name && p.country===country)) removed.push({name, country});
       await setDoc(doc(db, 'config', 'squadOverrides'), {removed, added, lastUpdated: new Date()});
-    } catch(e) { console.warn('Remove override failed:', e.message); }
+      console.log('✅ Squad remove saved to Firestore:', name, country);
+    } catch(e) {
+      console.error('Remove override failed:', e);
+      alert('❌ Save failed: ' + e.message + '\n\nCheck Firestore rules for "config" collection.');
+    }
   };
 
   window.toggleLineup = async (matchId, homeTeam, awayTeam, btn) => {
