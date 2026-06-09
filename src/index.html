@@ -2700,6 +2700,7 @@
         <div class="admin-card" onclick="showAdminSub('schedule')"><div class="icon">📅</div><div class="title">Match schedule</div><div class="desc">Add, edit or remove matches. Set kickoff times (Israel time), group info, and prediction deadlines.</div></div>
         <div class="admin-card" onclick="showAdminSub('stats')"><div class="icon">📊</div><div class="title">Statistics</div><div class="desc">Full tournament analytics - accuracy rates, most popular player picks, predicted scorers, group performance.</div></div>
         <div class="admin-card" onclick="showAdminSub('predictions-backup')"><div class="icon">📦</div><div class="title">Predictions backup</div><div class="desc">Full snapshot of all player predictions before the tournament starts. Use this to manually verify or restore predictions.</div></div>
+        <div class="admin-card" onclick="showAdminSub('export-backup');loadExportBackup()"><div class="icon">💾</div><div class="title">Export & Backup</div><div class="desc">Download full backup of all data — predictions, scores, Joker, DON, players. One click JSON export.</div></div>
         <div class="admin-card" onclick="showAdminSub('members')"><div class="icon">🆕</div><div class="title">New members log</div><div class="desc">See who joined and when, with a full activity log including registration date and actions taken.</div></div>
         <div class="admin-card" onclick="showAdminSub('watch-admin')"><div class="icon">📺</div><div class="title">Watch Together</div><div class="desc">Add location options for matches that reached 4+ viewers. Players will then vote on where to meet.</div></div>
         <div class="admin-card" onclick="showAdminSub('bold-pred')"><div class="icon">🐂</div><div class="title">Bold predictions</div><div class="desc">Award the 🐂 badge to players who made a brave prediction and nailed it.</div></div>
@@ -2959,6 +2960,32 @@
         <h2>🆕 New members log</h2>
         <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">All registered members sorted by join date, with their activity.</p>
         <div id="members-log-content"><div style="text-align:center;padding:2rem;font-size:13px;color:var(--text-muted);">Loading...</div></div>
+      </div>
+    </div>
+
+    <!-- EXPORT & BACKUP PANEL -->
+    <div id="admin-export-backup" class="admin-sub">
+      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
+      <div class="form-card">
+        <h2>💾 Export & Backup</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1.2rem;">Download a full JSON backup of all tournament data. Use to restore if something breaks.</p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.2rem;">
+          <button onclick="exportData('all')" style="padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#059669,#047857);color:white;font-size:13px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <span style="font-size:22px;">📦</span><span>Full Backup</span><span style="font-size:10px;opacity:0.85;">Everything</span>
+          </button>
+          <button onclick="exportData('predictions')" style="padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;font-size:13px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <span style="font-size:22px;">⚽</span><span>Predictions</span><span style="font-size:10px;opacity:0.85;">All match picks</span>
+          </button>
+          <button onclick="exportData('users')" style="padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;font-size:13px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <span style="font-size:22px;">👥</span><span>Users</span><span style="font-size:10px;opacity:0.85;">Players + picks</span>
+          </button>
+          <button onclick="exportData('jokerdon')" style="padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#d97706,#b45309);color:white;font-size:13px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <span style="font-size:22px;">🃏</span><span>Joker & DON</span><span style="font-size:10px;opacity:0.85;">All bets</span>
+          </button>
+        </div>
+
+        <div id="export-status" style="display:none;padding:12px;background:var(--surface2);border-radius:10px;font-size:12px;color:var(--text-muted);text-align:center;"></div>
       </div>
     </div>
 
@@ -13937,6 +13964,70 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
 
   // Show popup 1.5 seconds after login
   // (called from onAuthStateChanged after user is confirmed logged in)
+
+  // ═══ EXPORT & BACKUP ═══
+  window.loadExportBackup = () => {}; // panel loads instantly, no data needed upfront
+
+  window.exportData = async (type) => {
+    const status = document.getElementById('export-status');
+    if (status) { status.style.display='block'; status.textContent='⏳ Loading data...'; }
+    try {
+      const timestamp = new Date().toISOString().slice(0,19).replace(/[:.]/g,'-');
+      let exportObj = { exportedAt: new Date().toISOString(), type };
+
+      if (type === 'all' || type === 'predictions') {
+        status && (status.textContent = '⏳ Loading predictions...');
+        const snap = await getDocs(collection(db, 'predictions'));
+        const preds = [];
+        snap.forEach(d => preds.push({ id: d.id, ...d.data() }));
+        exportObj.predictions = preds;
+      }
+      if (type === 'all' || type === 'users') {
+        status && (status.textContent = '⏳ Loading users...');
+        const snap = await getDocs(collection(db, 'users'));
+        const users = [];
+        snap.forEach(d => users.push({ id: d.id, ...d.data() }));
+        exportObj.users = users;
+      }
+      if (type === 'all' || type === 'jokerdon') {
+        status && (status.textContent = '⏳ Loading Joker & DON...');
+        const jSnap = await getDocs(collection(db, 'jokerCards'));
+        const jokers = [];
+        jSnap.forEach(d => jokers.push({ id: d.id, ...d.data() }));
+        exportObj.jokerCards = jokers;
+
+        const dSnap = await getDocs(collection(db, 'donOptIns'));
+        const dons = [];
+        dSnap.forEach(d => dons.push({ id: d.id, ...d.data() }));
+        exportObj.donOptIns = dons;
+      }
+
+      // Download as JSON file
+      const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `coed-backup-${type}-${timestamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      const counts = [];
+      if (exportObj.predictions) counts.push(`${exportObj.predictions.length} predictions`);
+      if (exportObj.users) counts.push(`${exportObj.users.length} users`);
+      if (exportObj.jokerCards) counts.push(`${exportObj.jokerCards.length} jokers`);
+      if (exportObj.donOptIns) counts.push(`${exportObj.donOptIns.length} DONs`);
+
+      if (status) {
+        status.style.color = '#059669';
+        status.textContent = `✅ Downloaded! ${counts.join(', ')}`;
+        setTimeout(() => { status.style.display='none'; status.style.color=''; }, 4000);
+      }
+    } catch(e) {
+      if (status) { status.style.color='#ef4444'; status.textContent='❌ Error: ' + e.message; }
+    }
+  };
 
   // ═══ SQUAD EDITOR (admin) ═══
   window.loadSquadEditor = () => {
