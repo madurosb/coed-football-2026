@@ -13042,12 +13042,24 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
       if (!homeEl || !awayEl) return;
       const homeScore = parseInt(homeEl.dataset?.val ?? homeEl.textContent ?? 0);
       const awayScore = parseInt(awayEl.dataset?.val ?? awayEl.textContent ?? 0);
-      const firstScorer = document.getElementById('scorer-' + matchId)?.value || '';
+
+      // Only save if user actually touched this match
+      if (!window._touchedMatches?.has(matchId) && homeScore === 0 && awayScore === 0) return;
+
+      const scorerEl = document.getElementById('scorer-' + matchId);
+      const firstScorer = scorerEl?.value || '';
+
       try {
-        await setDoc(doc(db, 'predictions', `${currentUser.uid}_${matchId}`), {
-          userId: currentUser.uid, matchId, homeScore, awayScore, firstScorer,
-          submittedAt: serverTimestamp()
-        });
+        const predRef = doc(db, 'predictions', `${currentUser.uid}_${matchId}`);
+
+        // Use merge:true — never wipe existing firstScorer if dropdown is empty
+        const updateData = { userId: currentUser.uid, matchId, homeScore, awayScore, submittedAt: serverTimestamp() };
+        if (firstScorer) {
+          // Only overwrite scorer if we have a value
+          updateData.firstScorer = firstScorer;
+        }
+        await setDoc(predRef, updateData, { merge: true });
+
         // Brief green flash on match card
         const card = homeEl.closest('.match-card');
         if (card) {
