@@ -13830,31 +13830,45 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
         log(`✅ ${allMatches.length} matches filled & saved!`);
       }
 
-      // Joker — use allFilledPreds
-      if (doJoker && window._aiSetJoker && allFilledPreds.length) {
-        log(await window._aiSetJoker(allFilledPreds));
+      // Joker + DON — use allFilledPreds or fetch from Firestore
+      let jokerDonPreds = allFilledPreds.length ? allFilledPreds : [];
+      if (!jokerDonPreds.length && (doJoker || doDON)) {
+        log('📡 Loading existing predictions for Joker/DON...');
+        try {
+          const snap = await getDocs(query(collection(db,'predictions'), where('userId','==',currentUser.uid)));
+          snap.forEach(d => {
+            const p = d.data();
+            if (p.homeScore != null && p.awayScore != null)
+              jokerDonPreds.push({ matchId: p.matchId, homeScore: p.homeScore, awayScore: p.awayScore });
+          });
+        } catch(e) { log(`⚠️ Could not load predictions: ${e.message}`); }
       }
 
-      // DON — use allFilledPreds
-      if (doDON && window._aiSetDON && allFilledPreds.length) {
-        log(await window._aiSetDON(allFilledPreds));
+      if (doJoker && window._aiSetJoker) {
+        if (jokerDonPreds.length) log(await window._aiSetJoker(jokerDonPreds));
+        else log('🃏 No predictions to pick Joker from');
+      }
+
+      if (doDON && window._aiSetDON) {
+        if (jokerDonPreds.length) log(await window._aiSetDON(jokerDonPreds));
+        else log('💰 No predictions to pick DON from');
       }
 
       // Tournament player
-      if (doPlayer && window._dbSaveField) {
+      if (doPlayer) {
         const suggested = ['Kylian Mbappé','Erling Haaland','Lionel Messi','Vinicius Jr.','Jude Bellingham','Lamine Yamal','Florian Wirtz','Cristiano Ronaldo','Mohamed Salah','Viktor Gyokeres'];
         const pick = suggested[Math.floor(Math.random()*suggested.length)];
-        await window._dbSaveField('tournamentPlayer', pick);
-        if (window.currentUserData) window.currentUserData.tournamentPlayer = pick;
+        await setDoc(doc(db,'users',currentUser.uid), {tournamentPlayer: pick}, {merge:true});
+        if (currentUserData) currentUserData.tournamentPlayer = pick;
         log(`⭐ Tournament player: ${pick}`);
       }
 
       // World Cup winner
-      if (doWinner && window._dbSaveField) {
+      if (doWinner) {
         const teams = ['Brazil','France','Argentina','Spain','England','Germany','Portugal','Netherlands','Uruguay'];
         const pick = teams[Math.floor(Math.random()*teams.length)];
-        await window._dbSaveField('tournamentWinner', pick);
-        if (window.currentUserData) window.currentUserData.tournamentWinner = pick;
+        await setDoc(doc(db,'users',currentUser.uid), {tournamentWinner: pick}, {merge:true});
+        if (currentUserData) currentUserData.tournamentWinner = pick;
         log(`🏆 World Cup winner: ${pick}`);
       }
 
