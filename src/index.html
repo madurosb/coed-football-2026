@@ -4886,28 +4886,31 @@
     return doc(db, 'users', currentUser.uid);
   }
 
-  async function loadSquadOverrides() {
+  window.loadSquadOverrides = async function loadSquadOverrides() {
     try {
-      // Load from admin's user doc directly (admin UID is fixed)
       const ADMIN_UID = 'KGbbRvOMEtNGjSNP3PLYEbsVIix2';
+      console.log('[squads] Loading overrides from', ADMIN_UID);
       const snap = await getDoc(doc(db, 'users', ADMIN_UID));
-      if (!snap.exists()) return;
+      if (!snap.exists()) { console.log('[squads] No user doc found'); return; }
       const overrides = snap.data()?.squadOverrides;
-      if (!overrides) return;
+      if (!overrides) { console.log('[squads] No squadOverrides field'); return; }
+      console.log('[squads] Found overrides:', JSON.stringify(overrides).slice(0,200));
       if (overrides.removed && Array.isArray(overrides.removed)) {
         overrides.removed.forEach(({name, country}) => {
           const idx = ALL_PLAYERS_DATA.findIndex(p => p.name === name && p.country === country);
-          if (idx > -1) ALL_PLAYERS_DATA.splice(idx, 1);
+          if (idx > -1) { ALL_PLAYERS_DATA.splice(idx, 1); console.log('[squads] Removed:', name); }
+          else { console.log('[squads] Not found to remove:', name, country); }
         });
       }
       if (overrides.added && Array.isArray(overrides.added)) {
         overrides.added.forEach(p => {
           if (!ALL_PLAYERS_DATA.find(x => x.name === p.name && x.country === p.country)) {
             ALL_PLAYERS_DATA.push(p);
+            console.log('[squads] Added:', p.name);
           }
         });
       }
-    } catch(e) { console.warn('Squad overrides load failed:', e.message); }
+    } catch(e) { console.error('[squads] Load failed:', e.message); }
   }
 
   window._squadAddOverride = async (name, country, flag) => {
