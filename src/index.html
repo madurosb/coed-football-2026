@@ -8450,10 +8450,11 @@ Use exactly the formation provided. Use real known players.`
         const hasPlayer = !!u.tournamentPlayer;
         // 3. First match filled
         const hasFirstMatch = firstMatchId ? (predsByMatchId[firstMatchId]?.homeScore != null) : false;
-        // 4. Scorers — check all predictions that have scores filled
+        // 4. Scorers — exclude 0-0 (no scorer needed), check firstScorer field
         const filledPreds = preds.filter(p => p.homeScore != null && p.awayScore != null);
-        const missingScorer = filledPreds.filter(p => !p.scorer || p.scorer === '').length;
-        const scorerLabel = filledPreds.length === 0
+        const scorerRequired = filledPreds.filter(p => !(parseInt(p.homeScore)===0 && parseInt(p.awayScore)===0));
+        const missingScorer = scorerRequired.filter(p => !p.firstScorer || p.firstScorer === '').length;
+        const scorerLabel = scorerRequired.length === 0
           ? '<span style="color:var(--text-muted);font-size:12px;">➖</span>'
           : missingScorer === 0
             ? '<span style="color:#1D9E75;font-size:14px;">✅</span>'
