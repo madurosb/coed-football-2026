@@ -4761,8 +4761,7 @@
   }
 
 
-  // Poll for new messages every 30s
-  setInterval(() => { if (currentUser) updateMsgBadge(); }, 30000);
+  // Poll for new messages every 30s  setInterval(() => { if (currentUser) updateMsgBadge(); }, 30000);
 
   // ═══ PREDICTED LINEUPS ═══
   const TEAM_FORMATIONS = {
@@ -13737,6 +13736,138 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
 
   // Show popup 1.5 seconds after login
   // (called from onAuthStateChanged after user is confirmed logged in)
+
+  window.runDummiesWizard = async () => {
+    const btn = document.getElementById('dummies-go-btn');
+    const status = document.getElementById('dummies-status');
+    btn.disabled=true; btn.textContent='⏳ Working...';
+    status.style.display='block'; status.innerHTML='';
+    const doScores  = document.getElementById('dum-scores')?.checked;
+    const doScorers = document.getElementById('dum-scorers')?.checked;
+    const doJoker   = document.getElementById('dum-joker')?.checked;
+    const doDON     = document.getElementById('dum-don')?.checked;
+    const doPlayer  = document.getElementById('dum-player')?.checked;
+    const doWinner  = document.getElementById('dum-winner')?.checked;
+    const log = (msg) => { status.innerHTML += msg + '<br>'; status.scrollTop = status.scrollHeight; };
+
+    try {
+      let allFilledPreds = []; // track for Joker/DON
+
+      if (doScores || doScorers) {
+        // Fetch ALL group stage matches from Firestore
+        log('📡 Loading all matches...');
+        const matchesSnap = await getDocs(collection(db, 'matches'));
+        const allMatches = [];
+        matchesSnap.forEach(d => {
+          const m = d.data();
+          if (m.homeTeam && m.awayTeam && !m.homeTeam.includes('TBD') && !m.homeTeam.includes('Winner') && m.status !== 'FINISHED') {
+            allMatches.push({ matchId: d.id, home: m.homeTeam, away: m.awayTeam });
+          }
+        });
+        log(`⚽ Filling ${allMatches.length} matches in batches...`);
+
+        const CHUNK = 16;
+        for (let i=0; i<allMatches.length; i+=CHUNK) {
+          const chunk = allMatches.slice(i, i+CHUNK);
+          log(`🤖 Batch ${Math.floor(i/CHUNK)+1}/${Math.ceil(allMatches.length/CHUNK)} (${chunk.length} matches)...`);
+          try {
+            const resp = await fetch('/api/coach', {
+              method:'POST', headers:{'Content-Type':'application/json'},
+              body: JSON.stringify({
+                systemPrompt:'World Cup 2026 expert. Return ONLY valid JSON array, no markdown.',
+                messages:[{role:'user', content:`Predict World Cup 2026. JSON array ONLY:\n[{"matchId":"ID","home":N,"away":N,"scorer":"First Last"}]\n\n${chunk.map(m=>`matchId="${m.matchId}" | ${m.home} vs ${m.away}`).join('\n')}\n\nRules: varied realistic scores 0-4, scorer=real known player from one of those two teams.`}],
+                maxTokens:1200
+              })
+            });
+            const data = await resp.json();
+            let preds = null;
+            const text = (data.text||'').trim();
+            try { preds=JSON.parse(text); } catch(e){}
+            if (!preds) { const m=text.match(/\[[\s\S]*\]/); if(m) try{preds=JSON.parse(m[0]);}catch(e){} }
+            if (preds && Array.isArray(preds)) {
+              for (let idx=0; idx<preds.length; idx++) {
+                const pred = preds[idx];
+                const matchId = pred.matchId || chunk[idx]?.matchId;
+                if (!matchId) continue;
+                const h = Math.max(0, Math.min(10, typeof pred.home==='number'?pred.home:parseInt(pred.home)||0));
+                const a = Math.max(0, Math.min(10, typeof pred.away==='number'?pred.away:parseInt(pred.away)||0));
+                const scorer = pred.scorer || '';
+                allFilledPreds.push({ matchId, homeScore: h, awayScore: a });
+
+                // Save to Firestore
+                const predData = { userId: currentUser.uid, matchId };
+                if (doScores) { predData.homeScore = h; predData.awayScore = a; }
+                if (doScorers && scorer) predData.firstScorer = scorer;
+                await setDoc(doc(db, 'predictions', `${currentUser.uid}_${matchId}`), predData, { merge: true });
+
+                // Update DOM if card is visible
+                const card = document.querySelector(`.match-card[data-match-id="${matchId}"]`);
+                if (card) {
+                  if (doScores) {
+                    ['home','away'].forEach((side,si) => {
+                      const el = document.getElementById(`${side}-${matchId}`);
+                      if (!el) return;
+                      const cur=parseInt(el.dataset.val||'0'), target=si===0?h:a, delta=target-cur;
+                      if (delta!==0) for(let d=0;d<Math.abs(delta);d++) adjustScore(`${side}-${matchId}`, delta>0?1:-1);
+                    });
+                    if (!window._touchedMatches) window._touchedMatches = new Set();
+                    window._touchedMatches.add(matchId);
+                  }
+                  if (doScorers && scorer) {
+                    const sel = card.querySelector(`#scorer-${matchId}`);
+                    if (sel) {
+                      const lc=scorer.toLowerCase(), last=lc.split(' ').pop();
+                      const opt=Array.from(sel.options).find(o=>o.value.toLowerCase()===lc||o.value.toLowerCase().split(' ').pop()===last);
+                      if (opt) { sel.value=opt.value; sel.dispatchEvent(new Event('change',{bubbles:true})); const lbl=document.getElementById(`scorer-label-${matchId}`); if(lbl) lbl.textContent=opt.value; }
+                    }
+                  }
+                }
+              }
+            }
+          } catch(e) { log(`⚠️ Batch error: ${e.message}`); }
+          if (i+CHUNK < allMatches.length) await new Promise(r=>setTimeout(r,400));
+        }
+        log(`✅ ${allMatches.length} matches filled & saved!`);
+      }
+
+      // Joker — use allFilledPreds
+      if (doJoker && window._aiSetJoker && allFilledPreds.length) {
+        log(await window._aiSetJoker(allFilledPreds));
+      }
+
+      // DON — use allFilledPreds
+      if (doDON && window._aiSetDON && allFilledPreds.length) {
+        log(await window._aiSetDON(allFilledPreds));
+      }
+
+      // Tournament player
+      if (doPlayer && window._dbSaveField) {
+        const suggested = ['Kylian Mbappé','Erling Haaland','Lionel Messi','Vinicius Jr.','Jude Bellingham','Lamine Yamal','Florian Wirtz','Cristiano Ronaldo','Mohamed Salah','Viktor Gyokeres'];
+        const pick = suggested[Math.floor(Math.random()*suggested.length)];
+        await window._dbSaveField('tournamentPlayer', pick);
+        if (window.currentUserData) window.currentUserData.tournamentPlayer = pick;
+        log(`⭐ Tournament player: ${pick}`);
+      }
+
+      // World Cup winner
+      if (doWinner && window._dbSaveField) {
+        const teams = ['Brazil','France','Argentina','Spain','England','Germany','Portugal','Netherlands','Uruguay'];
+        const pick = teams[Math.floor(Math.random()*teams.length)];
+        await window._dbSaveField('tournamentWinner', pick);
+        if (window.currentUserData) window.currentUserData.tournamentWinner = pick;
+        log(`🏆 World Cup winner: ${pick}`);
+      }
+
+      status.style.background='rgba(5,150,105,0.1)'; status.style.color='#059669';
+      log("🎉 All done! You're ready for the World Cup!");
+      btn.textContent='✅ All set!';
+      setTimeout(()=>{ document.getElementById('dummies-overlay').style.display='none'; }, 4000);
+    } catch(e) {
+      log(`❌ Error: ${e.message}`);
+      btn.disabled=false; btn.textContent='🔄 Try again';
+    }
+  };
+
 </script>
 
   <!-- MISSING PICKS REMINDER POPUP -->
@@ -14488,136 +14619,7 @@ Rules: realistic scores (0-4 range per team), scorer must be a real known player
     if (b) { b.disabled=false; b.textContent='🚀 Do it all for me!'; }
   };
 
-  window.runDummiesWizard = async () => {
-    const btn = document.getElementById('dummies-go-btn');
-    const status = document.getElementById('dummies-status');
-    btn.disabled=true; btn.textContent='⏳ Working...';
-    status.style.display='block'; status.innerHTML='';
-    const doScores  = document.getElementById('dum-scores')?.checked;
-    const doScorers = document.getElementById('dum-scorers')?.checked;
-    const doJoker   = document.getElementById('dum-joker')?.checked;
-    const doDON     = document.getElementById('dum-don')?.checked;
-    const doPlayer  = document.getElementById('dum-player')?.checked;
-    const doWinner  = document.getElementById('dum-winner')?.checked;
-    const log = (msg) => { status.innerHTML += msg + '<br>'; status.scrollTop = status.scrollHeight; };
 
-    try {
-      let allFilledPreds = []; // track for Joker/DON
-
-      if (doScores || doScorers) {
-        // Fetch ALL group stage matches from Firestore
-        log('📡 Loading all matches...');
-        const matchesSnap = await getDocs(collection(db, 'matches'));
-        const allMatches = [];
-        matchesSnap.forEach(d => {
-          const m = d.data();
-          if (m.homeTeam && m.awayTeam && !m.homeTeam.includes('TBD') && !m.homeTeam.includes('Winner') && m.status !== 'FINISHED') {
-            allMatches.push({ matchId: d.id, home: m.homeTeam, away: m.awayTeam });
-          }
-        });
-        log(`⚽ Filling ${allMatches.length} matches in batches...`);
-
-        const CHUNK = 16;
-        for (let i=0; i<allMatches.length; i+=CHUNK) {
-          const chunk = allMatches.slice(i, i+CHUNK);
-          log(`🤖 Batch ${Math.floor(i/CHUNK)+1}/${Math.ceil(allMatches.length/CHUNK)} (${chunk.length} matches)...`);
-          try {
-            const resp = await fetch('/api/coach', {
-              method:'POST', headers:{'Content-Type':'application/json'},
-              body: JSON.stringify({
-                systemPrompt:'World Cup 2026 expert. Return ONLY valid JSON array, no markdown.',
-                messages:[{role:'user', content:`Predict World Cup 2026. JSON array ONLY:\n[{"matchId":"ID","home":N,"away":N,"scorer":"First Last"}]\n\n${chunk.map(m=>`matchId="${m.matchId}" | ${m.home} vs ${m.away}`).join('\n')}\n\nRules: varied realistic scores 0-4, scorer=real known player from one of those two teams.`}],
-                maxTokens:1200
-              })
-            });
-            const data = await resp.json();
-            let preds = null;
-            const text = (data.text||'').trim();
-            try { preds=JSON.parse(text); } catch(e){}
-            if (!preds) { const m=text.match(/\[[\s\S]*\]/); if(m) try{preds=JSON.parse(m[0]);}catch(e){} }
-            if (preds && Array.isArray(preds)) {
-              for (let idx=0; idx<preds.length; idx++) {
-                const pred = preds[idx];
-                const matchId = pred.matchId || chunk[idx]?.matchId;
-                if (!matchId) continue;
-                const h = Math.max(0, Math.min(10, typeof pred.home==='number'?pred.home:parseInt(pred.home)||0));
-                const a = Math.max(0, Math.min(10, typeof pred.away==='number'?pred.away:parseInt(pred.away)||0));
-                const scorer = pred.scorer || '';
-                allFilledPreds.push({ matchId, homeScore: h, awayScore: a });
-
-                // Save to Firestore
-                const predData = { userId: currentUser.uid, matchId };
-                if (doScores) { predData.homeScore = h; predData.awayScore = a; }
-                if (doScorers && scorer) predData.firstScorer = scorer;
-                await setDoc(doc(db, 'predictions', `${currentUser.uid}_${matchId}`), predData, { merge: true });
-
-                // Update DOM if card is visible
-                const card = document.querySelector(`.match-card[data-match-id="${matchId}"]`);
-                if (card) {
-                  if (doScores) {
-                    ['home','away'].forEach((side,si) => {
-                      const el = document.getElementById(`${side}-${matchId}`);
-                      if (!el) return;
-                      const cur=parseInt(el.dataset.val||'0'), target=si===0?h:a, delta=target-cur;
-                      if (delta!==0) for(let d=0;d<Math.abs(delta);d++) adjustScore(`${side}-${matchId}`, delta>0?1:-1);
-                    });
-                    if (!window._touchedMatches) window._touchedMatches = new Set();
-                    window._touchedMatches.add(matchId);
-                  }
-                  if (doScorers && scorer) {
-                    const sel = card.querySelector(`#scorer-${matchId}`);
-                    if (sel) {
-                      const lc=scorer.toLowerCase(), last=lc.split(' ').pop();
-                      const opt=Array.from(sel.options).find(o=>o.value.toLowerCase()===lc||o.value.toLowerCase().split(' ').pop()===last);
-                      if (opt) { sel.value=opt.value; sel.dispatchEvent(new Event('change',{bubbles:true})); const lbl=document.getElementById(`scorer-label-${matchId}`); if(lbl) lbl.textContent=opt.value; }
-                    }
-                  }
-                }
-              }
-            }
-          } catch(e) { log(`⚠️ Batch error: ${e.message}`); }
-          if (i+CHUNK < allMatches.length) await new Promise(r=>setTimeout(r,400));
-        }
-        log(`✅ ${allMatches.length} matches filled & saved!`);
-      }
-
-      // Joker — use allFilledPreds
-      if (doJoker && window._aiSetJoker && allFilledPreds.length) {
-        log(await window._aiSetJoker(allFilledPreds));
-      }
-
-      // DON — use allFilledPreds
-      if (doDON && window._aiSetDON && allFilledPreds.length) {
-        log(await window._aiSetDON(allFilledPreds));
-      }
-
-      // Tournament player
-      if (doPlayer && window._dbSaveField) {
-        const suggested = ['Kylian Mbappé','Erling Haaland','Lionel Messi','Vinicius Jr.','Jude Bellingham','Lamine Yamal','Florian Wirtz','Cristiano Ronaldo','Mohamed Salah','Viktor Gyokeres'];
-        const pick = suggested[Math.floor(Math.random()*suggested.length)];
-        await window._dbSaveField('tournamentPlayer', pick);
-        if (window.currentUserData) window.currentUserData.tournamentPlayer = pick;
-        log(`⭐ Tournament player: ${pick}`);
-      }
-
-      // World Cup winner
-      if (doWinner && window._dbSaveField) {
-        const teams = ['Brazil','France','Argentina','Spain','England','Germany','Portugal','Netherlands','Uruguay'];
-        const pick = teams[Math.floor(Math.random()*teams.length)];
-        await window._dbSaveField('tournamentWinner', pick);
-        if (window.currentUserData) window.currentUserData.tournamentWinner = pick;
-        log(`🏆 World Cup winner: ${pick}`);
-      }
-
-      status.style.background='rgba(5,150,105,0.1)'; status.style.color='#059669';
-      log("🎉 All done! You're ready for the World Cup!");
-      btn.textContent='✅ All set!';
-      setTimeout(()=>{ document.getElementById('dummies-overlay').style.display='none'; }, 4000);
-    } catch(e) {
-      log(`❌ Error: ${e.message}`);
-      btn.disabled=false; btn.textContent='🔄 Try again';
-    }
-  };
   </script>
 
 </body>
