@@ -14350,9 +14350,11 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
 
     const homeTeam = card.dataset.home;
     const awayTeam = card.dataset.away;
-    let homePlayers = [], awayPlayers = [];
-    try { homePlayers = JSON.parse(card.dataset.homePlayers || '[]'); } catch(e) {}
-    try { awayPlayers = JSON.parse(card.dataset.awayPlayers || '[]'); } catch(e) {}
+    // Use getPlayersForTeam which pulls from ALL_PLAYERS_DATA (full squads)
+    const apiHomePlayers = (() => { try { return JSON.parse(card.dataset.homePlayers || '[]'); } catch(e) { return []; } })();
+    const apiAwayPlayers = (() => { try { return JSON.parse(card.dataset.awayPlayers || '[]'); } catch(e) { return []; } })();
+    const homePlayers = typeof getPlayersForTeam === 'function' ? getPlayersForTeam(homeTeam, apiHomePlayers) : apiHomePlayers;
+    const awayPlayers = typeof getPlayersForTeam === 'function' ? getPlayersForTeam(awayTeam, apiAwayPlayers) : apiAwayPlayers;
     const currentVal = document.getElementById('scorer-' + matchId)?.value || '';
 
     // Build inline panel
