@@ -10724,9 +10724,10 @@ Use exactly the formation provided. Use real known players.`
     ['all','game','social','system'].forEach(t => {
       const btn = document.getElementById(`ntab-${t}`);
       if (!btn) return;
-      btn.style.borderBottomColor = t === tab ? 'var(--green)' : 'transparent';
-      btn.style.color = t === tab ? 'var(--text)' : 'var(--text-muted)';
-      btn.style.fontWeight = t === tab ? '600' : '500';
+      const active = t === tab;
+      btn.style.background = active ? 'var(--accent)' : 'none';
+      btn.style.color = active ? 'white' : 'var(--text-muted)';
+      btn.style.fontWeight = active ? '700' : '600';
     });
     renderNotifList(cachedNotifs);
   };
@@ -13872,44 +13873,45 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
     const players = ALL_PLAYERS_DATA.filter(p => p.country === teamName);
     content.innerHTML = `
       <div style="margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <span style="font-size:13px;font-weight:700;">${teamName} — ${players.length} players</span>
+        <span style="font-size:13px;font-weight:700;">${teamName} — <span id="squad-count">${players.length}</span> players</span>
         <div style="display:flex;gap:6px;margin-left:auto;">
           <input id="squad-add-input" type="text" placeholder="Add player name..." style="padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:12px;width:180px;">
-          <button onclick="squadAddPlayer('${teamName.replace(/'/g,"\\'")}'" style="padding:6px 12px;border-radius:8px;border:none;background:var(--accent);color:white;font-size:12px;font-weight:600;cursor:pointer;">+ Add</button>
+          <button id="squad-add-btn" style="padding:6px 12px;border-radius:8px;border:none;background:var(--accent);color:white;font-size:12px;font-weight:600;cursor:pointer;">+ Add</button>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:4px;">
+      <div id="squad-player-list" style="display:flex;flex-direction:column;gap:4px;">
         ${players.map(p => `
           <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);">
             <span style="font-size:13px;">${p.name}</span>
-            <button onclick="squadRemovePlayer('${teamName.replace(/'/g,"\\'")}','${p.name.replace(/'/g,"\\'")}'" style="padding:3px 10px;border-radius:6px;border:none;background:rgba(239,68,68,0.1);color:#ef4444;font-size:11px;font-weight:600;cursor:pointer;">Remove</button>
+            <button class="squad-remove-btn" data-player="${p.name.replace(/"/g,'&quot;')}" style="padding:3px 10px;border-radius:6px;border:none;background:rgba(239,68,68,0.1);color:#ef4444;font-size:11px;font-weight:600;cursor:pointer;">Remove</button>
           </div>`).join('')}
       </div>`;
-  };
 
-  window.squadAddPlayer = (teamName) => {
-    const input = document.getElementById('squad-add-input');
-    const name = input?.value?.trim();
-    if (!name) return alert('Enter a player name!');
-    // Check not already there
-    if (ALL_PLAYERS_DATA.find(p => p.country === teamName && p.name.toLowerCase() === name.toLowerCase())) {
-      return alert(`${name} is already in ${teamName}!`);
-    }
-    const flag = ALL_PLAYERS_DATA.find(p => p.country === teamName)?.flag || '';
-    ALL_PLAYERS_DATA.push({ name, country: teamName, flag });
-    input.value = '';
-    loadSquadTeam(teamName);
-    // Update any visible scorer dropdowns
-    refreshScorerDropdownsForTeam(teamName);
-    alert(`✅ Added ${name} to ${teamName}`);
-  };
+    // Add event listeners after render
+    document.getElementById('squad-add-btn').addEventListener('click', () => {
+      const input = document.getElementById('squad-add-input');
+      const name = input?.value?.trim();
+      if (!name) { alert('Enter a player name!'); return; }
+      if (ALL_PLAYERS_DATA.find(p => p.country === teamName && p.name.toLowerCase() === name.toLowerCase())) {
+        alert(`${name} is already in ${teamName}!`); return;
+      }
+      const flag = ALL_PLAYERS_DATA.find(p => p.country === teamName)?.flag || '';
+      ALL_PLAYERS_DATA.push({ name, country: teamName, flag });
+      input.value = '';
+      loadSquadTeam(teamName);
+      refreshScorerDropdownsForTeam(teamName);
+    });
 
-  window.squadRemovePlayer = (teamName, playerName) => {
-    if (!confirm(`Remove ${playerName} from ${teamName}?`)) return;
-    const idx = ALL_PLAYERS_DATA.findIndex(p => p.country === teamName && p.name === playerName);
-    if (idx > -1) ALL_PLAYERS_DATA.splice(idx, 1);
-    loadSquadTeam(teamName);
-    refreshScorerDropdownsForTeam(teamName);
+    document.getElementById('squad-player-list').addEventListener('click', (e) => {
+      const btn = e.target.closest('.squad-remove-btn');
+      if (!btn) return;
+      const playerName = btn.dataset.player;
+      if (!confirm(`Remove ${playerName} from ${teamName}?`)) return;
+      const idx = ALL_PLAYERS_DATA.findIndex(p => p.country === teamName && p.name === playerName);
+      if (idx > -1) ALL_PLAYERS_DATA.splice(idx, 1);
+      loadSquadTeam(teamName);
+      refreshScorerDropdownsForTeam(teamName);
+    });
   };
 
   function refreshScorerDropdownsForTeam(teamName) {
