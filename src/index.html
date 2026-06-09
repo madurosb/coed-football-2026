@@ -4878,51 +4878,6 @@
   const lineupCache = {};
   window._clearLineupCache = () => { Object.keys(lineupCache).forEach(k => delete lineupCache[k]); };
 
-  // ═══ SQUAD OVERRIDES — persist admin edits to Firestore ═══
-  // Stored in users collection (already has write permissions) under admin UID
-  function getSquadOverrideRef() {
-    // Store under a doc that admin can write — using currentUser uid
-    if (!currentUser) return null;
-    return doc(db, 'users', currentUser.uid);
-  }
-
-  // Capture Firestore functions for use in window-exposed functions
-  const _getDoc = getDoc;
-  const _setDoc = setDoc;
-  const _doc = doc;
-  const _collection = collection;
-  const _getDocs = getDocs;
-  const _query = query;
-  const _where = where;
-
-  window.loadSquadOverrides = async function() {
-    console.log('[squads] Starting...');
-    try {
-      const ADMIN_UID = 'KGbbRvOMEtNGjSNP3PLYEbsVIix2';
-      const snap = await _getDoc(_doc(db, 'users', ADMIN_UID));
-      if (!snap.exists()) { console.log('[squads] No user doc'); return; }
-      const overrides = snap.data()?.squadOverrides;
-      if (!overrides) { console.log('[squads] No squadOverrides field'); return; }
-      console.log('[squads] Overrides found, removed:', overrides.removed?.length, 'added:', overrides.added?.length);
-      if (overrides.removed && Array.isArray(overrides.removed)) {
-        overrides.removed.forEach(({name, country}) => {
-          const idx = ALL_PLAYERS_DATA.findIndex(p => p.name === name && p.country === country);
-          if (idx > -1) { ALL_PLAYERS_DATA.splice(idx, 1); console.log('[squads] Removed:', name); }
-          else { console.log('[squads] Not found to remove:', name, country); }
-        });
-      }
-      if (overrides.added && Array.isArray(overrides.added)) {
-        overrides.added.forEach(p => {
-          if (!ALL_PLAYERS_DATA.find(x => x.name === p.name && x.country === p.country)) {
-            ALL_PLAYERS_DATA.push(p);
-            console.log('[squads] Added:', p.name);
-          }
-        });
-      }
-      console.log('[squads] Done!');
-    } catch(e) { console.error('[squads] Error:', e); }
-  };
-
   window._squadAddOverride = async (name, country, flag) => {
     try {
       if (!currentUser) { alert('Not logged in'); return; }
@@ -7883,6 +7838,36 @@ Use exactly the formation provided. Only use players from the squad lists above.
     // Curacao
     {name:'Leandro Bacuna',country:'Curacao',flag:'cw'},{name:'Juninho Bacuna',country:'Curacao',flag:'cw'},{name:'Sontje Hansen',country:'Curacao',flag:'cw'},{name:'Rangelo Janga',country:'Curacao',flag:'cw'},{name:'Cuco Martina',country:'Curacao',flag:'cw'},{name:'Delano Burgzorg',country:'Curacao',flag:'cw'},{name:'Elson Hooi',country:'Curacao',flag:'cw'},{name:'Jarchinio Antonia',country:'Curacao',flag:'cw'},{name:'Gino van Kessel',country:'Curacao',flag:'cw'},{name:'Gilmar Mejeur',country:'Curacao',flag:'cw'},
   ];
+  window._ALL_PLAYERS_DATA = ALL_PLAYERS_DATA; // expose for window-scope functions
+
+  // Define loadSquadOverrides HERE — after ALL_PLAYERS_DATA is defined
+  window.loadSquadOverrides = async function() {
+    console.log('[squads] Starting...');
+    try {
+      const ADMIN_UID = 'KGbbRvOMEtNGjSNP3PLYEbsVIix2';
+      const snap = await getDoc(doc(db, 'users', ADMIN_UID));
+      if (!snap.exists()) { console.log('[squads] No user doc'); return; }
+      const overrides = snap.data()?.squadOverrides;
+      if (!overrides) { console.log('[squads] No squadOverrides field'); return; }
+      console.log('[squads] removed:', overrides.removed?.length, 'added:', overrides.added?.length);
+      if (overrides.removed && Array.isArray(overrides.removed)) {
+        overrides.removed.forEach(({name, country}) => {
+          const idx = ALL_PLAYERS_DATA.findIndex(p => p.name === name && p.country === country);
+          if (idx > -1) { ALL_PLAYERS_DATA.splice(idx, 1); console.log('[squads] Removed:', name); }
+          else { console.log('[squads] Not found to remove:', name, '/', country); }
+        });
+      }
+      if (overrides.added && Array.isArray(overrides.added)) {
+        overrides.added.forEach(p => {
+          if (!ALL_PLAYERS_DATA.find(x => x.name === p.name && x.country === p.country)) {
+            ALL_PLAYERS_DATA.push(p);
+            console.log('[squads] Added:', p.name);
+          }
+        });
+      }
+      console.log('[squads] Done!');
+    } catch(e) { console.error('[squads] Error:', e); }
+  };
 
   function initPlayerCardsGrid(currentPlayer) {
     const grid = document.getElementById('player-cards-grid');
