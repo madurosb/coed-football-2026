@@ -2722,9 +2722,10 @@
       <div class="form-card">
         <h2>✅ Player Readiness Overview</h2>
         <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Quick check — who's ready and who's missing something.</p>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;font-size:11px;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;font-size:11px;align-items:center;">
           <span style="background:rgba(29,158,117,0.15);color:#1D9E75;padding:3px 8px;border-radius:99px;font-weight:600;">✅ Done</span>
           <span style="background:rgba(239,68,68,0.12);color:#ef4444;padding:3px 8px;border-radius:99px;font-weight:600;">❌ Missing</span>
+          <button onclick="loadReadinessOverview()" style="margin-left:auto;padding:4px 12px;border-radius:8px;border:none;background:var(--green);color:white;font-size:11px;font-weight:600;cursor:pointer;">🔄 Refresh</button>
         </div>
         <div id="readiness-overview-content">
           <div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:13px;">Loading...</div>
@@ -3223,7 +3224,7 @@
   }
 
 
-  async function loadJokerDonOverview() {
+  window.loadJokerDonOverview = async function loadJokerDonOverview() {
     const container = document.getElementById('joker-don-content');
     if (!container) return;
     container.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div>';
@@ -3304,7 +3305,12 @@
             <div style="font-weight:600;">${u.nickname||u.displayName}</div>
             <div style="color:${bets.length > 0 ? 'var(--badge-blue-text)' : 'var(--text-muted)'};">
               ${bets.length > 0
-                ? bets.map(b => `🎰 ${b.matchTeams || 'Match'} <span style="font-size:10px;color:var(--text-muted);">(${(b.week||'').replace('wc2026-week-','Wk ')})</span>`).join('<br>')
+                ? bets.map(b => {
+                    const m = b.matchId ? matches[b.matchId] : null;
+                    const matchStr = m ? `${m.homeTeam} vs ${m.awayTeam}` : (b.matchTeams || b.matchId || '?');
+                    const wk = (b.weekKey||b.week||'').replace('wc2026-week-','Wk ');
+                    return `🎰 ${matchStr}${wk ? ` <span style="font-size:10px;color:var(--text-muted);">(${wk})</span>` : ''}`;
+                  }).join('<br>')
                 : '❌ None yet'}
             </div>
           </div>`;
@@ -13938,6 +13944,8 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
         const sel = document.getElementById('tournament-player-select'); if(sel) sel.value = pick;
         const notice = document.getElementById('tournament-deadline-notice');
         if(notice) notice.innerHTML = `<span style="color:var(--green);font-weight:500;">⭐ Your tournament player: <strong>${pick}</strong></span>`;
+        // Update player cards grid visual
+        if(typeof initPlayerCardsGrid === 'function') initPlayerCardsGrid(pick);
         log(`⭐ Tournament player: ${pick}`);
       }
 
