@@ -1605,20 +1605,10 @@
         <div style="font-size:13px;color:var(--text-muted);">Pick scores &amp; first goalscorers · Deadline: 24h before kickoff</div>
       </div>
       <!-- AI Auto-fill button -->
-      <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
-        <button onclick="showAIFillModal()" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:10px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:0 3px 10px rgba(124,58,237,0.4);white-space:nowrap;">
-          <span>🤖</span><span>AI Fill picks</span>
-        </button>
-        <button onclick="runAIScorerFill(this)" style="background:linear-gradient(135deg,#0891b2,#0e7490);color:white;border:none;border-radius:10px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:0 3px 10px rgba(8,145,178,0.4);white-space:nowrap;">
-          <span>🎯</span><span>AI Fill scorers</span>
-        </button>
-        <button onclick="showAIJokerDonModal()" style="background:linear-gradient(135deg,#d97706,#b45309);color:white;border:none;border-radius:10px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:0 3px 10px rgba(217,119,6,0.4);white-space:nowrap;">
-          <span>🃏</span><span>AI Joker & DON</span>
-        </button>
-        <button onclick="showDummiesWizard()" style="background:linear-gradient(135deg,#059669,#047857);color:white;border:none;border-radius:10px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:0 3px 10px rgba(5,150,105,0.4);white-space:nowrap;">
-          <span>🎮</span><span>COED for Dummies</span>
-        </button>
-      </div>
+      <button onclick="showAIFillModal()" style="flex-shrink:0;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:12px;padding:10px 14px;font-size:12px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;box-shadow:0 4px 16px rgba(124,58,237,0.4);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(124,58,237,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(124,58,237,0.4)'">
+        <span style="font-size:20px;">🤖</span>
+        <span>AI Fill</span>
+      </button>
     </div>
     <img src="https://coed-football-2026.vercel.app/match-card.png" alt="" style="width:100%; height:auto; border-radius:12px; margin-bottom:1rem;">
 
@@ -4438,7 +4428,7 @@
     if (!currentUser || !currentUserData) return;
 
     const now = new Date();
-    const tournamentDeadline = new Date('2026-06-11T16:00:00Z');
+    const tournamentDeadline = new Date('2026-06-10T19:00:00Z');
     const missing = [];
 
     // 1. Tournament player
@@ -4759,72 +4749,6 @@
     if (liveScoresInterval) clearInterval(liveScoresInterval);
     liveScoresInterval = setInterval(updateLiveScoreCards, 60000);
   }
-
-  // Helper for wizard to save directly to Firestore
-  window._dbSaveField = async (field, value) => {
-    if (!currentUser) throw new Error('Not logged in');
-    await updateDoc(doc(db, 'users', currentUser.uid), { [field]: value });
-  };
-
-  // AI Fill Scorers only
-  window.runAIScorerFill = async (btnEl) => {
-    const btn = btnEl || document.querySelector('button[onclick*="runAIScorerFill"]');
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ Filling scorers...'; }
-
-    const matchCards = Array.from(document.querySelectorAll('.match-card[data-match-id]'));
-    const toFill = matchCards.filter(card => {
-      const matchId = card.dataset.matchId;
-      const h = parseInt(document.getElementById('home-'+matchId)?.dataset.val||'0');
-      const a = parseInt(document.getElementById('away-'+matchId)?.dataset.val||'0');
-      return !(h === 0 && a === 0) && (window._touchedMatches?.has(matchId) || h > 0 || a > 0);
-    });
-
-    if (!toFill.length) {
-      alert('Fill in some match scores first (not all 0-0)!');
-      if (btn) { btn.disabled=false; btn.innerHTML='<span>🎯</span><span>AI Fill scorers</span>'; }
-      return;
-    }
-
-    const matches = toFill.map(c => ({ matchId: c.dataset.matchId, home: c.dataset.home, away: c.dataset.away }));
-    const CHUNK = 16;
-    let totalFilled = 0;
-
-    try {
-      for (let i = 0; i < matches.length; i += CHUNK) {
-        const chunk = matches.slice(i, i+CHUNK);
-        if (btn) btn.textContent = `⏳ ${i+1}–${Math.min(i+CHUNK, matches.length)} / ${matches.length}`;
-        const resp = await fetch('/api/coach', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            systemPrompt: 'World Cup 2026 expert. Return ONLY JSON array, no markdown.',
-            messages: [{ role: 'user', content: `For each match pick 1 likely first goalscorer.\nReturn ONLY JSON array:\n[{"matchId":"ID","scorer":"First Last"}]\n\nMatches:\n${chunk.map(m=>`matchId="${m.matchId}" | ${m.home} vs ${m.away}`).join('\n')}` }],
-            maxTokens: 600
-          })
-        });
-        const data = await resp.json();
-        let preds = null;
-        const text = (data.text||'').trim();
-        try { preds = JSON.parse(text); } catch(e) {}
-        if (!preds) { const m=text.match(/\[[\s\S]*\]/); if(m) try{preds=JSON.parse(m[0]);}catch(e){} }
-        if (preds) {
-          preds.forEach((pred, idx) => {
-            let card = document.querySelector(`.match-card[data-match-id="${pred.matchId}"]`);
-            if (!card && idx < chunk.length) card = document.querySelector(`.match-card[data-match-id="${chunk[idx].matchId}"]`);
-            if (!card || !pred.scorer) return;
-            const matchId = card.dataset.matchId;
-            const sel = card.querySelector(`#scorer-${matchId}`);
-            if (!sel) return;
-            const lc=pred.scorer.toLowerCase(), last=lc.split(' ').pop();
-            const opt=Array.from(sel.options).find(o=>o.value.toLowerCase()===lc||o.value.toLowerCase().split(' ').pop()===last);
-            if (opt) { sel.value=opt.value; sel.dispatchEvent(new Event('change',{bubbles:true})); const lbl=document.getElementById(`scorer-label-${matchId}`); if(lbl)lbl.textContent=opt.value; totalFilled++; }
-          });
-        }
-        if (i + CHUNK < matches.length) await new Promise(r=>setTimeout(r,300));
-      }
-      alert(`✅ Filled ${totalFilled} / ${matches.length} scorers!`);
-    } catch(e) { alert('Error: ' + e.message); }
-    if (btn) { btn.disabled=false; btn.innerHTML='<span>🎯</span><span>AI Fill scorers</span>'; }
-  };
 
   // Poll for new messages every 30s
   setInterval(() => { if (currentUser) updateMsgBadge(); }, 30000);
@@ -5400,6 +5324,9 @@ Use exactly the formation provided. Use real known players.`
 
   let currentUser = null;
   let currentUserData = null;
+  // Expose to window so non-module scripts can access
+  Object.defineProperty(window, 'currentUser', { get: () => currentUser });
+  Object.defineProperty(window, 'currentUserData', { get: () => currentUserData });
 
   // ADMIN EMAIL - change this to your Gmail
   const ADMIN_EMAIL = 'grandfathercame@gmail.com';
@@ -5842,7 +5769,7 @@ Use exactly the formation provided. Use real known players.`
       return;
     }
 
-    const deadline = new Date('2026-06-11T16:00:00Z');
+    const deadline = new Date('2026-06-10T19:00:00Z');
     const isPast = new Date() >= deadline;
     const tournamentDone = new Date() >= new Date('2026-07-20T00:00:00Z'); // approx end
 
@@ -5909,7 +5836,7 @@ Use exactly the formation provided. Use real known players.`
   }
 
   window.voteGroupPred = async (type, targetUid) => {
-    const deadline = new Date('2026-06-11T16:00:00Z');
+    const deadline = new Date('2026-06-10T19:00:00Z');
     if (new Date() >= deadline) return alert('Voting is closed! Results will be revealed at the end of the tournament.');
     const targetUser = await getDoc(doc(db, 'users', targetUid));
     await setDoc(doc(db, 'groupPredVotes', `${currentUser.uid}_${type}`), {
@@ -6342,7 +6269,7 @@ Use exactly the formation provided. Use real known players.`
     document.getElementById('home-player').textContent = currentUserData.tournamentPlayer || 'Not set';
 
     // Tournament player deadline check
-    const tournamentDeadline = new Date('2026-06-11T16:00:00Z');
+    const tournamentDeadline = new Date('2026-06-10T19:00:00Z');
     const now = new Date();
     const noticeEl = document.getElementById('tournament-deadline-notice');
     const lockBtn = document.getElementById('tournament-lock-btn');
@@ -7859,52 +7786,46 @@ Use exactly the formation provided. Use real known players.`
   window.filterPlayerSelect = window.filterPlayerCards; // backward compat
 
   window.saveWinnerPick = async () => {
-    try {
-      const deadline = new Date('2026-06-11T16:00:00Z');
-      if (new Date() >= deadline) { alert('Deadline has passed!'); return; }
-      if (!currentUser) { alert('Not logged in! Please refresh and try again.'); return; }
-      const sel = document.getElementById('winner-pick-select');
-      const val = sel?.value;
-      if (!val) return alert('Please select a team first!');
-      const btn = document.getElementById('winner-lock-btn');
-      const notice = document.getElementById('winner-pick-notice');
-      if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
-      await setDoc(doc(db, 'users', currentUser.uid), { tournamentWinner: val }, { merge: true });
-      currentUserData.tournamentWinner = val;
-      if (notice) notice.textContent = `✅ Locked in: ${val}`;
-      if (btn) { btn.textContent = '✅ Saved!'; }
-      setTimeout(() => { if(btn){btn.textContent='🔒 Lock in my pick';btn.disabled=false;} }, 2000);
-    } catch(e) {
-      console.error('saveWinnerPick error:', e);
-      alert('Error saving: ' + e.message);
-    }
+    const sel = document.getElementById('winner-pick-select');
+    const notice = document.getElementById('winner-pick-notice');
+    const btn = document.getElementById('winner-lock-btn');
+    const val = sel?.value;
+    if (!val) return alert('Please select a team first!');
+    const deadline = new Date('2026-06-10T19:00:00Z');
+    if (new Date() >= deadline) return alert('Deadline has passed!');
+    btn.disabled = true; btn.textContent = 'Saving...';
+    await updateDoc(doc(db, 'users', currentUser.uid), { tournamentWinner: val });
+    currentUserData.tournamentWinner = val;
+    if (notice) notice.textContent = `✅ Locked in: ${val}`;
+    btn.textContent = '✅ Saved!';
+    setTimeout(() => { btn.textContent = '🔒 Lock in my pick'; btn.disabled = false; }, 2000);
   };
 
   window.saveTournamentPlayer = async () => {
-    try {
-      const tournamentDeadline = new Date('2026-06-11T16:00:00Z');
-      const now = new Date();
-      if (now >= tournamentDeadline) {
-        alert('Tournament player deadline has passed!');
-        return;
-      }
-      if (!currentUser) { alert('Not logged in! Please refresh and try again.'); return; }
-      const player = document.getElementById('tournament-player-select')?.value;
-      if (!player) return alert('Please select a player first!');
-      const btn = document.getElementById('tournament-lock-btn');
-      const notice = document.getElementById('tournament-deadline-notice');
-      if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
-      await setDoc(doc(db, 'users', currentUser.uid), { tournamentPlayer: player }, { merge: true });
-      currentUserData.tournamentPlayer = player;
-      const homePl = document.getElementById('home-player');
-      if (homePl) homePl.textContent = player;
-      if (btn) { btn.textContent = '✅ Locked in!'; btn.style.background = 'var(--green)'; btn.style.color = 'white'; }
-      if (notice) notice.innerHTML = `<span style="color:var(--green);font-weight:500;">⭐ Your tournament player: <strong>${player}</strong></span>`;
-      setTimeout(() => { if(btn){btn.textContent='Change pick';btn.disabled=false;btn.style.background='';btn.style.color='';} }, 3000);
-    } catch(e) {
-      console.error('saveTournamentPlayer error:', e);
-      alert('Error saving: ' + e.message);
+    const tournamentDeadline = new Date('2026-06-10T19:00:00Z');
+    const now = new Date();
+    if (now >= tournamentDeadline) {
+      alert('Tournament player deadline has passed! You can no longer change your pick.');
+      return;
     }
+    const player = document.getElementById('tournament-player-select').value;
+    if (!player) return alert('Please select a player first!');
+    const btn = document.getElementById('tournament-lock-btn');
+    const notice = document.getElementById('tournament-deadline-notice');
+    btn.disabled = true; btn.textContent = 'Saving...';
+    await updateDoc(doc(db, 'users', currentUser.uid), { tournamentPlayer: player });
+    currentUserData.tournamentPlayer = player;
+    document.getElementById('home-player').textContent = player;
+    btn.textContent = '✅ Locked in!';
+    btn.style.background = 'var(--green)';
+    btn.style.color = 'white';
+    if (notice) notice.innerHTML = `<span style="color:var(--green);font-weight:500;">⭐ Your tournament player: <strong>${player}</strong></span>`;
+    setTimeout(() => {
+      btn.textContent = 'Change pick';
+      btn.disabled = false;
+      btn.style.background = '';
+      btn.style.color = '';
+    }, 3000);
   };
 
   // LOAD PRIZES
@@ -8417,7 +8338,7 @@ Use exactly the formation provided. Use real known players.`
         const hasFirstMatch = firstMatchId ? (predsByMatchId[firstMatchId]?.homeScore != null) : false;
         // 4. Scorers — check all predictions that have scores filled
         const filledPreds = preds.filter(p => p.homeScore != null && p.awayScore != null);
-        const missingScorer = scorerRequired.filter(p => !p.firstScorer || p.firstScorer === '').length;
+        const missingScorer = filledPreds.filter(p => !p.scorer || p.scorer === '').length;
         const scorerLabel = filledPreds.length === 0
           ? '<span style="color:var(--text-muted);font-size:12px;">➖</span>'
           : missingScorer === 0
@@ -8647,7 +8568,7 @@ Use exactly the formation provided. Use real known players.`
   };
 
   window.pickTournamentPlayer = async (player, btn) => {
-    const tournamentDeadline = new Date('2026-06-11T16:00:00Z');
+    const tournamentDeadline = new Date('2026-06-10T19:00:00Z');
     if (new Date() >= tournamentDeadline) {
       alert('Tournament player deadline has passed!');
       return;
@@ -14409,229 +14330,6 @@ Rules: realistic scores (0-4 range per team), scorer must be a real known player
       status.textContent = '❌ Error: ' + e.message;
       btn.disabled = false;
       btn.textContent = '🔄 Try again';
-    }
-  };
-  </script>
-
-  <!-- COED FOR DUMMIES WIZARD -->
-  <div id="dummies-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1002;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px);">
-    <div style="background:var(--surface);border-radius:20px;width:100%;max-width:420px;max-height:88vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,0.5);border:1px solid rgba(5,150,105,0.3);">
-      <div style="background:linear-gradient(135deg,#059669,#047857);padding:20px;border-radius:20px 20px 0 0;text-align:center;">
-        <div style="font-size:40px;margin-bottom:6px;">🎮</div>
-        <div style="font-size:18px;font-weight:800;color:white;">COED for Dummies</div>
-        <div style="font-size:12px;color:rgba(255,255,255,0.8);margin-top:4px;">Let AI handle everything. Just sit back and enjoy! 🏆</div>
-      </div>
-      <div style="padding:16px 20px;">
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">Select what to fill automatically:</div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <label style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface2);border-radius:12px;cursor:pointer;border:1px solid var(--border);">
-            <input type="checkbox" id="dum-scores" checked style="width:20px;height:20px;accent-color:#059669;cursor:pointer;flex-shrink:0;">
-            <div><div style="font-size:13px;font-weight:700;">⚽ All match predictions</div><div style="font-size:11px;color:var(--text-muted);">Score for every group stage match</div></div>
-          </label>
-          <label style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface2);border-radius:12px;cursor:pointer;border:1px solid var(--border);">
-            <input type="checkbox" id="dum-scorers" checked style="width:20px;height:20px;accent-color:#059669;cursor:pointer;flex-shrink:0;">
-            <div><div style="font-size:13px;font-weight:700;">🎯 First goalscorers</div><div style="font-size:11px;color:var(--text-muted);">+2 bonus pts if correct</div></div>
-          </label>
-          <label style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface2);border-radius:12px;cursor:pointer;border:1px solid var(--border);">
-            <input type="checkbox" id="dum-joker" checked style="width:20px;height:20px;accent-color:#7c3aed;cursor:pointer;flex-shrink:0;">
-            <div><div style="font-size:13px;font-weight:700;">🃏 Joker card</div><div style="font-size:11px;color:var(--text-muted);">Double points on best match (once per tournament)</div></div>
-          </label>
-          <label style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface2);border-radius:12px;cursor:pointer;border:1px solid var(--border);">
-            <input type="checkbox" id="dum-don" checked style="width:20px;height:20px;accent-color:#d97706;cursor:pointer;flex-shrink:0;">
-            <div><div style="font-size:13px;font-weight:700;">💰 Double or Nothing</div><div style="font-size:11px;color:var(--text-muted);">+50% or -50% per week</div></div>
-          </label>
-          <label style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface2);border-radius:12px;cursor:pointer;border:1px solid var(--border);">
-            <input type="checkbox" id="dum-player" checked style="width:20px;height:20px;accent-color:#f59e0b;cursor:pointer;flex-shrink:0;">
-            <div><div style="font-size:13px;font-weight:700;">⭐ Tournament player</div><div style="font-size:11px;color:var(--text-muted);">Goals/assists = bonus points all tournament</div></div>
-          </label>
-          <label style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--surface2);border-radius:12px;cursor:pointer;border:1px solid var(--border);">
-            <input type="checkbox" id="dum-winner" checked style="width:20px;height:20px;accent-color:#d4af37;cursor:pointer;flex-shrink:0;">
-            <div><div style="font-size:13px;font-weight:700;">🏆 World Cup winner</div><div style="font-size:11px;color:var(--text-muted);">+15 pts if correct</div></div>
-          </label>
-        </div>
-        <div id="dummies-status" style="display:none;margin-top:12px;padding:12px;background:var(--surface2);border-radius:10px;font-size:12px;color:var(--text-muted);line-height:1.8;max-height:180px;overflow-y:auto;"></div>
-        <div style="display:flex;gap:8px;margin-top:16px;">
-          <button onclick="document.getElementById('dummies-overlay').style.display='none'" style="flex:1;padding:12px;border-radius:12px;border:1px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:600;cursor:pointer;">Cancel</button>
-          <button id="dummies-go-btn" onclick="runDummiesWizard()" style="flex:2;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#059669,#047857);color:white;font-size:14px;font-weight:700;cursor:pointer;">🚀 Do it all for me!</button>
-        </div>
-        <div style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:8px;">You can edit any prediction after.</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- AI JOKER & DON MODAL -->
-  <div id="ai-joker-don-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:1001;align-items:center;justify-content:center;backdrop-filter:blur(4px);">
-    <div style="background:var(--surface);border-radius:20px;padding:1.75rem 1.5rem;width:340px;max-width:92vw;border:1px solid rgba(217,119,6,0.3);box-shadow:0 20px 60px rgba(0,0,0,0.4);">
-      <div style="text-align:center;margin-bottom:1.25rem;">
-        <div style="font-size:48px;margin-bottom:8px;">🃏💰</div>
-        <div style="font-size:18px;font-weight:800;margin-bottom:6px;">AI Joker & DON</div>
-        <div style="font-size:13px;color:var(--text-muted);line-height:1.6;">AI picks the best matches for Joker and Double or Nothing.</div>
-      </div>
-      <div style="background:var(--surface2);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;flex-direction:column;gap:10px;">
-        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-          <input type="checkbox" id="ai-jd-joker" checked style="width:18px;height:18px;cursor:pointer;accent-color:#7c3aed;">
-          <div><div style="font-size:13px;font-weight:700;">🃏 Set Joker</div><div style="font-size:11px;color:var(--text-muted);">Best match across entire tournament</div></div>
-        </label>
-        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding-left:28px;">
-          <input type="checkbox" id="ai-jd-replace-joker" style="width:16px;height:16px;cursor:pointer;accent-color:#7c3aed;">
-          <div style="font-size:12px;color:var(--text-muted);">↳ Replace existing Joker if already set</div>
-        </label>
-        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-          <input type="checkbox" id="ai-jd-don" checked style="width:18px;height:18px;cursor:pointer;accent-color:#d4af37;">
-          <div><div style="font-size:13px;font-weight:700;">💰 Set DON this week</div><div style="font-size:11px;color:var(--text-muted);">Best match this week (different from Joker)</div></div>
-        </label>
-      </div>
-      <div id="ai-jd-status" style="display:none;padding:10px;background:var(--surface2);border-radius:10px;font-size:13px;text-align:center;margin-bottom:1rem;color:var(--text-muted);"></div>
-      <div style="display:flex;gap:8px;">
-        <button onclick="document.getElementById('ai-joker-don-overlay').style.display='none'" style="flex:1;padding:11px;border-radius:10px;border:1px solid var(--border);background:none;color:var(--text-muted);font-size:14px;font-weight:600;cursor:pointer;">Cancel</button>
-        <button id="ai-jd-confirm-btn" onclick="runAIJokerDon()" style="flex:2;padding:11px;border-radius:10px;border:none;background:linear-gradient(135deg,#d97706,#b45309);color:white;font-size:14px;font-weight:700;cursor:pointer;">🚀 Let AI decide!</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-  window.showAIJokerDonModal = () => {
-    document.getElementById('ai-joker-don-overlay').style.display = 'flex';
-    document.getElementById('ai-jd-status').style.display = 'none';
-    const btn = document.getElementById('ai-jd-confirm-btn');
-    btn.disabled = false; btn.textContent = '🚀 Let AI decide!';
-    document.getElementById('ai-jd-joker').checked = true;
-    document.getElementById('ai-jd-don').checked = true;
-    document.getElementById('ai-jd-replace-joker').checked = false;
-  };
-
-  window.showDummiesWizard = () => {
-    document.getElementById('dummies-overlay').style.display = 'flex';
-    document.getElementById('dummies-status').style.display = 'none';
-    const btn = document.getElementById('dummies-go-btn');
-    btn.disabled = false; btn.textContent = '🚀 Do it all for me!';
-  };
-
-  window.runDummiesWizard = async () => {
-    const btn = document.getElementById('dummies-go-btn');
-    const status = document.getElementById('dummies-status');
-    btn.disabled = true; btn.textContent = '⏳ Working...';
-    status.style.display = 'block'; status.innerHTML = '';
-
-    const doScores  = document.getElementById('dum-scores').checked;
-    const doScorers = document.getElementById('dum-scorers').checked;
-    const doJoker   = document.getElementById('dum-joker').checked;
-    const doDON     = document.getElementById('dum-don').checked;
-    const doPlayer  = document.getElementById('dum-player').checked;
-    const doWinner  = document.getElementById('dum-winner').checked;
-
-    const log = (msg) => { status.innerHTML += msg + '<br>'; };
-
-    try {
-      // STEP 1: All matches (all weeks) in chunks
-      if (doScores || doScorers) {
-        const allCards = Array.from(document.querySelectorAll('.match-card[data-match-id]'));
-        const matches = allCards.map(c => ({matchId:c.dataset.matchId, home:c.dataset.home, away:c.dataset.away})).filter(m=>m.home&&m.away&&m.matchId);
-        log(`⚽ Filling ${matches.length} matches...`);
-        const CHUNK = 16;
-        for (let i = 0; i < matches.length; i += CHUNK) {
-          const chunk = matches.slice(i, i+CHUNK);
-          log(`🤖 Batch ${Math.floor(i/CHUNK)+1}/${Math.ceil(matches.length/CHUNK)}...`);
-          try {
-            const resp = await fetch('/api/coach', {
-              method:'POST', headers:{'Content-Type':'application/json'},
-              body: JSON.stringify({
-                systemPrompt: 'World Cup 2026 expert. Respond ONLY with a valid JSON array, no markdown.',
-                messages:[{role:'user',content:`Predict World Cup 2026 matches. JSON array only:\n[{"matchId":"ID","home_team":"Name","away_team":"Name","home":N,"away":N,"scorer":"First Last"}]\n\n${chunk.map(m=>`matchId="${m.matchId}" | ${m.home} vs ${m.away}`).join('\n')}\n\nRules: varied realistic scores 0-4, scorer = real known player from one of the two teams.`}],
-                maxTokens: 1200
-              })
-            });
-            const data = await resp.json();
-            let preds = null;
-            const text = (data.text||'').trim();
-            try { preds = JSON.parse(text); } catch(e) {}
-            if (!preds) { const m=text.match(/\[[\s\S]*\]/); if(m) try{preds=JSON.parse(m[0]);}catch(e){} }
-            if (preds && Array.isArray(preds)) {
-              preds.forEach((pred,idx) => {
-                let card = document.querySelector(`.match-card[data-match-id="${pred.matchId}"]`);
-                if (!card) card = allCards.find(c=>c.dataset.home===pred.home_team&&c.dataset.away===pred.away_team);
-                if (!card && idx < chunk.length) card = document.querySelector(`.match-card[data-match-id="${chunk[idx].matchId}"]`);
-                if (!card) return;
-                const matchId = card.dataset.matchId;
-                if (doScores) {
-                  const h = Math.max(0,Math.min(10,typeof pred.home==='number'?pred.home:parseInt(pred.home)||0));
-                  const a = Math.max(0,Math.min(10,typeof pred.away==='number'?pred.away:parseInt(pred.away)||0));
-                  ['home','away'].forEach((side,si)=>{
-                    const el=document.getElementById(`${side}-${matchId}`);
-                    if(!el)return;
-                    const cur=parseInt(el.dataset.val||'0'),target=si===0?h:a,delta=target-cur;
-                    if(delta!==0)for(let d=0;d<Math.abs(delta);d++)adjustScore(`${side}-${matchId}`,delta>0?1:-1);
-                  });
-                  if(!window._touchedMatches)window._touchedMatches=new Set();
-                  window._touchedMatches.add(matchId);
-                }
-                if (doScorers && pred.scorer) {
-                  const sel = card.querySelector(`#scorer-${matchId}`);
-                  if (sel) {
-                    const lc=pred.scorer.toLowerCase(), last=lc.split(' ').pop();
-                    const opt=Array.from(sel.options).find(o=>o.value.toLowerCase()===lc||o.value.toLowerCase().split(' ').pop()===last);
-                    if(opt){sel.value=opt.value;sel.dispatchEvent(new Event('change',{bubbles:true}));const lbl=document.getElementById(`scorer-label-${matchId}`);if(lbl)lbl.textContent=opt.value;}
-                  }
-                }
-              });
-            }
-          } catch(e) { log(`⚠️ Batch error: ${e.message}`); }
-          await new Promise(r=>setTimeout(r,300));
-        }
-        log('✅ Matches filled!');
-      }
-
-      // STEP 2: Joker
-      if (doJoker && window._aiSetJoker) {
-        const preds = Array.from(document.querySelectorAll('.match-card[data-match-id]')).map(c=>{
-          const id=c.dataset.matchId,h=parseInt(document.getElementById('home-'+id)?.dataset.val||'0'),a=parseInt(document.getElementById('away-'+id)?.dataset.val||'0');
-          return {matchId:id,homeScore:h,awayScore:a};
-        }).filter(p=>p.homeScore>0||p.awayScore>0);
-        log(await window._aiSetJoker(preds));
-      }
-
-      // STEP 3: DON
-      if (doDON && window._aiSetDON) {
-        const preds = Array.from(document.querySelectorAll('.match-card[data-match-id]')).map(c=>{
-          const id=c.dataset.matchId,h=parseInt(document.getElementById('home-'+id)?.dataset.val||'0'),a=parseInt(document.getElementById('away-'+id)?.dataset.val||'0');
-          return {matchId:id,homeScore:h,awayScore:a};
-        }).filter(p=>p.homeScore>0||p.awayScore>0);
-        log(await window._aiSetDON(preds));
-      }
-
-      // STEP 4: Tournament player — random from SUGGESTED_PLAYERS
-      if (doPlayer) {
-        try {
-          if (window.currentUserData && !window.currentUserData.tournamentPlayer && typeof SUGGESTED_PLAYERS !== 'undefined') {
-            const pick = SUGGESTED_PLAYERS[Math.floor(Math.random()*SUGGESTED_PLAYERS.length)];
-            await window._dbSaveField('tournamentPlayer', pick.name);
-            if (window.currentUserData) window.currentUserData.tournamentPlayer = pick.name;
-            log(`⭐ Tournament player: ${pick.name}`);
-          } else { log('⭐ Tournament player: already set'); }
-        } catch(e) { log(`⭐ Player error: ${e.message}`); }
-      }
-
-      // STEP 5: World Cup winner — weighted random from top contenders
-      if (doWinner) {
-        try {
-          if (window.currentUserData && !window.currentUserData.tournamentWinner) {
-            const contenders = ['Brazil','France','Argentina','Spain','England','Germany','Portugal','Netherlands','Uruguay'];
-            const pick = contenders[Math.floor(Math.random()*contenders.length)];
-            await window._dbSaveField('tournamentWinner', pick);
-            if (window.currentUserData) window.currentUserData.tournamentWinner = pick;
-            log(`🏆 World Cup winner: ${pick}`);
-          } else { log('🏆 Winner: already set'); }
-        } catch(e) { log(`🏆 Winner error: ${e.message}`); }
-      }
-
-      status.style.background = 'rgba(5,150,105,0.1)';
-      status.style.color = '#059669';
-      log("🎉 All done! You're ready for the World Cup!");
-      btn.textContent = '✅ All set!';
-      setTimeout(() => { document.getElementById('dummies-overlay').style.display='none'; }, 4000);
-    } catch(e) {
-      log(`❌ Error: ${e.message}`);
-      btn.disabled = false; btn.textContent = '🔄 Try again';
     }
   };
   </script>
