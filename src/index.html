@@ -7817,41 +7817,53 @@ Use exactly the formation provided. Use real known players.`
 
   window.saveWinnerPick = async () => {
     try {
+      console.log('[saveWinnerPick] called, currentUser=', currentUser?.uid);
       if (!currentUser) return alert('Not logged in!');
       const sel = document.getElementById('winner-pick-select');
       const val = sel?.value;
+      console.log('[saveWinnerPick] val=', val);
       if (!val) return alert('Please select a team first!');
       const deadline = new Date('2026-06-11T16:00:00Z');
-      if (new Date() >= deadline) return alert('Deadline has passed!');
+      const now = new Date();
+      console.log('[saveWinnerPick] now=', now.toISOString(), 'deadline=', deadline.toISOString(), 'passed=', now >= deadline);
+      if (now >= deadline) return alert('Deadline has passed!');
       const btn = document.getElementById('winner-lock-btn');
       const notice = document.getElementById('winner-pick-notice');
       if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+      console.log('[saveWinnerPick] calling setDoc...');
       await setDoc(doc(db, 'users', currentUser.uid), { tournamentWinner: val }, { merge: true });
+      console.log('[saveWinnerPick] saved!');
       currentUserData.tournamentWinner = val;
       if (notice) notice.textContent = `✅ Locked in: ${val}`;
       if (btn) { btn.textContent = '✅ Saved!'; }
       setTimeout(() => { if(btn){btn.textContent='🔒 Lock in my pick';btn.disabled=false;} }, 2000);
-    } catch(e) { alert('Error saving: ' + e.message); }
+    } catch(e) { console.error('[saveWinnerPick] ERROR:', e); alert('Error saving: ' + e.message); }
   };
 
   window.saveTournamentPlayer = async () => {
     try {
+      console.log('[saveTournamentPlayer] called, currentUser=', currentUser?.uid);
       if (!currentUser) return alert('Not logged in!');
       const deadline = new Date('2026-06-11T16:00:00Z');
-      if (new Date() >= deadline) return alert('Tournament player deadline has passed!');
+      const now = new Date();
+      console.log('[saveTournamentPlayer] now=', now.toISOString(), 'passed=', now >= deadline);
+      if (now >= deadline) return alert('Tournament player deadline has passed!');
       const player = document.getElementById('tournament-player-select')?.value;
+      console.log('[saveTournamentPlayer] player=', player);
       if (!player) return alert('Please select a player first!');
       const btn = document.getElementById('tournament-lock-btn');
       const notice = document.getElementById('tournament-deadline-notice');
       if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+      console.log('[saveTournamentPlayer] calling setDoc...');
       await setDoc(doc(db, 'users', currentUser.uid), { tournamentPlayer: player }, { merge: true });
+      console.log('[saveTournamentPlayer] saved!');
       currentUserData.tournamentPlayer = player;
       const homePl = document.getElementById('home-player');
       if (homePl) homePl.textContent = player;
       if (btn) { btn.textContent = '✅ Locked in!'; btn.style.background = 'var(--green)'; btn.style.color = 'white'; }
       if (notice) notice.innerHTML = `<span style="color:var(--green);font-weight:500;">⭐ Your tournament player: <strong>${player}</strong></span>`;
       setTimeout(() => { if(btn){btn.textContent='Change pick';btn.disabled=false;btn.style.background='';btn.style.color='';} }, 3000);
-    } catch(e) { alert('Error saving: ' + e.message); }
+    } catch(e) { console.error('[saveTournamentPlayer] ERROR:', e); alert('Error saving: ' + e.message); }
   };
 
   // LOAD PRIZES
