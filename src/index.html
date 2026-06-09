@@ -11510,10 +11510,16 @@ Use exactly the formation provided. Use real known players.`
   }
 
   function getPlayersForTeam(teamName, apiPlayers) {
+    // Always prefer ALL_PLAYERS_DATA — has full squads
+    const normalized = normalizeTeamName(teamName);
+    const fromData = ALL_PLAYERS_DATA
+      .filter(p => p.country === teamName || p.country === normalized)
+      .map(p => p.name);
+    if (fromData.length > 0) return fromData;
+    // Fallback to API players or FALLBACK_PLAYERS
     if (apiPlayers && apiPlayers.length > 0) return apiPlayers;
-    // Try direct match first, then normalized
-    return FALLBACK_PLAYERS[teamName] 
-      || FALLBACK_PLAYERS[normalizeTeamName(teamName)] 
+    return FALLBACK_PLAYERS[teamName]
+      || FALLBACK_PLAYERS[normalized]
       || [];
   }
 
