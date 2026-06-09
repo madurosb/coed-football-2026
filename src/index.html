@@ -4879,21 +4879,29 @@
   window._clearLineupCache = () => { Object.keys(lineupCache).forEach(k => delete lineupCache[k]); };
 
   // ═══ SQUAD OVERRIDES — persist admin edits to Firestore ═══
+  // Stored in users collection (already has write permissions) under admin UID
+  function getSquadOverrideRef() {
+    // Store under a doc that admin can write — using currentUser uid
+    if (!currentUser) return null;
+    return doc(db, 'users', currentUser.uid);
+  }
+
   async function loadSquadOverrides() {
     try {
-      const snap = await getDoc(doc(db, 'config', 'squadOverrides'));
-      if (!snap.exists()) return;
-      const data = snap.data();
-      // Apply removals
-      if (data.removed && Array.isArray(data.removed)) {
-        data.removed.forEach(({name, country}) => {
+      // Try to find the squadOverrides doc — stored by the admin
+      // Query users collection for doc with squadOverrides field
+      const usersSnap = await getDocs(query(collection(db, 'users'), where('isAdmin', '==', true)));
+      let overrides = null;
+      usersSnap.forEach(d => { if (d.data().squadOverrides) overrides = d.data().squadOverrides; });
+      if (!overrides) return;
+      if (overrides.removed && Array.isArray(overrides.removed)) {
+        overrides.removed.forEach(({name, country}) => {
           const idx = ALL_PLAYERS_DATA.findIndex(p => p.name === name && p.country === country);
           if (idx > -1) ALL_PLAYERS_DATA.splice(idx, 1);
         });
       }
-      // Apply additions
-      if (data.added && Array.isArray(data.added)) {
-        data.added.forEach(p => {
+      if (overrides.added && Array.isArray(overrides.added)) {
+        overrides.added.forEach(p => {
           if (!ALL_PLAYERS_DATA.find(x => x.name === p.name && x.country === p.country)) {
             ALL_PLAYERS_DATA.push(p);
           }
@@ -4902,46 +4910,37 @@
     } catch(e) { console.warn('Squad overrides load failed:', e.message); }
   }
 
-  async function saveSquadOverrides() {
-    try {
-      // Load existing overrides, merge with current state
-      const snap = await getDoc(doc(db, 'config', 'squadOverrides'));
-      const existing = snap.exists() ? snap.data() : {removed:[], added:[]};
-      await setDoc(doc(db, 'config', 'squadOverrides'), {
-        removed: existing.removed || [],
-        added: existing.added || [],
-        lastUpdated: new Date()
-      });
-    } catch(e) { console.warn('Squad overrides save failed:', e.message); }
-  }
-
   window._squadAddOverride = async (name, country, flag) => {
     try {
-      const snap = await getDoc(doc(db, 'config', 'squadOverrides'));
-      const d = snap.exists() ? snap.data() : {removed:[], added:[]};
-      const removed = (d.removed||[]).filter(p => !(p.name===name && p.country===country));
-      const added = d.added||[];
+      if (!currentUser) { alert('Not logged in'); return; }
+      const ref = doc(db, 'users', currentUser.uid);
+      const snap = await getDoc(ref);
+      const existing = snap.data()?.squadOverrides || {removed:[], added:[]};
+      const removed = (existing.removed||[]).filter(p => !(p.name===name && p.country===country));
+      const added = existing.added||[];
       if (!added.find(p => p.name===name && p.country===country)) added.push({name, country, flag});
-      await setDoc(doc(db, 'config', 'squadOverrides'), {removed, added, lastUpdated: new Date()});
-      console.log('✅ Squad add saved to Firestore:', name, country);
+      await setDoc(ref, {squadOverrides: {removed, added, lastUpdated: new Date()}}, {merge: true});
+      console.log('✅ Squad add saved:', name, country);
     } catch(e) {
       console.error('Add override failed:', e);
-      alert('❌ Save failed: ' + e.message + '\n\nCheck Firestore rules for "config" collection.');
+      alert('❌ Save failed: ' + e.message);
     }
   };
 
   window._squadRemoveOverride = async (name, country) => {
     try {
-      const snap = await getDoc(doc(db, 'config', 'squadOverrides'));
-      const d = snap.exists() ? snap.data() : {removed:[], added:[]};
-      const added = (d.added||[]).filter(p => !(p.name===name && p.country===country));
-      const removed = d.removed||[];
+      if (!currentUser) { alert('Not logged in'); return; }
+      const ref = doc(db, 'users', currentUser.uid);
+      const snap = await getDoc(ref);
+      const existing = snap.data()?.squadOverrides || {removed:[], added:[]};
+      const added = (existing.added||[]).filter(p => !(p.name===name && p.country===country));
+      const removed = existing.removed||[];
       if (!removed.find(p => p.name===name && p.country===country)) removed.push({name, country});
-      await setDoc(doc(db, 'config', 'squadOverrides'), {removed, added, lastUpdated: new Date()});
-      console.log('✅ Squad remove saved to Firestore:', name, country);
+      await setDoc(ref, {squadOverrides: {removed, added, lastUpdated: new Date()}}, {merge: true});
+      console.log('✅ Squad remove saved:', name, country);
     } catch(e) {
       console.error('Remove override failed:', e);
-      alert('❌ Save failed: ' + e.message + '\n\nCheck Firestore rules for "config" collection.');
+      alert('❌ Save failed: ' + e.message);
     }
   };
 
