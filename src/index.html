@@ -4876,9 +4876,66 @@
   };
 
   const lineupCache = {};
-
-  // Clear lineup cache when squads are updated
   window._clearLineupCache = () => { Object.keys(lineupCache).forEach(k => delete lineupCache[k]); };
+
+  // ═══ SQUAD OVERRIDES — persist admin edits to Firestore ═══
+  async function loadSquadOverrides() {
+    try {
+      const snap = await getDoc(doc(db, 'config', 'squadOverrides'));
+      if (!snap.exists()) return;
+      const data = snap.data();
+      // Apply removals
+      if (data.removed && Array.isArray(data.removed)) {
+        data.removed.forEach(({name, country}) => {
+          const idx = ALL_PLAYERS_DATA.findIndex(p => p.name === name && p.country === country);
+          if (idx > -1) ALL_PLAYERS_DATA.splice(idx, 1);
+        });
+      }
+      // Apply additions
+      if (data.added && Array.isArray(data.added)) {
+        data.added.forEach(p => {
+          if (!ALL_PLAYERS_DATA.find(x => x.name === p.name && x.country === p.country)) {
+            ALL_PLAYERS_DATA.push(p);
+          }
+        });
+      }
+    } catch(e) { console.warn('Squad overrides load failed:', e.message); }
+  }
+
+  async function saveSquadOverrides() {
+    try {
+      // Load existing overrides, merge with current state
+      const snap = await getDoc(doc(db, 'config', 'squadOverrides'));
+      const existing = snap.exists() ? snap.data() : {removed:[], added:[]};
+      await setDoc(doc(db, 'config', 'squadOverrides'), {
+        removed: existing.removed || [],
+        added: existing.added || [],
+        lastUpdated: new Date()
+      });
+    } catch(e) { console.warn('Squad overrides save failed:', e.message); }
+  }
+
+  window._squadAddOverride = async (name, country, flag) => {
+    try {
+      const snap = await getDoc(doc(db, 'config', 'squadOverrides'));
+      const d = snap.exists() ? snap.data() : {removed:[], added:[]};
+      const removed = (d.removed||[]).filter(p => !(p.name===name && p.country===country));
+      const added = d.added||[];
+      if (!added.find(p => p.name===name && p.country===country)) added.push({name, country, flag});
+      await setDoc(doc(db, 'config', 'squadOverrides'), {removed, added, lastUpdated: new Date()});
+    } catch(e) { console.warn('Add override failed:', e.message); }
+  };
+
+  window._squadRemoveOverride = async (name, country) => {
+    try {
+      const snap = await getDoc(doc(db, 'config', 'squadOverrides'));
+      const d = snap.exists() ? snap.data() : {removed:[], added:[]};
+      const added = (d.added||[]).filter(p => !(p.name===name && p.country===country));
+      const removed = d.removed||[];
+      if (!removed.find(p => p.name===name && p.country===country)) removed.push({name, country});
+      await setDoc(doc(db, 'config', 'squadOverrides'), {removed, added, lastUpdated: new Date()});
+    } catch(e) { console.warn('Remove override failed:', e.message); }
+  };
 
   window.toggleLineup = async (matchId, homeTeam, awayTeam, btn) => {
     const panel = document.getElementById('lineup-panel-' + matchId);
@@ -5554,7 +5611,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     }
     showPage('home');
     loadHomeData();
-    loadMatches();
+    loadSquadOverrides().then(() => loadMatches()); // Apply admin squad edits before building match cards
     loadPrizes();
     // Opening video check + message badge
     setTimeout(checkOpeningVideo, 200);
@@ -13900,7 +13957,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
       </div>`;
 
     // Add event listeners after render
-    document.getElementById('squad-add-btn').addEventListener('click', () => {
+    document.getElementById('squad-add-btn').addEventListener('click', async () => {
       const input = document.getElementById('squad-add-input');
       const name = input?.value?.trim();
       if (!name) { alert('Enter a player name!'); return; }
@@ -13909,19 +13966,21 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
       }
       const flag = ALL_PLAYERS_DATA.find(p => p.country === teamName)?.flag || '';
       ALL_PLAYERS_DATA.push({ name, country: teamName, flag });
+      await window._squadAddOverride(name, teamName, flag);
       input.value = '';
       loadSquadTeam(teamName);
       refreshScorerDropdownsForTeam(teamName);
       window._clearLineupCache?.();
     });
 
-    document.getElementById('squad-player-list').addEventListener('click', (e) => {
+    document.getElementById('squad-player-list').addEventListener('click', async (e) => {
       const btn = e.target.closest('.squad-remove-btn');
       if (!btn) return;
       const playerName = btn.dataset.player;
       if (!confirm(`Remove ${playerName} from ${teamName}?`)) return;
       const idx = ALL_PLAYERS_DATA.findIndex(p => p.country === teamName && p.name === playerName);
       if (idx > -1) ALL_PLAYERS_DATA.splice(idx, 1);
+      await window._squadRemoveOverride(playerName, teamName);
       loadSquadTeam(teamName);
       refreshScorerDropdownsForTeam(teamName);
       window._clearLineupCache?.();
