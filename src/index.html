@@ -13749,6 +13749,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
     const doPlayer  = document.getElementById('dum-player')?.checked;
     const doWinner  = document.getElementById('dum-winner')?.checked;
     const log = (msg) => { status.innerHTML += msg + '<br>'; status.scrollTop = status.scrollHeight; };
+    log(`🔍 Debug: scores=${doScores} scorers=${doScorers} joker=${doJoker} don=${doDON} player=${doPlayer} winner=${doWinner}`);
 
     try {
       let allFilledPreds = []; // track for Joker/DON
