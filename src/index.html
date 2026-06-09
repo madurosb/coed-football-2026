@@ -2989,7 +2989,7 @@
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
   import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js';
-  import { getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, updateDoc, deleteDoc, query, orderBy, where, limit, onSnapshot, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+  import { getFirestore, doc, getDoc, getDocFromServer, setDoc, collection, getDocs, addDoc, updateDoc, deleteDoc, query, orderBy, where, limit, onSnapshot, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
 
   window.resetTrashTalk = async (days) => {
     const msg = days === 0 ? 'Delete ALL messages?' : `Delete messages older than ${days} days?`;
@@ -7845,7 +7845,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     console.log('[squads] Starting...');
     try {
       const ADMIN_UID = 'KGbbRvOMEtNGjSNP3PLYEbsVIix2';
-      const snap = await getDoc(doc(db, 'users', ADMIN_UID));
+      const snap = await getDocFromServer(doc(db, 'users', ADMIN_UID));
       if (!snap.exists()) { console.log('[squads] No user doc'); return; }
       const data = snap.data();
       console.log('[squads] Doc fields:', Object.keys(data));
