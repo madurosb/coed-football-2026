@@ -11711,11 +11711,12 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const awayScore = parseInt(awayEl.dataset?.val ?? awayEl.textContent ?? 0);
       const firstScorer = document.getElementById('scorer-' + d.id)?.value || '';
       try {
-        await setDoc(doc(db, 'predictions', `${currentUser.uid}_${d.id}`), {
+        const updateData = {
           userId: currentUser.uid, matchId: d.id,
-          homeScore, awayScore, firstScorer,
-          submittedAt: serverTimestamp()
-        });
+          homeScore, awayScore, submittedAt: serverTimestamp()
+        };
+        if (firstScorer) updateData.firstScorer = firstScorer;
+        await setDoc(doc(db, 'predictions', `${currentUser.uid}_${d.id}`), updateData, { merge: true });
         saved++;
       } catch(e) { skipped++; }
     }
@@ -11769,11 +11770,12 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const firstScorer = document.getElementById('scorer-' + d.id)?.value || '';
 
       try {
-        await setDoc(doc(db, 'predictions', `${currentUser.uid}_${d.id}`), {
+        const updateData = {
           userId: currentUser.uid, matchId: d.id,
-          homeScore, awayScore, firstScorer,
-          submittedAt: serverTimestamp()
-        });
+          homeScore, awayScore, submittedAt: serverTimestamp()
+        };
+        if (firstScorer) updateData.firstScorer = firstScorer;
+        await setDoc(doc(db, 'predictions', `${currentUser.uid}_${d.id}`), updateData, { merge: true });
         saved++;
         // Mark individual save btn as saved
         const individualBtn = document.querySelector(`[onclick*="savePrediction('${d.id}'"]`);
