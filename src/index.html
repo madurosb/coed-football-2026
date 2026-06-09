@@ -7847,7 +7847,9 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const ADMIN_UID = 'KGbbRvOMEtNGjSNP3PLYEbsVIix2';
       const snap = await getDoc(doc(db, 'users', ADMIN_UID));
       if (!snap.exists()) { console.log('[squads] No user doc'); return; }
-      const overrides = snap.data()?.squadOverrides;
+      const data = snap.data();
+      console.log('[squads] Doc fields:', Object.keys(data));
+      const overrides = data?.squadOverrides;
       if (!overrides) { console.log('[squads] No squadOverrides field'); return; }
       console.log('[squads] removed:', overrides.removed?.length, 'added:', overrides.added?.length);
       if (overrides.removed && Array.isArray(overrides.removed)) {
