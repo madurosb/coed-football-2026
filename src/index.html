@@ -4877,6 +4877,9 @@
 
   const lineupCache = {};
 
+  // Clear lineup cache when squads are updated
+  window._clearLineupCache = () => { Object.keys(lineupCache).forEach(k => delete lineupCache[k]); };
+
   window.toggleLineup = async (matchId, homeTeam, awayTeam, btn) => {
     const panel = document.getElementById('lineup-panel-' + matchId);
     const chevron = document.getElementById('lineup-chevron-' + matchId);
@@ -4899,6 +4902,12 @@
       const homeFormation = TEAM_FORMATIONS[homeTeam] || '4-3-3';
       const awayFormation = TEAM_FORMATIONS[awayTeam] || '4-3-3';
 
+      // Build squad lists from ALL_PLAYERS_DATA for accurate lineups
+      const homePlayers = getPlayersForTeam(homeTeam, []);
+      const awayPlayers = getPlayersForTeam(awayTeam, []);
+      const homeSquadStr = homePlayers.length ? `\n${homeTeam} squad: ${homePlayers.join(', ')}` : '';
+      const awaySquadStr = awayPlayers.length ? `\n${awayTeam} squad: ${awayPlayers.join(', ')}` : '';
+
       const resp = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -4909,6 +4918,9 @@
             content: `Predict the most likely starting 11 for both teams in this World Cup 2026 match: ${homeTeam} vs ${awayTeam}.
 
 ${homeTeam} plays ${homeFormation}. ${awayTeam} plays ${awayFormation}.
+${homeSquadStr}${awaySquadStr}
+
+IMPORTANT: Only use players from the squad lists above. Do not invent players.
 
 Return ONLY this JSON:
 {
@@ -4931,7 +4943,7 @@ Return ONLY this JSON:
 }
 
 Position codes: GK, RB, CB, LB, LWB, RWB, CDM, CM, CAM, RM, LM, RW, LW, ST, CF
-Use exactly the formation provided. Use real known players.`
+Use exactly the formation provided. Only use players from the squad lists above.`
           }],
           maxTokens: 1200
         })
@@ -13900,6 +13912,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
       input.value = '';
       loadSquadTeam(teamName);
       refreshScorerDropdownsForTeam(teamName);
+      window._clearLineupCache?.();
     });
 
     document.getElementById('squad-player-list').addEventListener('click', (e) => {
@@ -13911,6 +13924,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
       if (idx > -1) ALL_PLAYERS_DATA.splice(idx, 1);
       loadSquadTeam(teamName);
       refreshScorerDropdownsForTeam(teamName);
+      window._clearLineupCache?.();
     });
   };
 
