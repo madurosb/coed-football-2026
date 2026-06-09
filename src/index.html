@@ -5587,7 +5587,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     }
     showPage('home');
     loadHomeData();
-    loadSquadOverrides().then(() => loadMatches()); // Apply admin squad edits before building match cards
+    window.loadSquadOverrides?.().then(() => loadMatches()) ?? loadMatches(); // Apply admin squad edits before building match cards
     loadPrizes();
     // Opening video check + message badge
     setTimeout(checkOpeningVideo, 200);
