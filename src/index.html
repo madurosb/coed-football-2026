@@ -13845,11 +13845,13 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
       }
 
       if (doJoker && window._aiSetJoker) {
+        log(`🃏 Running Joker with ${jokerDonPreds.length} predictions...`);
         if (jokerDonPreds.length) log(await window._aiSetJoker(jokerDonPreds));
         else log('🃏 No predictions to pick Joker from');
       }
 
       if (doDON && window._aiSetDON) {
+        log(`💰 Running DON with ${jokerDonPreds.length} predictions...`);
         if (jokerDonPreds.length) log(await window._aiSetDON(jokerDonPreds));
         else log('💰 No predictions to pick DON from');
       }
