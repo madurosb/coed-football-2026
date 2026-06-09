@@ -5587,7 +5587,10 @@ Use exactly the formation provided. Only use players from the squad lists above.
     }
     showPage('home');
     loadHomeData();
-    window.loadSquadOverrides?.().then(() => loadMatches()) ?? loadMatches(); // Apply admin squad edits before building match cards
+    // Load squad overrides after a short delay to ensure Firestore auth is ready
+    setTimeout(() => {
+      window.loadSquadOverrides?.().then(() => loadMatches()) ?? loadMatches();
+    }, 500);
     loadPrizes();
     // Opening video check + message badge
     setTimeout(checkOpeningVideo, 200);
@@ -7845,10 +7848,11 @@ Use exactly the formation provided. Only use players from the squad lists above.
     console.log('[squads] Starting...');
     try {
       const ADMIN_UID = 'KGbbRvOMEtNGjSNP3PLYEbsVIix2';
-      const snap = await getDocFromServer(doc(db, 'users', ADMIN_UID));
+      // Use regular getDoc - server fetch was causing issues with auth timing
+      const snap = await getDoc(doc(db, 'users', ADMIN_UID));
       if (!snap.exists()) { console.log('[squads] No user doc'); return; }
       const data = snap.data();
-      console.log('[squads] Doc fields:', Object.keys(data));
+      console.log('[squads] Doc fields:', Object.keys(data).length, Object.keys(data));
       const overrides = data?.squadOverrides;
       if (!overrides) { console.log('[squads] No squadOverrides field'); return; }
       console.log('[squads] removed:', overrides.removed?.length, 'added:', overrides.added?.length);
