@@ -4888,11 +4888,11 @@
 
   async function loadSquadOverrides() {
     try {
-      // Try to find the squadOverrides doc — stored by the admin
-      // Query users collection for doc with squadOverrides field
-      const usersSnap = await getDocs(query(collection(db, 'users'), where('isAdmin', '==', true)));
-      let overrides = null;
-      usersSnap.forEach(d => { if (d.data().squadOverrides) overrides = d.data().squadOverrides; });
+      // Load from admin's user doc directly (admin UID is fixed)
+      const ADMIN_UID = 'KGbbRvOMEtNGjSNP3PLYEbsVIix2';
+      const snap = await getDoc(doc(db, 'users', ADMIN_UID));
+      if (!snap.exists()) return;
+      const overrides = snap.data()?.squadOverrides;
       if (!overrides) return;
       if (overrides.removed && Array.isArray(overrides.removed)) {
         overrides.removed.forEach(({name, country}) => {
