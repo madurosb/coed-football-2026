@@ -7547,7 +7547,7 @@ Use exactly the formation provided. Use real known players.`
       </button>`).join('');
   }
 
-  window.selectWinner = (team) => {
+  window.selectWinner = async (team) => {
     const sel = document.getElementById('winner-pick-select');
     if (sel) sel.value = team;
     document.querySelectorAll('[id^="winner-btn-"]').forEach(b => {
@@ -7565,7 +7565,6 @@ Use exactly the formation provided. Use real known players.`
     const nameEl = document.getElementById('winner-selected-name');
     if (display) display.style.display = 'flex';
     if (nameEl) nameEl.textContent = team;
-    // Update summary and auto-close
     const summary = document.getElementById('winner-pick-summary');
     if (summary) summary.textContent = `🏆 ${team} · Correct = +15pts`;
     const wbadge = document.getElementById('winner-pick-badge');
@@ -7582,6 +7581,16 @@ Use exactly the formation provided. Use real known players.`
         if (chevron) chevron.style.transform = '';
       }
     }, 400);
+    // Save to Firestore
+    try {
+      if (currentUser) {
+        const deadline = new Date('2026-06-11T16:00:00Z');
+        if (new Date() < deadline) {
+          await setDoc(doc(db, 'users', currentUser.uid), { tournamentWinner: team }, { merge: true });
+          if (currentUserData) currentUserData.tournamentWinner = team;
+        }
+      }
+    } catch(e) { console.error('selectWinner save error:', e); }
   };
 
   window.clearWinnerPick = () => {
@@ -7759,7 +7768,7 @@ Use exactly the formation provided. Use real known players.`
     renderPlayerCards(filtered, document.getElementById('tournament-player-select')?.value);
   };
 
-  window.selectPlayerCard = (name, country, flag) => {
+  window.selectPlayerCard = async (name, country, flag) => {
     const sel = document.getElementById('tournament-player-select');
     if (sel) sel.value = name;
     document.querySelectorAll('.player-card-btn').forEach(b => {
@@ -7800,6 +7809,18 @@ Use exactly the formation provided. Use real known players.`
         if (chevron) chevron.style.transform = '';
       }
     }, 400);
+    // Save to Firestore
+    try {
+      if (currentUser) {
+        const deadline = new Date('2026-06-11T16:00:00Z');
+        if (new Date() < deadline) {
+          await setDoc(doc(db, 'users', currentUser.uid), { tournamentPlayer: name }, { merge: true });
+          if (currentUserData) currentUserData.tournamentPlayer = name;
+          const homePl = document.getElementById('home-player');
+          if (homePl) homePl.textContent = name;
+        }
+      }
+    } catch(e) { console.error('selectPlayerCard save error:', e); }
   };
 
   window.clearPlayerPick = () => {
