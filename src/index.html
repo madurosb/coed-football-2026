@@ -4776,6 +4776,61 @@
   }
 
 
+  // AI Fill Scorers only
+  window.runAIScorerFill = async (btnEl) => {
+    const btn = btnEl instanceof HTMLElement ? btnEl : document.querySelector('button[onclick*="runAIScorerFill"]');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Filling...'; }
+    const matchCards = Array.from(document.querySelectorAll('.match-card[data-match-id]'));
+    const toFill = matchCards.filter(card => {
+      const matchId = card.dataset.matchId;
+      const h = parseInt(document.getElementById('home-'+matchId)?.dataset.val||'0');
+      const a = parseInt(document.getElementById('away-'+matchId)?.dataset.val||'0');
+      return !(h===0 && a===0) && (window._touchedMatches?.has(matchId) || h>0 || a>0);
+    });
+    if (!toFill.length) {
+      alert('Fill in some match scores first (not all 0-0)!');
+      if (btn) { btn.disabled=false; btn.innerHTML='<span>🎯</span><span>AI Fill scorers</span>'; }
+      return;
+    }
+    const matches = toFill.map(c => ({ matchId: c.dataset.matchId, home: c.dataset.home, away: c.dataset.away }));
+    const CHUNK = 16; let totalFilled = 0;
+    try {
+      for (let i=0; i<matches.length; i+=CHUNK) {
+        const chunk = matches.slice(i, i+CHUNK);
+        if (btn) btn.textContent = `⏳ ${i+1}–${Math.min(i+CHUNK,matches.length)}/${matches.length}`;
+        const resp = await fetch('/api/coach', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({
+            systemPrompt:'World Cup 2026 expert. Return ONLY JSON array, no markdown.',
+            messages:[{role:'user', content:`For each match pick 1 likely first goalscorer.\nReturn ONLY JSON array:\n[{"matchId":"ID","scorer":"First Last"}]\n\nMatches:\n${chunk.map(m=>`matchId="${m.matchId}" | ${m.home} vs ${m.away}`).join('\n')}`}],
+            maxTokens:600
+          })
+        });
+        const data = await resp.json();
+        let preds = null;
+        const text = (data.text||'').trim();
+        try { preds=JSON.parse(text); } catch(e){}
+        if (!preds) { const m=text.match(/\[[\s\S]*\]/); if(m) try{preds=JSON.parse(m[0]);}catch(e){} }
+        if (preds) {
+          preds.forEach((pred,idx) => {
+            let card = document.querySelector(`.match-card[data-match-id="${pred.matchId}"]`);
+            if (!card && idx<chunk.length) card = document.querySelector(`.match-card[data-match-id="${chunk[idx].matchId}"]`);
+            if (!card || !pred.scorer) return;
+            const matchId = card.dataset.matchId;
+            const sel = card.querySelector(`#scorer-${matchId}`);
+            if (!sel) return;
+            const lc=pred.scorer.toLowerCase(), last=lc.split(' ').pop();
+            const opt=Array.from(sel.options).find(o=>o.value.toLowerCase()===lc||o.value.toLowerCase().split(' ').pop()===last);
+            if (opt) { sel.value=opt.value; sel.dispatchEvent(new Event('change',{bubbles:true})); const lbl=document.getElementById(`scorer-label-${matchId}`); if(lbl)lbl.textContent=opt.value; totalFilled++; }
+          });
+        }
+        if (i+CHUNK<matches.length) await new Promise(r=>setTimeout(r,300));
+      }
+      alert(`✅ Filled ${totalFilled} / ${matches.length} scorers!`);
+    } catch(e) { alert('Error: '+e.message); }
+    if (btn) { btn.disabled=false; btn.innerHTML='<span>🎯</span><span>AI Fill scorers</span>'; }
+  };
+
   // Poll for new messages every 30s  setInterval(() => { if (currentUser) updateMsgBadge(); }, 30000);
 
   // ═══ PREDICTED LINEUPS ═══
