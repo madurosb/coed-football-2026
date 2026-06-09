@@ -6780,7 +6780,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const meBadgeHTML = isMe ? `<span style="font-size:10px;padding:2px 7px;border-radius:99px;background:rgba(59,130,246,0.15);color:var(--accent);font-weight:700;margin-left:4px;border:1px solid rgba(59,130,246,0.3);">👤 You</span>` : '';
       const nameHTML = u.isAdmin
         ? `${u.nickname||u.displayName} <span style="font-size:10px;background:#00ff41;color:#000;padding:1px 5px;border-radius:99px;font-weight:700;">ADMIN</span>`
-        : `${u.nickname||u.displayName}${meBadgeHTML}${badgeHTML}${streakHTML}${jokerHTML}`;
+        : `${(u.nickname && u.nickname !== 'undefined' ? u.nickname : u.displayName) || '?'}${meBadgeHTML}${badgeHTML}${streakHTML}${jokerHTML}`;
 
       const rowStyle = isMe
         ? 'background:rgba(59,130,246,0.08);border-left:3px solid var(--accent);'
