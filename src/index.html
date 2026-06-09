@@ -4438,7 +4438,7 @@
     if (!currentUser || !currentUserData) return;
 
     const now = new Date();
-    const tournamentDeadline = new Date('2026-06-10T19:00:00Z');
+    const tournamentDeadline = new Date('2026-06-11T16:00:00Z');
     const missing = [];
 
     // 1. Tournament player
@@ -5842,7 +5842,7 @@ Use exactly the formation provided. Use real known players.`
       return;
     }
 
-    const deadline = new Date('2026-06-10T19:00:00Z');
+    const deadline = new Date('2026-06-11T16:00:00Z');
     const isPast = new Date() >= deadline;
     const tournamentDone = new Date() >= new Date('2026-07-20T00:00:00Z'); // approx end
 
@@ -5909,7 +5909,7 @@ Use exactly the formation provided. Use real known players.`
   }
 
   window.voteGroupPred = async (type, targetUid) => {
-    const deadline = new Date('2026-06-10T19:00:00Z');
+    const deadline = new Date('2026-06-11T16:00:00Z');
     if (new Date() >= deadline) return alert('Voting is closed! Results will be revealed at the end of the tournament.');
     const targetUser = await getDoc(doc(db, 'users', targetUid));
     await setDoc(doc(db, 'groupPredVotes', `${currentUser.uid}_${type}`), {
@@ -6342,7 +6342,7 @@ Use exactly the formation provided. Use real known players.`
     document.getElementById('home-player').textContent = currentUserData.tournamentPlayer || 'Not set';
 
     // Tournament player deadline check
-    const tournamentDeadline = new Date('2026-06-10T19:00:00Z');
+    const tournamentDeadline = new Date('2026-06-11T16:00:00Z');
     const now = new Date();
     const noticeEl = document.getElementById('tournament-deadline-notice');
     const lockBtn = document.getElementById('tournament-lock-btn');
@@ -7864,7 +7864,7 @@ Use exactly the formation provided. Use real known players.`
     const btn = document.getElementById('winner-lock-btn');
     const val = sel?.value;
     if (!val) return alert('Please select a team first!');
-    const deadline = new Date('2026-06-10T19:00:00Z');
+    const deadline = new Date('2026-06-11T16:00:00Z');
     if (new Date() >= deadline) return alert('Deadline has passed!');
     btn.disabled = true; btn.textContent = 'Saving...';
     await updateDoc(doc(db, 'users', currentUser.uid), { tournamentWinner: val });
@@ -7875,7 +7875,7 @@ Use exactly the formation provided. Use real known players.`
   };
 
   window.saveTournamentPlayer = async () => {
-    const tournamentDeadline = new Date('2026-06-10T19:00:00Z');
+    const tournamentDeadline = new Date('2026-06-11T16:00:00Z');
     const now = new Date();
     if (now >= tournamentDeadline) {
       alert('Tournament player deadline has passed! You can no longer change your pick.');
@@ -8641,7 +8641,7 @@ Use exactly the formation provided. Use real known players.`
   };
 
   window.pickTournamentPlayer = async (player, btn) => {
-    const tournamentDeadline = new Date('2026-06-10T19:00:00Z');
+    const tournamentDeadline = new Date('2026-06-11T16:00:00Z');
     if (new Date() >= tournamentDeadline) {
       alert('Tournament player deadline has passed!');
       return;
