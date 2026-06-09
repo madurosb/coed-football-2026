@@ -1605,10 +1605,20 @@
         <div style="font-size:13px;color:var(--text-muted);">Pick scores &amp; first goalscorers · Deadline: 24h before kickoff</div>
       </div>
       <!-- AI Auto-fill button -->
-      <button onclick="showAIFillModal()" style="flex-shrink:0;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:12px;padding:10px 14px;font-size:12px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;box-shadow:0 4px 16px rgba(124,58,237,0.4);transition:all 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(124,58,237,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(124,58,237,0.4)'">
-        <span style="font-size:20px;">🤖</span>
-        <span>AI Fill</span>
-      </button>
+      <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
+        <button onclick="showAIFillModal()" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:10px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:0 3px 10px rgba(124,58,237,0.4);white-space:nowrap;">
+          <span>🤖</span><span>AI Fill picks</span>
+        </button>
+        <button onclick="runAIScorerFill(this)" style="background:linear-gradient(135deg,#0891b2,#0e7490);color:white;border:none;border-radius:10px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:0 3px 10px rgba(8,145,178,0.4);white-space:nowrap;">
+          <span>🎯</span><span>AI Fill scorers</span>
+        </button>
+        <button onclick="showAIJokerDonModal()" style="background:linear-gradient(135deg,#d97706,#b45309);color:white;border:none;border-radius:10px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:0 3px 10px rgba(217,119,6,0.4);white-space:nowrap;">
+          <span>🃏</span><span>AI Joker &amp; DON</span>
+        </button>
+        <button onclick="showDummiesWizard()" style="background:linear-gradient(135deg,#059669,#047857);color:white;border:none;border-radius:10px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:0 3px 10px rgba(5,150,105,0.4);white-space:nowrap;">
+          <span>🎮</span><span>COED for Dummies</span>
+        </button>
+      </div>
     </div>
     <img src="https://coed-football-2026.vercel.app/match-card.png" alt="" style="width:100%; height:auto; border-radius:12px; margin-bottom:1rem;">
 
