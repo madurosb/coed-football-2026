@@ -4886,15 +4886,24 @@
     return doc(db, 'users', currentUser.uid);
   }
 
-  window.loadSquadOverrides = async function loadSquadOverrides() {
+  // Capture Firestore functions for use in window-exposed functions
+  const _getDoc = getDoc;
+  const _setDoc = setDoc;
+  const _doc = doc;
+  const _collection = collection;
+  const _getDocs = getDocs;
+  const _query = query;
+  const _where = where;
+
+  window.loadSquadOverrides = async function() {
+    console.log('[squads] Starting...');
     try {
       const ADMIN_UID = 'KGbbRvOMEtNGjSNP3PLYEbsVIix2';
-      console.log('[squads] Loading overrides from', ADMIN_UID);
-      const snap = await getDoc(doc(db, 'users', ADMIN_UID));
-      if (!snap.exists()) { console.log('[squads] No user doc found'); return; }
+      const snap = await _getDoc(_doc(db, 'users', ADMIN_UID));
+      if (!snap.exists()) { console.log('[squads] No user doc'); return; }
       const overrides = snap.data()?.squadOverrides;
       if (!overrides) { console.log('[squads] No squadOverrides field'); return; }
-      console.log('[squads] Found overrides:', JSON.stringify(overrides).slice(0,200));
+      console.log('[squads] Overrides found, removed:', overrides.removed?.length, 'added:', overrides.added?.length);
       if (overrides.removed && Array.isArray(overrides.removed)) {
         overrides.removed.forEach(({name, country}) => {
           const idx = ALL_PLAYERS_DATA.findIndex(p => p.name === name && p.country === country);
@@ -4910,8 +4919,9 @@
           }
         });
       }
-    } catch(e) { console.error('[squads] Load failed:', e.message); }
-  }
+      console.log('[squads] Done!');
+    } catch(e) { console.error('[squads] Error:', e); }
+  };
 
   window._squadAddOverride = async (name, country, flag) => {
     try {
@@ -5405,6 +5415,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     setPersistence(auth, browserLocalPersistence).catch(()=>{});
   }).catch(()=>{});
   const db = getFirestore(app);
+  window._db = db; // Expose for debugging and window-scope functions
 
   // Show opening video — after DOM is fully ready
   if (document.readyState === 'loading') {
