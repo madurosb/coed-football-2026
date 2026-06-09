@@ -3062,15 +3062,23 @@
     const donOptSnap = await getDocs(query(collection(db, 'donOptIns'), where('userId', '==', currentUser.uid)));
     myDonMatches.clear();
     activeDonWeek = '';
+    window._donWeeks = new Set(); // track ALL weeks with DON set
     for (const d of donOptSnap.docs) {
       const data = d.data();
       myDonMatches.add(data.matchId);
-      // Store the week of the active DON match
       if (data.matchId) {
         try {
-          const mSnap = await getDoc(doc(db, 'matches', data.matchId));
-          const kickoff = mSnap.data()?.kickoff?.toDate?.();
-          if (kickoff) activeDonWeek = getMatchWeekKey(kickoff);
+          // Use stored weekKey if available, else look up from matches
+          let weekKey = data.weekKey || data.week || null;
+          if (!weekKey) {
+            const mSnap = await getDoc(doc(db, 'matches', data.matchId));
+            const kickoff = mSnap.data()?.kickoff?.toDate?.();
+            if (kickoff) weekKey = getMatchWeekKey(kickoff);
+          }
+          if (weekKey) {
+            activeDonWeek = weekKey;
+            window._donWeeks.add(weekKey);
+          }
         } catch(e) {}
       }
     }
@@ -3138,12 +3146,13 @@
       const mId = btn.id.replace('don-btn-','');
       const isActive = myDonMatches.has(mId);
 
-      // Only lock if: there IS an active DON match (not this one) AND it's the same week
+      // Lock if this week already has a DON set (and this match isn't the active DON)
       let isLocked = false;
-      if (activeMatchId && !isActive && activeDonWeek) {
+      if (!isActive) {
         const thisWeek = btn.dataset?.week || '';
-        isLocked = thisWeek ? (thisWeek === activeDonWeek) : false;
-        // If no data-week on this button yet, don't lock
+        if (thisWeek && window._donWeeks?.has(thisWeek)) {
+          isLocked = true;
+        }
       }
 
       if (isActive) {
