@@ -13769,17 +13769,36 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
       if (!jokerMatchId) {
         try { const js=await getDoc(doc(db,'jokerCards',currentUser.uid)); if(js.exists()) jokerMatchId=js.data().matchId; } catch(e){}
       }
-      const sorted = [...predictions]
-        .map(p=>({...p,score:Math.abs((p.homeScore||0)-(p.awayScore||0))*2+(p.homeScore||0)+(p.awayScore||0)}))
-        .sort((a,b)=>b.score-a.score);
-      const best = jokerMatchId ? (sorted.find(p=>p.matchId!==jokerMatchId)||sorted[0]) : sorted[0];
-      if (best?.matchId && best.score>=1) {
-        try { const ex=await getDocs(query(collection(db,'donOptIns'),where('userId','==',currentUser.uid))); for(const d of ex.docs) await deleteDoc(d.ref); } catch(e){}
-        await setDoc(doc(db,'donOptIns',`${currentUser.uid}_${best.matchId}`),{userId:currentUser.uid,matchId:best.matchId,activatedAt:new Date(),aiActivated:true});
-        setTimeout(()=>{ if(typeof loadDONStatus==='function') loadDONStatus(); }, 800);
-        return '💰 DON activated!';
+
+      // Load match kickoff dates to group by week
+      const matchDates = {};
+      try {
+        const mSnap = await getDocs(collection(db,'matches'));
+        mSnap.forEach(d => { const m=d.data(); if(m.kickoff) matchDates[d.id] = m.kickoff.toDate ? m.kickoff.toDate() : new Date(m.kickoff); });
+      } catch(e) {}
+
+      // Group predictions by week
+      const byWeek = {};
+      predictions.forEach(p => {
+        const kickoff = matchDates[p.matchId];
+        const weekKey = kickoff ? getMatchWeekKey(kickoff) : 'week-0';
+        if (!byWeek[weekKey]) byWeek[weekKey] = [];
+        byWeek[weekKey].push(p);
+      });
+
+      let count = 0;
+      for (const [weekKey, weekPreds] of Object.entries(byWeek)) {
+        const sorted = [...weekPreds]
+          .map(p=>({...p,score:Math.abs((p.homeScore||0)-(p.awayScore||0))*2+(p.homeScore||0)+(p.awayScore||0)}))
+          .sort((a,b)=>b.score-a.score);
+        const best = jokerMatchId ? (sorted.find(p=>p.matchId!==jokerMatchId)||sorted[0]) : sorted[0];
+        if (best?.matchId && best.score>=1) {
+          await setDoc(doc(db,'donOptIns',`${currentUser.uid}_${best.matchId}`),{userId:currentUser.uid,matchId:best.matchId,activatedAt:new Date(),aiActivated:true,weekKey});
+          count++;
+        }
       }
-      return '💰 DON skipped';
+      setTimeout(()=>{ if(typeof loadDONStatus==='function') loadDONStatus(); }, 800);
+      return `💰 DON activated for ${count} week${count!==1?'s':''}!`;
     } catch(e) { return '💰 DON error: '+e.message; }
   };
 
@@ -13914,6 +13933,11 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
         const pick = suggested[Math.floor(Math.random()*suggested.length)];
         await setDoc(doc(db,'users',currentUser.uid), {tournamentPlayer: pick}, {merge:true});
         if (currentUserData) currentUserData.tournamentPlayer = pick;
+        // Update UI immediately
+        const homePl = document.getElementById('home-player'); if(homePl) homePl.textContent = pick;
+        const sel = document.getElementById('tournament-player-select'); if(sel) sel.value = pick;
+        const notice = document.getElementById('tournament-deadline-notice');
+        if(notice) notice.innerHTML = `<span style="color:var(--green);font-weight:500;">⭐ Your tournament player: <strong>${pick}</strong></span>`;
         log(`⭐ Tournament player: ${pick}`);
       }
 
@@ -13923,6 +13947,10 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
         const pick = teams[Math.floor(Math.random()*teams.length)];
         await setDoc(doc(db,'users',currentUser.uid), {tournamentWinner: pick}, {merge:true});
         if (currentUserData) currentUserData.tournamentWinner = pick;
+        // Update UI immediately
+        const winSel = document.getElementById('winner-pick-select'); if(winSel) winSel.value = pick;
+        const winNotice = document.getElementById('winner-pick-notice'); if(winNotice) winNotice.textContent = `✅ Locked in: ${pick}`;
+        if(typeof selectWinner === 'function') selectWinner(pick);
         log(`🏆 World Cup winner: ${pick}`);
       }
 
