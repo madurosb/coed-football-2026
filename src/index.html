@@ -13737,6 +13737,57 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
   // Show popup 1.5 seconds after login
   // (called from onAuthStateChanged after user is confirmed logged in)
 
+  // ═══ AI JOKER + DON HELPERS ═══
+  window._aiSetJoker = async (predictions, forceReplace) => {
+    if (!currentUser) return '🃏 Not logged in';
+    if (!predictions?.length) return '🃏 No predictions';
+    try {
+      const existing = await getDoc(doc(db,'jokerCards',currentUser.uid));
+      if (existing.exists() && !forceReplace) {
+        window._lastAiJokerMatchId = existing.data().matchId;
+        return '🃏 Joker already set (check "Replace" to change)';
+      }
+      const best = predictions.reduce((b,p) => {
+        const s = Math.abs((p.homeScore||0)-(p.awayScore||0))*2+(p.homeScore||0)+(p.awayScore||0);
+        return s>b.score ? {matchId:p.matchId,score:s} : b;
+      }, {matchId:null,score:-1});
+      if (best.matchId) {
+        await setDoc(doc(db,'jokerCards',currentUser.uid),{userId:currentUser.uid,matchId:best.matchId,setAt:new Date()});
+        window._lastAiJokerMatchId = best.matchId;
+        setTimeout(()=>{ if(typeof loadJokerStatus==='function') loadJokerStatus(); }, 800);
+        return forceReplace ? '🃏 Joker replaced!' : '🃏 Joker set!';
+      }
+      return '🃏 No match found';
+    } catch(e) { return '🃏 Error: '+e.message; }
+  };
+
+  window._aiSetDON = async (predictions) => {
+    if (!currentUser) return '💰 Not logged in';
+    if (!predictions?.length) return '💰 No predictions';
+    try {
+      let jokerMatchId = window._lastAiJokerMatchId || null;
+      if (!jokerMatchId) {
+        try { const js=await getDoc(doc(db,'jokerCards',currentUser.uid)); if(js.exists()) jokerMatchId=js.data().matchId; } catch(e){}
+      }
+      const sorted = [...predictions]
+        .map(p=>({...p,score:Math.abs((p.homeScore||0)-(p.awayScore||0))*2+(p.homeScore||0)+(p.awayScore||0)}))
+        .sort((a,b)=>b.score-a.score);
+      const best = jokerMatchId ? (sorted.find(p=>p.matchId!==jokerMatchId)||sorted[0]) : sorted[0];
+      if (best?.matchId && best.score>=1) {
+        try { const ex=await getDocs(query(collection(db,'donOptIns'),where('userId','==',currentUser.uid))); for(const d of ex.docs) await deleteDoc(d.ref); } catch(e){}
+        await setDoc(doc(db,'donOptIns',`${currentUser.uid}_${best.matchId}`),{userId:currentUser.uid,matchId:best.matchId,activatedAt:new Date(),aiActivated:true});
+        setTimeout(()=>{ if(typeof loadDONStatus==='function') loadDONStatus(); }, 800);
+        return '💰 DON activated!';
+      }
+      return '💰 DON skipped';
+    } catch(e) { return '💰 DON error: '+e.message; }
+  };
+
+  window._dbSaveField = async (field, value) => {
+    if (!currentUser) throw new Error('Not logged in');
+    await setDoc(doc(db,'users',currentUser.uid), {[field]:value}, {merge:true});
+  };
+
   window.runDummiesWizard = async () => {
     const btn = document.getElementById('dummies-go-btn');
     const status = document.getElementById('dummies-status');
