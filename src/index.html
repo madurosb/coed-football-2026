@@ -5945,7 +5945,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       return;
     }
 
-    const deadline = new Date('2026-06-11T16:00:00Z');
+    const deadline = new Date('2026-06-15T21:00:00Z'); // June 15, midnight Israel time
     const isPast = new Date() >= deadline;
     const tournamentDone = new Date() >= new Date('2026-07-20T00:00:00Z'); // approx end
 
@@ -6008,11 +6008,11 @@ Use exactly the formation provided. Only use players from the squad lists above.
         ${users.map(u => renderUserRow(u, 'last')).join('')}
       </div>
 
-      ${!isPast ? `<div style="font-size:12px;color:var(--text-muted);text-align:center;">Votes are secret until June 10 🤫</div>` : ''}`;
+      ${!isPast ? `<div style="font-size:12px;color:var(--text-muted);text-align:center;">Votes are secret until June 15 🤫</div>` : ''}`;
   }
 
   window.voteGroupPred = async (type, targetUid) => {
-    const deadline = new Date('2026-06-11T16:00:00Z');
+    const deadline = new Date('2026-06-15T21:00:00Z');
     if (new Date() >= deadline) return alert('Voting is closed! Results will be revealed at the end of the tournament.');
     const targetUser = await getDoc(doc(db, 'users', targetUid));
     await setDoc(doc(db, 'groupPredVotes', `${currentUser.uid}_${type}`), {
@@ -6780,7 +6780,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const meBadgeHTML = isMe ? `<span style="font-size:10px;padding:2px 7px;border-radius:99px;background:rgba(59,130,246,0.15);color:var(--accent);font-weight:700;margin-left:4px;border:1px solid rgba(59,130,246,0.3);">👤 You</span>` : '';
       const nameHTML = u.isAdmin
         ? `${u.nickname||u.displayName} <span style="font-size:10px;background:#00ff41;color:#000;padding:1px 5px;border-radius:99px;font-weight:700;">ADMIN</span>`
-        : `${(u.nickname && u.nickname !== 'undefined' ? u.nickname : u.displayName) || '?'}${meBadgeHTML}${badgeHTML}${streakHTML}${jokerHTML}`;
+        : `${u.nickname||u.displayName}${meBadgeHTML}${badgeHTML}${streakHTML}${jokerHTML}`;
 
       const rowStyle = isMe
         ? 'background:rgba(59,130,246,0.08);border-left:3px solid var(--accent);'
