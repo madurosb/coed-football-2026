@@ -4782,7 +4782,7 @@
         const myPickHtml = msg ? `
           <div style="margin-top:8px;padding:10px 12px;border-radius:10px;background:${msgBg[msg.type]};border:1px solid ${msgColors[msg.type]}44;">
             <div style="font-size:12px;color:${msgColors[msg.type]};font-weight:600;line-height:1.5;">${msg.text}</div>
-            <div style="font-size:10px;color:var(--text-muted);margin-top:3px;">Your pick: ${myPred.homeScore}-${myPred.awayScore}${myPred.firstScorer ? ` · ⚽ ${myPred.firstScorer}` : ''}</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:3px;">Your pick: ${myPred.homeScore}-${myPred.awayScore}</div>
           </div>` : '';
 
         // Who picked what
@@ -7404,7 +7404,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
                 style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;min-width:160px;max-width:200px;text-align:left;">
                 <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="scorer-label-${d.id}">⚽ Pick scorer...</span>
                 <span style="font-size:11px;flex-shrink:0;">▾</span>
-              </button>` : `<div style="font-size:12px;color:var(--text-muted);font-style:italic;">Deadline passed</div>`}
+              </button>` : `<div id="scorer-label-${d.id}" style="font-size:13px;color:var(--text-muted);font-style:italic;">⚽ —</div>`}
             </div>
           </div>
           ${!isPast ? `
@@ -7642,9 +7642,6 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
   // ═══ COLLAPSIBLE PICKER SECTIONS ═══
   window.togglePickerSection = (bodyId, chevronId) => {
-    // After deadline — don't allow expanding
-    const deadline = new Date('2026-06-11T16:00:00Z');
-    if (new Date() >= deadline) return;
     const body = document.getElementById(bodyId);
     const chevron = document.getElementById(chevronId);
     if (!body) return;
