@@ -4782,7 +4782,7 @@
         const myPickHtml = msg ? `
           <div style="margin-top:8px;padding:10px 12px;border-radius:10px;background:${msgBg[msg.type]};border:1px solid ${msgColors[msg.type]}44;">
             <div style="font-size:12px;color:${msgColors[msg.type]};font-weight:600;line-height:1.5;">${msg.text}</div>
-            <div style="font-size:10px;color:var(--text-muted);margin-top:3px;">Your pick: ${myPred.homeScore}-${myPred.awayScore}</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:3px;">Your pick: ${myPred.homeScore}-${myPred.awayScore}${myPred.firstScorer ? ` · ⚽ ${myPred.firstScorer}` : ''}</div>
           </div>` : '';
 
         // Who picked what
@@ -5945,7 +5945,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       return;
     }
 
-    const deadline = new Date('2026-06-15T21:00:00Z'); // June 15, midnight Israel time
+    const deadline = new Date('2026-06-11T16:00:00Z');
     const isPast = new Date() >= deadline;
     const tournamentDone = new Date() >= new Date('2026-07-20T00:00:00Z'); // approx end
 
@@ -6008,11 +6008,11 @@ Use exactly the formation provided. Only use players from the squad lists above.
         ${users.map(u => renderUserRow(u, 'last')).join('')}
       </div>
 
-      ${!isPast ? `<div style="font-size:12px;color:var(--text-muted);text-align:center;">Votes are secret until June 15 🤫</div>` : ''}`;
+      ${!isPast ? `<div style="font-size:12px;color:var(--text-muted);text-align:center;">Votes are secret until June 10 🤫</div>` : ''}`;
   }
 
   window.voteGroupPred = async (type, targetUid) => {
-    const deadline = new Date('2026-06-15T21:00:00Z');
+    const deadline = new Date('2026-06-11T16:00:00Z');
     if (new Date() >= deadline) return alert('Voting is closed! Results will be revealed at the end of the tournament.');
     const targetUser = await getDoc(doc(db, 'users', targetUid));
     await setDoc(doc(db, 'groupPredVotes', `${currentUser.uid}_${type}`), {
@@ -7642,6 +7642,9 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
   // ═══ COLLAPSIBLE PICKER SECTIONS ═══
   window.togglePickerSection = (bodyId, chevronId) => {
+    // After deadline — don't allow expanding
+    const deadline = new Date('2026-06-11T16:00:00Z');
+    if (new Date() >= deadline) return;
     const body = document.getElementById(bodyId);
     const chevron = document.getElementById(chevronId);
     if (!body) return;
