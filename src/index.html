@@ -177,10 +177,10 @@
       content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
       background: linear-gradient(90deg, transparent, rgba(59,130,246,0.5), rgba(212,175,55,0.35), rgba(59,130,246,0.5), transparent);
     }
-    .nav-logo { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 13px; cursor: pointer; text-decoration: none; color: #e2e8f0; letter-spacing: 0.02em; flex-shrink: 0; }
+    .nav-logo { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 15px; cursor: pointer; text-decoration: none; color: #e2e8f0; letter-spacing: 0.02em; flex-shrink: 0; }
     .nav-logo img { filter: drop-shadow(0 0 6px rgba(29,158,117,0.5)); }
-    .nav-logo .badge { background: linear-gradient(135deg, #d4af37, #f5e182); color: #000; font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 99px; letter-spacing: 0.06em; }
-    .nav-logo span:not(.badge) { display: none; } /* hide text, keep only icon + badge */
+    .nav-logo .badge { background: linear-gradient(135deg, #d4af37, #f5e182); color: #000; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 99px; letter-spacing: 0.06em; }
+    .nav-logo .nav-logo-name { display: none; } /* hide "COED&FOOTBALL" text on desktop */
     .nav-links { display: flex; align-items: center; justify-content: center; gap: 0px; overflow-x: auto; flex: 1; padding: 0 2px; scrollbar-width: none; }
     .nav-links::-webkit-scrollbar { display: none; }
     .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 5px; border-radius: 7px; border: 1px solid transparent; background: none; color: #475569; font-size: 7.5px; font-weight: 700; letter-spacing: 0.03em; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; text-transform: uppercase; }
@@ -1338,7 +1338,7 @@
 <!-- MAIN APP -->
 <div id="view-app" style="display:none;">
   <nav class="nav">
-    <a class="nav-logo" onclick="showPage('home')"><img src="https://coed-football-2026.vercel.app/logo-icon.png" alt="logo" style="height:32px; width:32px; object-fit:contain;"> <span>COED&FOOTBALL</span> <span class="nav-wc-text" style="font-size:11px;font-weight:600;color:var(--badge-gold-text);letter-spacing:0.04em;">🏆 WORLD CUP</span> <span class="badge">2026</span></a>
+    <a class="nav-logo" onclick="showPage('home')"><img src="https://coed-football-2026.vercel.app/logo-icon.png" alt="logo" style="height:32px; width:32px; object-fit:contain;"> <span class="nav-logo-name">COED&FOOTBALL</span> <span class="nav-wc-text" style="font-size:11px;font-weight:600;color:var(--badge-gold-text);letter-spacing:0.04em;">🏆 WORLD CUP</span> <span class="badge">2026</span></a>
     <div class="nav-links">
       <button class="nav-btn" data-page="home" onclick="showPage('home')"><span class="nav-icon">🏠</span>Home</button>
       <button class="nav-btn" data-page="matches" onclick="showPage('matches')"><span class="nav-icon">⚽</span>Predictions</button>
@@ -2645,8 +2645,6 @@
     <p class="section-title" style="margin-bottom:0.25rem;">🎬 Match Highlights</p>
     <p style="font-size:13px;color:var(--text-muted);margin-bottom:1.5rem;">Watch the best moments from each match. Updated after every game.</p>
     <div style="display:flex;flex-direction:column;gap:1.5rem;">
-
-      <!-- Match 1: Mexico vs South Africa -->
       <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:16px;overflow:hidden;">
         <div style="padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:0.5px solid var(--border);">
           <span style="font-size:20px;">🇲🇽</span>
@@ -2657,14 +2655,11 @@
           <span style="font-size:20px;">🇿🇦</span>
         </div>
         <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;">
-          <iframe
-            src="https://www.youtube.com/embed/eki0SMOrhhI?rel=0&modestbranding=1"
+          <iframe src="https://www.youtube.com/embed/eki0SMOrhhI?rel=0&modestbranding=1"
             style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"
-            allowfullscreen loading="lazy">
-          </iframe>
+            allowfullscreen loading="lazy"></iframe>
         </div>
       </div>
-
     </div>
   </div>
 
