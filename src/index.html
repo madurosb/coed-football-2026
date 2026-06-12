@@ -185,6 +185,8 @@
     .nav-links::-webkit-scrollbar { display: none; }
     .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 5px; border-radius: 7px; border: 1px solid transparent; background: none; color: #475569; font-size: 7.5px; font-weight: 700; letter-spacing: 0.03em; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; text-transform: uppercase; }
     .nav-btn .nav-icon { font-size: 14px; line-height: 1; display: block; }
+    .nav-scroll-btn { display: flex; align-items: center; justify-content: center; width: 24px; height: 36px; background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2); border-radius: 6px; cursor: pointer; color: #60a5fa; font-size: 14px; flex-shrink: 0; transition: all 0.15s; user-select: none; }
+    .nav-scroll-btn:hover { background: rgba(59,130,246,0.25); }
     .nav-btn .nav-icon { font-size: 17px; line-height: 1; display: block; }
     .nav-btn:hover { background: rgba(59,130,246,0.12); color: #93c5fd; border-color: rgba(59,130,246,0.2); }
     .nav-btn.active { background: rgba(59,130,246,0.18); color: #60a5fa; border-color: rgba(59,130,246,0.35); }
@@ -445,6 +447,7 @@
       #user-handle { display: none; }
       .nav { padding: 0 0.75rem; height: 56px; }
       .nav-logo .badge { display: none; }
+      .nav-scroll-btn { display: none !important; } /* hide scroll arrows on mobile */
       .nav-logo-name { display: none !important; } /* hide logo text on mobile */
 
       /* Hide hamburger on mobile — replaced by FAB */
@@ -745,6 +748,7 @@
       #user-handle { display: none; }
       .nav { padding: 0 0.75rem; height: 50px; }
       .nav-logo .badge { display: none; }
+      .nav-scroll-btn { display: none !important; }
       .nav-logo-name { display: none !important; }
 
       /* Bottom navigation bar — hidden, replaced by smart drawer */
@@ -1340,6 +1344,7 @@
 <div id="view-app" style="display:none;">
   <nav class="nav">
     <a class="nav-logo" onclick="showPage('home')"><img src="https://coed-football-2026.vercel.app/logo-icon.png" alt="logo" style="height:32px; width:32px; object-fit:contain;"> <span class="nav-logo-name">COED&FOOTBALL</span> <span class="nav-wc-text" style="font-size:11px;font-weight:600;color:var(--badge-gold-text);letter-spacing:0.04em;">🏆 WORLD CUP</span> <span class="badge">2026</span></a>
+    <span class="nav-scroll-btn" id="nav-scroll-left" onclick="document.querySelector('.nav-links').scrollBy({left:-150,behavior:'smooth'})">‹</span>
     <div class="nav-links" id="nav-links-el">
       <button class="nav-btn" data-page="home" onclick="showPage('home')"><span class="nav-icon">🏠</span>Home</button>
       <button class="nav-btn" data-page="matches" onclick="showPage('matches')"><span class="nav-icon">⚽</span>Predictions</button>
@@ -1358,6 +1363,7 @@
       <button class="nav-btn" data-page="dummies" onclick="showPage('dummies')"><span class="nav-icon">🎓</span>How to Play</button>
       <button class="nav-btn" data-page="admin" id="admin-nav-btn" style="display:none;" onclick="showPage('admin')"><span class="nav-icon">⚙️</span>Admin</button>
     </div>
+    <span class="nav-scroll-btn" id="nav-scroll-right" onclick="document.querySelector('.nav-links').scrollBy({left:150,behavior:'smooth'})">›</span>
     <div class="nav-user">
       <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
       <button id="darkmode-btn" onclick="toggleDarkMode()" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.15);cursor:pointer;font-size:15px;padding:5px 7px;border-radius:8px;transition:all 0.15s;flex-shrink:0;" onmouseover="this.style.background='rgba(59,130,246,0.2)'" onmouseout="this.style.background='rgba(59,130,246,0.08)'" title="Toggle dark mode">🌙</button>
@@ -7312,6 +7318,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       if (!isPast && hoursToDeadline < 6 && hoursToDeadline > 0) deadlineSoonMatches.push(m);
 
       const scorerOptions = [
+        `<option value="Own Goal">⚽ Own Goal</option>`,
         ...(m.homePlayers || []).map(p => `<option value="${p}">${p}</option>`),
         ...(m.awayPlayers || []).map(p => `<option value="${p}">${p}</option>`)
       ].join('');
