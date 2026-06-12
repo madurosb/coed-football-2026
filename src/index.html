@@ -180,10 +180,10 @@
     .nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; cursor: pointer; text-decoration: none; color: #e2e8f0; letter-spacing: 0.02em; flex-shrink: 0; }
     .nav-logo img { filter: drop-shadow(0 0 6px rgba(29,158,117,0.5)); }
     .nav-logo .badge { background: linear-gradient(135deg, #d4af37, #f5e182); color: #000; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 99px; letter-spacing: 0.06em; }
-    .nav-links { display: flex; align-items: center; justify-content: center; gap: 1px; overflow-x: auto; flex: 1; padding: 0 8px; scrollbar-width: none; }
+    .nav-links { display: flex; align-items: center; justify-content: center; gap: 0px; overflow-x: auto; flex: 1; padding: 0 4px; scrollbar-width: none; }
     .nav-links::-webkit-scrollbar { display: none; }
-    .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 9px; border-radius: 8px; border: 1px solid transparent; background: none; color: #475569; font-size: 9px; font-weight: 700; letter-spacing: 0.06em; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; text-transform: uppercase; }
-    .nav-btn .nav-icon { font-size: 17px; line-height: 1; display: block; }
+    .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 5px 6px; border-radius: 8px; border: 1px solid transparent; background: none; color: #475569; font-size: 8px; font-weight: 700; letter-spacing: 0.04em; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; text-transform: uppercase; }
+    .nav-btn .nav-icon { font-size: 15px; line-height: 1; display: block; }
     .nav-btn:hover { background: rgba(59,130,246,0.12); color: #93c5fd; border-color: rgba(59,130,246,0.2); }
     .nav-btn.active { background: rgba(59,130,246,0.18); color: #60a5fa; border-color: rgba(59,130,246,0.35); }
     .nav-btn.active .nav-icon { filter: drop-shadow(0 0 5px rgba(96,165,250,0.7)); }
@@ -2641,52 +2641,30 @@
 
   <!-- HIGHLIGHTS -->
   <div class="page" id="page-highlights">
-    <div style="text-align:center; padding: 2rem 1rem 3rem;">
-      <div style="font-size:13px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2rem;">Match Highlights</div>
+    <p class="section-title" style="margin-bottom:0.25rem;">🎬 Match Highlights</p>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:1.5rem;">Watch the best moments from each match. Updated after every game.</p>
+    <div style="display:flex;flex-direction:column;gap:1.5rem;">
 
-      <svg viewBox="0 0 320 260" width="280" style="display:block;margin:0 auto 2rem;" xmlns="http://www.w3.org/2000/svg">
-        <!-- Screen/TV -->
-        <rect x="30" y="20" width="260" height="160" rx="12" fill="#1a1a2e" stroke="#334155" stroke-width="2"/>
-        <rect x="44" y="34" width="232" height="132" rx="6" fill="#0f172a"/>
-        <!-- Pitch lines -->
-        <rect x="44" y="34" width="232" height="132" rx="6" fill="#166534" opacity="0.3"/>
-        <line x1="160" y1="34" x2="160" y2="166" stroke="#ffffff" stroke-width="0.8" opacity="0.3"/>
-        <circle cx="160" cy="100" r="28" fill="none" stroke="#ffffff" stroke-width="0.8" opacity="0.3"/>
-        <rect x="126" y="34" width="68" height="22" fill="none" stroke="#ffffff" stroke-width="0.8" opacity="0.3"/>
-        <rect x="126" y="144" width="68" height="22" fill="none" stroke="#ffffff" stroke-width="0.8" opacity="0.3"/>
-        <!-- Play button -->
-        <circle cx="160" cy="100" r="22" fill="#1D9E75" opacity="0.9"/>
-        <polygon points="154,91 154,109 172,100" fill="white"/>
-        <!-- Lock icon overlay -->
-        <rect x="110" y="70" width="100" height="60" rx="8" fill="#0f172a" opacity="0.85"/>
-        <rect x="143" y="82" width="34" height="26" rx="4" fill="none" stroke="#5DCAA5" stroke-width="2"/>
-        <path d="M150 82 Q150 72 160 72 Q170 72 170 82" fill="none" stroke="#5DCAA5" stroke-width="2"/>
-        <circle cx="160" cy="95" r="4" fill="#5DCAA5"/>
-        <line x1="160" y1="99" x2="160" y2="104" stroke="#5DCAA5" stroke-width="2"/>
-        <!-- TV stand -->
-        <rect x="148" y="180" width="24" height="14" rx="2" fill="#334155"/>
-        <rect x="128" y="192" width="64" height="6" rx="3" fill="#334155"/>
-        <!-- Floating calendar icons -->
-        <rect x="58" y="48" width="28" height="26" rx="4" fill="#1e3a5f" opacity="0.8"/>
-        <line x1="64" y1="52" x2="80" y2="52" stroke="#60a5fa" stroke-width="1.5"/>
-        <rect x="62" y="56" width="4" height="4" rx="1" fill="#60a5fa" opacity="0.6"/>
-        <rect x="70" y="56" width="4" height="4" rx="1" fill="#60a5fa" opacity="0.6"/>
-        <rect x="62" y="64" width="4" height="4" rx="1" fill="#60a5fa" opacity="0.4"/>
-        <rect x="70" y="64" width="4" height="4" rx="1" fill="#60a5fa" opacity="0.4"/>
-        <!-- Stars -->
-        <text x="240" y="58" font-size="14" opacity="0.4">⭐</text>
-        <text x="52" y="155" font-size="12" opacity="0.3">⭐</text>
-        <text x="258" y="148" font-size="10" opacity="0.3">✨</text>
-      </svg>
-
-      <div style="font-size:22px;font-weight:500;margin-bottom:0.5rem;">No highlights yet</div>
-      <div style="font-size:14px;color:var(--text-muted);line-height:1.7;max-width:320px;margin:0 auto 2rem;">
-        Once the World Cup kicks off on <strong>June 11</strong>, match highlights will appear here after every game.
+      <!-- Match 1: Mexico vs South Africa -->
+      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:16px;overflow:hidden;">
+        <div style="padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:0.5px solid var(--border);">
+          <span style="font-size:20px;">🇲🇽</span>
+          <div style="flex:1;">
+            <div style="font-size:14px;font-weight:700;">Mexico <span style="color:var(--green);">2 – 0</span> South Africa</div>
+            <div style="font-size:11px;color:var(--text-muted);">Group A · June 11, 2026</div>
+          </div>
+          <span style="font-size:20px;">🇿🇦</span>
+        </div>
+        <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;">
+          <iframe
+            src="https://www.youtube.com/embed/PmevGCkUtM8?rel=0&modestbranding=1"
+            style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"
+            allowfullscreen
+            loading="lazy">
+          </iframe>
+        </div>
       </div>
 
-      <div style="display:inline-flex;align-items:center;gap:8px;background:#0a1f0a;border-radius:99px;padding:10px 20px;">
-        <span style="font-size:14px;color:#4ade80;font-weight:500;">⚽ Check back on June 11, 2026</span>
-      </div>
     </div>
   </div>
 
@@ -3738,7 +3716,7 @@
   }
 
   let videoPaused = false;
-  let videoMuted = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent); // muted on mobile (browser policy), sound on desktop
+  let videoMuted = true; // always muted by default — user clicks to unmute
 
   window.toggleVideoPause = function() {
     const btn = document.getElementById('video-pause-btn');
@@ -8775,8 +8753,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
   ];
 
   function showDyk() {
-    const last = localStorage.getItem('dyk_last_shown');
-    const now = Date.now();
+    return; // Disabled — popup removed
     if (last && now - parseInt(last) < 24 * 60 * 60 * 1000) return; // once per 24h
     const lastIndex = parseInt(localStorage.getItem('dyk_last_index') ?? '-1');
     let idx;
@@ -13193,7 +13170,22 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
         : `<div style="width:${size}px;height:${size}px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;flex-shrink:0;">${(u.nickname||'?').substr(0,2).toUpperCase()}</div>`;
     };
 
-    const hofCard = (title, emoji, color, borderColor, winner, subtitle, stat) => {
+    // Extra fun stats
+    const byWorst = [...stats].filter(s => s.total >= 3).sort((a,b) => (a.points||0) - (b.points||0));
+    const byLuckiest = [...stats].filter(s => s.total >= 3).sort((a,b) => {
+      // most points with fewest exact scores = lucky
+      const aScore = (a.points||0) - (a.exact * 4); 
+      const bScore = (b.points||0) - (b.exact * 4);
+      return bScore - aScore;
+    });
+    const byMostWrong = [...stats].filter(s => s.total >= 3).sort((a,b) => {
+      const aWrong = (a.total - a.correct);
+      const bWrong = (b.total - b.correct);
+      return bWrong - aWrong;
+    });
+    const byDON = [...stats].sort((a,b) => (b.bonusPoints||0) - (a.bonusPoints||0));
+
+    const hofCard = (title, emoji, color, borderColor, winner, subtitle, stat, joke) => {
       if (!winner) return '';
       return `
       <div style="background:var(--surface);border:1.5px solid ${borderColor};border-radius:16px;padding:1.25rem;margin-bottom:1rem;position:relative;overflow:hidden;">
@@ -13204,6 +13196,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
           <div style="flex:1;">
             <div style="font-size:17px;font-weight:700;">${winner.nickname || winner.displayName}</div>
             <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${subtitle}</div>
+            ${joke ? `<div style="font-size:11px;color:${color};margin-top:4px;font-style:italic;">${joke}</div>` : ''}
           </div>
           <div style="text-align:center;background:${color}18;border-radius:10px;padding:8px 12px;">
             <div style="font-size:22px;font-weight:800;color:${color};">${stat}</div>
@@ -13229,35 +13222,53 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
     }
 
     container.innerHTML = `
-      ${hofCard('Most Points', '👑', '#EF9F27', '#BA7517',
+      ${hofCard('The King 👑', '🏆', '#EF9F27', '#BA7517',
         byPoints[0],
-        `${byPoints[0]?.points||0} total points · Rank #1`,
-        `${byPoints[0]?.points||0} pts`
+        `${byPoints[0]?.points||0} pts — sitting on the throne`,
+        `${byPoints[0]?.points||0} pts`,
+        `"I knew it all along." — ${byPoints[0]?.nickname||'them'}, probably`
       )}
-      ${hofCard('Sharpest Predictor', '🎯', '#1D9E75', '#085041',
+      ${hofCard('The Surgeon 🎯', '🔬', '#1D9E75', '#085041',
         byExact[0],
         `${Math.round((byExact[0]?.exactRate||0)*100)}% exact score rate · ${byExact[0]?.exact||0} exact scores`,
-        `${Math.round((byExact[0]?.exactRate||0)*100)}%`
+        `${Math.round((byExact[0]?.exactRate||0)*100)}%`,
+        `Doesn't predict matches. Schedules them.`
       )}
-      ${hofCard('The Oracle', '🔥', '#E24B4A', '#B91C1C',
+      ${hofCard('The Oracle 🔮', '👁️', '#7C3AED', '#5B21B6',
         byCorrect[0],
-        `${Math.round((byCorrect[0]?.correctRate||0)*100)}% correct results · Never wrong`,
-        `${Math.round((byCorrect[0]?.correctRate||0)*100)}%`
+        `${Math.round((byCorrect[0]?.correctRate||0)*100)}% correct results`,
+        `${Math.round((byCorrect[0]?.correctRate||0)*100)}%`,
+        `Gets it right without knowing how. Suspicious.`
       )}
-      ${hofCard('Scorer Hunter', '⚽', '#7C3AED', '#5B21B6',
+      ${hofCard('Sniper ⚽', '🎯', '#E24B4A', '#B91C1C',
         byScorer[0],
         `${byScorer[0]?.scorerHits||0} first scorers called correctly`,
-        `${byScorer[0]?.scorerHits||0} hits`
+        `${byScorer[0]?.scorerHits||0} hits`,
+        `Named the goalscorer before the match even started. Witch?`
       )}
-      ${hofCard('Most Committed', '📋', '#0C447C', '#1e40af',
+      ${hofCard('The Hustler 💼', '🎰', '#0C447C', '#1e40af',
+        byLuckiest[0],
+        `Points without breaking a sweat`,
+        `😎`,
+        `Minimal effort. Maximum results. Somehow.`
+      )}
+      ${hofCard('Wooden Spoon 🥄', '😬', '#6b7280', '#374151',
+        byWorst[byWorst.length - 1],
+        `${byWorst[byWorst.length-1]?.points||0} pts — bravely holding the bottom`,
+        `${byWorst[byWorst.length-1]?.points||0} pts`,
+        `"At least I entered." — A champion in their own mind.`
+      )}
+      ${hofCard('Chaos Agent 💥', '🌪️', '#f59e0b', '#b45309',
+        byMostWrong[0],
+        `${byMostWrong[0] ? byMostWrong[0].total - byMostWrong[0].correct : 0} wrong results — absolutely unhinged`,
+        `${byMostWrong[0] ? byMostWrong[0].total - byMostWrong[0].correct : 0} ❌`,
+        `Football analyst? No. Entertainment? Absolutely.`
+      )}
+      ${hofCard('Most Committed 📋', '🤓', '#1D9E75', '#085041',
         byCommit[0],
-        `${byCommit[0]?.total||0} predictions submitted`,
-        `${byCommit[0]?.total||0}`
-      )}
-      ${hofCard('Bonus King', '⚡', '#BA7517', '#92400E',
-        byBonus[0],
-        `${byBonus[0]?.bonusPoints||0} tournament player bonus points`,
-        `+${byBonus[0]?.bonusPoints||0}`
+        `${byCommit[0]?.total||0} predictions submitted — not missing a single match`,
+        `${byCommit[0]?.total||0}`,
+        `Eats, sleeps, predicts. Family is worried.`
       )}
       <div style="background:var(--surface2);border-radius:12px;padding:12px 16px;font-size:12px;color:var(--text-muted);text-align:center;margin-top:0.5rem;">
         🔄 Hall of Fame updates automatically after each match result
