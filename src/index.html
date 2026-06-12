@@ -177,12 +177,16 @@
       content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
       background: linear-gradient(90deg, transparent, rgba(59,130,246,0.5), rgba(212,175,55,0.35), rgba(59,130,246,0.5), transparent);
     }
-    .nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; cursor: pointer; text-decoration: none; color: #e2e8f0; letter-spacing: 0.02em; flex-shrink: 0; }
+    .nav-logo { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 15px; cursor: pointer; text-decoration: none; color: #e2e8f0; letter-spacing: 0.02em; flex-shrink: 0; }
     .nav-logo img { filter: drop-shadow(0 0 6px rgba(29,158,117,0.5)); }
     .nav-logo .badge { background: linear-gradient(135deg, #d4af37, #f5e182); color: #000; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 99px; letter-spacing: 0.06em; }
-    .nav-links { display: flex; align-items: center; justify-content: center; gap: 1px; overflow-x: auto; flex: 1; padding: 0 8px; scrollbar-width: none; }
+    .nav-logo .nav-logo-name { display: none; } /* hide text on desktop */
+    .nav-links { display: flex; align-items: center; justify-content: flex-start; gap: 0px; overflow-x: auto; flex: 1; padding: 0 2px; scrollbar-width: none; scroll-behavior: smooth; }
     .nav-links::-webkit-scrollbar { display: none; }
-    .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 9px; border-radius: 8px; border: 1px solid transparent; background: none; color: #475569; font-size: 9px; font-weight: 700; letter-spacing: 0.06em; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; text-transform: uppercase; }
+    .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 5px; border-radius: 7px; border: 1px solid transparent; background: none; color: #475569; font-size: 7.5px; font-weight: 700; letter-spacing: 0.03em; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; text-transform: uppercase; }
+    .nav-btn .nav-icon { font-size: 14px; line-height: 1; display: block; }
+    .nav-scroll-btn { display: flex; align-items: center; justify-content: center; width: 24px; height: 36px; background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2); border-radius: 6px; cursor: pointer; color: #60a5fa; font-size: 14px; flex-shrink: 0; transition: all 0.15s; user-select: none; }
+    .nav-scroll-btn:hover { background: rgba(59,130,246,0.25); }
     .nav-btn .nav-icon { font-size: 17px; line-height: 1; display: block; }
     .nav-btn:hover { background: rgba(59,130,246,0.12); color: #93c5fd; border-color: rgba(59,130,246,0.2); }
     .nav-btn.active { background: rgba(59,130,246,0.18); color: #60a5fa; border-color: rgba(59,130,246,0.35); }
@@ -443,7 +447,8 @@
       #user-handle { display: none; }
       .nav { padding: 0 0.75rem; height: 56px; }
       .nav-logo .badge { display: none; }
-      .nav-wc-text { display: none !important; }
+      .nav-scroll-btn { display: none !important; } /* hide scroll arrows on mobile */
+      .nav-logo-name { display: none !important; } /* hide logo text on mobile */
 
       /* Hide hamburger on mobile — replaced by FAB */
       .hamburger { display: none !important; }
@@ -743,7 +748,8 @@
       #user-handle { display: none; }
       .nav { padding: 0 0.75rem; height: 50px; }
       .nav-logo .badge { display: none; }
-      .nav-wc-text { display: none !important; }
+      .nav-scroll-btn { display: none !important; }
+      .nav-logo-name { display: none !important; }
 
       /* Bottom navigation bar — hidden, replaced by smart drawer */
       .bottom-nav { display: none; }
@@ -1337,8 +1343,9 @@
 <!-- MAIN APP -->
 <div id="view-app" style="display:none;">
   <nav class="nav">
-    <a class="nav-logo" onclick="showPage('home')"><img src="https://coed-football-2026.vercel.app/logo-icon.png" alt="logo" style="height:32px; width:32px; object-fit:contain;"> <span>COED&FOOTBALL</span> <span class="nav-wc-text" style="font-size:11px;font-weight:600;color:var(--badge-gold-text);letter-spacing:0.04em;">🏆 WORLD CUP</span> <span class="badge">2026</span></a>
-    <div class="nav-links">
+    <a class="nav-logo" onclick="showPage('home')"><img src="https://coed-football-2026.vercel.app/logo-icon.png" alt="logo" style="height:32px; width:32px; object-fit:contain;"> <span class="nav-logo-name">COED&FOOTBALL</span> <span class="nav-wc-text" style="font-size:11px;font-weight:600;color:var(--badge-gold-text);letter-spacing:0.04em;">🏆 WORLD CUP</span> <span class="badge">2026</span></a>
+    <span class="nav-scroll-btn" id="nav-scroll-left" onclick="document.querySelector('.nav-links').scrollBy({left:-150,behavior:'smooth'})">‹</span>
+    <div class="nav-links" id="nav-links-el">
       <button class="nav-btn" data-page="home" onclick="showPage('home')"><span class="nav-icon">🏠</span>Home</button>
       <button class="nav-btn" data-page="matches" onclick="showPage('matches')"><span class="nav-icon">⚽</span>Predictions</button>
       <button class="nav-btn" data-page="leaderboard" onclick="showPage('leaderboard')"><span class="nav-icon">🏆</span>Standings</button>
@@ -1356,6 +1363,7 @@
       <button class="nav-btn" data-page="dummies" onclick="showPage('dummies')"><span class="nav-icon">🎓</span>How to Play</button>
       <button class="nav-btn" data-page="admin" id="admin-nav-btn" style="display:none;" onclick="showPage('admin')"><span class="nav-icon">⚙️</span>Admin</button>
     </div>
+    <span class="nav-scroll-btn" id="nav-scroll-right" onclick="document.querySelector('.nav-links').scrollBy({left:150,behavior:'smooth'})">›</span>
     <div class="nav-user">
       <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
       <button id="darkmode-btn" onclick="toggleDarkMode()" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.15);cursor:pointer;font-size:15px;padding:5px 7px;border-radius:8px;transition:all 0.15s;flex-shrink:0;" onmouseover="this.style.background='rgba(59,130,246,0.2)'" onmouseout="this.style.background='rgba(59,130,246,0.08)'" title="Toggle dark mode">🌙</button>
@@ -1373,7 +1381,7 @@
       </button>
       </div>
       <div class="avatar" id="user-avatar" onclick="showPage('stats')" style="cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;" onmouseover="this.style.transform='scale(1.1)';this.style.boxShadow='0 0 0 2px #3b82f6'" onmouseout="this.style.transform='';this.style.boxShadow=''" title="My Stats"></div>
-      <span id="user-handle" style="font-size:12px;color:#475569;font-weight:600;letter-spacing:0.02em;"></span>
+      <span id="user-handle" style="display:none;font-size:12px;color:#475569;font-weight:600;letter-spacing:0.02em;"></span>
     </div>
   </nav>
 
@@ -2706,7 +2714,6 @@
         <div class="admin-card" onclick="showAdminSub('members')"><div class="icon">🆕</div><div class="title">New members log</div><div class="desc">See who joined and when, with a full activity log including registration date and actions taken.</div></div>
         <div class="admin-card" onclick="showAdminSub('watch-admin')"><div class="icon">📺</div><div class="title">Watch Together</div><div class="desc">Add location options for matches that reached 4+ viewers. Players will then vote on where to meet.</div></div>
         <div class="admin-card" onclick="showAdminSub('bold-pred')"><div class="icon">🐂</div><div class="title">Bold predictions</div><div class="desc">Award the 🐂 badge to players who made a brave prediction and nailed it.</div></div>
-        <div class="admin-card" onclick="showAdminSub('edit-predictions');loadEditPredictions()"><div class="icon">✏️</div><div class="title">Edit user predictions</div><div class="desc">Manually set or fix a user's prediction, score and first goalscorer for upcoming matches.</div></div>
         <div class="admin-card" onclick="showAdminSub('trash-admin')"><div class="icon">🧹</div><div class="title">Trash Talk reset</div><div class="desc">Delete all messages or messages older than a chosen number of days.</div></div>
         <div class="admin-card" onclick="showAdminSub('innercircle-admin')"><div class="icon">🏅</div><div class="title">Inner Circle Bets</div><div class="desc">Enable or disable the Inner Circle Bets page. Open it once the final player count is confirmed.</div></div>
         <div class="admin-card" onclick="showAdminSub('payment-admin')"><div class="icon">💰</div><div class="title">Payment tracker</div><div class="desc">Mark who paid their 50 ILS entry fee. Players can see their payment status in My Stats.</div></div>
@@ -2936,61 +2943,6 @@
         <button onclick="saveDoubleOrNothing()" style="width:100%;padding:10px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">Set this match as Double or Nothing</button>
         <button onclick="saveDoubleOrNothing('')" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;cursor:pointer;margin-top:8px;">Clear Double or Nothing</button>
         <div id="don-current" style="font-size:12px;color:var(--text-muted);margin-top:10px;"></div>
-      </div>
-    </div>
-
-    <!-- EDIT USER PREDICTIONS PANEL -->
-    <div id="admin-edit-predictions" class="admin-sub">
-      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
-      <div class="form-card">
-        <h2>✏️ Edit User Predictions</h2>
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1.2rem;">Select a user and match to set or fix their prediction.</p>
-
-        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:1.2rem;">
-          <div>
-            <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">User</label>
-            <select id="ep-user-select" onchange="loadEditPredMatchList()" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;">
-              <option value="">— Select user —</option>
-            </select>
-          </div>
-          <div>
-            <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Match (next 5 upcoming)</label>
-            <select id="ep-match-select" onchange="loadEditPredForm()" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;">
-              <option value="">— Select match —</option>
-            </select>
-          </div>
-        </div>
-
-        <div id="ep-form" style="display:none;">
-          <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
-            <div style="flex:1;">
-              <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;" id="ep-home-label">Home</label>
-              <input id="ep-home-score" type="number" min="0" max="20" value="0"
-                style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:18px;font-weight:700;text-align:center;">
-            </div>
-            <span style="font-size:20px;color:var(--text-muted);padding-top:16px;">—</span>
-            <div style="flex:1;">
-              <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;" id="ep-away-label">Away</label>
-              <input id="ep-away-score" type="number" min="0" max="20" value="0"
-                style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:18px;font-weight:700;text-align:center;">
-            </div>
-          </div>
-
-          <div style="margin-bottom:1.2rem;">
-            <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">First Goalscorer</label>
-            <select id="ep-scorer-select" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;">
-              <option value="">— No pick / skip —</option>
-            </select>
-          </div>
-
-          <div id="ep-current" style="font-size:12px;color:var(--text-muted);margin-bottom:1rem;padding:8px 12px;background:var(--surface2);border-radius:8px;"></div>
-
-          <button onclick="saveEditPrediction()"
-            style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--accent);color:white;font-size:14px;font-weight:700;cursor:pointer;">
-            💾 Save Prediction
-          </button>
-          <div id="ep-status" style="margin-top:8px;font-size:12px;text-align:center;"></div>
-        </div>
       </div>
     </div>
 
@@ -14112,122 +14064,6 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
 
   // Show popup 1.5 seconds after login
   // (called from onAuthStateChanged after user is confirmed logged in)
-
-  // ═══ EDIT USER PREDICTIONS (Admin) ═══
-  let epMatches = []; // stores next 5 matches
-  let epCurrentPred = null;
-
-  window.loadEditPredictions = async () => {
-    // Load users into dropdown
-    const userSel = document.getElementById('ep-user-select');
-    if (!userSel) return;
-    userSel.innerHTML = '<option value="">— Select user —</option>';
-    const snap = await getDocs(collection(db, 'users'));
-    const users = [];
-    snap.forEach(d => { const u = d.data(); users.push({ uid: d.id, name: u.nickname || u.displayName || d.id }); });
-    users.sort((a,b) => a.name.localeCompare(b.name));
-    users.forEach(u => {
-      const opt = document.createElement('option');
-      opt.value = u.uid;
-      opt.textContent = u.name;
-      userSel.appendChild(opt);
-    });
-
-    // Load next 5 upcoming matches
-    const now = new Date();
-    const matchSnap = await getDocs(query(collection(db, 'matches'), orderBy('kickoff')));
-    epMatches = [];
-    matchSnap.forEach(d => {
-      const m = d.data();
-      const kick = m.kickoff?.toDate ? m.kickoff.toDate() : new Date(m.kickoff);
-      if (kick > now && epMatches.length < 5) epMatches.push({ id: d.id, ...m, kickoffDate: kick });
-    });
-
-    const matchSel = document.getElementById('ep-match-select');
-    matchSel.innerHTML = '<option value="">— Select match —</option>';
-    epMatches.forEach(m => {
-      const opt = document.createElement('option');
-      opt.value = m.id;
-      opt.textContent = `${m.homeFlag||''} ${m.homeTeam} vs ${m.awayTeam} ${m.awayFlag||''} · ${m.kickoffDate.toLocaleDateString('he-IL')}`;
-      matchSel.appendChild(opt);
-    });
-    document.getElementById('ep-form').style.display = 'none';
-  };
-
-  window.loadEditPredMatchList = () => {
-    document.getElementById('ep-form').style.display = 'none';
-    document.getElementById('ep-current').textContent = '';
-    document.getElementById('ep-status').textContent = '';
-    if (document.getElementById('ep-match-select').value) loadEditPredForm();
-  };
-
-  window.loadEditPredForm = async () => {
-    const uid = document.getElementById('ep-user-select').value;
-    const matchId = document.getElementById('ep-match-select').value;
-    if (!uid || !matchId) return;
-
-    const match = epMatches.find(m => m.id === matchId);
-    if (!match) return;
-
-    // Set team labels
-    document.getElementById('ep-home-label').textContent = `${match.homeFlag||''} ${match.homeTeam}`;
-    document.getElementById('ep-away-label').textContent = `${match.awayFlag||''} ${match.awayTeam}`;
-
-    // Load scorer options
-    const scorerSel = document.getElementById('ep-scorer-select');
-    scorerSel.innerHTML = '<option value="">— No pick / skip —</option>';
-    const players = getPlayersForTeam(match.homeTeam, []).concat(getPlayersForTeam(match.awayTeam, []));
-    players.forEach(name => {
-      const opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = name;
-      scorerSel.appendChild(opt);
-    });
-
-    // Load existing prediction if any
-    const predSnap = await getDoc(doc(db, 'predictions', `${uid}_${matchId}`));
-    const current = document.getElementById('ep-current');
-    if (predSnap.exists()) {
-      const p = predSnap.data();
-      epCurrentPred = p;
-      document.getElementById('ep-home-score').value = p.homeScore ?? 0;
-      document.getElementById('ep-away-score').value = p.awayScore ?? 0;
-      if (p.firstScorer) scorerSel.value = p.firstScorer;
-      current.innerHTML = `<span style="color:var(--green);">✅ Existing prediction found</span> — ${p.homeScore ?? '?'}-${p.awayScore ?? '?'}${p.firstScorer ? ` · ⚽ ${p.firstScorer}` : ''}`;
-    } else {
-      epCurrentPred = null;
-      document.getElementById('ep-home-score').value = 0;
-      document.getElementById('ep-away-score').value = 0;
-      current.innerHTML = `<span style="color:var(--text-muted);">No prediction yet for this match</span>`;
-    }
-
-    document.getElementById('ep-form').style.display = 'block';
-    document.getElementById('ep-status').textContent = '';
-  };
-
-  window.saveEditPrediction = async () => {
-    const uid = document.getElementById('ep-user-select').value;
-    const matchId = document.getElementById('ep-match-select').value;
-    const homeScore = parseInt(document.getElementById('ep-home-score').value) || 0;
-    const awayScore = parseInt(document.getElementById('ep-away-score').value) || 0;
-    const firstScorer = document.getElementById('ep-scorer-select').value || '';
-    const status = document.getElementById('ep-status');
-
-    if (!uid || !matchId) { status.textContent = '❌ Select user and match first'; return; }
-
-    try {
-      status.textContent = '⏳ Saving...';
-      const predRef = doc(db, 'predictions', `${uid}_${matchId}`);
-      const updateData = { userId: uid, matchId, homeScore, awayScore, submittedAt: serverTimestamp() };
-      if (firstScorer) updateData.firstScorer = firstScorer;
-      await setDoc(predRef, updateData, { merge: true });
-
-      status.innerHTML = `<span style="color:var(--green);">✅ Saved! ${homeScore}-${awayScore}${firstScorer ? ` · ⚽ ${firstScorer}` : ''}</span>`;
-      document.getElementById('ep-current').innerHTML = `<span style="color:var(--green);">✅ Updated</span> — ${homeScore}-${awayScore}${firstScorer ? ` · ⚽ ${firstScorer}` : ''}`;
-    } catch(e) {
-      status.innerHTML = `<span style="color:#ef4444;">❌ Error: ${e.message}</span>`;
-    }
-  };
 
   // ═══ EXPORT & BACKUP ═══
   window.loadExportBackup = () => {}; // panel loads instantly, no data needed upfront
