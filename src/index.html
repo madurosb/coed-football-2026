@@ -180,7 +180,7 @@
     .nav-logo { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 13px; cursor: pointer; text-decoration: none; color: #e2e8f0; letter-spacing: 0.02em; flex-shrink: 0; }
     .nav-logo img { filter: drop-shadow(0 0 6px rgba(29,158,117,0.5)); }
     .nav-logo .badge { background: linear-gradient(135deg, #d4af37, #f5e182); color: #000; font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 99px; letter-spacing: 0.06em; }
-    .nav-logo .nav-logo-text { display: none; } /* hide text on desktop to save space */
+    .nav-logo span:not(.badge) { display: none; } /* hide text, keep only icon + badge */
     .nav-links { display: flex; align-items: center; justify-content: center; gap: 0px; overflow-x: auto; flex: 1; padding: 0 2px; scrollbar-width: none; }
     .nav-links::-webkit-scrollbar { display: none; }
     .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 5px; border-radius: 7px; border: 1px solid transparent; background: none; color: #475569; font-size: 7.5px; font-weight: 700; letter-spacing: 0.03em; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; text-transform: uppercase; }
@@ -188,7 +188,7 @@
     .nav-btn:hover { background: rgba(59,130,246,0.12); color: #93c5fd; border-color: rgba(59,130,246,0.2); }
     .nav-btn.active { background: rgba(59,130,246,0.18); color: #60a5fa; border-color: rgba(59,130,246,0.35); }
     .nav-btn.active .nav-icon { filter: drop-shadow(0 0 5px rgba(96,165,250,0.7)); }
-    .nav-user { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .nav-user { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
     .avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #1e3a5f, #0f2040); color: #60a5fa; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; border: 1.5px solid rgba(59,130,246,0.35); }
 
     /* PAGES */
@@ -1374,7 +1374,7 @@
       </button>
       </div>
       <div class="avatar" id="user-avatar" onclick="showPage('stats')" style="cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;" onmouseover="this.style.transform='scale(1.1)';this.style.boxShadow='0 0 0 2px #3b82f6'" onmouseout="this.style.transform='';this.style.boxShadow=''" title="My Stats"></div>
-      <span id="user-handle" style="font-size:12px;color:#475569;font-weight:600;letter-spacing:0.02em;"></span>
+      <span id="user-handle" style="display:none;font-size:12px;color:#475569;font-weight:600;letter-spacing:0.02em;"></span>
     </div>
   </nav>
 
@@ -2652,16 +2652,15 @@
           <span style="font-size:20px;">🇲🇽</span>
           <div style="flex:1;">
             <div style="font-size:14px;font-weight:700;">Mexico <span style="color:var(--green);">2 – 0</span> South Africa</div>
-            <div style="font-size:11px;color:var(--text-muted);">Group A · June 11, 2026</div>
+            <div style="font-size:11px;color:var(--text-muted);">Group A · June 11, 2026 · ⚽ Quiñones 9' · Jiménez 66'</div>
           </div>
           <span style="font-size:20px;">🇿🇦</span>
         </div>
         <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;">
           <iframe
-            src="https://www.youtube.com/embed/DjYkkRPqV18?rel=0&modestbranding=1"
+            src="https://www.youtube.com/embed/eki0SMOrhhI?rel=0&modestbranding=1"
             style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"
-            allowfullscreen
-            loading="lazy">
+            allowfullscreen loading="lazy">
           </iframe>
         </div>
       </div>
@@ -3717,7 +3716,7 @@
   }
 
   let videoPaused = false;
-  let videoMuted = true; // always muted by default — user clicks to unmute
+  let videoMuted = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent); // muted on mobile (browser policy), sound on desktop
 
   window.toggleVideoPause = function() {
     const btn = document.getElementById('video-pause-btn');
@@ -8754,7 +8753,8 @@ Use exactly the formation provided. Only use players from the squad lists above.
   ];
 
   function showDyk() {
-    return; // Disabled — popup removed
+    const last = localStorage.getItem('dyk_last_shown');
+    const now = Date.now();
     if (last && now - parseInt(last) < 24 * 60 * 60 * 1000) return; // once per 24h
     const lastIndex = parseInt(localStorage.getItem('dyk_last_index') ?? '-1');
     let idx;
@@ -13171,22 +13171,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
         : `<div style="width:${size}px;height:${size}px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;flex-shrink:0;">${(u.nickname||'?').substr(0,2).toUpperCase()}</div>`;
     };
 
-    // Extra fun stats
-    const byWorst = [...stats].filter(s => s.total >= 3).sort((a,b) => (a.points||0) - (b.points||0));
-    const byLuckiest = [...stats].filter(s => s.total >= 3).sort((a,b) => {
-      // most points with fewest exact scores = lucky
-      const aScore = (a.points||0) - (a.exact * 4); 
-      const bScore = (b.points||0) - (b.exact * 4);
-      return bScore - aScore;
-    });
-    const byMostWrong = [...stats].filter(s => s.total >= 3).sort((a,b) => {
-      const aWrong = (a.total - a.correct);
-      const bWrong = (b.total - b.correct);
-      return bWrong - aWrong;
-    });
-    const byDON = [...stats].sort((a,b) => (b.bonusPoints||0) - (a.bonusPoints||0));
-
-    const hofCard = (title, emoji, color, borderColor, winner, subtitle, stat, joke) => {
+    const hofCard = (title, emoji, color, borderColor, winner, subtitle, stat) => {
       if (!winner) return '';
       return `
       <div style="background:var(--surface);border:1.5px solid ${borderColor};border-radius:16px;padding:1.25rem;margin-bottom:1rem;position:relative;overflow:hidden;">
@@ -13197,7 +13182,6 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
           <div style="flex:1;">
             <div style="font-size:17px;font-weight:700;">${winner.nickname || winner.displayName}</div>
             <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${subtitle}</div>
-            ${joke ? `<div style="font-size:11px;color:${color};margin-top:4px;font-style:italic;">${joke}</div>` : ''}
           </div>
           <div style="text-align:center;background:${color}18;border-radius:10px;padding:8px 12px;">
             <div style="font-size:22px;font-weight:800;color:${color};">${stat}</div>
@@ -13223,53 +13207,35 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
     }
 
     container.innerHTML = `
-      ${hofCard('The King 👑', '🏆', '#EF9F27', '#BA7517',
+      ${hofCard('Most Points', '👑', '#EF9F27', '#BA7517',
         byPoints[0],
-        `${byPoints[0]?.points||0} pts — sitting on the throne`,
-        `${byPoints[0]?.points||0} pts`,
-        `"I knew it all along." — ${byPoints[0]?.nickname||'them'}, probably`
+        `${byPoints[0]?.points||0} total points · Rank #1`,
+        `${byPoints[0]?.points||0} pts`
       )}
-      ${hofCard('The Surgeon 🎯', '🔬', '#1D9E75', '#085041',
+      ${hofCard('Sharpest Predictor', '🎯', '#1D9E75', '#085041',
         byExact[0],
         `${Math.round((byExact[0]?.exactRate||0)*100)}% exact score rate · ${byExact[0]?.exact||0} exact scores`,
-        `${Math.round((byExact[0]?.exactRate||0)*100)}%`,
-        `Doesn't predict matches. Schedules them.`
+        `${Math.round((byExact[0]?.exactRate||0)*100)}%`
       )}
-      ${hofCard('The Oracle 🔮', '👁️', '#7C3AED', '#5B21B6',
+      ${hofCard('The Oracle', '🔥', '#E24B4A', '#B91C1C',
         byCorrect[0],
-        `${Math.round((byCorrect[0]?.correctRate||0)*100)}% correct results`,
-        `${Math.round((byCorrect[0]?.correctRate||0)*100)}%`,
-        `Gets it right without knowing how. Suspicious.`
+        `${Math.round((byCorrect[0]?.correctRate||0)*100)}% correct results · Never wrong`,
+        `${Math.round((byCorrect[0]?.correctRate||0)*100)}%`
       )}
-      ${hofCard('Sniper ⚽', '🎯', '#E24B4A', '#B91C1C',
+      ${hofCard('Scorer Hunter', '⚽', '#7C3AED', '#5B21B6',
         byScorer[0],
         `${byScorer[0]?.scorerHits||0} first scorers called correctly`,
-        `${byScorer[0]?.scorerHits||0} hits`,
-        `Named the goalscorer before the match even started. Witch?`
+        `${byScorer[0]?.scorerHits||0} hits`
       )}
-      ${hofCard('The Hustler 💼', '🎰', '#0C447C', '#1e40af',
-        byLuckiest[0],
-        `Points without breaking a sweat`,
-        `😎`,
-        `Minimal effort. Maximum results. Somehow.`
-      )}
-      ${hofCard('Wooden Spoon 🥄', '😬', '#6b7280', '#374151',
-        byWorst[byWorst.length - 1],
-        `${byWorst[byWorst.length-1]?.points||0} pts — bravely holding the bottom`,
-        `${byWorst[byWorst.length-1]?.points||0} pts`,
-        `"At least I entered." — A champion in their own mind.`
-      )}
-      ${hofCard('Chaos Agent 💥', '🌪️', '#f59e0b', '#b45309',
-        byMostWrong[0],
-        `${byMostWrong[0] ? byMostWrong[0].total - byMostWrong[0].correct : 0} wrong results — absolutely unhinged`,
-        `${byMostWrong[0] ? byMostWrong[0].total - byMostWrong[0].correct : 0} ❌`,
-        `Football analyst? No. Entertainment? Absolutely.`
-      )}
-      ${hofCard('Most Committed 📋', '🤓', '#1D9E75', '#085041',
+      ${hofCard('Most Committed', '📋', '#0C447C', '#1e40af',
         byCommit[0],
-        `${byCommit[0]?.total||0} predictions submitted — not missing a single match`,
-        `${byCommit[0]?.total||0}`,
-        `Eats, sleeps, predicts. Family is worried.`
+        `${byCommit[0]?.total||0} predictions submitted`,
+        `${byCommit[0]?.total||0}`
+      )}
+      ${hofCard('Bonus King', '⚡', '#BA7517', '#92400E',
+        byBonus[0],
+        `${byBonus[0]?.bonusPoints||0} tournament player bonus points`,
+        `+${byBonus[0]?.bonusPoints||0}`
       )}
       <div style="background:var(--surface2);border-radius:12px;padding:12px 16px;font-size:12px;color:var(--text-muted);text-align:center;margin-top:0.5rem;">
         🔄 Hall of Fame updates automatically after each match result
