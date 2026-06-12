@@ -1853,7 +1853,7 @@
     <div class="rules-card">
       <h2>Scoring system</h2>
       <div class="rule-row"><div><div class="rule-name">Correct result</div><div class="rule-desc">You predicted the right winner or correctly predicted a draw</div></div><div class="rule-pts">+1 pt</div></div>
-      <div class="rule-row"><div><div class="rule-name">Exact score</div><div class="rule-desc">You got the exact final score right</div></div><div class="rule-pts">+3 pts</div></div>
+      <div class="rule-row"><div><div class="rule-name">Exact score</div><div class="rule-desc">You got the exact final score right (includes the +1 for correct result)</div></div><div class="rule-pts">+4 pts</div></div>
       <div class="rule-row"><div><div class="rule-name">First goalscorer</div><div class="rule-desc">You predicted who scored the first goal in the match</div></div><div class="rule-pts">+2 pts</div></div>
       <div class="rule-row"><div><div class="rule-name">Tournament player goal</div><div class="rule-desc">Your chosen player scores a goal at any point in the tournament</div></div><div class="rule-pts">+2 pts per goal</div></div>
       <div class="rule-row"><div><div class="rule-name">Tournament player assist</div><div class="rule-desc">Your chosen player provides an assist at any point in the tournament</div></div><div class="rule-pts">+1 pt per assist</div></div>
@@ -7331,6 +7331,13 @@ Use exactly the formation provided. Only use players from the squad lists above.
             <span class="group">${(m.group || '').replace(/_/g, ' ')}</span>
             <div style="display:flex;align-items:center;gap:8px;">
               ${liveIndicator}
+              ${isFinished ? `
+              <button onclick="showPostMatchCard('${d.id}')"
+                style="display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(220,38,38,0.08));border:1px solid rgba(239,68,68,0.5);border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;color:#f87171;cursor:pointer;letter-spacing:0.05em;text-transform:uppercase;transition:all 0.18s;box-shadow:0 0 12px rgba(239,68,68,0.2),0 0 24px rgba(239,68,68,0.08);animation:postMatchGlow 2s ease-in-out infinite;"
+                onmouseover="this.style.background='linear-gradient(135deg,rgba(239,68,68,0.3),rgba(220,38,38,0.2))';this.style.borderColor='rgba(239,68,68,0.9)';this.style.boxShadow='0 0 20px rgba(239,68,68,0.5),0 0 40px rgba(239,68,68,0.2)';this.style.color='#fca5a5'"
+                onmouseout="this.style.background='linear-gradient(135deg,rgba(239,68,68,0.15),rgba(220,38,38,0.08))';this.style.borderColor='rgba(239,68,68,0.5)';this.style.boxShadow='0 0 12px rgba(239,68,68,0.2),0 0 24px rgba(239,68,68,0.08)';this.style.color='#f87171'">
+                <span style="font-size:12px;">🔥</span> Post Match
+              </button>` : ''}
               <button onclick="showMatchPreview('${d.id}')"
                 style="display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,rgba(99,252,180,0.08),rgba(16,185,129,0.05));border:1px solid rgba(99,252,180,0.35);border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;color:#34d399;cursor:pointer;letter-spacing:0.05em;text-transform:uppercase;transition:all 0.18s;box-shadow:0 0 8px rgba(99,252,180,0.1);"
                 onmouseover="this.style.background='linear-gradient(135deg,rgba(99,252,180,0.18),rgba(16,185,129,0.12))';this.style.borderColor='rgba(99,252,180,0.7)';this.style.boxShadow='0 0 14px rgba(99,252,180,0.3)';this.style.color='#6ee7b7'"
@@ -11586,10 +11593,10 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
     // Exact score check simulation
     if (home !== away) {
-      lines.push('🎯 Exact score → <strong>+3 pts</strong> (if your score is right)');
+      lines.push('🎯 Exact score → <strong>+4 pts</strong> (includes +1 for correct result)');
       pts += 3;
     } else {
-      lines.push('🎯 Exact score → <strong>+3 pts</strong> (if draw & correct goals)');
+      lines.push('🎯 Exact score → <strong>+4 pts</strong> (includes +1 for correct result)');
       pts += 3;
     }
 
@@ -13511,6 +13518,22 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
   };
 
   // ========== ANALYSIS TABS ==========
+  // Opens Match Analysis page directly on Post-Match tab
+  window.showPostMatchCard = (matchId) => {
+    showPage('analysis');
+    // Reset postmatch loaded flag so it reloads fresh
+    const container = document.getElementById('analysis-postmatch');
+    if (container) delete container.dataset.loaded;
+    setTimeout(() => {
+      window.setAnalysisTab('postmatch');
+      // Scroll to the specific match if possible
+      setTimeout(() => {
+        const el = document.getElementById('postmatch-' + matchId);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 600);
+    }, 150);
+  };
+
   window.setAnalysisTab = (tab) => {
     ['heatmap','odds','postmatch'].forEach(t => {
       const btn = document.getElementById(`atab-${t}`);
@@ -13817,7 +13840,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
         : `📊 Mixed bag — ${pct}% got it right.`;
 
       return `
-        <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
+        <div id="postmatch-${m.id}" style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
             <div>
               <div style="font-size:13px;font-weight:600;">${m.homeTeam} ${m.homeScore} – ${m.awayScore} ${m.awayTeam}</div>
