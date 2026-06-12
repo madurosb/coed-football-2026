@@ -45,7 +45,6 @@ function getFlag(tla) {
   return flags[tla.toUpperCase()] || '';
 }
 
-// Hardcoded squads - outfield players only
 const SQUADS = {
   'Algeria': ['Riyad Mahrez','Islam Slimani','Youcef Atal','Sofiane Feghouli','Haris Belkebla','Aissa Mandi','Djamel Benlamri','Ismael Bennacer','Bilal Benkhedim','Ilyes Chetti'],
   'Argentina': ['Lionel Messi','Julian Alvarez','Lautaro Martinez','Rodrigo De Paul','Enzo Fernandez','Alejandro Garnacho','Thiago Almada','Nicolas Gonzalez','Leandro Paredes','Giovani Lo Celso'],
@@ -76,7 +75,7 @@ const SQUADS = {
   'Iraq': ['Aymen Hussein','Amjed Attwan','Mohanad Ali','Yaser Kasim','Alaa Abbas','Ibrahim Bayesh','Muhanad Abdulraheem','Bashar Resan','Saad Natiq','Ali Adnan'],
   "Côte d'Ivoire": ['Sebastien Haller','Nicolas Pepe','Franck Kessie','Serge Aurier','Max Gradel','Simon Adingra','Jeremie Boga','Ibrahim Sangare','Seko Fofana','Wilfried Zaha'],
   'Ivory Coast': ['Sebastien Haller','Nicolas Pepe','Franck Kessie','Serge Aurier','Max Gradel','Simon Adingra','Jeremie Boga','Ibrahim Sangare','Seko Fofana','Wilfried Zaha'],
-  'Japan': ['Takefusa Kubo','Kaoru Mitoma','Ritsu Doan','Daichi Kamada','Wataru Endo','Ao Tanaka','Takehiro Tomiyasu','Ayase Ueda','Yukinari Sugawara','Hiroki Ito'],
+  'Japan': ['Takefusa Kubo','Kaoru Mitoma','Ritsu Doan','Daichi Kamada','Wataru Endo','Ao Tanaka','Takehiro Tomiyasu','Ayuse Ueda','Yukinari Sugawara','Hiroki Ito'],
   'Jordan': ['Musa Al-Taamari','Yazan Al-Naimat','Baha Faisal','Ahmad Gharaibeh','Hamza Al-Dardour','Ashraf Nour','Odai Al-Rashid','Mohammad Abu Hasna','Rawan Rawashdeh','Ahmad Al-Saify'],
   'Mexico': ['Santiago Gimenez','Hirving Lozano','Raul Jimenez','Roberto Alvarado','Henry Martin','Orbelin Pineda','Carlos Vela','Uriel Antuna','Edson Alvarez','Cesar Montes'],
   'Morocco': ['Hakim Ziyech','Achraf Hakimi','Youssef En-Nesyri','Sofiane Boufal','Azzedine Ounahi','Nayef Aguerd','Abde Ezzalzouli','Ibrahim Diaz','Selim Amallah','Romain Saiss'],
@@ -110,9 +109,7 @@ const SQUADS = {
 
 function getSquad(teamName) {
   if (!teamName) return [];
-  // Try exact match first
   if (SQUADS[teamName]) return SQUADS[teamName];
-  // Try case-insensitive match
   const key = Object.keys(SQUADS).find(k => k.toLowerCase() === teamName.toLowerCase());
   return key ? SQUADS[key] : [];
 }
@@ -182,15 +179,19 @@ async function syncLiveResults(db) {
         let firstScorer = null;
         try {
           const detail = await fetchAPI(`/matches/${match.id}`);
-          const goals = (detail.goals || [])
-            .filter(g => g.type !== 'OWN_GOAL')
+          // ✅ OWN GOAL SUPPORT: if first goal is OG, firstScorer = 'Own Goal'
+          const allGoals = (detail.goals || [])
             .sort((a, b) => (a.minute || 0) - (b.minute || 0));
-          if (goals.length > 0) firstScorer = goals[0].scorer?.name || null;
+          if (allGoals.length > 0) {
+            const firstGoal = allGoals[0];
+            firstScorer = firstGoal.type === 'OWN_GOAL'
+              ? 'Own Goal'
+              : (firstGoal.scorer?.name || null);
+          }
         } catch(e) { console.log('Could not get scorer for', matchId); }
 
         await calculatePoints(db, matchId, homeScore, awayScore, firstScorer);
 
-        // If this is the Final, award +10 pts to correct tournament winner pickers
         const matchData = (await db.collection('matches').doc(matchId).get()).data();
         const grp = (matchData?.group || '').toUpperCase();
         if (grp.includes('FINAL') && !grp.includes('SEMI') && !grp.includes('QUARTER')) {
@@ -221,7 +222,6 @@ async function syncLiveResults(db) {
 }
 
 async function calculatePoints(db, matchId, homeScore, awayScore, firstScorer) {
-  // Get match group for stage multiplier
   const matchDoc = await db.collection('matches').doc(matchId).get();
   const matchGroup = (matchDoc.data()?.group || '').toUpperCase();
   const isFinal = matchGroup.includes('FINAL') && !matchGroup.includes('QUARTER') && !matchGroup.includes('SEMI');
@@ -246,11 +246,9 @@ async function calculatePoints(db, matchId, homeScore, awayScore, firstScorer) {
     }
     if (firstScorer && pred.firstScorer === firstScorer) { pts += 2 * multiplier; bonus += 1; }
 
-    // Joker card — double points if activated
     const jokerSnap = await db.collection('jokerCards').where('matchId','==',matchId).where('userId','==',pred.userId).get();
     if (!jokerSnap.empty) pts *= 2;
 
-    // Double or Nothing Version B — affects ONLY result+exact pts, not first scorer
     const donSnap = await db.collection('donOptIns').where('matchId','==',matchId).where('userId','==',pred.userId).get();
     if (!donSnap.empty) {
       const isCorrect = actualResult === predResult;
@@ -279,20 +277,14 @@ async function calculatePoints(db, matchId, homeScore, awayScore, firstScorer) {
 
   try {
     const detail = await fetchAPI(`/matches/${matchId}`);
-
-    // Goals (x2 pts each, exclude own goals)
     const goals = (detail.goals || [])
       .filter(g => g.type !== 'OWN_GOAL')
       .map(g => g.scorer?.name)
       .filter(Boolean);
-
-    // Assists (+1 pt each)
     const assists = (detail.goals || [])
       .filter(g => g.type !== 'OWN_GOAL' && g.assist?.name)
       .map(g => g.assist.name)
       .filter(Boolean);
-
-    // Red cards (-1 pt each)
     const bookings = detail.bookings || [];
     const redCards = bookings
       .filter(b => b.card === 'RED_CARD' || b.card === 'YELLOW_RED_CARD')
@@ -340,44 +332,32 @@ export default async function handler(req, res) {
     } else if (action === 'matchStats') {
       const matchId = req.query.matchId;
       if (!matchId) return res.status(400).json({ error: 'matchId required' });
-      // Get match from Firestore to find API id
       const matchDoc = await db.collection('matches').doc(matchId).get();
       const matchData = matchDoc.data();
       const apiId = matchData?.apiId;
       if (!apiId) return res.status(200).json({ success: true, matchStats: null });
-      // Fetch full match from API
       const data = await fetchAPI(`/matches/${apiId}`);
       const m = data.match || data;
-      // Goals
       const goals = (m.goals || []).map(g => ({
         minute: g.minute,
         scorer: g.scorer?.name || 'Unknown',
         team: g.team?.name || ''
       }));
-      // Stats
       const rawStats = m.statistics || [];
       const statMap = {
-        'Shots on Goal': 'Shots on target',
-        'Shots off Goal': 'Shots off target',
-        'Total Shots': 'Total shots',
-        'Ball Possession': 'Possession %',
-        'Corner Kicks': 'Corners',
-        'Fouls': 'Fouls',
-        'Yellow Cards': 'Yellow cards',
-        'Red Cards': 'Red cards',
-        'Offsides': 'Offsides',
-        'Passes Accurate': 'Accurate passes',
+        'Shots on Goal': 'Shots on target','Shots off Goal': 'Shots off target',
+        'Total Shots': 'Total shots','Ball Possession': 'Possession %',
+        'Corner Kicks': 'Corners','Fouls': 'Fouls','Yellow Cards': 'Yellow cards',
+        'Red Cards': 'Red cards','Offsides': 'Offsides','Passes Accurate': 'Accurate passes',
       };
       const stats = [];
       const homeStats = rawStats.find(s => s.team?.id === m.homeTeam?.id)?.statistics || [];
       const awayStats = rawStats.find(s => s.team?.id === m.awayTeam?.id)?.statistics || [];
-      const wanted = Object.keys(statMap);
-      wanted.forEach(key => {
+      Object.keys(statMap).forEach(key => {
         const hs = homeStats.find(s => s.type === key);
         const as = awayStats.find(s => s.type === key);
         if (hs || as) stats.push({ label: statMap[key], home: hs?.value ?? null, away: as?.value ?? null });
       });
-      // Lineups
       const homeLineup = (m.lineups?.[0]?.startXI || []).map(p => `${p.player?.number||''} ${p.player?.name||''}`);
       const awayLineup = (m.lineups?.[1]?.startXI || []).map(p => `${p.player?.number||''} ${p.player?.name||''}`);
       result.matchStats = { goals, stats, homeLineup, awayLineup, minute: m.minute, status: m.status };
