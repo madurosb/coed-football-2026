@@ -177,14 +177,13 @@
       content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
       background: linear-gradient(90deg, transparent, rgba(59,130,246,0.5), rgba(212,175,55,0.35), rgba(59,130,246,0.5), transparent);
     }
-    .nav-logo { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 15px; cursor: pointer; text-decoration: none; color: #e2e8f0; letter-spacing: 0.02em; flex-shrink: 0; }
+    .nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; cursor: pointer; text-decoration: none; color: #e2e8f0; letter-spacing: 0.02em; flex-shrink: 0; }
     .nav-logo img { filter: drop-shadow(0 0 6px rgba(29,158,117,0.5)); }
     .nav-logo .badge { background: linear-gradient(135deg, #d4af37, #f5e182); color: #000; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 99px; letter-spacing: 0.06em; }
-    .nav-logo .nav-logo-name { display: none; } /* hide "COED&FOOTBALL" on desktop to save space */
-    .nav-links { display: flex; align-items: center; justify-content: center; gap: 0px; overflow-x: auto; flex: 1; padding: 0 2px; scrollbar-width: none; }
+    .nav-links { display: flex; align-items: center; justify-content: center; gap: 1px; overflow-x: auto; flex: 1; padding: 0 8px; scrollbar-width: none; }
     .nav-links::-webkit-scrollbar { display: none; }
-    .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 5px; border-radius: 7px; border: 1px solid transparent; background: none; color: #475569; font-size: 7.5px; font-weight: 700; letter-spacing: 0.03em; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; text-transform: uppercase; }
-    .nav-btn .nav-icon { font-size: 14px; line-height: 1; display: block; }
+    .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 9px; border-radius: 8px; border: 1px solid transparent; background: none; color: #475569; font-size: 9px; font-weight: 700; letter-spacing: 0.06em; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; text-transform: uppercase; }
+    .nav-btn .nav-icon { font-size: 17px; line-height: 1; display: block; }
     .nav-btn:hover { background: rgba(59,130,246,0.12); color: #93c5fd; border-color: rgba(59,130,246,0.2); }
     .nav-btn.active { background: rgba(59,130,246,0.18); color: #60a5fa; border-color: rgba(59,130,246,0.35); }
     .nav-btn.active .nav-icon { filter: drop-shadow(0 0 5px rgba(96,165,250,0.7)); }
@@ -444,7 +443,7 @@
       #user-handle { display: none; }
       .nav { padding: 0 0.75rem; height: 56px; }
       .nav-logo .badge { display: none; }
-
+      .nav-wc-text { display: none !important; }
 
       /* Hide hamburger on mobile — replaced by FAB */
       .hamburger { display: none !important; }
@@ -744,7 +743,7 @@
       #user-handle { display: none; }
       .nav { padding: 0 0.75rem; height: 50px; }
       .nav-logo .badge { display: none; }
-
+      .nav-wc-text { display: none !important; }
 
       /* Bottom navigation bar — hidden, replaced by smart drawer */
       .bottom-nav { display: none; }
@@ -1338,7 +1337,7 @@
 <!-- MAIN APP -->
 <div id="view-app" style="display:none;">
   <nav class="nav">
-    <a class="nav-logo" onclick="showPage('home')"><img src="https://coed-football-2026.vercel.app/logo-icon.png" alt="logo" style="height:32px; width:32px; object-fit:contain;"> <span class="nav-logo-name">COED&FOOTBALL</span> <span class="nav-wc-text" style="font-size:11px;font-weight:600;color:var(--badge-gold-text);letter-spacing:0.04em;">🏆 WORLD CUP</span> <span class="badge">2026</span></a>
+    <a class="nav-logo" onclick="showPage('home')"><img src="https://coed-football-2026.vercel.app/logo-icon.png" alt="logo" style="height:32px; width:32px; object-fit:contain;"> <span>COED&FOOTBALL</span> <span class="nav-wc-text" style="font-size:11px;font-weight:600;color:var(--badge-gold-text);letter-spacing:0.04em;">🏆 WORLD CUP</span> <span class="badge">2026</span></a>
     <div class="nav-links">
       <button class="nav-btn" data-page="home" onclick="showPage('home')"><span class="nav-icon">🏠</span>Home</button>
       <button class="nav-btn" data-page="matches" onclick="showPage('matches')"><span class="nav-icon">⚽</span>Predictions</button>
@@ -2642,23 +2641,51 @@
 
   <!-- HIGHLIGHTS -->
   <div class="page" id="page-highlights">
-    <p class="section-title" style="margin-bottom:0.25rem;">🎬 Match Highlights</p>
-    <p style="font-size:13px;color:var(--text-muted);margin-bottom:1.5rem;">Watch the best moments from each match. Updated after every game.</p>
-    <div style="display:flex;flex-direction:column;gap:1.5rem;">
-      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:16px;overflow:hidden;">
-        <div style="padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:0.5px solid var(--border);">
-          <span style="font-size:20px;">🇲🇽</span>
-          <div style="flex:1;">
-            <div style="font-size:14px;font-weight:700;">Mexico <span style="color:var(--green);">2 – 0</span> South Africa</div>
-            <div style="font-size:11px;color:var(--text-muted);">Group A · June 11, 2026 · ⚽ Quiñones 9' · Jiménez 66'</div>
-          </div>
-          <span style="font-size:20px;">🇿🇦</span>
-        </div>
-        <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;">
-          <iframe src="https://www.youtube.com/embed/eki0SMOrhhI?rel=0&modestbranding=1"
-            style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"
-            allowfullscreen loading="lazy"></iframe>
-        </div>
+    <div style="text-align:center; padding: 2rem 1rem 3rem;">
+      <div style="font-size:13px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2rem;">Match Highlights</div>
+
+      <svg viewBox="0 0 320 260" width="280" style="display:block;margin:0 auto 2rem;" xmlns="http://www.w3.org/2000/svg">
+        <!-- Screen/TV -->
+        <rect x="30" y="20" width="260" height="160" rx="12" fill="#1a1a2e" stroke="#334155" stroke-width="2"/>
+        <rect x="44" y="34" width="232" height="132" rx="6" fill="#0f172a"/>
+        <!-- Pitch lines -->
+        <rect x="44" y="34" width="232" height="132" rx="6" fill="#166534" opacity="0.3"/>
+        <line x1="160" y1="34" x2="160" y2="166" stroke="#ffffff" stroke-width="0.8" opacity="0.3"/>
+        <circle cx="160" cy="100" r="28" fill="none" stroke="#ffffff" stroke-width="0.8" opacity="0.3"/>
+        <rect x="126" y="34" width="68" height="22" fill="none" stroke="#ffffff" stroke-width="0.8" opacity="0.3"/>
+        <rect x="126" y="144" width="68" height="22" fill="none" stroke="#ffffff" stroke-width="0.8" opacity="0.3"/>
+        <!-- Play button -->
+        <circle cx="160" cy="100" r="22" fill="#1D9E75" opacity="0.9"/>
+        <polygon points="154,91 154,109 172,100" fill="white"/>
+        <!-- Lock icon overlay -->
+        <rect x="110" y="70" width="100" height="60" rx="8" fill="#0f172a" opacity="0.85"/>
+        <rect x="143" y="82" width="34" height="26" rx="4" fill="none" stroke="#5DCAA5" stroke-width="2"/>
+        <path d="M150 82 Q150 72 160 72 Q170 72 170 82" fill="none" stroke="#5DCAA5" stroke-width="2"/>
+        <circle cx="160" cy="95" r="4" fill="#5DCAA5"/>
+        <line x1="160" y1="99" x2="160" y2="104" stroke="#5DCAA5" stroke-width="2"/>
+        <!-- TV stand -->
+        <rect x="148" y="180" width="24" height="14" rx="2" fill="#334155"/>
+        <rect x="128" y="192" width="64" height="6" rx="3" fill="#334155"/>
+        <!-- Floating calendar icons -->
+        <rect x="58" y="48" width="28" height="26" rx="4" fill="#1e3a5f" opacity="0.8"/>
+        <line x1="64" y1="52" x2="80" y2="52" stroke="#60a5fa" stroke-width="1.5"/>
+        <rect x="62" y="56" width="4" height="4" rx="1" fill="#60a5fa" opacity="0.6"/>
+        <rect x="70" y="56" width="4" height="4" rx="1" fill="#60a5fa" opacity="0.6"/>
+        <rect x="62" y="64" width="4" height="4" rx="1" fill="#60a5fa" opacity="0.4"/>
+        <rect x="70" y="64" width="4" height="4" rx="1" fill="#60a5fa" opacity="0.4"/>
+        <!-- Stars -->
+        <text x="240" y="58" font-size="14" opacity="0.4">⭐</text>
+        <text x="52" y="155" font-size="12" opacity="0.3">⭐</text>
+        <text x="258" y="148" font-size="10" opacity="0.3">✨</text>
+      </svg>
+
+      <div style="font-size:22px;font-weight:500;margin-bottom:0.5rem;">No highlights yet</div>
+      <div style="font-size:14px;color:var(--text-muted);line-height:1.7;max-width:320px;margin:0 auto 2rem;">
+        Once the World Cup kicks off on <strong>June 11</strong>, match highlights will appear here after every game.
+      </div>
+
+      <div style="display:inline-flex;align-items:center;gap:8px;background:#0a1f0a;border-radius:99px;padding:10px 20px;">
+        <span style="font-size:14px;color:#4ade80;font-weight:500;">⚽ Check back on June 11, 2026</span>
       </div>
     </div>
   </div>
@@ -2679,6 +2706,7 @@
         <div class="admin-card" onclick="showAdminSub('members')"><div class="icon">🆕</div><div class="title">New members log</div><div class="desc">See who joined and when, with a full activity log including registration date and actions taken.</div></div>
         <div class="admin-card" onclick="showAdminSub('watch-admin')"><div class="icon">📺</div><div class="title">Watch Together</div><div class="desc">Add location options for matches that reached 4+ viewers. Players will then vote on where to meet.</div></div>
         <div class="admin-card" onclick="showAdminSub('bold-pred')"><div class="icon">🐂</div><div class="title">Bold predictions</div><div class="desc">Award the 🐂 badge to players who made a brave prediction and nailed it.</div></div>
+        <div class="admin-card" onclick="showAdminSub('edit-predictions');loadEditPredictions()"><div class="icon">✏️</div><div class="title">Edit user predictions</div><div class="desc">Manually set or fix a user's prediction, score and first goalscorer for upcoming matches.</div></div>
         <div class="admin-card" onclick="showAdminSub('trash-admin')"><div class="icon">🧹</div><div class="title">Trash Talk reset</div><div class="desc">Delete all messages or messages older than a chosen number of days.</div></div>
         <div class="admin-card" onclick="showAdminSub('innercircle-admin')"><div class="icon">🏅</div><div class="title">Inner Circle Bets</div><div class="desc">Enable or disable the Inner Circle Bets page. Open it once the final player count is confirmed.</div></div>
         <div class="admin-card" onclick="showAdminSub('payment-admin')"><div class="icon">💰</div><div class="title">Payment tracker</div><div class="desc">Mark who paid their 50 ILS entry fee. Players can see their payment status in My Stats.</div></div>
@@ -2908,6 +2936,61 @@
         <button onclick="saveDoubleOrNothing()" style="width:100%;padding:10px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">Set this match as Double or Nothing</button>
         <button onclick="saveDoubleOrNothing('')" style="width:100%;padding:10px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;cursor:pointer;margin-top:8px;">Clear Double or Nothing</button>
         <div id="don-current" style="font-size:12px;color:var(--text-muted);margin-top:10px;"></div>
+      </div>
+    </div>
+
+    <!-- EDIT USER PREDICTIONS PANEL -->
+    <div id="admin-edit-predictions" class="admin-sub">
+      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
+      <div class="form-card">
+        <h2>✏️ Edit User Predictions</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1.2rem;">Select a user and match to set or fix their prediction.</p>
+
+        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:1.2rem;">
+          <div>
+            <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">User</label>
+            <select id="ep-user-select" onchange="loadEditPredMatchList()" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;">
+              <option value="">— Select user —</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Match (next 5 upcoming)</label>
+            <select id="ep-match-select" onchange="loadEditPredForm()" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;">
+              <option value="">— Select match —</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="ep-form" style="display:none;">
+          <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
+            <div style="flex:1;">
+              <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;" id="ep-home-label">Home</label>
+              <input id="ep-home-score" type="number" min="0" max="20" value="0"
+                style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:18px;font-weight:700;text-align:center;">
+            </div>
+            <span style="font-size:20px;color:var(--text-muted);padding-top:16px;">—</span>
+            <div style="flex:1;">
+              <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;" id="ep-away-label">Away</label>
+              <input id="ep-away-score" type="number" min="0" max="20" value="0"
+                style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:18px;font-weight:700;text-align:center;">
+            </div>
+          </div>
+
+          <div style="margin-bottom:1.2rem;">
+            <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">First Goalscorer</label>
+            <select id="ep-scorer-select" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;">
+              <option value="">— No pick / skip —</option>
+            </select>
+          </div>
+
+          <div id="ep-current" style="font-size:12px;color:var(--text-muted);margin-bottom:1rem;padding:8px 12px;background:var(--surface2);border-radius:8px;"></div>
+
+          <button onclick="saveEditPrediction()"
+            style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--accent);color:white;font-size:14px;font-weight:700;cursor:pointer;">
+            💾 Save Prediction
+          </button>
+          <div id="ep-status" style="margin-top:8px;font-size:12px;text-align:center;"></div>
+        </div>
       </div>
     </div>
 
@@ -14029,6 +14112,122 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
 
   // Show popup 1.5 seconds after login
   // (called from onAuthStateChanged after user is confirmed logged in)
+
+  // ═══ EDIT USER PREDICTIONS (Admin) ═══
+  let epMatches = []; // stores next 5 matches
+  let epCurrentPred = null;
+
+  window.loadEditPredictions = async () => {
+    // Load users into dropdown
+    const userSel = document.getElementById('ep-user-select');
+    if (!userSel) return;
+    userSel.innerHTML = '<option value="">— Select user —</option>';
+    const snap = await getDocs(collection(db, 'users'));
+    const users = [];
+    snap.forEach(d => { const u = d.data(); users.push({ uid: d.id, name: u.nickname || u.displayName || d.id }); });
+    users.sort((a,b) => a.name.localeCompare(b.name));
+    users.forEach(u => {
+      const opt = document.createElement('option');
+      opt.value = u.uid;
+      opt.textContent = u.name;
+      userSel.appendChild(opt);
+    });
+
+    // Load next 5 upcoming matches
+    const now = new Date();
+    const matchSnap = await getDocs(query(collection(db, 'matches'), orderBy('kickoff')));
+    epMatches = [];
+    matchSnap.forEach(d => {
+      const m = d.data();
+      const kick = m.kickoff?.toDate ? m.kickoff.toDate() : new Date(m.kickoff);
+      if (kick > now && epMatches.length < 5) epMatches.push({ id: d.id, ...m, kickoffDate: kick });
+    });
+
+    const matchSel = document.getElementById('ep-match-select');
+    matchSel.innerHTML = '<option value="">— Select match —</option>';
+    epMatches.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = `${m.homeFlag||''} ${m.homeTeam} vs ${m.awayTeam} ${m.awayFlag||''} · ${m.kickoffDate.toLocaleDateString('he-IL')}`;
+      matchSel.appendChild(opt);
+    });
+    document.getElementById('ep-form').style.display = 'none';
+  };
+
+  window.loadEditPredMatchList = () => {
+    document.getElementById('ep-form').style.display = 'none';
+    document.getElementById('ep-current').textContent = '';
+    document.getElementById('ep-status').textContent = '';
+    if (document.getElementById('ep-match-select').value) loadEditPredForm();
+  };
+
+  window.loadEditPredForm = async () => {
+    const uid = document.getElementById('ep-user-select').value;
+    const matchId = document.getElementById('ep-match-select').value;
+    if (!uid || !matchId) return;
+
+    const match = epMatches.find(m => m.id === matchId);
+    if (!match) return;
+
+    // Set team labels
+    document.getElementById('ep-home-label').textContent = `${match.homeFlag||''} ${match.homeTeam}`;
+    document.getElementById('ep-away-label').textContent = `${match.awayFlag||''} ${match.awayTeam}`;
+
+    // Load scorer options
+    const scorerSel = document.getElementById('ep-scorer-select');
+    scorerSel.innerHTML = '<option value="">— No pick / skip —</option>';
+    const players = getPlayersForTeam(match.homeTeam, []).concat(getPlayersForTeam(match.awayTeam, []));
+    players.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      scorerSel.appendChild(opt);
+    });
+
+    // Load existing prediction if any
+    const predSnap = await getDoc(doc(db, 'predictions', `${uid}_${matchId}`));
+    const current = document.getElementById('ep-current');
+    if (predSnap.exists()) {
+      const p = predSnap.data();
+      epCurrentPred = p;
+      document.getElementById('ep-home-score').value = p.homeScore ?? 0;
+      document.getElementById('ep-away-score').value = p.awayScore ?? 0;
+      if (p.firstScorer) scorerSel.value = p.firstScorer;
+      current.innerHTML = `<span style="color:var(--green);">✅ Existing prediction found</span> — ${p.homeScore ?? '?'}-${p.awayScore ?? '?'}${p.firstScorer ? ` · ⚽ ${p.firstScorer}` : ''}`;
+    } else {
+      epCurrentPred = null;
+      document.getElementById('ep-home-score').value = 0;
+      document.getElementById('ep-away-score').value = 0;
+      current.innerHTML = `<span style="color:var(--text-muted);">No prediction yet for this match</span>`;
+    }
+
+    document.getElementById('ep-form').style.display = 'block';
+    document.getElementById('ep-status').textContent = '';
+  };
+
+  window.saveEditPrediction = async () => {
+    const uid = document.getElementById('ep-user-select').value;
+    const matchId = document.getElementById('ep-match-select').value;
+    const homeScore = parseInt(document.getElementById('ep-home-score').value) || 0;
+    const awayScore = parseInt(document.getElementById('ep-away-score').value) || 0;
+    const firstScorer = document.getElementById('ep-scorer-select').value || '';
+    const status = document.getElementById('ep-status');
+
+    if (!uid || !matchId) { status.textContent = '❌ Select user and match first'; return; }
+
+    try {
+      status.textContent = '⏳ Saving...';
+      const predRef = doc(db, 'predictions', `${uid}_${matchId}`);
+      const updateData = { userId: uid, matchId, homeScore, awayScore, submittedAt: serverTimestamp() };
+      if (firstScorer) updateData.firstScorer = firstScorer;
+      await setDoc(predRef, updateData, { merge: true });
+
+      status.innerHTML = `<span style="color:var(--green);">✅ Saved! ${homeScore}-${awayScore}${firstScorer ? ` · ⚽ ${firstScorer}` : ''}</span>`;
+      document.getElementById('ep-current').innerHTML = `<span style="color:var(--green);">✅ Updated</span> — ${homeScore}-${awayScore}${firstScorer ? ` · ⚽ ${firstScorer}` : ''}`;
+    } catch(e) {
+      status.innerHTML = `<span style="color:#ef4444;">❌ Error: ${e.message}</span>`;
+    }
+  };
 
   // ═══ EXPORT & BACKUP ═══
   window.loadExportBackup = () => {}; // panel loads instantly, no data needed upfront
