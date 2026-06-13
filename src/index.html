@@ -1986,15 +1986,6 @@
     <div id="tips-scorers-content" style="display:none;"></div>
   </div>
 
-  <!-- LIVE GAME -->
-  <div class="page" id="page-live">
-    <div id="live-match-selector" style="margin-bottom:1rem;">
-      <p class="section-title" style="margin-bottom:0.5rem;">🔴 Live Game</p>
-      <div id="live-match-list" style="font-size:13px;color:var(--text-muted);text-align:center;padding:1rem;">Loading matches...</div>
-    </div>
-    <div id="live-content" style="display:none;"></div>
-  </div>
-
   <!-- GROUP PREDICTIONS -->
   <div class="page" id="page-grouppred">
     <p class="section-title" style="margin-bottom:0.25rem;">🏅 Inner Circle Bets</p>
@@ -8925,51 +8916,43 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
     container.innerHTML = `<div style="text-align:center;padding:3rem;font-size:13px;color:var(--text-muted);">🔴 Loading...</div>`;
 
-    // 1. Try live API first — most up to date
-    let apiLive = [];
+    // 1. Fetch live API directly (real-time, not dependent on cron)
+    let apiMatches = [];
     try {
       const resp = await fetch('/api/live-scores');
       if (resp.ok) {
         const data = await resp.json();
-        apiLive = (data.matches || []).filter(m => ['IN_PLAY','PAUSED'].includes(m.status));
+        apiMatches = data.matches || [];
       }
     } catch(e) {}
 
-    // 2. Also check Firestore for matches
+    // 2. Fetch Firestore matches for metadata (teams, group, etc.)
     const matchesSnap = await getDocs(query(collection(db, 'matches'), orderBy('kickoff')));
     const firestoreMatches = [];
     matchesSnap.forEach(d => firestoreMatches.push({ id: d.id, ...d.data() }));
 
     const now = new Date();
-
-    // Build candidates: API live matches merged with Firestore data
     let candidates = [];
 
+    // Merge API live matches with Firestore metadata
+    const apiLive = apiMatches.filter(m => ['IN_PLAY','PAUSED'].includes(m.status));
     if (apiLive.length > 0) {
-      // Match API results to Firestore docs by team name
-      for (const apiMatch of apiLive) {
+      for (const apiM of apiLive) {
         const fsMatch = firestoreMatches.find(m => {
           const h = (m.homeTeam||'').toLowerCase();
           const a = (m.awayTeam||'').toLowerCase();
-          const ah = (apiMatch.homeTeam||'').toLowerCase();
-          const aa = (apiMatch.awayTeam||'').toLowerCase();
+          const ah = (apiM.homeTeam||'').toLowerCase();
+          const aa = (apiM.awayTeam||'').toLowerCase();
           return (h.includes(ah.split(' ')[0]) || ah.includes(h.split(' ')[0])) &&
                  (a.includes(aa.split(' ')[0]) || aa.includes(a.split(' ')[0]));
         });
         if (fsMatch) {
-          // Merge: prefer API scores as they're more current
-          candidates.push({
-            ...fsMatch,
-            homeScore: apiMatch.homeScore ?? fsMatch.homeScore,
-            awayScore: apiMatch.awayScore ?? fsMatch.awayScore,
-            status: apiMatch.status,
-            minute: apiMatch.minute
-          });
+          candidates.push({ ...fsMatch, homeScore: apiM.homeScore ?? fsMatch.homeScore, awayScore: apiM.awayScore ?? fsMatch.awayScore, status: apiM.status, minute: apiM.minute });
         }
       }
     }
 
-    // Fallback: Firestore IN_PLAY or matches started within 120 mins
+    // Fallback: Firestore status or recently kicked off (150 min window)
     if (candidates.length === 0) {
       const fsLive = firestoreMatches.filter(m => ['IN_PLAY','PAUSED','HALFTIME'].includes(m.status));
       const recent = firestoreMatches.filter(m => {
@@ -8990,7 +8973,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       return;
     }
 
-    // If multiple live, show selector
+    // If multiple, show selector
     if (candidates.length > 1 && !liveMatchId) {
       container.innerHTML = `
         <p class="section-title" style="margin-bottom:1rem;">🔴 Live now — pick a match</p>
@@ -9009,26 +8992,11 @@ Use exactly the formation provided. Only use players from the squad lists above.
     liveMatchId = match.id;
     await renderLiveMatch(match, container);
 
-    // Auto-refresh every 30s
+    // Auto-refresh every 10s (API allows ~10 req/min on free tier)
     liveRefreshInterval = setInterval(async () => {
-      // Re-fetch from API for freshest score
-      let updatedMatch = { ...match };
-      try {
-        const resp = await fetch('/api/live-scores');
-        if (resp.ok) {
-          const data = await resp.json();
-          const apiUpd = (data.matches || []).find(m => String(m.id) === String(match.id));
-          if (apiUpd) {
-            updatedMatch.homeScore = apiUpd.homeScore ?? updatedMatch.homeScore;
-            updatedMatch.awayScore = apiUpd.awayScore ?? updatedMatch.awayScore;
-            updatedMatch.status = apiUpd.status;
-            updatedMatch.minute = apiUpd.minute;
-          }
-        }
-      } catch(e) {}
-      // Also sync from Firestore
       const snap = await getDocs(collection(db, 'matches'));
-      snap.forEach(d => { if (d.id === match.id) updatedMatch = { ...updatedMatch, ...d.data(), id: d.id }; });
+      let updatedMatch = null;
+      snap.forEach(d => { if (d.id === match.id) updatedMatch = { id: d.id, ...d.data() }; });
       if (updatedMatch) {
         // Detect new goal → play sound
         const newHome = updatedMatch.homeScore ?? 0;
