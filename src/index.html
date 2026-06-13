@@ -1353,7 +1353,6 @@
       <button class="nav-btn" data-page="tips" onclick="showPage('tips')"><span class="nav-icon">💡</span>Tips</button>
       <button class="nav-btn" data-page="grouppred" onclick="showPage('grouppred')"><span class="nav-icon">🏅</span>Inner Circle</button>
       <button class="nav-btn" data-page="watch" onclick="showPage('watch')"><span class="nav-icon">👀</span>Watch</button>
-      <button class="nav-btn" data-page="live" onclick="showPage('live')" id="live-nav-btn"><span class="nav-icon">🔴</span>Live</button>
       <button class="nav-btn" data-page="trash" onclick="showPage('trash')"><span class="nav-icon">💬</span>Trash Talk</button>
       <button class="nav-btn" data-page="highlights" onclick="showPage('highlights')"><span class="nav-icon">🎬</span>Highlights</button>
       <button class="nav-btn" data-page="hof" onclick="showPage('hof')"><span class="nav-icon">🏅</span>Hall of Fame</button>
@@ -1444,7 +1443,6 @@
     <button class="mobile-menu-btn" data-page="tips" onclick="mobileNav('tips')">💡 &nbsp; Tips</button>
     <button class="mobile-menu-btn" data-page="grouppred" onclick="mobileNav('grouppred')">🏅 &nbsp; Inner Circle Bets</button>
     <button class="mobile-menu-btn" data-page="watch" onclick="mobileNav('watch')">📺 &nbsp; Watch Together</button>
-    <button class="mobile-menu-btn" data-page="live" onclick="mobileNav('live')">🔴 &nbsp; Live</button>
     <button class="mobile-menu-btn" data-page="trash" onclick="mobileNav('trash')">💬 &nbsp; Trash Talk</button>
     <button class="mobile-menu-btn" data-page="highlights" onclick="mobileNav('highlights')">🎬 &nbsp; Highlights</button>
     <button class="mobile-menu-btn" data-page="hof" onclick="mobileNav('hof')">🏅 &nbsp; Hall of Fame</button>
@@ -1708,7 +1706,6 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
       <p class="section-title" style="margin-bottom:0;">Group stage predictions — June 11-27 · Round of 32 unlocks after group results ⚡</p>
       <div style="display:flex;gap:8px;">
-        <button onclick="showPage('live')" id="live-matches-btn" style="display:none;font-size:12px;color:white;background:#E24B4A;border:none;padding:5px 12px;border-radius:8px;cursor:pointer;animation:pulse 1.5s infinite;">🔴 Live now!</button>
         <button onclick="confirmResetPredictions()" style="font-size:12px;color:#E24B4A;background:none;border:0.5px solid #E24B4A;padding:5px 12px;border-radius:8px;cursor:pointer;">🗑 Reset all</button>
       </div>
     </div>
@@ -1992,6 +1989,15 @@
       </div>
     </div>
     <div id="tips-scorers-content" style="display:none;"></div>
+  </div>
+
+  <!-- LIVE GAME -->
+  <div class="page" id="page-live">
+    <div id="live-match-selector" style="margin-bottom:1rem;">
+      <p class="section-title" style="margin-bottom:0.5rem;">🔴 Live Game</p>
+      <div id="live-match-list" style="font-size:13px;color:var(--text-muted);text-align:center;padding:1rem;">Loading matches...</div>
+    </div>
+    <div id="live-content" style="display:none;"></div>
   </div>
 
   <!-- GROUP PREDICTIONS -->
@@ -4652,7 +4658,7 @@
           const lH = m.homeScore ?? 0, lA = m.awayScore ?? 0;
           const minute = m.minute ? m.minute + "'" : m.status === 'HALFTIME' ? 'HT' : '';
           return `
-          <div onclick="showPage('matches')" style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(226,75,74,0.1);cursor:pointer;last-child:border-none;">
+          <div onclick="showPage('live')" style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(226,75,74,0.1);cursor:pointer;last-child:border-none;">
             <div style="flex:1;display:flex;align-items:center;justify-content:space-between;gap:8px;">
               <span style="font-size:12px;font-weight:600;flex:1;text-align:right;">${m.homeTeam}</span>
               <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
@@ -4665,7 +4671,7 @@
             ${minute ? `<span style="font-size:11px;color:#E24B4A;font-weight:700;flex-shrink:0;min-width:28px;text-align:right;">${minute}</span>` : ''}
           </div>`;
         }).join('')}
-        <div style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;cursor:pointer;" onclick="showPage('matches')">Tap to see predictions →</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;cursor:pointer;" onclick="showPage('live')">Tap to watch live →</div>
       </div>`;
   }
 
@@ -7462,9 +7468,6 @@ Use exactly the formation provided. Only use players from the squad lists above.
       });
     }, 100);
 
-    // Show/hide live button
-    const liveBtn = document.getElementById('live-matches-btn');
-    if (liveBtn) liveBtn.style.display = liveMatches.length > 0 ? 'inline-block' : 'none';
     // Pulse Live nav tab when live matches exist
     const liveNavBtn = document.getElementById('live-nav-btn');
     if (liveNavBtn) {
@@ -9031,7 +9034,13 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
     const resultIcon = (r) => r === 'exact' ? '🎯' : r === 'correct' ? '✅' : r === 'wrong' ? '❌' : '';
     const resultBorder = (r) => r === 'exact' ? '#BA7517' : r === 'correct' ? 'var(--green)' : r === 'wrong' ? '#E24B4A' : 'var(--border)';
-    const resultBg = (r) => r === 'exact' ? '#FAEEDA' : r === 'correct' ? '#E1F5EE' : r === 'wrong' ? '#FCEBEB' : 'var(--surface)';
+    const resultBg = (r) => {
+      const dark = document.body.classList.contains('dark-mode') || !document.body.classList.contains('light-mode');
+      if (r === 'exact')   return dark ? 'rgba(234,179,8,0.15)'   : '#FAEEDA';
+      if (r === 'correct') return dark ? 'rgba(29,158,117,0.15)'  : '#E1F5EE';
+      if (r === 'wrong')   return dark ? 'rgba(226,75,74,0.12)'   : '#FCEBEB';
+      return 'var(--surface)';
+    };
 
     const statusLabel = match.status === 'HALFTIME' ? '⏸ Half Time'
       : match.status === 'PAUSED' ? '⏸ Paused'
@@ -9113,7 +9122,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       </div>`;
 
     loadLiveStats(match.id, match.homeTeam, match.awayTeam);
-    loadLiveTopScorers();
+    loadLiveTopScorers(match.id);
   }
 
   window.switchLiveTab = (tab) => {
@@ -9126,48 +9135,48 @@ Use exactly the formation provided. Only use players from the squad lists above.
     });
   };
 
-  async function loadLiveTopScorers() {
+  async function loadLiveTopScorers(matchId) {
     const el = document.getElementById('live-top-scorers');
     if (!el) return;
     try {
-      // Get all finished matches and their goals from results
-      const resultsSnap = await getDocs(collection(db, 'results'));
-      const scorers = {}, assisters = {};
-      resultsSnap.forEach(d => {
-        const r = d.data();
-        if (r.firstScorer && r.firstScorer !== 'og' && r.firstScorer !== 'none') {
-          scorers[r.firstScorer] = (scorers[r.firstScorer] || 0) + 1;
+      // Show goals ONLY from the current live match's result doc
+      const goals = [];
+
+      if (matchId) {
+        const resultSnap = await getDoc(doc(db, 'results', matchId));
+        const matchSnap = await getDoc(doc(db, 'matches', matchId));
+        const m = matchSnap.data() || {};
+        if (resultSnap.exists()) {
+          const r = resultSnap.data();
+          if (r.firstScorer && r.firstScorer !== 'og' && r.firstScorer !== 'none' && r.firstScorer !== 'Own Goal') {
+            goals.push({ name: r.firstScorer, label: 'First scorer' });
+          } else if (r.firstScorer === 'Own Goal') {
+            goals.push({ name: '⚽ Own Goal', label: 'First scorer' });
+          }
         }
-      });
-      // Also pull from tournament bonus points if available
-      const usersSnap = await getDocs(collection(db, 'users'));
-      const tourneyGoals = {};
-      usersSnap.forEach(d => {
-        const u = d.data();
-        if (u.tournamentPlayer && u.bonusPoints > 0) {
-          tourneyGoals[u.tournamentPlayer] = Math.max(tourneyGoals[u.tournamentPlayer] || 0, Math.floor(u.bonusPoints / 2));
-        }
-      });
-      const combined = { ...scorers };
-      Object.entries(tourneyGoals).forEach(([p, g]) => { combined[p] = Math.max(combined[p] || 0, g); });
-      const sorted = Object.entries(combined).sort((a,b) => b[1]-a[1]).slice(0,10);
-      if (sorted.length === 0) {
-        el.innerHTML = `<div style="text-align:center;font-size:13px;color:var(--text-muted);padding:1rem;">No goals recorded yet</div>`;
+        // Show current score summary
+        const homeScore = m.homeScore ?? 0;
+        const awayScore = m.awayScore ?? 0;
+        el.innerHTML = `
+          <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;">⚽ This Match</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--surface2);border-radius:8px;margin-bottom:10px;">
+            <span style="font-size:13px;">${m.homeTeam||'Home'}</span>
+            <span style="font-size:20px;font-weight:800;">${homeScore} - ${awayScore}</span>
+            <span style="font-size:13px;">${m.awayTeam||'Away'}</span>
+          </div>
+          ${goals.length > 0
+            ? goals.map(g => `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:0.5px solid var(--border);">
+                <span style="font-size:16px;">⚽</span>
+                <div><div style="font-size:13px;font-weight:600;">${g.name}</div><div style="font-size:11px;color:var(--text-muted);">${g.label}</div></div>
+              </div>`).join('')
+            : `<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px;">No goals recorded yet for this match</div>`
+          }`;
         return;
       }
-      const medals = ['🥇','🥈','🥉'];
-      el.innerHTML = `
-        <div style="font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">⚽ Top Scorers</div>
-        ${sorted.map(([name,goals],i) => `
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--border);">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:16px;">${medals[i] || (i+1)+'.'}</span>
-              <span style="font-size:13px;font-weight:500;">${name}</span>
-            </div>
-            <span style="font-size:13px;font-weight:700;color:var(--green);">${goals} ⚽</span>
-          </div>`).join('')}`;
+
+      el.innerHTML = `<div style="text-align:center;font-size:13px;color:var(--text-muted);padding:1rem;">Select a match to see scorers</div>`;
     } catch(e) {
-      if (el) el.innerHTML = `<div style="text-align:center;font-size:13px;color:var(--text-muted);">Stats not available yet</div>`;
+      if (el) el.innerHTML = `<div style="text-align:center;font-size:13px;color:var(--text-muted);">Stats not available</div>`;
     }
   }
 
@@ -9237,9 +9246,10 @@ Use exactly the formation provided. Only use players from the squad lists above.
   }
 
   function renderFallbackStats(homeTeam, awayTeam) {
-    return `<div style="text-align:center;padding:0.5rem;font-size:13px;color:var(--text-muted);">
-      Live stats will appear here once the match starts.<br>
-      <span style="font-size:11px;">Powered by football-data.org</span>
+    return `<div style="text-align:center;padding:1rem;font-size:13px;color:var(--text-muted);">
+      <div style="font-size:24px;margin-bottom:8px;">📊</div>
+      <div style="font-weight:600;margin-bottom:4px;">Detailed stats not available</div>
+      <div style="font-size:12px;">football-data.org free tier doesn't include live stats.<br>Check back after the match for the final summary.</div>
     </div>`;
   }
 
