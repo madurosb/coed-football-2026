@@ -7563,15 +7563,21 @@ Use exactly the formation provided. Only use players from the squad lists above.
         const ogBtn = document.getElementById('og-btn-' + d.id);
 
         if (pred.firstScorer === 'Own Goal') {
-          // Restore OG active state visually
-          if (scorerLabel) scorerLabel.textContent = '🙈 Own Goal';
-          if (scorerBtn) { scorerBtn.style.opacity = '0.4'; scorerBtn.style.pointerEvents = 'none'; }
-          if (ogBtn) {
-            ogBtn.style.background = 'rgba(239,68,68,0.22)';
-            ogBtn.style.borderColor = '#ef4444';
-            ogBtn.textContent = '🙈 OG! ON';
-          }
-          if (typeof _ogActive !== 'undefined') _ogActive.add(d.id);
+          // Restore OG active state — defer to ensure DOM elements exist
+          const matchIdStr = d.id;
+          const restoreOG = () => {
+            const ogBtnEl = document.getElementById('og-btn-' + matchIdStr);
+            const scorerBtnEl = document.getElementById('scorer-btn-' + matchIdStr);
+            const scorerLabelEl = document.getElementById('scorer-label-' + matchIdStr);
+            if (!ogBtnEl) { setTimeout(restoreOG, 100); return; } // retry if not yet in DOM
+            if (scorerLabelEl) scorerLabelEl.textContent = '🙈 Own Goal';
+            if (scorerBtnEl) { scorerBtnEl.style.opacity = '0.4'; scorerBtnEl.style.pointerEvents = 'none'; }
+            ogBtnEl.style.background = 'rgba(239,68,68,0.22)';
+            ogBtnEl.style.borderColor = '#ef4444';
+            ogBtnEl.textContent = '🙈 OG! ON';
+            _ogActive.add(matchIdStr);
+          };
+          setTimeout(restoreOG, 200);
         } else {
           if (scorerLabel) scorerLabel.textContent = pred.firstScorer;
           if (scorerBtn) { scorerBtn.style.borderColor = 'var(--accent)'; scorerBtn.style.background = 'rgba(59,130,246,0.06)'; scorerBtn.style.color = 'var(--text)'; }
@@ -14876,6 +14882,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
     const scorerLabel = document.getElementById('scorer-label-' + matchId);
     const scorerSelect = document.getElementById('scorer-' + matchId);
     if (!ogBtn) return;
+    if (!currentUser) { console.error('toggleOwnGoal: no currentUser'); return; }
 
     const isActive = _ogActive.has(matchId);
 
