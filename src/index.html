@@ -13260,7 +13260,9 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
       if (!window._touchedMatches?.has(matchId) && homeScore === 0 && awayScore === 0) return;
 
       const scorerEl = document.getElementById('scorer-' + matchId);
-      const firstScorer = scorerEl?.value || '';
+      const selectValue = scorerEl?.value || '';
+      // If OG is active for this match, don't overwrite it with empty select value
+      const firstScorer = _ogActive.has(matchId) ? 'Own Goal' : selectValue;
 
       try {
         const predRef = doc(db, 'predictions', `${currentUser.uid}_${matchId}`);
@@ -14868,7 +14870,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
   // ═══ OWN GOAL TOGGLE ═══
   const _ogActive = new Set();
 
-  window.toggleOwnGoal = (matchId) => {
+  window.toggleOwnGoal = async (matchId) => {
     const ogBtn = document.getElementById('og-btn-' + matchId);
     const scorerBtn = document.getElementById('scorer-btn-' + matchId);
     const scorerLabel = document.getElementById('scorer-label-' + matchId);
@@ -14879,7 +14881,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
 
     if (!isActive) {
       _ogActive.add(matchId);
-      if (scorerSelect) scorerSelect.value = 'Own Goal';
+      // Visual state
       if (scorerLabel) scorerLabel.textContent = '🙈 Own Goal';
       if (scorerBtn) { scorerBtn.style.opacity = '0.4'; scorerBtn.style.pointerEvents = 'none'; }
       ogBtn.style.background = 'rgba(239,68,68,0.22)';
@@ -14887,17 +14889,29 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
       ogBtn.style.animation = 'ogBounce 0.5s ease';
       ogBtn.textContent = '🙈 OG! ON';
       showOGToast(matchId);
-      triggerAutoSave(matchId, '', '');
+      // Save directly to Firestore — don't rely on select element
+      try {
+        const predRef = doc(db, 'predictions', `${currentUser.uid}_${matchId}`);
+        await setDoc(predRef, { firstScorer: 'Own Goal' }, { merge: true });
+        // Flash green on match card
+        const card = document.querySelector(`.match-card[data-match-id="${matchId}"]`);
+        if (card) { card.style.borderColor = 'var(--green)'; setTimeout(() => { card.style.borderColor = ''; }, 1500); }
+      } catch(e) { console.error('OG save error:', e); }
     } else {
       _ogActive.delete(matchId);
-      if (scorerSelect) scorerSelect.value = '';
-      if (scorerLabel) scorerLabel.textContent = '⚽ Pick scorer...';
+      // Visual state
+      if (scorerLabel) scorerLabel.textContent = scorerSelect?.options[scorerSelect.selectedIndex]?.value || '⚽ Pick scorer...';
       if (scorerBtn) { scorerBtn.style.opacity = ''; scorerBtn.style.pointerEvents = ''; }
       ogBtn.style.background = 'rgba(239,68,68,0.07)';
       ogBtn.style.borderColor = 'rgba(239,68,68,0.3)';
       ogBtn.style.animation = '';
       ogBtn.textContent = '🙈 OG?';
-      triggerAutoSave(matchId, '', '');
+      // Clear Own Goal from Firestore — restore to empty scorer
+      try {
+        const predRef = doc(db, 'predictions', `${currentUser.uid}_${matchId}`);
+        await setDoc(predRef, { firstScorer: '' }, { merge: true });
+        if (scorerLabel) scorerLabel.textContent = '⚽ Pick scorer...';
+      } catch(e) { console.error('OG clear error:', e); }
     }
   };
 
