@@ -1545,7 +1545,7 @@
           <div style="font-size:10px;color:#4ade80;letter-spacing:0.08em;text-transform:uppercase;">Sec</div>
         </div>
       </div>
-      <div style="font-size:12px;color:#4ade80;margin-top:10px;">🇲🇽 Mexico vs South Africa 🇿🇦 &nbsp;·&nbsp; Estadio Azteca</div>
+      <div id="cd-next-match" style="font-size:12px;color:#4ade80;margin-top:10px;"></div>
     </div>
     <div class="hero">
       <img src="https://coed-football-2026.vercel.app/hero-banner.png" alt="COED&FOOTBALL" style="width:100%; max-height:280px; object-fit:cover; border-radius:8px; margin-bottom:1rem;">
@@ -2710,6 +2710,7 @@
         <div id="avatar-requests-badge" style="display:none;position:absolute;top:10px;right:10px;width:20px;height:20px;border-radius:50%;background:#E24B4A;color:white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;" id="avatar-badge">0</div>
       </div>
       <div class="admin-card" onclick="showAdminSub('knockout-admin')"><div class="icon">⚡</div><div class="title">Knockout stages</div><div class="desc">Enable predictions for Round of 16, Quarter-finals, Semi-finals and Final once the group stage is done.</div></div>
+        <div class="admin-card" onclick="showAdminSub('wc-scorers');loadAdminWCScorers()"><div class="icon">⚽</div><div class="title">WC Scorers Table</div><div class="desc">Manage the World Cup top scorers table shown in Standings. Add/edit manually or auto-fetch from the web.</div></div>
         <div class="admin-card" onclick="showAdminSub('score-verify')"><div class="icon">🔍</div><div class="title">Score verification</div><div class="desc">Check that all points are calculated correctly. Compare predicted vs actual results and audit per player.</div></div>
         <div class="admin-card" onclick="showAdminSub('picks-overview')"><div class="icon">📋</div><div class="title">Picks overview</div><div class="desc">See who picked which tournament player and World Cup winner. Verify everyone submitted before June 10.</div></div>
         <div class="admin-card" onclick="showAdminSub('joker-don-overview')"><div class="icon">🃏</div><div class="title">Joker & DON overview</div><div class="desc">See which players activated their Joker card and Double or Nothing bets this tournament.</div></div>
@@ -2850,6 +2851,34 @@
         </div>
         <div id="squad-editor-content" style="min-height:100px;">
           <div style="color:var(--text-muted);font-size:13px;text-align:center;padding:2rem;">Select a team above to edit their squad.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="admin-wc-scorers" class="admin-sub">
+      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
+      <div class="form-card">
+        <h2>⚽ WC Top Scorers Table</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">This table appears in Standings → Scorers tab. Update manually or auto-fetch from the web.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;">
+          <button onclick="fetchWCScorersFromWeb()" style="padding:8px 14px;border-radius:8px;border:none;background:#185FA5;color:white;font-size:13px;font-weight:500;cursor:pointer;">🌐 Auto-fetch from web</button>
+          <button onclick="loadAdminWCScorers(true)" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">🔄 Refresh</button>
+        </div>
+        <div id="wc-scorers-fetch-status" style="font-size:12px;margin-bottom:0.75rem;min-height:18px;"></div>
+        <div style="display:grid;grid-template-columns:1fr 80px 80px 80px;gap:6px;margin-bottom:8px;font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;padding:0 4px;">
+          <div>Player · Country</div><div style="text-align:center;">Goals</div><div style="text-align:center;">Assists</div><div style="text-align:center;"></div>
+        </div>
+        <div id="wc-scorers-admin-list" style="font-size:13px;color:var(--text-muted);text-align:center;padding:1rem;">Loading...</div>
+        <div style="margin-top:1rem;padding-top:1rem;border-top:0.5px solid var(--border);">
+          <div style="font-size:12px;font-weight:600;margin-bottom:8px;">➕ Add / Update player</div>
+          <div style="display:grid;grid-template-columns:1fr 60px 60px;gap:6px;margin-bottom:8px;">
+            <input type="text" id="wcs-player-name" placeholder="Player name" style="padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;">
+            <input type="number" id="wcs-goals" placeholder="⚽" min="0" style="padding:7px 8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;text-align:center;">
+            <input type="number" id="wcs-assists" placeholder="🅰️" min="0" style="padding:7px 8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;text-align:center;">
+          </div>
+          <input type="text" id="wcs-country" placeholder="Country (e.g. USA)" style="width:100%;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;margin-bottom:8px;">
+          <button onclick="saveWCScorer()" style="width:100%;padding:9px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:600;cursor:pointer;">💾 Save</button>
+          <div id="wcs-save-status" style="font-size:12px;text-align:center;margin-top:6px;min-height:16px;"></div>
         </div>
       </div>
     </div>
@@ -6529,6 +6558,29 @@ Use exactly the formation provided. Only use players from the squad lists above.
     });
     renderLeaderboard('home-leaderboard', users.slice(0, 10), homePredStats);
 
+    // Load next upcoming match for countdown display
+    const nextMatchEl = document.getElementById('cd-next-match');
+    if (nextMatchEl) {
+      try {
+        const matchesForNext = await getDocs(query(collection(db, 'matches'), orderBy('kickoff')));
+        const nowTime = new Date();
+        let nextMatch = null;
+        matchesForNext.forEach(d => {
+          const m = d.data();
+          const k = m.kickoff?.toDate?.() || new Date(m.kickoff);
+          if (k > nowTime && !nextMatch) nextMatch = { ...m, kickoff: k };
+        });
+        if (nextMatch) {
+          const hf = nextMatch.homeFlag || '';
+          const af = nextMatch.awayFlag || '';
+          const timeStr = nextMatch.kickoff.toLocaleString('he-IL', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', timeZone:'Asia/Jerusalem' });
+          nextMatchEl.innerHTML = `${hf} ${nextMatch.homeTeam} vs ${nextMatch.awayTeam} ${af} &nbsp;·&nbsp; ${timeStr}`;
+        } else {
+          nextMatchEl.textContent = '';
+        }
+      } catch(e) { nextMatchEl.textContent = ''; }
+    }
+
     // Only show fun stats and player of round if tournament has started
     const tournamentStart = new Date('2026-06-11T19:00:00Z');
     if (new Date() >= tournamentStart && users.length > 1) {
@@ -7039,94 +7091,45 @@ Use exactly the formation provided. Only use players from the squad lists above.
     container.dataset.loaded = '1';
 
     try {
-      const resultsSnap = await getDocs(collection(db, 'results'));
-      const usersSnap = await getDocs(collection(db, 'users'));
+      const snap = await getDocs(query(collection(db, 'wc_scorers'), orderBy('goals', 'desc')));
 
-      // Build scorers from results (first goalscorer per match)
-      const scorers = {}, matchCount = {};
-      resultsSnap.forEach(d => {
-        const r = d.data();
-        if (r.firstScorer && r.firstScorer !== 'og' && r.firstScorer !== 'none' && r.firstScorer !== 'null') {
-          scorers[r.firstScorer] = (scorers[r.firstScorer] || 0) + 1;
-        }
-      });
-
-      // Build assists & goals from tournament player data
-      const playerGoals = {}, playerAssists = {};
-      usersSnap.forEach(d => {
-        const u = d.data();
-        // Use bonusPoints as proxy for combined goals+assists
-        if (u.tournamentPlayer && (u.bonusPoints || 0) > 0) {
-          const bp = u.bonusPoints || 0;
-          if (!playerGoals[u.tournamentPlayer] || playerGoals[u.tournamentPlayer] < bp) {
-            playerGoals[u.tournamentPlayer] = bp;
-          }
-        }
-      });
-
-      const sortedScorers = Object.entries(scorers).sort((a,b) => b[1]-a[1]);
-      const sortedTP = Object.entries(playerGoals).sort((a,b) => b[1]-a[1]).slice(0,10);
-
-      const medals = ['🥇','🥈','🥉'];
-
-      let html = '';
-
-      if (sortedScorers.length === 0 && sortedTP.length === 0) {
-        html = `<div style="text-align:center;padding:3rem;font-size:13px;color:var(--text-muted);">
+      if (snap.empty) {
+        container.innerHTML = `<div style="text-align:center;padding:3rem;font-size:13px;color:var(--text-muted);">
           <div style="font-size:32px;margin-bottom:8px;">⚽</div>
-          No goals recorded yet - check back once matches start!
+          No goals recorded yet — check back once matches start!
         </div>`;
-      } else {
-        // First goalscorers per match
-        if (sortedScorers.length > 0) {
-          html += `
-            <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1rem;">
-              <div style="background:var(--green);padding:8px 12px;">
-                <div style="font-size:12px;font-weight:600;color:white;letter-spacing:0.04em;">⚽ First Goalscorers</div>
-                <div style="font-size:10px;color:rgba(255,255,255,0.75);">Players who scored first in a match</div>
-              </div>
-              <div style="display:grid;grid-template-columns:36px 1fr 50px;font-size:11px;color:var(--text-muted);text-transform:uppercase;padding:6px 12px;background:var(--surface2);">
-                <div></div><div>Player</div><div style="text-align:center;">Goals</div>
-              </div>
-              ${sortedScorers.map(([name, goals], i) => `
-                <div style="display:grid;grid-template-columns:36px 1fr 50px;align-items:center;padding:8px 12px;border-top:0.5px solid var(--border);">
-                  <div style="font-size:16px;">${medals[i] || (i+1)+'.'}</div>
-                  <div style="font-size:13px;font-weight:500;">${name}</div>
-                  <div style="text-align:center;font-size:16px;font-weight:700;color:var(--green);">${goals}</div>
-                </div>`).join('')}
-            </div>`;
-        }
-
-        // Tournament player scorers (goals + assists)
-        if (sortedTP.length > 0) {
-          html += `
-            <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1rem;">
-              <div style="background:#BA7517;padding:8px 12px;">
-                <div style="font-size:12px;font-weight:600;color:white;letter-spacing:0.04em;">🏆 Tournament Player Performance</div>
-                <div style="font-size:10px;color:rgba(255,255,255,0.75);">Goals + assists by your tournament picks</div>
-              </div>
-              <div style="display:grid;grid-template-columns:36px 1fr 60px;font-size:11px;color:var(--text-muted);text-transform:uppercase;padding:6px 12px;background:var(--surface2);">
-                <div></div><div>Player</div><div style="text-align:center;">Pts earned</div>
-              </div>
-              ${sortedTP.map(([name, pts], i) => {
-                const pickers = [];
-                usersSnap.forEach(d => { if (d.data().tournamentPlayer === name) pickers.push(d.data().nickname || d.data().displayName); });
-                return `<div style="display:grid;grid-template-columns:36px 1fr 60px;align-items:center;padding:8px 12px;border-top:0.5px solid var(--border);">
-                  <div style="font-size:16px;">${medals[i] || (i+1)+'.'}</div>
-                  <div>
-                    <div style="font-size:13px;font-weight:500;">${name}</div>
-                    <div style="font-size:10px;color:var(--text-muted);">Picked by: ${pickers.join(', ') || '—'}</div>
-                  </div>
-                  <div style="text-align:center;font-size:15px;font-weight:700;color:var(--badge-gold-text);">${pts}</div>
-                </div>`;
-              }).join('')}
-            </div>`;
-        }
+        return;
       }
 
-      container.innerHTML = html;
+      const medals = ['🥇','🥈','🥉'];
+      const rows = snap.docs.map((d, i) => {
+        const s = d.data();
+        return `<div style="display:grid;grid-template-columns:36px 1fr 50px 50px;align-items:center;padding:8px 12px;border-top:0.5px solid var(--border);${i < 3 ? 'background:var(--surface2);' : ''}">
+          <div style="font-size:16px;text-align:center;">${medals[i] || (i+1)}</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;">${s.name}</div>
+            <div style="font-size:11px;color:var(--text-muted);">${s.country||''}</div>
+          </div>
+          <div style="text-align:center;font-size:14px;font-weight:700;color:var(--green);">⚽ ${s.goals||0}</div>
+          <div style="text-align:center;font-size:13px;color:var(--text-muted);">🅰️ ${s.assists||0}</div>
+        </div>`;
+      }).join('');
+
+      container.innerHTML = `
+        <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;overflow:hidden;">
+          <div style="background:var(--green);padding:8px 12px;display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:12px;font-weight:600;color:white;letter-spacing:0.04em;">⚽ World Cup 2026 Top Scorers</div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.75);">Updated by admin after each match day</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:36px 1fr 50px 50px;font-size:11px;color:var(--text-muted);text-transform:uppercase;padding:6px 12px;background:var(--surface2);">
+            <div></div><div>Player</div><div style="text-align:center;">Goals</div><div style="text-align:center;">Ast</div>
+          </div>
+          ${rows}
+        </div>`;
     } catch(e) {
-      container.innerHTML = `<div style="text-align:center;padding:2rem;font-size:13px;color:var(--text-muted);">Could not load scorers.</div>`;
+      container.innerHTML = `<div style="color:#ef4444;font-size:13px;text-align:center;padding:1rem;">Error loading scorers: ${e.message}</div>`;
     }
   }
 
@@ -8206,6 +8209,96 @@ Use exactly the formation provided. Only use players from the squad lists above.
     if (id === 'joker-don-overview') loadJokerDonOverview();
     if (id === 'trash-admin') {};
     if (id === 'double-admin') loadDoubleOrNothingAdmin();
+    if (id === 'wc-scorers') loadAdminWCScorers();
+  };
+
+  // ═══ WC SCORERS ADMIN ═══
+  window.loadAdminWCScorers = async (force = false) => {
+    const list = document.getElementById('wc-scorers-admin-list');
+    if (!list) return;
+    list.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div>';
+    try {
+      const snap = await getDocs(query(collection(db, 'wc_scorers'), orderBy('goals', 'desc')));
+      if (snap.empty) {
+        list.innerHTML = '<div style="text-align:center;padding:1rem;font-size:13px;color:var(--text-muted);">No scorers yet. Add one below or auto-fetch.</div>';
+        return;
+      }
+      list.innerHTML = snap.docs.map(d => {
+        const s = d.data();
+        return `<div style="display:grid;grid-template-columns:1fr 80px 80px 80px;gap:6px;align-items:center;padding:6px 4px;border-bottom:0.5px solid var(--border);">
+          <div>
+            <div style="font-size:13px;font-weight:600;">${s.name}</div>
+            <div style="font-size:11px;color:var(--text-muted);">${s.country||''}</div>
+          </div>
+          <div style="text-align:center;font-size:14px;font-weight:700;">⚽ ${s.goals||0}</div>
+          <div style="text-align:center;font-size:14px;color:var(--text-muted);">🅰️ ${s.assists||0}</div>
+          <button onclick="deleteWCScorer('${d.id}')" style="padding:4px 8px;border-radius:6px;border:0.5px solid #ef4444;background:none;color:#ef4444;font-size:11px;cursor:pointer;">✕</button>
+        </div>`;
+      }).join('');
+    } catch(e) {
+      list.innerHTML = `<div style="color:#ef4444;font-size:13px;">Error: ${e.message}</div>`;
+    }
+  };
+
+  window.saveWCScorer = async () => {
+    const name = document.getElementById('wcs-player-name').value.trim();
+    const goals = parseInt(document.getElementById('wcs-goals').value) || 0;
+    const assists = parseInt(document.getElementById('wcs-assists').value) || 0;
+    const country = document.getElementById('wcs-country').value.trim();
+    const status = document.getElementById('wcs-save-status');
+    if (!name) { status.textContent = '❌ Enter player name'; return; }
+    status.textContent = '⏳ Saving...';
+    try {
+      // Use player name as doc id (lowercase, no spaces)
+      const docId = name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+      await setDoc(doc(db, 'wc_scorers', docId), { name, goals, assists, country, updatedAt: serverTimestamp() }, { merge: true });
+      status.innerHTML = `<span style="color:var(--green);">✅ Saved ${name}</span>`;
+      document.getElementById('wcs-player-name').value = '';
+      document.getElementById('wcs-goals').value = '';
+      document.getElementById('wcs-assists').value = '';
+      document.getElementById('wcs-country').value = '';
+      loadAdminWCScorers(true);
+    } catch(e) { status.innerHTML = `<span style="color:#ef4444;">❌ ${e.message}</span>`; }
+  };
+
+  window.deleteWCScorer = async (docId) => {
+    if (!confirm('Delete this scorer?')) return;
+    try {
+      await deleteDoc(doc(db, 'wc_scorers', docId));
+      loadAdminWCScorers(true);
+    } catch(e) { alert('Error: ' + e.message); }
+  };
+
+  window.fetchWCScorersFromWeb = async () => {
+    const status = document.getElementById('wc-scorers-fetch-status');
+    status.innerHTML = '⏳ Fetching from Anthropic API...';
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1000,
+          messages: [{ role: 'user', content: `Give me the current FIFA World Cup 2026 top scorers as of today. Return ONLY a JSON array, no markdown, no explanation. Format: [{"name":"Player Name","country":"Country","goals":2,"assists":1}]. Include all players with at least 1 goal, sorted by goals descending.` }]
+        })
+      });
+      const data = await response.json();
+      const text = data.content?.[0]?.text || '';
+      const cleaned = text.replace(/```json|```/g, '').trim();
+      const scorers = JSON.parse(cleaned);
+      if (!Array.isArray(scorers)) throw new Error('Invalid response format');
+      let saved = 0;
+      for (const s of scorers) {
+        if (!s.name || !s.goals) continue;
+        const docId = s.name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+        await setDoc(doc(db, 'wc_scorers', docId), { name: s.name, goals: s.goals||0, assists: s.assists||0, country: s.country||'', updatedAt: serverTimestamp() }, { merge: true });
+        saved++;
+      }
+      status.innerHTML = `<span style="color:var(--green);">✅ Fetched & saved ${saved} scorers</span>`;
+      loadAdminWCScorers(true);
+    } catch(e) {
+      status.innerHTML = `<span style="color:#ef4444;">❌ Error: ${e.message}</span>`;
+    }
   };
 
   async function loadMembersLog() {
@@ -14237,6 +14330,14 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
     }
     tick();
     setInterval(tick, 1000);
+  })();
+
+  // Show next upcoming match dynamically
+  (async function loadNextMatchDisplay() {
+    const el = document.getElementById('cd-next-match');
+    if (!el) return;
+    // Will be populated by module script after auth
+    el.dataset.pending = '1';
   })();
 
   // Show popup 1.5 seconds after login
