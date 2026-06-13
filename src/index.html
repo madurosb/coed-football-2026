@@ -1353,6 +1353,7 @@
       <button class="nav-btn" data-page="tips" onclick="showPage('tips')"><span class="nav-icon">💡</span>Tips</button>
       <button class="nav-btn" data-page="grouppred" onclick="showPage('grouppred')"><span class="nav-icon">🏅</span>Inner Circle</button>
       <button class="nav-btn" data-page="watch" onclick="showPage('watch')"><span class="nav-icon">👀</span>Watch</button>
+      <button class="nav-btn" data-page="live" onclick="showPage('live')" id="live-nav-btn"><span class="nav-icon">🔴</span>Live</button>
       <button class="nav-btn" data-page="trash" onclick="showPage('trash')"><span class="nav-icon">💬</span>Trash Talk</button>
       <button class="nav-btn" data-page="highlights" onclick="showPage('highlights')"><span class="nav-icon">🎬</span>Highlights</button>
       <button class="nav-btn" data-page="hof" onclick="showPage('hof')"><span class="nav-icon">🏅</span>Hall of Fame</button>
@@ -1443,6 +1444,7 @@
     <button class="mobile-menu-btn" data-page="tips" onclick="mobileNav('tips')">💡 &nbsp; Tips</button>
     <button class="mobile-menu-btn" data-page="grouppred" onclick="mobileNav('grouppred')">🏅 &nbsp; Inner Circle Bets</button>
     <button class="mobile-menu-btn" data-page="watch" onclick="mobileNav('watch')">📺 &nbsp; Watch Together</button>
+    <button class="mobile-menu-btn" data-page="live" onclick="mobileNav('live')">🔴 &nbsp; Live</button>
     <button class="mobile-menu-btn" data-page="trash" onclick="mobileNav('trash')">💬 &nbsp; Trash Talk</button>
     <button class="mobile-menu-btn" data-page="highlights" onclick="mobileNav('highlights')">🎬 &nbsp; Highlights</button>
     <button class="mobile-menu-btn" data-page="hof" onclick="mobileNav('hof')">🏅 &nbsp; Hall of Fame</button>
@@ -1990,15 +1992,6 @@
       </div>
     </div>
     <div id="tips-scorers-content" style="display:none;"></div>
-  </div>
-
-  <!-- LIVE GAME -->
-  <div class="page" id="page-live">
-    <div id="live-match-selector" style="margin-bottom:1rem;">
-      <p class="section-title" style="margin-bottom:0.5rem;">🔴 Live Game</p>
-      <div id="live-match-list" style="font-size:13px;color:var(--text-muted);text-align:center;padding:1rem;">Loading matches...</div>
-    </div>
-    <div id="live-content" style="display:none;"></div>
   </div>
 
   <!-- GROUP PREDICTIONS -->
@@ -2760,16 +2753,6 @@
         <div class="form-row"><label>Tournament player assists in this match</label><input type="text" id="result-tourney-assists" placeholder="e.g. Mbappe x1"></div>
         <div class="form-row"><label>Tournament player red cards in this match</label><input type="text" id="result-tourney-reds" placeholder="e.g. Vinicius x1 (or leave empty)"></div>
         <button class="submit-btn" onclick="submitResult()">Submit results and calculate points</button>
-      </div>
-
-      <!-- SCORER POINTS ONLY -->
-      <div class="form-card" style="margin-top:1rem;">
-        <h2>🎯 Award Scorer Points Only</h2>
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Use this when the result was already submitted but the first goalscorer was missing. Adds +2 pts only to players who guessed correctly — no duplicate result points.</p>
-        <div class="form-row"><label>Match</label><select id="scorer-only-match"><option value="">Select match...</option></select></div>
-        <div class="form-row"><label>First goalscorer name (exact)</label><input type="text" id="scorer-only-name" placeholder="e.g. Julian Quinones"></div>
-        <button class="submit-btn" id="scorer-only-btn" onclick="awardScorerPoints()" style="background:linear-gradient(135deg,#059669,#047857);">🎯 Award +2 pts to correct pickers</button>
-        <div id="scorer-only-status" style="margin-top:8px;font-size:12px;text-align:center;"></div>
       </div>
     </div>
     <div id="admin-players" class="admin-sub">
@@ -7482,6 +7465,19 @@ Use exactly the formation provided. Only use players from the squad lists above.
     // Show/hide live button
     const liveBtn = document.getElementById('live-matches-btn');
     if (liveBtn) liveBtn.style.display = liveMatches.length > 0 ? 'inline-block' : 'none';
+    // Pulse Live nav tab when live matches exist
+    const liveNavBtn = document.getElementById('live-nav-btn');
+    if (liveNavBtn) {
+      if (liveMatches.length > 0) {
+        liveNavBtn.style.color = '#E24B4A';
+        liveNavBtn.style.borderColor = 'rgba(226,75,74,0.4)';
+        liveNavBtn.querySelector('.nav-icon').style.animation = 'pulse 1.5s infinite';
+      } else {
+        liveNavBtn.style.color = '';
+        liveNavBtn.style.borderColor = '';
+        liveNavBtn.querySelector('.nav-icon').style.animation = '';
+      }
+    }
 
     // Show deadline notifications for matches closing in < 6h
     if (deadlineSoonMatches.length > 0) {
@@ -8131,7 +8127,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     document.getElementById('admin-main').style.display = 'none';
     document.querySelectorAll('.admin-sub').forEach(s => s.classList.remove('active'));
     document.getElementById('admin-' + id).classList.add('active');
-    if (id === 'results') { loadMatchesForAdmin(); loadScorerOnlyMatches(); }
+    if (id === 'results') loadMatchesForAdmin();
     if (id === 'players') loadMatchesForPlayerAdmin();
     if (id === 'members') loadMembersLog();
     if (id === 'watch-admin') loadWatchAdmin();
@@ -8388,75 +8384,6 @@ Use exactly the formation provided. Only use players from the squad lists above.
       btn.textContent = 'Submit results and calculate points';
       btn.disabled = false;
     }
-  };
-
-  // Load finished matches into scorer-only dropdown whenever results panel opens
-  async function loadScorerOnlyMatches() {
-    const sel = document.getElementById('scorer-only-match');
-    if (!sel || sel.dataset.loaded) return;
-    const snap = await getDocs(query(collection(db, 'matches'), orderBy('kickoff')));
-    sel.innerHTML = '<option value="">Select match...</option>';
-    snap.forEach(d => {
-      const m = d.data();
-      if (m.status !== 'FINISHED') return;
-      const opt = document.createElement('option');
-      opt.value = d.id;
-      opt.textContent = `${m.homeFlag||''} ${m.homeTeam} ${m.homeScore ?? '?'}-${m.awayScore ?? '?'} ${m.awayTeam} ${m.awayFlag||''}`;
-      sel.appendChild(opt);
-    });
-    sel.dataset.loaded = '1';
-  }
-
-  window.awardScorerPoints = async () => {
-    const matchId = document.getElementById('scorer-only-match').value;
-    const scorerName = document.getElementById('scorer-only-name').value.trim();
-    const status = document.getElementById('scorer-only-status');
-    const btn = document.getElementById('scorer-only-btn');
-    if (!matchId) { status.textContent = '❌ Select a match first'; return; }
-    if (!scorerName) { status.textContent = '❌ Enter scorer name'; return; }
-
-    btn.disabled = true;
-    status.textContent = '⏳ Processing...';
-
-    try {
-      // Get match stage multiplier
-      const matchSnap = await getDoc(doc(db, 'matches', matchId));
-      const matchGroup = (matchSnap.data()?.group || '').toUpperCase();
-      const isFinal = matchGroup.includes('FINAL') && !matchGroup.includes('QUARTER') && !matchGroup.includes('SEMI');
-      const isSemi = matchGroup.includes('SEMI');
-      const isQuarter = matchGroup.includes('QUARTER');
-      const isR16 = matchGroup.includes('16') || matchGroup.includes('ROUND_OF_16');
-      const multiplier = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
-
-      // Find all predictions for this match that got it right
-      const predsSnap = await getDocs(query(collection(db, 'predictions'), where('matchId', '==', matchId)));
-      let awarded = 0;
-      for (const predDoc of predsSnap.docs) {
-        const pred = predDoc.data();
-        if (pred.firstScorer !== scorerName) continue;
-        // Award +2 pts (× multiplier)
-        const pts = 2 * multiplier;
-        const userRef = doc(db, 'users', pred.userId);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) {
-          await updateDoc(userRef, {
-            points: (userSnap.data().points || 0) + pts,
-            bonusPoints: (userSnap.data().bonusPoints || 0) + 1
-          });
-          awarded++;
-        }
-      }
-
-      // Also update the results doc with the correct scorer
-      await setDoc(doc(db, 'results', matchId), { firstScorer: scorerName }, { merge: true });
-      // Update matches doc
-      await updateDoc(doc(db, 'matches', matchId), { firstGoalscorer: scorerName });
-
-      status.innerHTML = `<span style="color:var(--green);">✅ Done! Awarded +${2*multiplier} pts to ${awarded} player${awarded!==1?'s':''} who picked ${scorerName}</span>`;
-    } catch(e) {
-      status.innerHTML = `<span style="color:#ef4444;">❌ Error: ${e.message}</span>`;
-    }
-    btn.disabled = false;
   };
 
   async function loadMatchesForPlayerAdmin() {
