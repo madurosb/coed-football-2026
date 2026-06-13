@@ -185,6 +185,8 @@
     .nav-links::-webkit-scrollbar { display: none; }
     .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 5px; border-radius: 7px; border: 1px solid transparent; background: none; color: #475569; font-size: 7.5px; font-weight: 700; letter-spacing: 0.03em; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; text-transform: uppercase; }
     .nav-btn .nav-icon { font-size: 14px; line-height: 1; display: block; }
+    .nav-scroll-btn { display: flex; align-items: center; justify-content: center; width: 24px; height: 36px; background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2); border-radius: 6px; cursor: pointer; color: #60a5fa; font-size: 14px; flex-shrink: 0; transition: all 0.15s; user-select: none; }
+    .nav-scroll-btn:hover { background: rgba(59,130,246,0.25); }
     .nav-btn .nav-icon { font-size: 17px; line-height: 1; display: block; }
     .nav-btn:hover { background: rgba(59,130,246,0.12); color: #93c5fd; border-color: rgba(59,130,246,0.2); }
     .nav-btn.active { background: rgba(59,130,246,0.18); color: #60a5fa; border-color: rgba(59,130,246,0.35); }
@@ -445,6 +447,7 @@
       #user-handle { display: none; }
       .nav { padding: 0 0.75rem; height: 56px; }
       .nav-logo .badge { display: none; }
+      .nav-scroll-btn { display: none !important; } /* hide scroll arrows on mobile */
       .nav-logo-name { display: none !important; } /* hide logo text on mobile */
 
       /* Hide hamburger on mobile — replaced by FAB */
@@ -745,6 +748,7 @@
       #user-handle { display: none; }
       .nav { padding: 0 0.75rem; height: 50px; }
       .nav-logo .badge { display: none; }
+      .nav-scroll-btn { display: none !important; }
       .nav-logo-name { display: none !important; }
 
       /* Bottom navigation bar — hidden, replaced by smart drawer */
@@ -863,8 +867,6 @@
     @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
     @keyframes scorerPop { 0% { transform:scale(0.8); opacity:0; } 100% { transform:scale(1); opacity:1; } }
-    @keyframes ogBounce { 0%{transform:scale(1)} 20%{transform:scale(1.3) rotate(-10deg)} 40%{transform:scale(0.9) rotate(5deg)} 60%{transform:scale(1.15) rotate(-3deg)} 80%{transform:scale(0.97)} 100%{transform:scale(1)} }
-    @keyframes ogSlideIn { 0%{transform:translateY(-20px);opacity:0} 60%{transform:translateY(4px)} 100%{transform:translateY(0);opacity:1} }
     @keyframes spin { 0% { transform:rotate(0deg) scale(0.5); } 100% { transform:rotate(720deg) scale(1); } }
     @keyframes badgePop { 0%{transform:scale(0.5);opacity:0} 70%{transform:scale(1.15)} 100%{transform:scale(1);opacity:1} }
     @keyframes badgeShine { 0%,100%{background-position:200% center} 50%{background-position:-200% center} }
@@ -1342,6 +1344,7 @@
 <div id="view-app" style="display:none;">
   <nav class="nav">
     <a class="nav-logo" onclick="showPage('home')"><img src="https://coed-football-2026.vercel.app/logo-icon.png" alt="logo" style="height:32px; width:32px; object-fit:contain;"> <span class="nav-logo-name">COED&FOOTBALL</span> <span class="nav-wc-text" style="font-size:11px;font-weight:600;color:var(--badge-gold-text);letter-spacing:0.04em;">🏆 WORLD CUP</span> <span class="badge">2026</span></a>
+    <span class="nav-scroll-btn" id="nav-scroll-left" onclick="document.querySelector('.nav-links').scrollBy({left:-150,behavior:'smooth'})">‹</span>
     <div class="nav-links" id="nav-links-el">
       <button class="nav-btn" data-page="home" onclick="showPage('home')"><span class="nav-icon">🏠</span>Home</button>
       <button class="nav-btn" data-page="matches" onclick="showPage('matches')"><span class="nav-icon">⚽</span>Predictions</button>
@@ -1360,6 +1363,7 @@
       <button class="nav-btn" data-page="dummies" onclick="showPage('dummies')"><span class="nav-icon">🎓</span>How to Play</button>
       <button class="nav-btn" data-page="admin" id="admin-nav-btn" style="display:none;" onclick="showPage('admin')"><span class="nav-icon">⚙️</span>Admin</button>
     </div>
+    <span class="nav-scroll-btn" id="nav-scroll-right" onclick="document.querySelector('.nav-links').scrollBy({left:150,behavior:'smooth'})">›</span>
     <div class="nav-user">
       <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
       <button id="darkmode-btn" onclick="toggleDarkMode()" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.15);cursor:pointer;font-size:15px;padding:5px 7px;border-radius:8px;transition:all 0.15s;flex-shrink:0;" onmouseover="this.style.background='rgba(59,130,246,0.2)'" onmouseout="this.style.background='rgba(59,130,246,0.08)'" title="Toggle dark mode">🌙</button>
@@ -2756,6 +2760,16 @@
         <div class="form-row"><label>Tournament player assists in this match</label><input type="text" id="result-tourney-assists" placeholder="e.g. Mbappe x1"></div>
         <div class="form-row"><label>Tournament player red cards in this match</label><input type="text" id="result-tourney-reds" placeholder="e.g. Vinicius x1 (or leave empty)"></div>
         <button class="submit-btn" onclick="submitResult()">Submit results and calculate points</button>
+      </div>
+
+      <!-- SCORER POINTS ONLY -->
+      <div class="form-card" style="margin-top:1rem;">
+        <h2>🎯 Award Scorer Points Only</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Use this when the result was already submitted but the first goalscorer was missing. Adds +2 pts only to players who guessed correctly — no duplicate result points.</p>
+        <div class="form-row"><label>Match</label><select id="scorer-only-match"><option value="">Select match...</option></select></div>
+        <div class="form-row"><label>First goalscorer name (exact)</label><input type="text" id="scorer-only-name" placeholder="e.g. Julian Quinones"></div>
+        <button class="submit-btn" id="scorer-only-btn" onclick="awardScorerPoints()" style="background:linear-gradient(135deg,#059669,#047857);">🎯 Award +2 pts to correct pickers</button>
+        <div id="scorer-only-status" style="margin-top:8px;font-size:12px;text-align:center;"></div>
       </div>
     </div>
     <div id="admin-players" class="admin-sub">
@@ -7409,22 +7423,15 @@ Use exactly the formation provided. Only use players from the squad lists above.
                 <optgroup label="${m.awayTeam}">${getPlayersForTeam(m.awayTeam, m.awayPlayers).map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
               </select>
               ${!isPast ? `
-              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
               <button id="scorer-btn-${d.id}"
                 data-match-id="${d.id}"
                 data-home-team="${m.homeTeam.replace(/"/g,'&quot;')}"
                 data-away-team="${m.awayTeam.replace(/"/g,'&quot;')}"
                 onclick="openScorerPickerById('${d.id}')"
-                style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;min-width:140px;max-width:180px;text-align:left;">
+                style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;min-width:160px;max-width:200px;text-align:left;">
                 <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="scorer-label-${d.id}">⚽ Pick scorer...</span>
                 <span style="font-size:11px;flex-shrink:0;">▾</span>
-              </button>
-              <button id="og-btn-${d.id}" onclick="toggleOwnGoal('${d.id}')"
-                title="Predict an Own Goal as the first scorer"
-                style="padding:9px 10px;border-radius:10px;border:1.5px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.07);color:#ef4444;font-size:11px;font-weight:700;cursor:pointer;transition:all 0.15s;white-space:nowrap;letter-spacing:0.02em;">
-                🙈 OG?
-              </button>
-              </div>` : `<div id="scorer-label-${d.id}" style="font-size:13px;color:var(--text-muted);font-style:italic;">⚽ —</div>`}
+              </button>` : `<div id="scorer-label-${d.id}" style="font-size:13px;color:var(--text-muted);font-style:italic;">⚽ —</div>`}
             </div>
           </div>
           ${!isPast ? `
@@ -8124,7 +8131,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     document.getElementById('admin-main').style.display = 'none';
     document.querySelectorAll('.admin-sub').forEach(s => s.classList.remove('active'));
     document.getElementById('admin-' + id).classList.add('active');
-    if (id === 'results') loadMatchesForAdmin();
+    if (id === 'results') { loadMatchesForAdmin(); loadScorerOnlyMatches(); }
     if (id === 'players') loadMatchesForPlayerAdmin();
     if (id === 'members') loadMembersLog();
     if (id === 'watch-admin') loadWatchAdmin();
@@ -8381,6 +8388,75 @@ Use exactly the formation provided. Only use players from the squad lists above.
       btn.textContent = 'Submit results and calculate points';
       btn.disabled = false;
     }
+  };
+
+  // Load finished matches into scorer-only dropdown whenever results panel opens
+  async function loadScorerOnlyMatches() {
+    const sel = document.getElementById('scorer-only-match');
+    if (!sel || sel.dataset.loaded) return;
+    const snap = await getDocs(query(collection(db, 'matches'), orderBy('kickoff')));
+    sel.innerHTML = '<option value="">Select match...</option>';
+    snap.forEach(d => {
+      const m = d.data();
+      if (m.status !== 'FINISHED') return;
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = `${m.homeFlag||''} ${m.homeTeam} ${m.homeScore ?? '?'}-${m.awayScore ?? '?'} ${m.awayTeam} ${m.awayFlag||''}`;
+      sel.appendChild(opt);
+    });
+    sel.dataset.loaded = '1';
+  }
+
+  window.awardScorerPoints = async () => {
+    const matchId = document.getElementById('scorer-only-match').value;
+    const scorerName = document.getElementById('scorer-only-name').value.trim();
+    const status = document.getElementById('scorer-only-status');
+    const btn = document.getElementById('scorer-only-btn');
+    if (!matchId) { status.textContent = '❌ Select a match first'; return; }
+    if (!scorerName) { status.textContent = '❌ Enter scorer name'; return; }
+
+    btn.disabled = true;
+    status.textContent = '⏳ Processing...';
+
+    try {
+      // Get match stage multiplier
+      const matchSnap = await getDoc(doc(db, 'matches', matchId));
+      const matchGroup = (matchSnap.data()?.group || '').toUpperCase();
+      const isFinal = matchGroup.includes('FINAL') && !matchGroup.includes('QUARTER') && !matchGroup.includes('SEMI');
+      const isSemi = matchGroup.includes('SEMI');
+      const isQuarter = matchGroup.includes('QUARTER');
+      const isR16 = matchGroup.includes('16') || matchGroup.includes('ROUND_OF_16');
+      const multiplier = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
+
+      // Find all predictions for this match that got it right
+      const predsSnap = await getDocs(query(collection(db, 'predictions'), where('matchId', '==', matchId)));
+      let awarded = 0;
+      for (const predDoc of predsSnap.docs) {
+        const pred = predDoc.data();
+        if (pred.firstScorer !== scorerName) continue;
+        // Award +2 pts (× multiplier)
+        const pts = 2 * multiplier;
+        const userRef = doc(db, 'users', pred.userId);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          await updateDoc(userRef, {
+            points: (userSnap.data().points || 0) + pts,
+            bonusPoints: (userSnap.data().bonusPoints || 0) + 1
+          });
+          awarded++;
+        }
+      }
+
+      // Also update the results doc with the correct scorer
+      await setDoc(doc(db, 'results', matchId), { firstScorer: scorerName }, { merge: true });
+      // Update matches doc
+      await updateDoc(doc(db, 'matches', matchId), { firstGoalscorer: scorerName });
+
+      status.innerHTML = `<span style="color:var(--green);">✅ Done! Awarded +${2*multiplier} pts to ${awarded} player${awarded!==1?'s':''} who picked ${scorerName}</span>`;
+    } catch(e) {
+      status.innerHTML = `<span style="color:#ef4444;">❌ Error: ${e.message}</span>`;
+    }
+    btn.disabled = false;
   };
 
   async function loadMatchesForPlayerAdmin() {
@@ -14699,79 +14775,6 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
   }
 
   // ═══ FIRST GOALSCORER PICKER — replace per-match dropdowns ═══
-  // ═══ OWN GOAL TOGGLE ═══
-  const _ogActive = new Set(); // track which matches have OG selected
-
-  window.toggleOwnGoal = (matchId) => {
-    const ogBtn = document.getElementById('og-btn-' + matchId);
-    const scorerBtn = document.getElementById('scorer-btn-' + matchId);
-    const scorerLabel = document.getElementById('scorer-label-' + matchId);
-    const scorerSelect = document.getElementById('scorer-' + matchId);
-    if (!ogBtn) return;
-
-    const isActive = _ogActive.has(matchId);
-
-    if (!isActive) {
-      // ACTIVATE — select Own Goal, disable scorer picker
-      _ogActive.add(matchId);
-      if (scorerSelect) scorerSelect.value = 'Own Goal';
-      if (scorerLabel) scorerLabel.textContent = '🙈 Own Goal';
-      if (scorerBtn) {
-        scorerBtn.style.opacity = '0.4';
-        scorerBtn.style.pointerEvents = 'none';
-      }
-      ogBtn.style.background = 'rgba(239,68,68,0.2)';
-      ogBtn.style.borderColor = '#ef4444';
-      ogBtn.style.color = '#ef4444';
-      ogBtn.style.animation = 'ogBounce 0.5s ease';
-      ogBtn.textContent = '🙈 OG! ON';
-
-      // Show fun toast
-      showOGToast(matchId);
-
-      // Trigger autosave
-      triggerAutoSave(matchId, '', '');
-    } else {
-      // DEACTIVATE
-      _ogActive.delete(matchId);
-      if (scorerSelect) scorerSelect.value = '';
-      if (scorerLabel) scorerLabel.textContent = '⚽ Pick scorer...';
-      if (scorerBtn) {
-        scorerBtn.style.opacity = '';
-        scorerBtn.style.pointerEvents = '';
-      }
-      ogBtn.style.background = 'rgba(239,68,68,0.07)';
-      ogBtn.style.borderColor = 'rgba(239,68,68,0.3)';
-      ogBtn.style.color = '#ef4444';
-      ogBtn.style.animation = '';
-      ogBtn.textContent = '🙈 OG?';
-      triggerAutoSave(matchId, '', '');
-    }
-  };
-
-  function showOGToast(matchId) {
-    const card = document.querySelector(`.match-card[data-match-id="${matchId}"]`);
-    if (!card) return;
-    const toast = document.createElement('div');
-    toast.style.cssText = `
-      position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-      background:linear-gradient(135deg,#1a0505,#2d0808);
-      border:1.5px solid #ef4444;border-radius:14px;
-      padding:14px 18px;text-align:center;z-index:100;
-      animation:ogSlideIn 0.4s ease forwards;
-      pointer-events:none;white-space:nowrap;
-      box-shadow:0 8px 32px rgba(239,68,68,0.4);
-    `;
-    toast.innerHTML = `
-      <div style="font-size:28px;margin-bottom:6px;animation:ogBounce 0.6s ease 0.1s both;">⚽🥅😱</div>
-      <div style="font-size:13px;font-weight:800;color:#f87171;letter-spacing:0.03em;">Oops, wrong end!</div>
-      <div style="font-size:11px;color:#fca5a5;margin-top:3px;font-style:italic;">That wasn't the right side...</div>
-    `;
-    card.style.position = 'relative';
-    card.appendChild(toast);
-    setTimeout(() => toast.remove(), 2200);
-  }
-
   window.openScorerPickerById = (matchId) => {
     const card = document.querySelector(`.match-card[data-match-id="${matchId}"]`);
     if (!card) return;
