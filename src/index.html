@@ -185,6 +185,8 @@
     .nav-links::-webkit-scrollbar { display: none; }
     .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 5px; border-radius: 7px; border: 1px solid transparent; background: none; color: #475569; font-size: 7.5px; font-weight: 700; letter-spacing: 0.03em; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; text-transform: uppercase; }
     .nav-btn .nav-icon { font-size: 14px; line-height: 1; display: block; }
+    .nav-scroll-btn { display: flex; align-items: center; justify-content: center; width: 24px; height: 36px; background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2); border-radius: 6px; cursor: pointer; color: #60a5fa; font-size: 14px; flex-shrink: 0; transition: all 0.15s; user-select: none; }
+    .nav-scroll-btn:hover { background: rgba(59,130,246,0.25); }
     .nav-btn .nav-icon { font-size: 17px; line-height: 1; display: block; }
     .nav-btn:hover { background: rgba(59,130,246,0.12); color: #93c5fd; border-color: rgba(59,130,246,0.2); }
     .nav-btn.active { background: rgba(59,130,246,0.18); color: #60a5fa; border-color: rgba(59,130,246,0.35); }
@@ -445,6 +447,7 @@
       #user-handle { display: none; }
       .nav { padding: 0 0.75rem; height: 56px; }
       .nav-logo .badge { display: none; }
+      .nav-scroll-btn { display: none !important; } /* hide scroll arrows on mobile */
       .nav-logo-name { display: none !important; } /* hide logo text on mobile */
 
       /* Hide hamburger on mobile — replaced by FAB */
@@ -745,6 +748,7 @@
       #user-handle { display: none; }
       .nav { padding: 0 0.75rem; height: 50px; }
       .nav-logo .badge { display: none; }
+      .nav-scroll-btn { display: none !important; }
       .nav-logo-name { display: none !important; }
 
       /* Bottom navigation bar — hidden, replaced by smart drawer */
@@ -1340,6 +1344,7 @@
 <div id="view-app" style="display:none;">
   <nav class="nav">
     <a class="nav-logo" onclick="showPage('home')"><img src="https://coed-football-2026.vercel.app/logo-icon.png" alt="logo" style="height:32px; width:32px; object-fit:contain;"> <span class="nav-logo-name">COED&FOOTBALL</span> <span class="nav-wc-text" style="font-size:11px;font-weight:600;color:var(--badge-gold-text);letter-spacing:0.04em;">🏆 WORLD CUP</span> <span class="badge">2026</span></a>
+    <span class="nav-scroll-btn" id="nav-scroll-left" onclick="document.querySelector('.nav-links').scrollBy({left:-150,behavior:'smooth'})">‹</span>
     <div class="nav-links" id="nav-links-el">
       <button class="nav-btn" data-page="home" onclick="showPage('home')"><span class="nav-icon">🏠</span>Home</button>
       <button class="nav-btn" data-page="matches" onclick="showPage('matches')"><span class="nav-icon">⚽</span>Predictions</button>
@@ -1358,6 +1363,7 @@
       <button class="nav-btn" data-page="dummies" onclick="showPage('dummies')"><span class="nav-icon">🎓</span>How to Play</button>
       <button class="nav-btn" data-page="admin" id="admin-nav-btn" style="display:none;" onclick="showPage('admin')"><span class="nav-icon">⚙️</span>Admin</button>
     </div>
+    <span class="nav-scroll-btn" id="nav-scroll-right" onclick="document.querySelector('.nav-links').scrollBy({left:150,behavior:'smooth'})">›</span>
     <div class="nav-user">
       <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
       <button id="darkmode-btn" onclick="toggleDarkMode()" style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.15);cursor:pointer;font-size:15px;padding:5px 7px;border-radius:8px;transition:all 0.15s;flex-shrink:0;" onmouseover="this.style.background='rgba(59,130,246,0.2)'" onmouseout="this.style.background='rgba(59,130,246,0.08)'" title="Toggle dark mode">🌙</button>
@@ -1700,7 +1706,6 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
       <p class="section-title" style="margin-bottom:0;">Group stage predictions — June 11-27 · Round of 32 unlocks after group results ⚡</p>
       <div style="display:flex;gap:8px;">
-        <button onclick="showPage('live')" id="live-matches-btn" style="display:none;font-size:12px;color:white;background:#E24B4A;border:none;padding:5px 12px;border-radius:8px;cursor:pointer;animation:pulse 1.5s infinite;">🔴 Live now!</button>
         <button onclick="confirmResetPredictions()" style="font-size:12px;color:#E24B4A;background:none;border:0.5px solid #E24B4A;padding:5px 12px;border-radius:8px;cursor:pointer;">🗑 Reset all</button>
       </div>
     </div>
@@ -1984,6 +1989,15 @@
       </div>
     </div>
     <div id="tips-scorers-content" style="display:none;"></div>
+  </div>
+
+  <!-- LIVE GAME -->
+  <div class="page" id="page-live">
+    <div id="live-match-selector" style="margin-bottom:1rem;">
+      <p class="section-title" style="margin-bottom:0.5rem;">🔴 Live Game</p>
+      <div id="live-match-list" style="font-size:13px;color:var(--text-muted);text-align:center;padding:1rem;">Loading matches...</div>
+    </div>
+    <div id="live-content" style="display:none;"></div>
   </div>
 
   <!-- GROUP PREDICTIONS -->
@@ -4644,7 +4658,7 @@
           const lH = m.homeScore ?? 0, lA = m.awayScore ?? 0;
           const minute = m.minute ? m.minute + "'" : m.status === 'HALFTIME' ? 'HT' : '';
           return `
-          <div onclick="showPage('matches')" style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(226,75,74,0.1);cursor:pointer;last-child:border-none;">
+          <div onclick="showPage('live')" style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(226,75,74,0.1);cursor:pointer;last-child:border-none;">
             <div style="flex:1;display:flex;align-items:center;justify-content:space-between;gap:8px;">
               <span style="font-size:12px;font-weight:600;flex:1;text-align:right;">${m.homeTeam}</span>
               <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
@@ -4657,7 +4671,7 @@
             ${minute ? `<span style="font-size:11px;color:#E24B4A;font-weight:700;flex-shrink:0;min-width:28px;text-align:right;">${minute}</span>` : ''}
           </div>`;
         }).join('')}
-        <div style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;cursor:pointer;" onclick="showPage('matches')">Tap to see predictions →</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;cursor:pointer;" onclick="showPage('live')">Tap to watch live →</div>
       </div>`;
   }
 
@@ -7455,8 +7469,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     }, 100);
 
     // Show/hide live button
-    const liveBtn = document.getElementById('live-matches-btn');
-    if (liveBtn) liveBtn.style.display = liveMatches.length > 0 ? 'inline-block' : 'none';
+    // live-matches-btn removed from predictions page
 
     // Show deadline notifications for matches closing in < 6h
     if (deadlineSoonMatches.length > 0) {
@@ -8911,69 +8924,35 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
   async function loadLivePage() {
     const container = document.getElementById('live-content');
-    if (!container) return;
     if (liveRefreshInterval) clearInterval(liveRefreshInterval);
 
-    container.innerHTML = `<div style="text-align:center;padding:3rem;font-size:13px;color:var(--text-muted);">🔴 Loading...</div>`;
-
-    // 1. Fetch live API directly (real-time, not dependent on cron)
-    let apiMatches = [];
-    try {
-      const resp = await fetch('/api/live-scores');
-      if (resp.ok) {
-        const data = await resp.json();
-        apiMatches = data.matches || [];
-      }
-    } catch(e) {}
-
-    // 2. Fetch Firestore matches for metadata (teams, group, etc.)
+    // Fetch all matches, find live or most recent
     const matchesSnap = await getDocs(query(collection(db, 'matches'), orderBy('kickoff')));
-    const firestoreMatches = [];
-    matchesSnap.forEach(d => firestoreMatches.push({ id: d.id, ...d.data() }));
+    const matches = [];
+    matchesSnap.forEach(d => matches.push({ id: d.id, ...d.data() }));
 
+    const liveMatches = matches.filter(m => ['IN_PLAY','PAUSED','HALFTIME'].includes(m.status));
     const now = new Date();
-    let candidates = [];
+    // Also include matches that started within last 2h (in case status not updated yet)
+    const recentMatches = matches.filter(m => {
+      const k = m.kickoff?.toDate?.() || new Date(m.kickoff);
+      const minsAgo = (now - k) / 60000;
+      return minsAgo > 0 && minsAgo < 120 && m.status !== 'FINISHED';
+    });
 
-    // Merge API live matches with Firestore metadata
-    const apiLive = apiMatches.filter(m => ['IN_PLAY','PAUSED'].includes(m.status));
-    if (apiLive.length > 0) {
-      for (const apiM of apiLive) {
-        const fsMatch = firestoreMatches.find(m => {
-          const h = (m.homeTeam||'').toLowerCase();
-          const a = (m.awayTeam||'').toLowerCase();
-          const ah = (apiM.homeTeam||'').toLowerCase();
-          const aa = (apiM.awayTeam||'').toLowerCase();
-          return (h.includes(ah.split(' ')[0]) || ah.includes(h.split(' ')[0])) &&
-                 (a.includes(aa.split(' ')[0]) || aa.includes(a.split(' ')[0]));
-        });
-        if (fsMatch) {
-          candidates.push({ ...fsMatch, homeScore: apiM.homeScore ?? fsMatch.homeScore, awayScore: apiM.awayScore ?? fsMatch.awayScore, status: apiM.status, minute: apiM.minute });
-        }
-      }
-    }
-
-    // Fallback: Firestore status or recently kicked off (150 min window)
-    if (candidates.length === 0) {
-      const fsLive = firestoreMatches.filter(m => ['IN_PLAY','PAUSED','HALFTIME'].includes(m.status));
-      const recent = firestoreMatches.filter(m => {
-        const k = m.kickoff?.toDate?.() || new Date(m.kickoff);
-        const minsAgo = (now - k) / 60000;
-        return minsAgo > 0 && minsAgo < 150 && m.status !== 'FINISHED';
-      });
-      candidates = [...new Map([...fsLive, ...recent].map(m => [m.id, m])).values()];
-    }
+    const candidates = [...new Map([...liveMatches, ...recentMatches].map(m => [m.id, m])).values()];
 
     if (candidates.length === 0) {
       container.innerHTML = `
         <div style="text-align:center;padding:3rem 1rem;">
           <div style="font-size:40px;margin-bottom:1rem;">😴</div>
           <div style="font-size:16px;font-weight:500;margin-bottom:8px;">No live matches right now</div>
-          <div style="font-size:13px;color:var(--text-muted);">Come back when a match is in play.</div>
+          <div style="font-size:13px;color:var(--text-muted);">Come back when a match is in play - this page updates every 30 seconds.</div>
         </div>`;
       return;
     }
 
-    // If multiple, show selector
+    // If multiple live, show selector
     if (candidates.length > 1 && !liveMatchId) {
       container.innerHTML = `
         <p class="section-title" style="margin-bottom:1rem;">🔴 Live now — pick a match</p>
@@ -9044,7 +9023,13 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
     const resultIcon = (r) => r === 'exact' ? '🎯' : r === 'correct' ? '✅' : r === 'wrong' ? '❌' : '';
     const resultBorder = (r) => r === 'exact' ? '#BA7517' : r === 'correct' ? 'var(--green)' : r === 'wrong' ? '#E24B4A' : 'var(--border)';
-    const resultBg = (r) => r === 'exact' ? '#FAEEDA' : r === 'correct' ? '#E1F5EE' : r === 'wrong' ? '#FCEBEB' : 'var(--surface)';
+    const isDark = document.body.classList.contains('dark-mode') || !document.body.classList.contains('light-mode');
+    const resultBg = (r) => {
+      if (r === 'exact')   return isDark ? 'rgba(234,179,8,0.15)'  : '#FAEEDA';
+      if (r === 'correct') return isDark ? 'rgba(29,158,117,0.15)' : '#E1F5EE';
+      if (r === 'wrong')   return isDark ? 'rgba(226,75,74,0.12)'  : '#FCEBEB';
+      return 'var(--surface)';
+    };
 
     const statusLabel = match.status === 'HALFTIME' ? '⏸ Half Time'
       : match.status === 'PAUSED' ? '⏸ Paused'
@@ -9126,7 +9111,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       </div>`;
 
     loadLiveStats(match.id, match.homeTeam, match.awayTeam);
-    loadLiveTopScorers();
+    loadLiveTopScorers(match.id, match.homeTeam, match.awayTeam);
   }
 
   window.switchLiveTab = (tab) => {
@@ -9139,48 +9124,39 @@ Use exactly the formation provided. Only use players from the squad lists above.
     });
   };
 
-  async function loadLiveTopScorers() {
+  async function loadLiveTopScorers(matchId, homeTeam, awayTeam) {
     const el = document.getElementById('live-top-scorers');
     if (!el) return;
     try {
-      // Get all finished matches and their goals from results
-      const resultsSnap = await getDocs(collection(db, 'results'));
-      const scorers = {}, assisters = {};
-      resultsSnap.forEach(d => {
-        const r = d.data();
-        if (r.firstScorer && r.firstScorer !== 'og' && r.firstScorer !== 'none') {
-          scorers[r.firstScorer] = (scorers[r.firstScorer] || 0) + 1;
-        }
-      });
-      // Also pull from tournament bonus points if available
-      const usersSnap = await getDocs(collection(db, 'users'));
-      const tourneyGoals = {};
-      usersSnap.forEach(d => {
-        const u = d.data();
-        if (u.tournamentPlayer && u.bonusPoints > 0) {
-          tourneyGoals[u.tournamentPlayer] = Math.max(tourneyGoals[u.tournamentPlayer] || 0, Math.floor(u.bonusPoints / 2));
-        }
-      });
-      const combined = { ...scorers };
-      Object.entries(tourneyGoals).forEach(([p, g]) => { combined[p] = Math.max(combined[p] || 0, g); });
-      const sorted = Object.entries(combined).sort((a,b) => b[1]-a[1]).slice(0,10);
-      if (sorted.length === 0) {
-        el.innerHTML = `<div style="text-align:center;font-size:13px;color:var(--text-muted);padding:1rem;">No goals recorded yet</div>`;
-        return;
-      }
-      const medals = ['🥇','🥈','🥉'];
+      // Show score summary + first scorer for THIS match only
+      const matchSnap = await getDoc(doc(db, 'matches', matchId));
+      const resultSnap = await getDoc(doc(db, 'results', matchId));
+      const m = matchSnap.exists() ? matchSnap.data() : {};
+      const r = resultSnap.exists() ? resultSnap.data() : {};
+
+      const hS = m.homeScore ?? '?';
+      const aS = m.awayScore ?? '?';
+      const firstScorer = r.firstScorer || m.firstGoalscorer || null;
+
       el.innerHTML = `
-        <div style="font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">⚽ Top Scorers</div>
-        ${sorted.map(([name,goals],i) => `
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--border);">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:16px;">${medals[i] || (i+1)+'.'}</span>
-              <span style="font-size:13px;font-weight:500;">${name}</span>
-            </div>
-            <span style="font-size:13px;font-weight:700;color:var(--green);">${goals} ⚽</span>
-          </div>`).join('')}`;
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;">⚽ This Match</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--surface2);border-radius:10px;margin-bottom:10px;">
+          <span style="font-size:13px;font-weight:500;">${homeTeam||m.homeTeam||''}</span>
+          <span style="font-size:22px;font-weight:800;letter-spacing:2px;">${hS} – ${aS}</span>
+          <span style="font-size:13px;font-weight:500;">${awayTeam||m.awayTeam||''}</span>
+        </div>
+        ${firstScorer && firstScorer !== 'none'
+          ? `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface);border:0.5px solid var(--border);border-radius:10px;">
+              <span style="font-size:20px;">⚽</span>
+              <div>
+                <div style="font-size:13px;font-weight:700;">${firstScorer}</div>
+                <div style="font-size:11px;color:var(--text-muted);">First scorer</div>
+              </div>
+             </div>`
+          : `<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:8px;">No first scorer recorded yet</div>`
+        }`;
     } catch(e) {
-      if (el) el.innerHTML = `<div style="text-align:center;font-size:13px;color:var(--text-muted);">Stats not available yet</div>`;
+      if (el) el.innerHTML = `<div style="text-align:center;font-size:13px;color:var(--text-muted);">Stats not available</div>`;
     }
   }
 
@@ -9250,9 +9226,10 @@ Use exactly the formation provided. Only use players from the squad lists above.
   }
 
   function renderFallbackStats(homeTeam, awayTeam) {
-    return `<div style="text-align:center;padding:0.5rem;font-size:13px;color:var(--text-muted);">
-      Live stats will appear here once the match starts.<br>
-      <span style="font-size:11px;">Powered by football-data.org</span>
+    return `<div style="text-align:center;padding:1rem;">
+      <div style="font-size:24px;margin-bottom:8px;">📊</div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Detailed stats unavailable</div>
+      <div style="font-size:12px;color:var(--text-muted);">Live stats require a paid API tier.<br>Check back after the match for the final result.</div>
     </div>`;
   }
 
