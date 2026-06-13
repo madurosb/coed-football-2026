@@ -799,7 +799,7 @@
       #video-tabs button { font-size: 10px !important; padding: 4px 9px !important; }
 
       /* Live page tabs */
-      #ltab-participants, #ltab-stats, #ltab-scorers { font-size: 11px; padding: 6px 4px; }
+      #ltab-participants { font-size: 11px; padding: 6px 4px; }
 
       /* Live participants table — hide points col on very small screens */
       @media (max-width: 360px) {
@@ -8956,21 +8956,45 @@ Use exactly the formation provided. Only use players from the squad lists above.
     liveMatchId = match.id;
     await renderLiveMatch(match, container);
 
-    // Auto-refresh every 10s (API allows ~10 req/min on free tier)
+    // Auto-refresh every 10s — fetch from live API directly
+    let refreshCount = 0;
     liveRefreshInterval = setInterval(async () => {
-      const snap = await getDocs(collection(db, 'matches'));
-      let updatedMatch = null;
-      snap.forEach(d => { if (d.id === match.id) updatedMatch = { id: d.id, ...d.data() }; });
-      if (updatedMatch) {
-        // Detect new goal → play sound
-        const newHome = updatedMatch.homeScore ?? 0;
-        const newAway = updatedMatch.awayScore ?? 0;
-        if (lastLiveScore.home !== null && (newHome > lastLiveScore.home || newAway > lastLiveScore.away)) {
-          playGoalSound();
+      try {
+        // Fetch fresh score from API
+        const resp = await fetch('/api/live-scores');
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const apiMatch = (data.matches || []).find(m => String(m.id) === String(match.id));
+
+        if (apiMatch) {
+          // Update scores in-place without full re-render
+          const newHome = apiMatch.homeScore ?? match.homeScore ?? 0;
+          const newAway = apiMatch.awayScore ?? match.awayScore ?? 0;
+          const newMinute = apiMatch.minute;
+          const newStatus = apiMatch.status;
+
+          // Goal sound
+          if (lastLiveScore.home !== null && (newHome > lastLiveScore.home || newAway > lastLiveScore.away)) {
+            playGoalSound();
+          }
+          lastLiveScore = { home: newHome, away: newAway };
+
+          // Update match object and re-render
+          match.homeScore = newHome;
+          match.awayScore = newAway;
+          if (newMinute) match.minute = newMinute;
+          if (newStatus) match.status = newStatus;
         }
-        lastLiveScore = { home: newHome, away: newAway };
-        await renderLiveMatch(updatedMatch, container);
-      }
+
+        // Every 3rd refresh also sync from Firestore for firstGoalscorer etc
+        refreshCount++;
+        if (refreshCount % 3 === 0) {
+          const snap = await getDocs(collection(db, 'matches'));
+          snap.forEach(d => { if (d.id === match.id) { const md = d.data(); match.firstGoalscorer = md.firstGoalscorer; match.goals = md.goals; } });
+        }
+
+        await renderLiveMatch(match, container);
+      } catch(e) { console.log('Live refresh error:', e); }
     }, 10000);
   }
 
@@ -9036,67 +9060,61 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
       <!-- MATCH HEADER -->
       <div style="background:var(--surface);border:1.5px solid ${isLive?'#E24B4A':'var(--border)'};border-radius:14px;padding:1.25rem;margin-bottom:1rem;text-align:center;">
-        <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">${(match.group||'').replace(/_/,' ')} · ${statusLabel} ${stageLabel}</div>
-        <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin:8px 0;">
-          <div style="font-size:14px;font-weight:500;flex:1;text-align:right;">${match.homeTeam}</div>
-          <div style="font-size:32px;font-weight:700;letter-spacing:2px;min-width:80px;text-align:center;">${homeScore}<span style="color:var(--text-muted);font-weight:300;"> - </span>${awayScore}</div>
-          <div style="font-size:14px;font-weight:500;flex:1;text-align:left;">${match.awayTeam}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">${(match.group||'').replace(/_/,' ')} · ${statusLabel} ${stageLabel}</div>
+
+        <!-- SCORE ROW WITH GOALSCORERS -->
+        <div style="display:flex;align-items:flex-start;justify-content:center;gap:12px;margin:4px 0 8px;">
+
+          <!-- HOME TEAM -->
+          <div style="flex:1;text-align:right;">
+            <div style="font-size:14px;font-weight:600;margin-bottom:4px;">${match.homeTeam}</div>
+            ${(match.goals||[]).filter(g=>g.team==='home').map(g=>`
+              <div style="font-size:11px;color:var(--text-muted);">${g.name} <span style="color:#E24B4A;">(${g.minute}')</span></div>`).join('')}
+          </div>
+
+          <!-- SCORE -->
+          <div style="font-size:36px;font-weight:800;letter-spacing:3px;min-width:90px;text-align:center;line-height:1.1;padding-top:2px;">
+            ${homeScore}<span style="color:var(--text-muted);font-weight:300;font-size:28px;"> – </span>${awayScore}
+          </div>
+
+          <!-- AWAY TEAM -->
+          <div style="flex:1;text-align:left;">
+            <div style="font-size:14px;font-weight:600;margin-bottom:4px;">${match.awayTeam}</div>
+            ${(match.goals||[]).filter(g=>g.team==='away').map(g=>`
+              <div style="font-size:11px;color:var(--text-muted);">${g.name} <span style="color:#E24B4A;">(${g.minute}')</span></div>`).join('')}
+          </div>
         </div>
-        ${match.firstGoalscorer ? `<div style="font-size:12px;color:var(--text-muted);">⚽ First scorer: <strong>${match.firstGoalscorer}</strong></div>` : ''}
-        <div style="font-size:10px;color:var(--text-muted);margin-top:5px;">🔄 Updates every 10s</div>
+
+        ${match.minute ? `<div style="font-size:12px;color:#E24B4A;font-weight:600;margin-bottom:4px;">${match.minute}'</div>` : ''}
+        <div id="live-refresh-indicator" style="font-size:10px;color:var(--text-muted);margin-top:4px;">🔄 Updates every 10s</div>
       </div>
 
-      <!-- TABS -->
-      <div style="display:flex;gap:6px;margin-bottom:1rem;">
-        <button id="ltab-participants" onclick="switchLiveTab('participants')" style="flex:1;padding:7px;border-radius:8px;border:0.5px solid var(--green);background:var(--green);color:white;font-size:12px;font-weight:500;cursor:pointer;">👥 Participants</button>
-        <button id="ltab-stats" onclick="switchLiveTab('stats')" style="flex:1;padding:7px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:12px;font-weight:500;cursor:pointer;">📊 Stats</button>
-        <button id="ltab-scorers" onclick="switchLiveTab('scorers')" style="flex:1;padding:7px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:12px;font-weight:500;cursor:pointer;">⚽ Scorers</button>
-      </div>
-
-      <!-- PARTICIPANTS TAB -->
-      <div id="ltab-content-participants">
-        ${preds.length === 0
-          ? `<div style="text-align:center;padding:2rem;font-size:13px;color:var(--text-muted);">No predictions submitted for this match.</div>`
-          : `<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;overflow:hidden;">
-              <div style="display:grid;grid-template-columns:1fr 80px 60px 32px;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;padding:8px 12px;background:var(--surface2);">
-                <div>Player</div><div style="text-align:center;">Prediction</div><div style="text-align:center;">Pts</div><div></div>
-              </div>
-              ${preds.map(p => {
-                const r = predResult(p);
-                const av = getAvatarById(p.avatar);
-                const avatarHTML = p.isAdmin
-                  ? `<img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">`
-                  : av ? `<div style="width:28px;height:28px;border-radius:50%;overflow:hidden;">${makeAvatarSVG(av,28)}</div>`
-                  : `<div style="width:28px;height:28px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;">${(p.nickname||'?').substring(0,2).toUpperCase()}</div>`;
-                return `<div style="display:grid;grid-template-columns:1fr 80px 60px 32px;align-items:center;padding:8px 12px;border-top:0.5px solid var(--border);background:${resultBg(r)};">
-                  <div style="display:flex;align-items:center;gap:8px;">
-                    ${avatarHTML}
-                    <span style="font-size:13px;font-weight:500;">${p.nickname}</span>
-                  </div>
-                  <div style="text-align:center;font-size:14px;font-weight:700;">${p.homeScore ?? '?'} - ${p.awayScore ?? '?'}</div>
-                  <div style="text-align:center;font-size:12px;color:var(--text-muted);">${p.totalPts} pts</div>
-                  <div style="text-align:center;font-size:16px;">${resultIcon(r)}</div>
-                </div>`;
-              }).join('')}
-            </div>`}
-      </div>
-
-      <!-- STATS TAB -->
-      <div id="ltab-content-stats" style="display:none;">
-        <div id="live-api-stats" style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem;">
-          <div style="text-align:center;font-size:13px;color:var(--text-muted);">Loading stats...</div>
-        </div>
-      </div>
-
-      <!-- TOP SCORERS TAB -->
-      <div id="ltab-content-scorers" style="display:none;">
-        <div id="live-top-scorers" style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem;">
-          <div style="text-align:center;font-size:13px;color:var(--text-muted);">Loading scorers...</div>
-        </div>
-      </div>`;
-
-    loadLiveStats(match.id, match.homeTeam, match.awayTeam);
-    loadLiveTopScorers(match.id, match.homeTeam, match.awayTeam);
+      <!-- PARTICIPANTS (no tabs) -->
+      ${preds.length === 0
+        ? `<div style="text-align:center;padding:2rem;font-size:13px;color:var(--text-muted);">No predictions submitted for this match.</div>`
+        : `<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;overflow:hidden;">
+            <div style="display:grid;grid-template-columns:1fr 80px 60px 32px;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;padding:8px 12px;background:var(--surface2);">
+              <div>Player</div><div style="text-align:center;">Prediction</div><div style="text-align:center;">Pts</div><div></div>
+            </div>
+            ${preds.map(p => {
+              const r = predResult(p);
+              const av = getAvatarById(p.avatar);
+              const avatarHTML = p.isAdmin
+                ? `<img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">`
+                : av ? `<div style="width:28px;height:28px;border-radius:50%;overflow:hidden;">${makeAvatarSVG(av,28)}</div>`
+                : `<div style="width:28px;height:28px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;">${(p.nickname||'?').substring(0,2).toUpperCase()}</div>`;
+              return `<div style="display:grid;grid-template-columns:1fr 80px 60px 32px;align-items:center;padding:8px 12px;border-top:0.5px solid var(--border);background:${resultBg(r)};">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  ${avatarHTML}
+                  <span style="font-size:13px;font-weight:500;color:var(--text);">${p.nickname}</span>
+                </div>
+                <div style="text-align:center;font-size:14px;font-weight:700;color:var(--text);">${p.homeScore ?? '?'} - ${p.awayScore ?? '?'}</div>
+                <div style="text-align:center;font-size:12px;color:var(--text-muted);">${p.totalPts} pts</div>
+                <div style="text-align:center;font-size:16px;">${resultIcon(r)}</div>
+              </div>`;
+            }).join('')}
+          </div>`}
+      `;
   }
 
   window.switchLiveTab = (tab) => {
