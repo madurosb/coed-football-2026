@@ -1900,7 +1900,7 @@
     </div>
     <div class="rules-card">
       <h2>Prediction rules</h2>
-      <div class="rule-row"><div><div class="rule-name">Deadline</div><div class="rule-desc">All predictions must be submitted at least 24 hours before kickoff (Israel time)</div></div></div>
+      <div class="rule-row"><div><div class="rule-name">Deadline</div><div class="rule-desc">All predictions must be submitted at least 1 hour before kickoff (Israel time)</div></div></div>
       <div class="rule-row"><div><div class="rule-name">Tournament player</div><div class="rule-desc">Must be locked in before the first match of the tournament</div></div></div>
       <div class="rule-row"><div><div class="rule-name">No changes after deadline</div><div class="rule-desc">Once the deadline passes, predictions are locked - no edits</div></div></div>
     </div>
@@ -2157,7 +2157,7 @@
           <div class="htp-icon">⚽</div>
           <div>
             <div class="htp-title">Step 3 — Predict match scores</div>
-            <div class="htp-desc">Go to <strong>Matches</strong> and predict the score for every game. Tap the +/− buttons to set home and away goals. You must submit at least <strong>24 hours before kickoff</strong> — no last-minute betting on the whistle.</div>
+            <div class="htp-desc">Go to <strong>Matches</strong> and predict the score for every game. Tap the +/− buttons to set home and away goals. You must submit at least <strong>1 hour before kickoff</strong> — no last-minute betting on the whistle.</div>
           </div>
         </div>
       </div>
@@ -2468,8 +2468,8 @@
         <div style="display:flex;gap:14px;align-items:flex-start;">
           <div class="htp-icon">⏰</div>
           <div>
-            <div class="htp-title">24-hour deadline warning</div>
-            <div class="htp-desc">You'll receive a notification 24 hours before any match you haven't predicted yet. Don't ignore it — you cannot submit after the deadline. Set AutoSave on and save early to avoid stress.</div>
+            <div class="htp-title">1-hour deadline warning</div>
+            <div class="htp-desc">You'll receive a notification when a match is coming up that you haven't predicted yet. Don't ignore it — you cannot submit after the deadline. Set AutoSave on and save early to avoid stress.</div>
           </div>
         </div>
       </div>
@@ -3158,7 +3158,7 @@
     // Weekly check using match kickoff week
     const matchSnap = await getDoc(doc(db, 'matches', matchId));
     const kickoff = matchSnap.data()?.kickoff?.toDate?.();
-    if (kickoff && new Date() >= new Date(kickoff.getTime() - 24*60*60*1000)) return alert('Deadline passed for this match!');
+    if (kickoff && new Date() >= new Date(kickoff.getTime() - 1*60*60*1000)) return alert('Deadline passed for this match!');
 
     const week = getMatchWeekKey(kickoff);
     const weekSnap = await getDocs(query(collection(db, 'donOptIns'), where('userId', '==', currentUser.uid), where('week', '==', week)));
@@ -6359,7 +6359,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
     const matchSnap = await getDoc(doc(db, 'matches', matchId));
     const kickoff = matchSnap.data()?.kickoff?.toDate?.();
-    if (kickoff && new Date() >= new Date(kickoff.getTime() - 24*60*60*1000)) {
+    if (kickoff && new Date() >= new Date(kickoff.getTime() - 1*60*60*1000)) {
       return alert('Deadline passed — can\'t activate Joker on this match.');
     }
 
@@ -6924,6 +6924,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const container = document.getElementById('wc-groups-content');
     if (container.dataset.loaded) return;
     container.dataset.loaded = '1';
+    container.innerHTML = '<div style="text-align:center;padding:1rem;font-size:13px;color:var(--text-muted);">Loading groups...</div>';
 
     const matchesSnap = await getDocs(query(collection(db, 'matches'), orderBy('kickoff')));
     const matches = [];
@@ -6936,10 +6937,12 @@ Use exactly the formation provided. Only use players from the squad lists above.
     };
 
     matches.forEach(m => {
-      if (m.status !== 'FINISHED' || m.homeScore === null) return;
+      if (!['FINISHED','IN_PLAY','PAUSED'].includes(m.status) && m.homeScore == null) return;
+      if (m.homeScore == null || m.awayScore == null) return;
       if (!m.group || !m.group.startsWith('GROUP_')) return;
       const h = m.homeTeam, a = m.awayTeam;
-      const hs = m.homeScore, as = m.awayScore;
+      const hs = parseInt(m.homeScore), as = parseInt(m.awayScore);
+      if (isNaN(hs) || isNaN(as)) return;
       initTeam(h); initTeam(a);
       teamStats[h].p++; teamStats[a].p++;
       teamStats[h].gf += hs; teamStats[h].ga += as;
@@ -7353,13 +7356,13 @@ Use exactly the formation provided. Only use players from the squad lists above.
         if (dateKey !== filterDate) return;
       }
       visibleCount++;
-      const deadline = new Date(kickoff.getTime() - 24 * 60 * 60 * 1000);
+      const deadline = new Date(kickoff.getTime() - 1 * 60 * 60 * 1000);
       const isPast = deadline < now;
       const isLive = m.status === 'IN_PLAY' || m.status === 'PAUSED' || m.status === 'HALFTIME';
       const isFinished = m.status === 'FINISHED';
       if (isLive) liveMatches.push(m);
       const hoursToDeadline = (deadline - now) / (1000 * 60 * 60);
-      if (!isPast && hoursToDeadline < 6 && hoursToDeadline > 0) deadlineSoonMatches.push(m);
+      if (!isPast && hoursToDeadline < 0.5 && hoursToDeadline > 0) deadlineSoonMatches.push(m);
 
       const scorerOptions = [
         ...(m.homePlayers || []).map(p => `<option value="${p}">${p}</option>`),
@@ -7557,8 +7560,22 @@ Use exactly the formation provided. Only use players from the squad lists above.
       if (pred.firstScorer) {
         const scorerBtn = document.getElementById('scorer-btn-' + d.id);
         const scorerLabel = document.getElementById('scorer-label-' + d.id);
-        if (scorerLabel) scorerLabel.textContent = pred.firstScorer;
-        if (scorerBtn) { scorerBtn.style.borderColor = 'var(--accent)'; scorerBtn.style.background = 'rgba(59,130,246,0.06)'; scorerBtn.style.color = 'var(--text)'; }
+        const ogBtn = document.getElementById('og-btn-' + d.id);
+
+        if (pred.firstScorer === 'Own Goal') {
+          // Restore OG active state visually
+          if (scorerLabel) scorerLabel.textContent = '🙈 Own Goal';
+          if (scorerBtn) { scorerBtn.style.opacity = '0.4'; scorerBtn.style.pointerEvents = 'none'; }
+          if (ogBtn) {
+            ogBtn.style.background = 'rgba(239,68,68,0.22)';
+            ogBtn.style.borderColor = '#ef4444';
+            ogBtn.textContent = '🙈 OG! ON';
+          }
+          if (typeof _ogActive !== 'undefined') _ogActive.add(d.id);
+        } else {
+          if (scorerLabel) scorerLabel.textContent = pred.firstScorer;
+          if (scorerBtn) { scorerBtn.style.borderColor = 'var(--accent)'; scorerBtn.style.background = 'rgba(59,130,246,0.06)'; scorerBtn.style.color = 'var(--text)'; }
+        }
       }
 
       // Show result feedback for finished matches
@@ -11859,7 +11876,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     for (const d of allMatchesSnap.docs) {
       const m = d.data();
       const kickoff = m.kickoff?.toDate?.() || new Date(m.kickoff);
-      const deadline = new Date(kickoff.getTime() - 24*60*60*1000);
+      const deadline = new Date(kickoff.getTime() - 1*60*60*1000);
       if (deadline < now) { skipped++; continue; }
       const homeEl = document.getElementById('home-' + d.id);
       const awayEl = document.getElementById('away-' + d.id);
@@ -11915,7 +11932,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     for (const d of dayMatches) {
       const m = d.data();
       const kickoff = m.kickoff?.toDate?.() || new Date(m.kickoff);
-      const deadline = new Date(kickoff.getTime() - 24*60*60*1000);
+      const deadline = new Date(kickoff.getTime() - 1*60*60*1000);
       if (deadline < now) { skipped++; continue; }
 
       const homeEl = document.getElementById('home-' + d.id);
@@ -12209,7 +12226,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const totalVotes = homeVotes + drawVotes + awayVotes;
 
     const kickoff = m.kickoff?.toDate?.() || new Date(m.kickoff);
-    const deadline = new Date(kickoff.getTime() - 24*60*60*1000);
+    const deadline = new Date(kickoff.getTime() - 1*60*60*1000);
     const isPast = deadline < new Date();
 
     content.innerHTML = `
@@ -13034,7 +13051,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
       if (upcoming.length >= 6) return;
       const m = d.data();
       const kickoff = m.kickoff?.toDate?.() || new Date(m.kickoff);
-      const deadline = new Date(kickoff.getTime() - 24*60*60*1000);
+      const deadline = new Date(kickoff.getTime() - 1*60*60*1000);
       if (deadline > now) upcoming.push({ id: d.id, ...m, kickoff });
     });
 
@@ -13102,7 +13119,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
           if (nextMatch) return;
           const m = d.data();
           const kickoff = m.kickoff?.toDate?.() || new Date(m.kickoff);
-          const deadline = new Date(kickoff.getTime() - 24*60*60*1000);
+          const deadline = new Date(kickoff.getTime() - 1*60*60*1000);
           if (deadline > now && !predictedIds.has(d.id)) {
             nextMatch = m;
           }
