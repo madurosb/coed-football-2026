@@ -2747,6 +2747,14 @@
         <div class="form-row"><label>Tournament player red cards in this match</label><input type="text" id="result-tourney-reds" placeholder="e.g. Vinicius x1 (or leave empty)"></div>
         <button class="submit-btn" onclick="submitResult()">Submit results and calculate points</button>
       </div>
+      <div class="form-card" style="margin-top:1rem;">
+        <h2>🎯 Award Scorer Points Only</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Use when result was already submitted but first scorer was missing. Awards +2 pts to correct pickers only — no duplicate result points. Works for <strong>Own Goal</strong> too.</p>
+        <div class="form-row"><label>Match</label><select id="scorer-only-match" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;"><option value="">Select match...</option></select></div>
+        <div class="form-row"><label>First scorer name</label><input type="text" id="scorer-only-name" placeholder='e.g. Julian Quinones or Own Goal' style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;"></div>
+        <button class="submit-btn" id="scorer-only-btn" onclick="awardScorerPoints()" style="background:linear-gradient(135deg,#059669,#047857);margin-top:0.5rem;">🎯 Award +2 pts to correct pickers</button>
+        <div id="scorer-only-status" style="margin-top:8px;font-size:12px;text-align:center;min-height:20px;"></div>
+      </div>
     </div>
     <div id="admin-players" class="admin-sub">
       <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
@@ -5641,7 +5649,15 @@ Use exactly the formation provided. Only use players from the squad lists above.
             const rankEl = document.getElementById('home-rank');
             if (rankEl) rankEl.textContent = '#' + rank;
           }
-          renderLeaderboard('home-leaderboard', users.slice(0, 10));
+          const homePredStats = {};
+          const homePredSnap = await getDocs(collection(db, 'predictions'));
+          homePredSnap.forEach(d => {
+            const p = d.data();
+            if (!homePredStats[p.userId]) homePredStats[p.userId] = { total: 0, draws: 0 };
+            homePredStats[p.userId].total++;
+            if ((p.homeScore ?? -1) === (p.awayScore ?? -2)) homePredStats[p.userId].draws++;
+          });
+          renderLeaderboard('home-leaderboard', users.slice(0, 10), homePredStats);
         }
         // Refresh leaderboard page silently if open
         if (currentPage === 'leaderboard') {
@@ -6503,7 +6519,15 @@ Use exactly the formation provided. Only use players from the squad lists above.
     users.sort((a, b) => (b.points || 0) - (a.points || 0));
     const rank = users.findIndex(u => u.uid === currentUser.uid) + 1;
     document.getElementById('home-rank').textContent = '#' + rank;
-    renderLeaderboard('home-leaderboard', users.slice(0, 10));
+    const predsSnap2 = await getDocs(collection(db, 'predictions'));
+    const homePredStats = {};
+    predsSnap2.forEach(d => {
+      const p = d.data();
+      if (!homePredStats[p.userId]) homePredStats[p.userId] = { total: 0, draws: 0 };
+      homePredStats[p.userId].total++;
+      if ((p.homeScore ?? -1) === (p.awayScore ?? -2)) homePredStats[p.userId].draws++;
+    });
+    renderLeaderboard('home-leaderboard', users.slice(0, 10), homePredStats);
 
     // Only show fun stats and player of round if tournament has started
     const tournamentStart = new Date('2026-06-11T19:00:00Z');
@@ -8147,7 +8171,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     document.getElementById('admin-main').style.display = 'none';
     document.querySelectorAll('.admin-sub').forEach(s => s.classList.remove('active'));
     document.getElementById('admin-' + id).classList.add('active');
-    if (id === 'results') loadMatchesForAdmin();
+    if (id === 'results') { loadMatchesForAdmin(); loadScorerOnlyMatches(); }
     if (id === 'players') loadMatchesForPlayerAdmin();
     if (id === 'members') loadMembersLog();
     if (id === 'watch-admin') loadWatchAdmin();
@@ -8404,6 +8428,65 @@ Use exactly the formation provided. Only use players from the squad lists above.
       btn.textContent = 'Submit results and calculate points';
       btn.disabled = false;
     }
+  };
+
+  async function loadScorerOnlyMatches() {
+    const sel = document.getElementById('scorer-only-match');
+    if (!sel || sel.dataset.loaded) return;
+    const snap = await getDocs(query(collection(db, 'matches'), orderBy('kickoff')));
+    sel.innerHTML = '<option value="">Select match...</option>';
+    snap.forEach(d => {
+      const m = d.data();
+      if (m.status !== 'FINISHED') return;
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = `${m.homeFlag||''} ${m.homeTeam} ${m.homeScore ?? '?'}-${m.awayScore ?? '?'} ${m.awayTeam} ${m.awayFlag||''}`;
+      sel.appendChild(opt);
+    });
+    sel.dataset.loaded = '1';
+  }
+
+  window.awardScorerPoints = async () => {
+    const matchId = document.getElementById('scorer-only-match').value;
+    const scorerName = document.getElementById('scorer-only-name').value.trim();
+    const status = document.getElementById('scorer-only-status');
+    const btn = document.getElementById('scorer-only-btn');
+    if (!matchId) { status.textContent = '❌ Select a match first'; return; }
+    if (!scorerName) { status.textContent = '❌ Enter first scorer name (or "Own Goal")'; return; }
+    btn.disabled = true;
+    status.innerHTML = '⏳ Processing...';
+    try {
+      const matchSnap = await getDoc(doc(db, 'matches', matchId));
+      const matchGroup = (matchSnap.data()?.group || '').toUpperCase();
+      const isFinal = matchGroup.includes('FINAL') && !matchGroup.includes('QUARTER') && !matchGroup.includes('SEMI');
+      const isSemi = matchGroup.includes('SEMI');
+      const isQuarter = matchGroup.includes('QUARTER');
+      const isR16 = matchGroup.includes('16') || matchGroup.includes('ROUND_OF_16');
+      const multiplier = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
+
+      const predsSnap = await getDocs(query(collection(db, 'predictions'), where('matchId', '==', matchId)));
+      let awarded = 0;
+      for (const predDoc of predsSnap.docs) {
+        const pred = predDoc.data();
+        if (pred.firstScorer !== scorerName) continue;
+        const pts = 2 * multiplier;
+        const userRef = doc(db, 'users', pred.userId);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          await updateDoc(userRef, {
+            points: (userSnap.data().points || 0) + pts,
+            bonusPoints: (userSnap.data().bonusPoints || 0) + 1
+          });
+          awarded++;
+        }
+      }
+      await setDoc(doc(db, 'results', matchId), { firstScorer: scorerName }, { merge: true });
+      await updateDoc(doc(db, 'matches', matchId), { firstGoalscorer: scorerName });
+      status.innerHTML = `<span style="color:var(--green);">✅ Done! Awarded +${2*multiplier} pts to ${awarded} player${awarded!==1?'s':''} who picked <strong>${scorerName}</strong></span>`;
+    } catch(e) {
+      status.innerHTML = `<span style="color:#ef4444;">❌ Error: ${e.message}</span>`;
+    }
+    btn.disabled = false;
   };
 
   async function loadMatchesForPlayerAdmin() {
