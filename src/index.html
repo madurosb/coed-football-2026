@@ -11889,7 +11889,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       if (!homeEl || !awayEl) continue;
       const homeScore = parseInt(homeEl.dataset?.val ?? homeEl.textContent ?? 0);
       const awayScore = parseInt(awayEl.dataset?.val ?? awayEl.textContent ?? 0);
-      const firstScorer = document.getElementById('scorer-' + d.id)?.value || '';
+      const firstScorer = _ogActive.has(d.id) ? 'Own Goal' : (document.getElementById('scorer-' + d.id)?.value || '');
       try {
         const updateData = {
           userId: currentUser.uid, matchId: d.id,
@@ -11947,7 +11947,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
       const homeScore = parseInt(homeEl.dataset?.val ?? homeEl.textContent ?? 0);
       const awayScore = parseInt(awayEl.dataset?.val ?? awayEl.textContent ?? 0);
-      const firstScorer = document.getElementById('scorer-' + d.id)?.value || '';
+      const firstScorer = _ogActive.has(d.id) ? 'Own Goal' : (document.getElementById('scorer-' + d.id)?.value || '');
 
       try {
         const updateData = {
