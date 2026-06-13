@@ -3732,7 +3732,7 @@
   }
 
   let videoPaused = false;
-  let videoMuted = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent); // muted on mobile (browser policy), sound on desktop
+  let videoMuted = true; // always muted by default — click to unmute
 
   window.toggleVideoPause = function() {
     const btn = document.getElementById('video-pause-btn');
@@ -6538,14 +6538,36 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const leastPredictor = Object.entries(totalCounts).sort((a,b) => a[1]-b[1])[0];
     const topPoints = users[0];
     const bottomPoints = [...users].sort((a,b) => (a.points||0)-(b.points||0))[0];
+    const secondPlace = users[1];
+    const midPlace = users[Math.floor(users.length/2)];
+    const thirdLast = users[users.length - 3];
+
+    // Find player with most exact scores
+    const byExact = [...users].sort((a,b) => (b.exactScores||0)-(a.exactScores||0));
+    const topExact = byExact[0];
+    const worstExact = byExact[byExact.length-1];
+
+    // Most points but no exact scores
+    const noExactHighPts = users.filter(u => (u.exactScores||0) === 0 && (u.points||0) > 0)
+      .sort((a,b) => (b.points||0)-(a.points||0))[0];
 
     const funnies = [
-      topDrawer ? `🤝 <strong>${topDrawer[0]}</strong> predicted ${topDrawer[1]} draws. You really don't believe in winners, do you?` : null,
+      topDrawer ? `🤝 <strong>${topDrawer[0]}</strong> predicted ${topDrawer[1]} draws. You really believe in peace and love, don't you?` : null,
       topScorer ? `🎯 <strong>${topScorer[0]}</strong> predicted a first goalscorer in ${topScorer[1]} matches. Suspiciously confident.` : null,
       topPredictor ? `📋 <strong>${topPredictor[0]}</strong> submitted ${topPredictor[1]} predictions. We see you. No job?` : null,
       leastPredictor && leastPredictor[0] !== topPredictor?.[0] ? `😴 <strong>${leastPredictor[0]}</strong> only predicted ${leastPredictor[1]} match${leastPredictor[1]>1?'es':''}. What are you even doing here?` : null,
-      bottomPoints && bottomPoints.uid !== topPoints?.uid ? `💀 <strong>${bottomPoints.nickname||bottomPoints.displayName}</strong> is last with ${bottomPoints.points||0} pts. Hang in there buddy.` : null,
+      bottomPoints && bottomPoints.uid !== topPoints?.uid ? `💀 <strong>${bottomPoints.nickname||bottomPoints.displayName}</strong> is last with ${bottomPoints.points||0} pts. The wooden spoon is heavy.` : null,
+      secondPlace && secondPlace.points > 0 ? `😤 <strong>${secondPlace.nickname||secondPlace.displayName}</strong> is in 2nd. Close but no cigar.` : null,
+      topExact && (topExact.exactScores||0) > 0 ? `📐 <strong>${topExact.nickname||topExact.displayName}</strong> has ${topExact.exactScores} exact scores. Either genius or cheating.` : null,
+      worstExact && (worstExact.exactScores||0) === 0 && (worstExact.points||0) > 0 ? `🎰 <strong>${worstExact.nickname||worstExact.displayName}</strong> has ${worstExact.points} pts but zero exact scores. Direction is enough, apparently.` : null,
+      noExactHighPts ? `🧭 <strong>${noExactHighPts.nickname||noExactHighPts.displayName}</strong> has ${noExactHighPts.points} pts without a single exact score. Vibes-based predictions only.` : null,
+      midPlace && midPlace.points > 0 ? `🧘 <strong>${midPlace.nickname||midPlace.displayName}</strong> sits perfectly in the middle. The Switzerland of this tournament.` : null,
+      thirdLast && thirdLast.uid !== bottomPoints?.uid ? `📉 <strong>${thirdLast.nickname||thirdLast.displayName}</strong> is in the relegation zone. Three more bad predictions and it's all over.` : null,
+      topPoints && topPoints.points > 0 ? `👑 <strong>${topPoints.nickname||topPoints.displayName}</strong> is leading with ${topPoints.points} pts. They haven't replied to messages since.` : null,
     ].filter(Boolean);
+
+    // Shuffle to show different ones each time
+    funnies.sort(() => Math.random() - 0.5);
 
     const section = document.getElementById('fun-stats-section');
     const list = document.getElementById('fun-stats-list');
@@ -6716,6 +6738,18 @@ Use exactly the formation provided. Only use players from the squad lists above.
     if (i === 2 && pts > 0) badges.push({ emoji: '🥉', text: 'Podium chaser', bg: '#FAEEDA', color: '#633806' });
     if (pts > 50 && i > 2) badges.push({ emoji: '🚀', text: 'Dark horse', bg: '#EDE9FE', color: '#5B21B6' });
     if (u.boldPrediction) badges.push({ emoji: '🐂', text: 'Big balls prediction', bg: '#FFF0E0', color: '#92400E' });
+    // New fun badges
+    if (predCount >= 1 && predCount <= 5 && pts === 0) badges.push({ emoji: '🦺', text: 'Playing it safe', bg: '#F1EFE8', color: '#666' });
+    if (predCount >= 1 && predCount <= 10 && pts > 0 && i <= Math.floor(total/2)) badges.push({ emoji: '🎲', text: 'Casual punter', bg: '#EDE9FE', color: '#5B21B6' });
+    if (exactRate === 0 && predCount >= 5 && pts > 0) badges.push({ emoji: '🪄', text: 'Direction only', bg: '#FFF0E0', color: '#B45309' });
+    if (exactRate > 0 && exactRate < 0.15 && predCount >= 5) badges.push({ emoji: '🎰', text: 'Occasional gambler', bg: '#FAEEDA', color: '#633806' });
+    if (pts > 0 && i === Math.floor(total/2)) badges.push({ emoji: '🧘', text: 'Perfectly average', bg: '#E6F1FB', color: '#0C447C' });
+    if (predCount > 5 && drawCount === 0) badges.push({ emoji: '🦅', text: 'Hates draws', bg: '#FAEEDA', color: '#633806' });
+    if (drawCount > 0 && drawCount / predCount > 0.4 && predCount >= 5) badges.push({ emoji: '☮️', text: 'Mr. Peace', bg: '#E6F1FB', color: '#0C447C' });
+    if (predCount >= 10 && predCount < 30 && exactRate < 0.1) badges.push({ emoji: '🌪️', text: 'Chaos theory', bg: '#FCEBEB', color: '#791F1F' });
+    if (i >= total - 3 && i < total - 1 && pts > 0) badges.push({ emoji: '🪸', text: 'Rock bottom adjacent', bg: '#FCEBEB', color: '#791F1F' });
+    if (pts > 0 && predCount >= 5 && pts / predCount < 0.5) badges.push({ emoji: '📉', text: 'Low yield', bg: '#F1EFE8', color: '#666' });
+    if (i > 2 && i <= 5 && pts > 0) badges.push({ emoji: '🔭', text: 'Top 5 vision', bg: '#E1F5EE', color: '#085041' });
 
     return badges.length > 0 ? badges[0] : null; // return top badge only in leaderboard
   }
@@ -6985,7 +7019,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const scorers = {}, matchCount = {};
       resultsSnap.forEach(d => {
         const r = d.data();
-        if (r.firstScorer && r.firstScorer !== 'og' && r.firstScorer !== 'none') {
+        if (r.firstScorer && r.firstScorer !== 'og' && r.firstScorer !== 'none' && r.firstScorer !== 'null') {
           scorers[r.firstScorer] = (scorers[r.firstScorer] || 0) + 1;
         }
       });
@@ -8775,8 +8809,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
   ];
 
   function showDyk() {
-    const last = localStorage.getItem('dyk_last_shown');
-    const now = Date.now();
+    return; // Disabled
     if (last && now - parseInt(last) < 24 * 60 * 60 * 1000) return; // once per 24h
     const lastIndex = parseInt(localStorage.getItem('dyk_last_index') ?? '-1');
     let idx;
@@ -13202,6 +13235,15 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
     const byCommit = [...stats].sort((a,b) => (b.total||0) - (a.total||0));
     const byBonus = [...stats].sort((a,b) => (b.bonusPoints||0) - (a.bonusPoints||0));
 
+    // Extra fun categories
+    const byWorst = [...stats].filter(s => s.total >= 3).sort((a,b) => (a.points||0) - (b.points||0));
+    const byMostWrong = [...stats].filter(s => s.total >= 3).sort((a,b) => (b.total - b.correct) - (a.total - a.correct));
+    const byLuckiest = [...stats].filter(s => s.total >= 3).sort((a,b) => {
+      const aLuck = (a.points||0) - (a.exact * 4);
+      const bLuck = (b.points||0) - (b.exact * 4);
+      return bLuck - aLuck;
+    });
+
     const avatarHTML = (u, size=40) => {
       if (u.isAdmin) return `<img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;border:2px solid #00ff41;">`;
       const av = getAvatarById(u.avatar);
@@ -13209,7 +13251,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
         : `<div style="width:${size}px;height:${size}px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;flex-shrink:0;">${(u.nickname||'?').substr(0,2).toUpperCase()}</div>`;
     };
 
-    const hofCard = (title, emoji, color, borderColor, winner, subtitle, stat) => {
+    const hofCard = (title, emoji, color, borderColor, winner, subtitle, stat, joke) => {
       if (!winner) return '';
       return `
       <div style="background:var(--surface);border:1.5px solid ${borderColor};border-radius:16px;padding:1.25rem;margin-bottom:1rem;position:relative;overflow:hidden;">
@@ -13220,6 +13262,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
           <div style="flex:1;">
             <div style="font-size:17px;font-weight:700;">${winner.nickname || winner.displayName}</div>
             <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${subtitle}</div>
+            ${joke ? `<div style="font-size:11px;color:${color};margin-top:5px;font-style:italic;">${joke}</div>` : ''}
           </div>
           <div style="text-align:center;background:${color}18;border-radius:10px;padding:8px 12px;">
             <div style="font-size:22px;font-weight:800;color:${color};">${stat}</div>
@@ -13245,35 +13288,53 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
     }
 
     container.innerHTML = `
-      ${hofCard('Most Points', '👑', '#EF9F27', '#BA7517',
+      ${hofCard('The King 👑', '🏆', '#EF9F27', '#BA7517',
         byPoints[0],
-        `${byPoints[0]?.points||0} total points · Rank #1`,
-        `${byPoints[0]?.points||0} pts`
+        `${byPoints[0]?.points||0} pts — sitting on the throne`,
+        `${byPoints[0]?.points||0} pts`,
+        `"I knew it all along." — ${byPoints[0]?.nickname||'them'}, probably`
       )}
-      ${hofCard('Sharpest Predictor', '🎯', '#1D9E75', '#085041',
+      ${hofCard('The Surgeon 🔬', '🎯', '#1D9E75', '#085041',
         byExact[0],
         `${Math.round((byExact[0]?.exactRate||0)*100)}% exact score rate · ${byExact[0]?.exact||0} exact scores`,
-        `${Math.round((byExact[0]?.exactRate||0)*100)}%`
+        `${Math.round((byExact[0]?.exactRate||0)*100)}%`,
+        `Doesn't predict matches. Schedules them.`
       )}
-      ${hofCard('The Oracle', '🔥', '#E24B4A', '#B91C1C',
+      ${hofCard('The Oracle 🔮', '👁️', '#7C3AED', '#5B21B6',
         byCorrect[0],
-        `${Math.round((byCorrect[0]?.correctRate||0)*100)}% correct results · Never wrong`,
-        `${Math.round((byCorrect[0]?.correctRate||0)*100)}%`
+        `${Math.round((byCorrect[0]?.correctRate||0)*100)}% correct results`,
+        `${Math.round((byCorrect[0]?.correctRate||0)*100)}%`,
+        `Gets it right without knowing how. Suspicious.`
       )}
-      ${hofCard('Scorer Hunter', '⚽', '#7C3AED', '#5B21B6',
+      ${hofCard('Sniper ⚽', '🎯', '#E24B4A', '#B91C1C',
         byScorer[0],
         `${byScorer[0]?.scorerHits||0} first scorers called correctly`,
-        `${byScorer[0]?.scorerHits||0} hits`
+        `${byScorer[0]?.scorerHits||0} hits`,
+        `Named the goalscorer before the match even started. Witch? 🧙`
       )}
-      ${hofCard('Most Committed', '📋', '#0C447C', '#1e40af',
+      ${hofCard('The Hustler 💼', '🎰', '#0C447C', '#1e40af',
+        byLuckiest[0],
+        `Points without breaking a sweat`,
+        `😎`,
+        `Minimal effort. Maximum results. We hate them.`
+      )}
+      ${hofCard('Wooden Spoon 🥄', '😬', '#6b7280', '#374151',
+        byWorst[byWorst.length - 1],
+        `${byWorst[byWorst.length-1]?.points||0} pts — bravely holding the bottom`,
+        `${byWorst[byWorst.length-1]?.points||0} pts`,
+        `"At least I entered." True. Barely, but true.`
+      )}
+      ${hofCard('Chaos Agent 🌪️', '💥', '#f59e0b', '#b45309',
+        byMostWrong[0],
+        `${byMostWrong[0] ? byMostWrong[0].total - byMostWrong[0].correct : 0} wrong results — absolutely unhinged`,
+        `${byMostWrong[0] ? byMostWrong[0].total - byMostWrong[0].correct : 0} ❌`,
+        `Football analyst? No. Entertainment? Absolutely.`
+      )}
+      ${hofCard('Most Committed 🤓', '📋', '#1D9E75', '#085041',
         byCommit[0],
-        `${byCommit[0]?.total||0} predictions submitted`,
-        `${byCommit[0]?.total||0}`
-      )}
-      ${hofCard('Bonus King', '⚡', '#BA7517', '#92400E',
-        byBonus[0],
-        `${byBonus[0]?.bonusPoints||0} tournament player bonus points`,
-        `+${byBonus[0]?.bonusPoints||0}`
+        `${byCommit[0]?.total||0} predictions submitted — not missing a single match`,
+        `${byCommit[0]?.total||0}`,
+        `Eats, sleeps, predicts. Family is worried.`
       )}
       <div style="background:var(--surface2);border-radius:12px;padding:12px 16px;font-size:12px;color:var(--text-muted);text-align:center;margin-top:0.5rem;">
         🔄 Hall of Fame updates automatically after each match result
