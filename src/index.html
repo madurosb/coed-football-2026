@@ -1753,10 +1753,7 @@
     </div>
 
     <!-- REFRESH BUTTON -->
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
-      <button onclick="document.getElementById('badges-guide-modal').style.display='flex'" style="display:flex;align-items:center;gap:5px;background:none;border:0.5px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--text-muted);cursor:pointer;">
-        🏅 Badges guide
-      </button>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:0.75rem;">
       <button onclick="refreshStandings(this)" style="display:flex;align-items:center;gap:6px;background:none;border:0.5px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--text-muted);cursor:pointer;transition:all 0.15s;">
         🔄 <span>(Refresh results!)</span>
       </button>
@@ -2638,54 +2635,52 @@
 
   <!-- HIGHLIGHTS -->
   <div class="page" id="page-highlights">
-    <div style="padding:0 0 2rem;">
-      <div style="font-size:13px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:1.5rem;text-align:center;">Match Highlights</div>
+    <div style="text-align:center; padding: 2rem 1rem 3rem;">
+      <div style="font-size:13px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2rem;">Match Highlights</div>
 
-      <!-- South Korea vs Czechia -->
-      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1.25rem;">
-        <div style="padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:0.5px solid var(--border);">
-          <span style="font-size:18px;">🇰🇷</span>
-          <div>
-            <div style="font-size:14px;font-weight:600;">South Korea 2–1 Czechia</div>
-            <div style="font-size:11px;color:var(--text-muted);">Group A · Jun 12</div>
-          </div>
-          <span style="font-size:18px;margin-left:auto;">🇨🇿</span>
-        </div>
-        <video controls style="width:100%;display:block;max-height:280px;background:#000;" preload="metadata">
-          <source src="https://github.com/madurosb/coed-football-2026/raw/refs/heads/main/highlights/korea_czech.mp4" type="video/mp4">
-        </video>
+      <svg viewBox="0 0 320 260" width="280" style="display:block;margin:0 auto 2rem;" xmlns="http://www.w3.org/2000/svg">
+        <!-- Screen/TV -->
+        <rect x="30" y="20" width="260" height="160" rx="12" fill="#1a1a2e" stroke="#334155" stroke-width="2"/>
+        <rect x="44" y="34" width="232" height="132" rx="6" fill="#0f172a"/>
+        <!-- Pitch lines -->
+        <rect x="44" y="34" width="232" height="132" rx="6" fill="#166534" opacity="0.3"/>
+        <line x1="160" y1="34" x2="160" y2="166" stroke="#ffffff" stroke-width="0.8" opacity="0.3"/>
+        <circle cx="160" cy="100" r="28" fill="none" stroke="#ffffff" stroke-width="0.8" opacity="0.3"/>
+        <rect x="126" y="34" width="68" height="22" fill="none" stroke="#ffffff" stroke-width="0.8" opacity="0.3"/>
+        <rect x="126" y="144" width="68" height="22" fill="none" stroke="#ffffff" stroke-width="0.8" opacity="0.3"/>
+        <!-- Play button -->
+        <circle cx="160" cy="100" r="22" fill="#1D9E75" opacity="0.9"/>
+        <polygon points="154,91 154,109 172,100" fill="white"/>
+        <!-- Lock icon overlay -->
+        <rect x="110" y="70" width="100" height="60" rx="8" fill="#0f172a" opacity="0.85"/>
+        <rect x="143" y="82" width="34" height="26" rx="4" fill="none" stroke="#5DCAA5" stroke-width="2"/>
+        <path d="M150 82 Q150 72 160 72 Q170 72 170 82" fill="none" stroke="#5DCAA5" stroke-width="2"/>
+        <circle cx="160" cy="95" r="4" fill="#5DCAA5"/>
+        <line x1="160" y1="99" x2="160" y2="104" stroke="#5DCAA5" stroke-width="2"/>
+        <!-- TV stand -->
+        <rect x="148" y="180" width="24" height="14" rx="2" fill="#334155"/>
+        <rect x="128" y="192" width="64" height="6" rx="3" fill="#334155"/>
+        <!-- Floating calendar icons -->
+        <rect x="58" y="48" width="28" height="26" rx="4" fill="#1e3a5f" opacity="0.8"/>
+        <line x1="64" y1="52" x2="80" y2="52" stroke="#60a5fa" stroke-width="1.5"/>
+        <rect x="62" y="56" width="4" height="4" rx="1" fill="#60a5fa" opacity="0.6"/>
+        <rect x="70" y="56" width="4" height="4" rx="1" fill="#60a5fa" opacity="0.6"/>
+        <rect x="62" y="64" width="4" height="4" rx="1" fill="#60a5fa" opacity="0.4"/>
+        <rect x="70" y="64" width="4" height="4" rx="1" fill="#60a5fa" opacity="0.4"/>
+        <!-- Stars -->
+        <text x="240" y="58" font-size="14" opacity="0.4">⭐</text>
+        <text x="52" y="155" font-size="12" opacity="0.3">⭐</text>
+        <text x="258" y="148" font-size="10" opacity="0.3">✨</text>
+      </svg>
+
+      <div style="font-size:22px;font-weight:500;margin-bottom:0.5rem;">No highlights yet</div>
+      <div style="font-size:14px;color:var(--text-muted);line-height:1.7;max-width:320px;margin:0 auto 2rem;">
+        Once the World Cup kicks off on <strong>June 11</strong>, match highlights will appear here after every game.
       </div>
 
-      <!-- Canada vs Bosnia -->
-      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1.25rem;">
-        <div style="padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:0.5px solid var(--border);">
-          <span style="font-size:18px;">🇨🇦</span>
-          <div>
-            <div style="font-size:14px;font-weight:600;">Canada 1–1 Bosnia-Herzegovina</div>
-            <div style="font-size:11px;color:var(--text-muted);">Group B · Jun 12</div>
-          </div>
-          <span style="font-size:18px;margin-left:auto;">🇧🇦</span>
-        </div>
-        <video controls style="width:100%;display:block;max-height:280px;background:#000;" preload="metadata">
-          <source src="https://github.com/madurosb/coed-football-2026/raw/refs/heads/main/highlights/canada_bos.mp4" type="video/mp4">
-        </video>
+      <div style="display:inline-flex;align-items:center;gap:8px;background:#0a1f0a;border-radius:99px;padding:10px 20px;">
+        <span style="font-size:14px;color:#4ade80;font-weight:500;">⚽ Check back on June 11, 2026</span>
       </div>
-
-      <!-- USA vs Paraguay -->
-      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1.25rem;">
-        <div style="padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:0.5px solid var(--border);">
-          <span style="font-size:18px;">🇺🇸</span>
-          <div>
-            <div style="font-size:14px;font-weight:600;">USA 4–1 Paraguay</div>
-            <div style="font-size:11px;color:var(--text-muted);">Group D · Jun 13</div>
-          </div>
-          <span style="font-size:18px;margin-left:auto;">🇵🇾</span>
-        </div>
-        <video controls style="width:100%;display:block;max-height:280px;background:#000;" preload="metadata">
-          <source src="https://github.com/madurosb/coed-football-2026/raw/refs/heads/main/highlights/usa_para.mp4" type="video/mp4">
-        </video>
-      </div>
-
     </div>
   </div>
 
@@ -6807,24 +6802,26 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const badges = [];
 
     if (i === 0 && pts > 0) badges.push({ emoji: '👑', text: 'El Rey', bg: '#FAEEDA', color: '#633806' });
-    // Wooden spoon only if we have ALL users (full leaderboard has more than 10)
     if (i === total - 1 && total > 10) badges.push({ emoji: '🥄', text: 'Wooden spoon', bg: '#FCEBEB', color: '#791F1F' });
     if (exactRate >= 0.35 && exact >= 4) badges.push({ emoji: '🎯', text: 'Sniper', bg: '#E1F5EE', color: '#085041' });
     if (exactRate >= 0.5 && exact >= 6) badges.push({ emoji: '🔥', text: 'On fire', bg: '#FFF0E0', color: '#B45309' });
     if (bonus >= 5) badges.push({ emoji: '⚡', text: 'Scorer hunter', bg: '#E1F5EE', color: '#085041' });
-    if (drawCount >= 5 && predCount > 8) badges.push({ emoji: '🤝', text: 'Mr. Draw', bg: '#E6F1FB', color: '#0C447C' });
+    // Mr. Draw: needs draws to be > 50% of predictions AND at least 8 draws predicted
+    if (drawCount >= 8 && predCount > 0 && drawCount / predCount > 0.5) badges.push({ emoji: '🤝', text: 'Mr. Draw', bg: '#E6F1FB', color: '#0C447C' });
     if (predCount === 0) badges.push({ emoji: '😴', text: 'Just watching', bg: '#F1EFE8', color: '#666' });
     if (predCount >= 40) badges.push({ emoji: '📋', text: 'Prediction machine', bg: '#E6F1FB', color: '#0C447C' });
-    if (pts === 0 && predCount > 5) badges.push({ emoji: '🫠', text: 'Confidently wrong', bg: '#FCEBEB', color: '#791F1F' });
+    if (pts === 0 && predCount > 10) badges.push({ emoji: '🫠', text: 'Confidently wrong', bg: '#FCEBEB', color: '#791F1F' });
     if (i === 1 && pts > 0) badges.push({ emoji: '🥈', text: 'So close', bg: '#E6F1FB', color: '#0C447C' });
     if (i === 2 && pts > 0) badges.push({ emoji: '🥉', text: 'Podium chaser', bg: '#FAEEDA', color: '#633806' });
     if (pts > 50 && i > 2) badges.push({ emoji: '🚀', text: 'Dark horse', bg: '#EDE9FE', color: '#5B21B6' });
     if (u.boldPrediction) badges.push({ emoji: '🐂', text: 'Big balls prediction', bg: '#FFF0E0', color: '#92400E' });
-    // New fun badges
+    // Fun badges — stricter thresholds so they're rarer
     if (predCount >= 1 && predCount <= 5 && pts === 0) badges.push({ emoji: '🦺', text: 'Playing it safe', bg: '#F1EFE8', color: '#666' });
     if (predCount >= 1 && predCount <= 10 && pts > 0 && i <= Math.floor(total/2)) badges.push({ emoji: '🎲', text: 'Casual punter', bg: '#EDE9FE', color: '#5B21B6' });
-    if (exactRate === 0 && predCount >= 5 && pts > 0) badges.push({ emoji: '🪄', text: 'Direction only', bg: '#FFF0E0', color: '#B45309' });
-    if (exactRate > 0 && exactRate < 0.15 && predCount >= 5) badges.push({ emoji: '🎰', text: 'Occasional gambler', bg: '#FAEEDA', color: '#633806' });
+    // Direction only: no exact scores but at least 15 predictions (enough sample)
+    if (exactRate === 0 && predCount >= 15 && pts > 0) badges.push({ emoji: '🪄', text: 'Direction only', bg: '#FFF0E0', color: '#B45309' });
+    // Occasional gambler: low exact rate but meaningful sample (20+ predictions)
+    if (exactRate > 0 && exactRate < 0.1 && predCount >= 20) badges.push({ emoji: '🎰', text: 'Occasional gambler', bg: '#FAEEDA', color: '#633806' });
     if (pts > 0 && i === Math.floor(total/2)) badges.push({ emoji: '🧘', text: 'Perfectly average', bg: '#E6F1FB', color: '#0C447C' });
     if (predCount > 5 && drawCount === 0) badges.push({ emoji: '🦅', text: 'Hates draws', bg: '#FAEEDA', color: '#633806' });
     if (drawCount > 0 && drawCount / predCount > 0.4 && predCount >= 5) badges.push({ emoji: '☮️', text: 'Mr. Peace', bg: '#E6F1FB', color: '#0C447C' });
@@ -6994,7 +6991,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     };
 
     matches.forEach(m => {
-      // Count any match that has both scores — status may vary
+      if (!['FINISHED','IN_PLAY','PAUSED'].includes(m.status) && m.homeScore == null) return;
       if (m.homeScore == null || m.awayScore == null) return;
       if (!m.group || !m.group.startsWith('GROUP_')) return;
       const h = m.homeTeam, a = m.awayTeam;
@@ -7037,11 +7034,28 @@ Use exactly the formation provided. Only use players from the squad lists above.
       return code ? `<img src="https://flagcdn.com/20x15/${code}.png" style="border-radius:2px;vertical-align:middle;margin-right:4px;">` : '';
     };
 
+    // Name aliases — API returns different names than WC_GROUPS definition
+    const NAME_ALIASES = {
+      'United States': 'USA',
+      'USA': 'United States',
+      'Bosnia-Herzegovina': 'Bosnia & Herzegovina',
+      'Bosnia & Herzegovina': 'Bosnia-Herzegovina',
+      'Ivory Coast': "Côte d'Ivoire",
+      "Côte d'Ivoire": 'Ivory Coast',
+      'Türkiye': 'Turkey',
+      'Turkey': 'Türkiye',
+    };
+
+    // Resolve team stats to handle name mismatches
+    const resolveStats = (name) => {
+      return teamStats[name] || teamStats[NAME_ALIASES[name]] || { p:0, w:0, d:0, l:0, gf:0, ga:0, pts:0 };
+    };
+
     let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
     for (const [group, teams] of Object.entries(WC_GROUPS)) {
       const sortedTeams = teams.map(t => ({
         name: t,
-        ...(teamStats[t] || { p:0, w:0, d:0, l:0, gf:0, ga:0, pts:0 })
+        ...resolveStats(t)
       })).sort((a,b) => b.pts - a.pts || (b.gf-b.ga) - (a.gf-a.ga) || b.gf - a.gf);
 
       const results = groupResults[`GROUP_${group}`] || [];
@@ -15573,24 +15587,5 @@ Rules: realistic scores (0-4 range per team), scorer must be a real known player
 
 
   </script>
-
-<!-- BADGES GUIDE MODAL -->
-<div id="badges-guide-modal" onclick="if(event.target===this)this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;padding:1rem;">
-  <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:16px;max-width:420px;width:100%;max-height:85vh;overflow-y:auto;padding:1.25rem;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
-      <div style="font-size:15px;font-weight:700;">🏅 Badges Guide</div>
-      <button onclick="document.getElementById('badges-guide-modal').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">×</button>
-    </div>
-    <div style="font-size:12px;color:var(--text-muted);margin-bottom:1rem;">Badges are awarded automatically based on your stats.</div>
-    <div id="badges-guide-list"></div>
-  </div>
-</div>
-<script>
-(function(){
-  const badges=[['👑','El Rey','#1 on the leaderboard'],['🥈','So close','2nd place'],['🥉','Podium chaser','3rd place'],['🔭','Top 5 vision','Positions 4–5'],['🚀','Dark horse','High points, not top 3'],['🥄','Wooden spoon','Dead last on the full leaderboard'],['🪸','Rock bottom adjacent','3rd from last'],['🎯','Sniper','35%+ exact score rate with 4+ exact scores'],['🔥','On fire','50%+ exact score rate with 6+ exact scores'],['⚡','Scorer hunter','5+ bonus pts from first scorer picks'],['📋','Prediction machine','40+ predictions submitted'],['🤝','Mr. Draw','5+ draws predicted'],['☮️','Mr. Peace','40%+ of your predictions are draws'],['🦅','Hates draws','Zero draws predicted'],['🪄','Direction only','Correct results but zero exact scores'],['🎰','Occasional gambler','Under 15% exact score rate'],['🧘','Perfectly average','Right in the middle of the table'],['🌪️','Chaos theory','Many predictions, almost no exact scores'],['📉','Low yield','Under 0.5 pts per prediction on average'],['🎲','Casual punter','Few predictions, some points'],['🦺','Playing it safe','1–5 predictions, zero points'],['🫠','Confidently wrong','Many predictions, still zero points'],['😴','Just watching','No predictions submitted yet']];
-  const el=document.getElementById('badges-guide-list');
-  if(el) el.innerHTML=badges.map(([e,t,d])=>`<div style="display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:0.5px solid var(--border);"><span style="font-size:20px;width:30px;flex-shrink:0;">${e}</span><div><div style="font-size:13px;font-weight:600;">${t}</div><div style="font-size:11px;color:var(--text-muted);">${d}</div></div></div>`).join('');
-})();
-</script>
 
 </body>
