@@ -14213,6 +14213,11 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
       let exact = 0, correct = 0, wrong = 0;
       const exacters = [], winners = [], losers = [];
 
+      // Scorer picks aggregation
+      const scorerPicks = {}; // { scorerName: [nickname, ...] }
+      const actualScorer = m.firstGoalscorer || null;
+      let scorerHits = [];
+
       preds.forEach(p => {
         const ar = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
         const pr = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
@@ -14220,7 +14225,21 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
         if (isExact) { exact++; exacters.push(p.nickname); }
         else if (ar === pr) { correct++; winners.push(p.nickname); }
         else { wrong++; losers.push(p.nickname); }
+
+        // Scorer picks
+        const sc = p.firstScorer;
+        if (sc && sc !== '' && sc !== 'null') {
+          if (!scorerPicks[sc]) scorerPicks[sc] = [];
+          scorerPicks[sc].push(p.nickname);
+          if (actualScorer && sc.toLowerCase() === actualScorer.toLowerCase()) {
+            scorerHits.push(p.nickname);
+          }
+        }
       });
+
+      // Sort scorer picks by count
+      const sortedScorers = Object.entries(scorerPicks).sort((a,b) => b[1].length - a[1].length);
+      const totalScorerPicks = Object.values(scorerPicks).reduce((s, v) => s + v.length, 0);
 
       // AI-style funny summary
       const pct = total > 0 ? Math.round(((exact+correct)/total)*100) : 0;
@@ -14228,6 +14247,24 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
         : correct >= total * 0.7 ? `✅ Most got the result right. Easy pick this one.`
         : wrong >= total * 0.7 ? `💀 ${Math.round(wrong/total*100)}% of predictions were wrong. Brutal.`
         : `📊 Mixed bag — ${pct}% got it right.`;
+
+      // Scorer section HTML
+      const scorerHTML = sortedScorers.length > 0 ? `
+        <div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border);">
+          <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">⚽ First scorer picks</div>
+          ${actualScorer ? `<div style="font-size:12px;margin-bottom:8px;"><span style="background:var(--badge-green-bg);color:var(--badge-green-text);padding:2px 8px;border-radius:99px;font-weight:600;font-size:11px;">✅ Actual: ${actualScorer}</span>${scorerHits.length > 0 ? ` <span style="font-size:11px;color:var(--green);font-weight:500;">· ${scorerHits.join(', ')} got it! 🎉</span>` : scorerHits.length === 0 && totalScorerPicks > 0 ? ` <span style="font-size:11px;color:var(--text-muted);">· Nobody got it 😬</span>` : ''}</div>` : ''}
+          ${sortedScorers.map(([name, pickers]) => {
+            const isRight = actualScorer && name.toLowerCase() === actualScorer.toLowerCase();
+            return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:0.5px solid var(--border);">
+              <div style="flex:1;display:flex;align-items:center;gap:6px;">
+                ${isRight ? '<span style="font-size:13px;">✅</span>' : '<span style="font-size:13px;opacity:0.3;">⚽</span>'}
+                <span style="font-size:12px;font-weight:${isRight?'700':'400'};color:${isRight?'var(--green)':'var(--text)'};">${name}</span>
+              </div>
+              <div style="height:5px;background:${isRight?'var(--green)':'var(--border)'};border-radius:99px;width:${Math.round(pickers.length/totalScorerPicks*100)}%;min-width:4px;max-width:80px;"></div>
+              <span style="font-size:11px;color:var(--text-muted);min-width:18px;text-align:right;">${pickers.length}</span>
+            </div>`;
+          }).join('')}
+        </div>` : '';
 
       return `
         <div id="postmatch-${m.id}" style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1rem;">
@@ -14251,7 +14288,8 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
           <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">${verdict}</div>
           ${exacters.length > 0 ? `<div style="font-size:11px;margin-bottom:4px;"><span style="color:var(--green);font-weight:600;">🎯 Exact score:</span> ${exacters.join(', ')}</div>` : ''}
           ${winners.length > 0 ? `<div style="font-size:11px;margin-bottom:4px;"><span style="color:#378ADD;font-weight:600;">✅ Correct result:</span> ${winners.join(', ')}</div>` : ''}
-          ${losers.length > 0 ? `<div style="font-size:11px;"><span style="color:#E24B4A;font-weight:600;">❌ Wrong:</span> ${losers.join(', ')}</div>` : ''}
+          ${losers.length > 0 ? `<div style="font-size:11px;margin-bottom:4px;"><span style="color:#E24B4A;font-weight:600;">❌ Wrong:</span> ${losers.join(', ')}</div>` : ''}
+          ${scorerHTML}
         </div>`;
     }).join('') + `
       <div style="text-align:center;font-size:12px;color:var(--text-muted);padding:0.5rem;">Showing last ${Math.min(finishedMatches.length, 10)} matches</div>`;
