@@ -1522,6 +1522,9 @@
         <span style="font-size:16px;opacity:0.8;">→</span>
       </button>
     </div>
+    <!-- LAST MATCH BANNER — injected by loadHomeData -->
+    <div id="last-match-banner" style="display:none;margin-bottom:1rem;"></div>
+
     <div style="background:#0a1f0a;border-radius:16px;padding:1.25rem 1rem;text-align:center;margin-bottom:1rem;">
       <div style="font-size:11px;letter-spacing:0.15em;color:#4ade80;text-transform:uppercase;margin-bottom:4px;font-family:monospace;">⚽ COED&FOOTBALL &nbsp;·&nbsp; 🏆 WORLD CUP 2026</div>
       <div style="font-size:13px;color:#86efac;margin-bottom:1rem;" id="cd-sub">Kickoff countdown</div>
@@ -5421,24 +5424,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
   };
 
   function showMusicTooltip() {
-    const existing = document.getElementById('music-tooltip');
-    if (existing) return;
-    const btn = document.getElementById('music-btn');
-    if (!btn) return;
-    const rect = btn.getBoundingClientRect();
-    const tip = document.createElement('div');
-    tip.id = 'music-tooltip';
-    tip.className = 'music-tooltip';
-    tip.textContent = '🔊 Your neighbors called. They said tap here.';
-    // Position below the button
-    tip.style.top = (rect.bottom + 10) + 'px';
-    tip.style.right = (window.innerWidth - rect.right - 10) + 'px';
-    document.body.appendChild(tip);
-    setTimeout(() => {
-      tip.style.transition = 'opacity 0.5s';
-      tip.style.opacity = '0';
-      setTimeout(() => tip.remove(), 500);
-    }, 4000);
+    // Tooltip disabled — music starts muted by default
   }
 
   const firebaseConfig = {
@@ -5757,21 +5743,81 @@ Use exactly the formation provided. Only use players from the squad lists above.
     setTimeout(checkFirstTimeUser, 3000);
     // Check for bold prediction award
     setTimeout(checkBoldPredictionPopup, 4000);
+    // ── LAST MATCH BANNER ──────────────────────────────────────────
+    (async () => {
+      try {
+        const mSnap = await getDocs(query(collection(db, 'matches'), orderBy('kickoff')));
+        const allM = [];
+        mSnap.forEach(d => allM.push({ id: d.id, ...d.data() }));
+        const finished = allM.filter(m => m.status === 'FINISHED' && m.homeScore !== null);
+        if (finished.length === 0) return;
+        finished.sort((a,b) => (b.kickoff?.toDate?.() || new Date(b.kickoff)) - (a.kickoff?.toDate?.() || new Date(a.kickoff)));
+        const lm = finished[0];
+
+        // Fetch predictions for this match
+        const pSnap = await getDocs(query(collection(db, 'predictions')));
+        const uSnap = await getDocs(collection(db, 'users'));
+        const users = {};
+        uSnap.forEach(d => { users[d.id] = d.data(); });
+        const preds = [];
+        pSnap.forEach(d => {
+          const p = d.data();
+          if (p.matchId !== lm.id) return;
+          const u = users[p.userId];
+          if (!u) return;
+          preds.push({ ...p, nickname: u.nickname || u.displayName || 'Unknown' });
+        });
+
+        // Who got exact score?
+        const exacters = preds
+          .filter(p => p.homeScore === lm.homeScore && p.awayScore === lm.awayScore)
+          .map(p => p.nickname);
+
+        // Goals/scorers display
+        const scorer = lm.firstGoalscorer && lm.firstGoalscorer !== 'null' ? lm.firstGoalscorer : null;
+        const goals = lm.goals || [];
+        const goalStr = goals.length > 0
+          ? goals.sort((a,b) => (parseInt(a.minute)||0)-(parseInt(b.minute)||0))
+                 .map(g => `${g.name||'?'} ${g.minute}'`).join(' · ')
+          : scorer ? `⚽ ${scorer}` : null;
+
+        const kickoffDate = (lm.kickoff?.toDate?.() || new Date(lm.kickoff))
+          .toLocaleDateString('en-GB', { day:'2-digit', month:'short', timeZone:'Asia/Jerusalem' });
+
+        const banner = document.getElementById('last-match-banner');
+        if (!banner) return;
+        banner.style.display = 'block';
+        banner.innerHTML = `
+          <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:12px 14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;">🕐 Last match · ${kickoffDate}</span>
+              </div>
+              <button onclick="showPostMatchCard('${lm.id}')"
+                style="font-size:11px;font-weight:700;color:#f87171;background:linear-gradient(135deg,rgba(239,68,68,0.12),rgba(220,38,38,0.06));border:1px solid rgba(239,68,68,0.4);border-radius:8px;padding:4px 10px;cursor:pointer;letter-spacing:0.04em;">
+                🔥 Post Match →
+              </button>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px;">
+              <span style="font-size:14px;font-weight:700;color:var(--text);">${lm.homeTeam}</span>
+              <span style="font-size:22px;font-weight:800;color:var(--text);letter-spacing:2px;">${lm.homeScore} – ${lm.awayScore}</span>
+              <span style="font-size:14px;font-weight:700;color:var(--text);">${lm.awayTeam}</span>
+            </div>
+            ${goalStr ? `<div style="font-size:11px;color:var(--text-muted);text-align:center;margin-bottom:8px;">⚽ ${goalStr}</div>` : ''}
+            ${exacters.length > 0
+              ? `<div style="font-size:11px;background:rgba(29,158,117,0.1);border:0.5px solid rgba(29,158,117,0.3);border-radius:8px;padding:5px 10px;text-align:center;">
+                  🎯 <span style="color:var(--green);font-weight:700;">Exact score:</span> ${exacters.join(', ')}
+                </div>`
+              : `<div style="font-size:11px;color:var(--text-muted);text-align:center;">😬 Nobody got the exact score</div>`}
+          </div>`;
+      } catch(e) { console.log('Last match banner error:', e); }
+    })();
+    // ── END LAST MATCH BANNER ───────────────────────────────────────
+
     // Run all notification checks
     setTimeout(runNotificationChecks, 2000);
     setTimeout(sendWeeklyDigest, 5000);
-    // Start music on first click or tap — capture:true catches ALL clicks even if stopPropagation is called
-    let musicStarted = false;
-    const startOnInteraction = () => {
-      if (musicStarted) return;
-      musicStarted = true;
-      startMusic();
-      document.removeEventListener('click', startOnInteraction, true);
-      document.removeEventListener('touchstart', startOnInteraction, true);
-      setTimeout(showMusicTooltip, 1200);
-    };
-    document.addEventListener('click', startOnInteraction, true);
-    document.addEventListener('touchstart', startOnInteraction, true);
+    // Music starts muted — user can tap 🔇 button to play
   }
 
   // SIGN IN
@@ -9284,6 +9330,35 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
     await renderLiveMatch(match, container);
 
+    // Manual refresh — hits the live API directly and re-renders
+    window._triggerLiveRefresh = async (btn) => {
+      if (btn) { btn.disabled = true; btn.innerHTML = '<span style="animation:spin 0.6s linear infinite;display:inline-block;">🔄</span> Refreshing...'; }
+      try {
+        const resp = await fetch('/api/live-scores');
+        if (resp.ok) {
+          const data = await resp.json();
+          const apiMatch = (data.matches || []).find(m => String(m.id) === String(match.id));
+          if (apiMatch) {
+            match.homeScore = apiMatch.homeScore ?? match.homeScore;
+            match.awayScore = apiMatch.awayScore ?? match.awayScore;
+            if (apiMatch.minute !== null && apiMatch.minute !== undefined) match.minute = apiMatch.minute;
+            if (apiMatch.status) match.status = apiMatch.status;
+          }
+        }
+        // Also pull latest from Firestore for goals/scorer
+        const freshSnap = await getDocFromServer(doc(db, 'matches', match.id));
+        if (freshSnap.exists()) {
+          const fd = freshSnap.data();
+          match.firstGoalscorer = fd.firstGoalscorer;
+          match.goals = fd.goals;
+          if (fd.homeScore !== null && fd.homeScore !== undefined) match.homeScore = fd.homeScore;
+          if (fd.awayScore !== null && fd.awayScore !== undefined) match.awayScore = fd.awayScore;
+        }
+        await renderLiveMatch(match, container);
+      } catch(e) { console.log('Manual refresh error:', e); }
+      // re-enable button (renderLiveMatch re-renders the button anyway)
+    };
+
     // Auto-refresh every 10s — fetch from live API directly
     let refreshCount = 0;
     liveRefreshInterval = setInterval(async () => {
@@ -9310,7 +9385,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
           // Update match object and re-render
           match.homeScore = newHome;
           match.awayScore = newAway;
-          if (newMinute) match.minute = newMinute;
+          if (newMinute !== null && newMinute !== undefined) match.minute = newMinute;
           if (newStatus) match.status = newStatus;
         }
 
@@ -9460,12 +9535,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
         </div>
 
         <div style="margin-top:10px;display:flex;align-items:center;justify-content:center;gap:10px;">
-          <button id="live-refresh-btn" onclick="(async()=>{
-            const btn=document.getElementById('live-refresh-btn');
-            btn.disabled=true;
-            btn.innerHTML='<span style=\'animation:spin 0.6s linear infinite;display:inline-block;\'>🔄</span> Refreshing...';
-            await loadLivePage();
-          })()" style="display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,#E24B4A,#b91c1c);color:white;border:none;border-radius:12px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(226,75,74,0.35);transition:all 0.15s;letter-spacing:0.02em;" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform=''">
+          <button id="live-refresh-btn" onclick="window._triggerLiveRefresh && window._triggerLiveRefresh(this)" style="display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,#E24B4A,#b91c1c);color:white;border:none;border-radius:12px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(226,75,74,0.35);transition:all 0.15s;letter-spacing:0.02em;" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform=''">
             🔄 Refresh Score
           </button>
           <span style="font-size:10px;color:var(--text-muted);">Auto-updates every 10s</span>
