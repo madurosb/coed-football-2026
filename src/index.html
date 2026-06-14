@@ -9201,7 +9201,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     } catch(e) {}
   }
 
-  async function loadLivePage() {
+  window.loadLivePage = async function loadLivePage() {
     const container = document.getElementById('live-content');
     if (liveRefreshInterval) clearInterval(liveRefreshInterval);
 
