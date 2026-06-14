@@ -4672,39 +4672,72 @@
     if (!section) return;
 
     const data = await fetchLiveScores();
-    const live = data?.matches?.filter(m => ['IN_PLAY','PAUSED','HALFTIME'].includes(m.status)) || [];
+    const allMatches = data?.matches || [];
+    const live = allMatches.filter(m => ['IN_PLAY','PAUSED','HALFTIME'].includes(m.status));
+    // Also show very recently finished matches (API returns them for today's games)
+    const recentFT = allMatches.filter(m => m.status === 'FINISHED' && m.homeScore !== null && m.homeScore !== undefined);
 
-    if (live.length === 0) {
+    if (live.length === 0 && recentFT.length === 0) {
       section.style.display = 'none';
       return;
     }
 
-    section.style.display = 'block';
-    section.innerHTML = `
-      <div style="background:linear-gradient(135deg,rgba(226,75,74,0.1),rgba(226,75,74,0.05));border:1px solid rgba(226,75,74,0.3);border-radius:14px;padding:12px 14px;overflow:hidden;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-          <span style="background:#E24B4A;color:white;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;animation:pulse 1.5s infinite;letter-spacing:0.05em;">● LIVE</span>
-          <span style="font-size:13px;font-weight:700;">Matches happening now</span>
-        </div>
-        ${live.map(m => {
-          const lH = m.homeScore ?? 0, lA = m.awayScore ?? 0;
-          const minute = m.minute ? m.minute + "'" : m.status === 'HALFTIME' ? 'HT' : '';
-          return `
-          <div onclick="showPage('live')" style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(226,75,74,0.1);cursor:pointer;last-child:border-none;">
-            <div style="flex:1;display:flex;align-items:center;justify-content:space-between;gap:8px;">
-              <span style="font-size:12px;font-weight:600;flex:1;text-align:right;">${m.homeTeam}</span>
-              <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
-                <span style="font-size:18px;font-weight:800;min-width:20px;text-align:center;">${lH}</span>
-                <span style="font-size:11px;color:#E24B4A;font-weight:700;">-</span>
-                <span style="font-size:18px;font-weight:800;min-width:20px;text-align:center;">${lA}</span>
+    if (live.length > 0) {
+      // ── LIVE ──
+      section.style.display = 'block';
+      section.innerHTML = `
+        <div style="background:linear-gradient(135deg,rgba(226,75,74,0.1),rgba(226,75,74,0.05));border:1px solid rgba(226,75,74,0.3);border-radius:14px;padding:12px 14px;overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <span style="background:#E24B4A;color:white;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;animation:pulse 1.5s infinite;letter-spacing:0.05em;">● LIVE</span>
+            <span style="font-size:13px;font-weight:700;">Matches happening now</span>
+          </div>
+          ${live.map(m => {
+            const lH = m.homeScore ?? 0, lA = m.awayScore ?? 0;
+            const minute = m.minute ? m.minute + "'" : m.status === 'HALFTIME' ? 'HT' : '';
+            return `
+            <div onclick="showPage('live')" style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(226,75,74,0.1);cursor:pointer;">
+              <div style="flex:1;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                <span style="font-size:12px;font-weight:600;flex:1;text-align:right;">${m.homeTeam}</span>
+                <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+                  <span style="font-size:18px;font-weight:800;min-width:20px;text-align:center;">${lH}</span>
+                  <span style="font-size:11px;color:#E24B4A;font-weight:700;">-</span>
+                  <span style="font-size:18px;font-weight:800;min-width:20px;text-align:center;">${lA}</span>
+                </div>
+                <span style="font-size:12px;font-weight:600;flex:1;">${m.awayTeam}</span>
               </div>
-              <span style="font-size:12px;font-weight:600;flex:1;">${m.awayTeam}</span>
-            </div>
-            ${minute ? `<span style="font-size:11px;color:#E24B4A;font-weight:700;flex-shrink:0;min-width:28px;text-align:right;">${minute}</span>` : ''}
-          </div>`;
-        }).join('')}
-        <div style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;cursor:pointer;" onclick="showPage('live')">Tap to watch live →</div>
-      </div>`;
+              ${minute ? `<span style="font-size:11px;color:#E24B4A;font-weight:700;flex-shrink:0;min-width:28px;text-align:right;">${minute}</span>` : ''}
+            </div>`;
+          }).join('')}
+          <div style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;cursor:pointer;" onclick="showPage('live')">Tap to watch live →</div>
+        </div>`;
+    } else {
+      // ── TODAY'S FT RESULTS (from live-scores API, today's games) ──
+      section.style.display = 'block';
+      section.innerHTML = `
+        <div style="background:linear-gradient(135deg,rgba(107,114,128,0.07),rgba(107,114,128,0.03));border:1px solid rgba(107,114,128,0.2);border-radius:14px;padding:12px 14px;overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <span style="background:rgba(107,114,128,0.18);color:var(--text-muted);font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;letter-spacing:0.05em;">✅ FT</span>
+            <span style="font-size:13px;font-weight:700;">Today's results</span>
+          </div>
+          ${recentFT.map(m => {
+            const lH = m.homeScore ?? 0, lA = m.awayScore ?? 0;
+            return `
+            <div onclick="showPage('live')" style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(107,114,128,0.08);cursor:pointer;">
+              <div style="flex:1;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                <span style="font-size:12px;font-weight:600;flex:1;text-align:right;">${m.homeTeam}</span>
+                <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+                  <span style="font-size:18px;font-weight:800;min-width:20px;text-align:center;">${lH}</span>
+                  <span style="font-size:11px;color:var(--text-muted);font-weight:700;">-</span>
+                  <span style="font-size:18px;font-weight:800;min-width:20px;text-align:center;">${lA}</span>
+                </div>
+                <span style="font-size:12px;font-weight:600;flex:1;">${m.awayTeam}</span>
+              </div>
+              <span style="font-size:10px;font-weight:700;color:var(--text-muted);flex-shrink:0;">FT</span>
+            </div>`;
+          }).join('')}
+          <div style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;cursor:pointer;" onclick="showPage('live')">View full match details →</div>
+        </div>`;
+    }
   }
 
   // ═══ LIVE SCORES ═══
