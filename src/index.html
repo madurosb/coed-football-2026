@@ -1613,7 +1613,7 @@
       <div>
         <div style="font-family:monospace;font-size:11px;letter-spacing:3px;color:var(--green);text-transform:uppercase;margin-bottom:4px;">⚽ Your picks</div>
         <div style="font-size:22px;font-weight:800;margin-bottom:4px;">Predictions</div>
-        <div style="font-size:13px;color:var(--text-muted);">Pick scores &amp; first goalscorers · Deadline: 24h before kickoff</div>
+        <div style="font-size:13px;color:var(--text-muted);">Pick scores &amp; first goalscorers · Deadline: 1h before kickoff</div>
       </div>
       <!-- AI Auto-fill button -->
       <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
@@ -5219,7 +5219,10 @@ Use exactly the formation provided. Only use players from the squad lists above.
         preds[key] = (preds[key] || { count: 0, users: [] });
         preds[key].count++;
         preds[key].users.push(p.userId);
-        if (p.scorer) scorers[p.scorer] = (scorers[p.scorer] || 0) + 1;
+        const scorerVal = p.firstScorer || p.scorer || null;
+        if (scorerVal && scorerVal !== 'Own Goal' && scorerVal !== 'none' && scorerVal !== '') {
+          scorers[scorerVal] = (scorers[scorerVal] || 0) + 1;
+        }
         usersMap[p.userId] = p;
       });
       if (total === 0) return;
@@ -5242,12 +5245,15 @@ Use exactly the formation provided. Only use players from the squad lists above.
       // My pick
       const myPred = snap.docs.find(d => d.data().userId === currentUser?.uid)?.data();
       const myKey = myPred && myPred.homeScore != null ? `${myPred.homeScore}-${myPred.awayScore}` : null;
+      const myScorer = myPred?.firstScorer || myPred?.scorer || null;
 
       // Sort predictions by count
       const sortedPreds = Object.entries(preds).sort((a,b) => b[1].count - a[1].count).slice(0, 6);
 
-      // Top scorer pick
-      const topScorer = Object.entries(scorers).sort((a,b) => b[1]-a[1])[0];
+      // Scorer picks — sorted by count, show top 5
+      const sortedScorers = Object.entries(scorers).sort((a,b) => b[1]-a[1]);
+      const totalScorerPicks = sortedScorers.reduce((s,[,c]) => s+c, 0);
+      const topScorers = sortedScorers.slice(0, 5);
 
       // Build HTML — collapsible
       const panelId = 'csp-' + matchId;
@@ -5292,7 +5298,23 @@ Use exactly the formation provided. Only use players from the squad lists above.
                 </tr>`;
               }).join('')}
             </table>
-            ${topScorer ? `<div style="margin-top:8px;font-size:11px;color:var(--text-muted);">⚽ Top scorer pick: <strong style="color:var(--text);">${topScorer[0]}</strong> (${topScorer[1]} votes)</div>` : ''}
+            <!-- First Scorer picks breakdown -->
+            ${topScorers.length > 0 ? `
+            <div style="font-size:10px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin:12px 0 6px;">⚽ First scorer picks</div>
+            <div style="display:flex;flex-direction:column;gap:5px;">
+              ${topScorers.map(([name, count]) => {
+                const isMyPick = myScorer && myScorer.toLowerCase().trim() === name.toLowerCase().trim();
+                const pct = totalScorerPicks > 0 ? Math.round(count/totalScorerPicks*100) : 0;
+                return `<div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-size:12px;font-weight:${isMyPick?'700':'500'};color:${isMyPick?'var(--accent)':'var(--text)'};min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${name}${isMyPick?' 👤':''}</span>
+                  <div style="flex:1;background:var(--border);border-radius:99px;height:5px;overflow:hidden;min-width:40px;">
+                    <div style="background:${isMyPick?'var(--accent)':'#E24B4A'};opacity:${isMyPick?'1':'0.65'};width:${pct}%;height:100%;border-radius:99px;transition:width 0.6s;"></div>
+                  </div>
+                  <span style="font-size:11px;color:var(--text-muted);white-space:nowrap;min-width:44px;text-align:right;">${count} (${pct}%)</span>
+                </div>`;
+              }).join('')}
+              ${sortedScorers.length > 5 ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">+${sortedScorers.length - 5} more picks</div>` : ''}
+            </div>` : ''}
           </div>
         </div>`;
 
@@ -9382,17 +9404,25 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
         <!-- MINUTE PILL (top centre, like livescore) -->
         ${(() => {
+          const isHalftime = match.status === 'HALFTIME';
+          if (isHalftime) return `<div style="display:inline-flex;align-items:center;gap:4px;background:rgba(107,114,128,0.15);border:1px solid rgba(107,114,128,0.4);border-radius:99px;padding:3px 10px;font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:10px;">⏸ Half Time</div>`;
           let minute = match.minute;
-          // Fallback: calculate from kickoff if API didn't return minute
-          if (!minute && isLive && match.kickoff) {
-            const kickoffTime = match.kickoff?.toDate?.() || new Date(match.kickoff);
-            const elapsed = Math.floor((new Date() - kickoffTime) / 60000);
-            if (elapsed > 0 && elapsed <= 120) minute = Math.min(elapsed, 90);
+          // Parse minute: handle "45+2" → show as-is; plain number → use as-is
+          let minuteDisplay = null;
+          if (minute !== null && minute !== undefined && minute !== '') {
+            const m = String(minute);
+            minuteDisplay = m.includes('+') ? m : (parseInt(m) > 0 ? m : null);
           }
-          if (isLive && minute) return `
+          // Fallback: calculate from kickoff if API didn't return minute
+          if (!minuteDisplay && isLive && match.kickoff) {
+            const kickoffTime = match.kickoff?.toDate?.() || new Date(match.kickoff);
+            const elapsed = Math.floor((Date.now() - kickoffTime.getTime()) / 60000);
+            if (elapsed > 0 && elapsed <= 105) minuteDisplay = String(Math.min(elapsed, 90));
+          }
+          if (isLive && minuteDisplay) return `
             <div style="display:inline-flex;align-items:center;gap:4px;background:rgba(226,75,74,0.15);border:1px solid rgba(226,75,74,0.4);border-radius:99px;padding:3px 10px;font-size:12px;font-weight:700;color:#E24B4A;margin-bottom:10px;">
               <span style="width:7px;height:7px;border-radius:50%;background:#E24B4A;display:inline-block;animation:pulse 1s infinite;"></span>
-              ${minute}'
+              ${minuteDisplay}'
             </div>`;
           if (isFinished) return `<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">✅ Full Time</div>`;
           return `<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">${statusLabel}</div>`;
@@ -9434,13 +9464,81 @@ Use exactly the formation provided. Only use players from the squad lists above.
             const btn=document.getElementById('live-refresh-btn');
             btn.disabled=true;
             btn.innerHTML='<span style=\'animation:spin 0.6s linear infinite;display:inline-block;\'>🔄</span> Refreshing...';
-            liveMatchId=null; await loadLivePage();
+            await loadLivePage();
           })()" style="display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,#E24B4A,#b91c1c);color:white;border:none;border-radius:12px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(226,75,74,0.35);transition:all 0.15s;letter-spacing:0.02em;" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform=''">
             🔄 Refresh Score
           </button>
           <span style="font-size:10px;color:var(--text-muted);">Auto-updates every 10s</span>
         </div>
       </div>
+
+      <!-- GOALS / SCORERS SECTION — SofaScore style -->
+      ${(() => {
+        const allGoals = match.goals || [];
+        // Also build from firstGoalscorer if no goals array
+        const firstScorer = match.firstGoalscorer && match.firstGoalscorer !== 'null' ? match.firstGoalscorer : null;
+        const hasGoals = allGoals.length > 0;
+        const totalGoals = (match.homeScore || 0) + (match.awayScore || 0);
+        if (totalGoals === 0 && !firstScorer) return '';
+        
+        // Build home/away goal lists
+        const homeGoals = allGoals.filter(g => g.team === 'home');
+        const awayGoals = allGoals.filter(g => g.team === 'away');
+        
+        // If no goals array but we have firstGoalscorer, show a simple pill
+        if (!hasGoals && firstScorer) {
+          return `<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:1rem;">
+            <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;">⚽ Goals</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:18px;">⚽</span>
+              <div>
+                <div style="font-size:13px;font-weight:700;color:var(--text);">${firstScorer}</div>
+                <div style="font-size:11px;color:var(--text-muted);">First scorer</div>
+              </div>
+            </div>
+          </div>`;
+        }
+        
+        if (!hasGoals) return '';
+        
+        // Full goals table — SofaScore style with home left, away right
+        const renderGoalRow = (homeG, awayG) => {
+          const hName = homeG ? homeG.name || '?' : '';
+          const hMin = homeG ? homeG.minute : '';
+          const aName = awayG ? awayG.name || '?' : '';
+          const aMin = awayG ? awayG.minute : '';
+          return `<div style="display:grid;grid-template-columns:1fr 36px 1fr;align-items:center;padding:5px 0;border-bottom:0.5px solid var(--border);">
+            <div style="text-align:right;">
+              ${homeG ? `<span style="font-size:13px;font-weight:600;color:var(--text);">${hName}</span>` : ''}
+            </div>
+            <div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:1px;">
+              ${homeG ? `<span style="font-size:10px;font-weight:700;color:#E24B4A;">${hMin}'</span>` : ''}
+              <span style="font-size:14px;line-height:1;">⚽</span>
+              ${awayG ? `<span style="font-size:10px;font-weight:700;color:#E24B4A;">${aMin}'</span>` : ''}
+            </div>
+            <div style="text-align:left;">
+              ${awayG ? `<span style="font-size:13px;font-weight:600;color:var(--text);">${aName}</span>` : ''}
+            </div>
+          </div>`;
+        };
+        
+        // Interleave home and away goals, sorted by minute
+        const allSorted = allGoals
+          .map(g => ({ ...g, minNum: parseInt(String(g.minute).split('+')[0]) || 0 }))
+          .sort((a,b) => a.minNum - b.minNum);
+        
+        return `<div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:1rem;">
+          <div style="display:grid;grid-template-columns:1fr 36px 1fr;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;">
+            <div style="text-align:right;">${match.homeTeam}</div>
+            <div style="text-align:center;">⚽</div>
+            <div style="text-align:left;">${match.awayTeam}</div>
+          </div>
+          ${allSorted.map(g => renderGoalRow(
+            g.team === 'home' ? g : null,
+            g.team === 'away' ? g : null
+          )).join('')}
+        </div>`;
+      })()}
 
       <!-- PARTICIPANTS (no tabs) -->
       ${preds.length === 0
@@ -9456,10 +9554,18 @@ Use exactly the formation provided. Only use players from the squad lists above.
                 ? `<img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">`
                 : av ? `<div style="width:28px;height:28px;border-radius:50%;overflow:hidden;">${makeAvatarSVG(av,28)}</div>`
                 : `<div style="width:28px;height:28px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;">${(p.nickname||'?').substring(0,2).toUpperCase()}</div>`;
+              // Show scorer pick + whether correct
+              const scorerPick = p.firstScorer || null;
+              const actualScorer = match.firstGoalscorer && match.firstGoalscorer !== 'null' ? match.firstGoalscorer : null;
+              const scorerCorrect = actualScorer && scorerPick && scorerPick.toLowerCase().trim() === actualScorer.toLowerCase().trim();
+              const scorerHTML = scorerPick ? `<div style="font-size:10px;color:${scorerCorrect ? '#1D9E75' : 'var(--text-muted)'};margin-top:1px;">⚽ ${scorerPick}${scorerCorrect ? ' ✅ +2pts' : ''}</div>` : '';
               return `<div style="display:grid;grid-template-columns:1fr 80px 60px 32px;align-items:center;padding:8px 12px;border-top:0.5px solid var(--border);background:${resultBg(r)};">
                 <div style="display:flex;align-items:center;gap:8px;">
                   ${avatarHTML}
-                  <span style="font-size:13px;font-weight:500;color:var(--text);">${p.nickname}</span>
+                  <div>
+                    <span style="font-size:13px;font-weight:500;color:var(--text);">${p.nickname}</span>
+                    ${scorerHTML}
+                  </div>
                 </div>
                 <div style="text-align:center;font-size:14px;font-weight:700;color:var(--text);">${p.homeScore ?? '?'} - ${p.awayScore ?? '?'}</div>
                 <div style="text-align:center;font-size:12px;color:var(--text-muted);">${p.totalPts} pts</div>
