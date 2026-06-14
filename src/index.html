@@ -5803,7 +5803,10 @@ Use exactly the formation provided. Only use players from the squad lists above.
               <span style="font-size:22px;font-weight:800;color:var(--text);letter-spacing:2px;">${lm.homeScore} – ${lm.awayScore}</span>
               <span style="font-size:14px;font-weight:700;color:var(--text);">${lm.awayTeam}</span>
             </div>
-            ${goalStr ? `<div style="font-size:11px;color:var(--text-muted);text-align:center;margin-bottom:8px;">⚽ ${goalStr}</div>` : ''}
+            ${scorer ? `<div style="font-size:11px;color:var(--text-muted);text-align:center;margin-bottom:8px;">
+              <span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);opacity:0.7;">First Scorer</span>
+              &nbsp;·&nbsp; ⚽ <span style="color:var(--text);font-weight:600;">${scorer}</span>
+            </div>` : ''}
             ${exacters.length > 0
               ? `<div style="font-size:11px;background:rgba(29,158,117,0.1);border:0.5px solid rgba(29,158,117,0.3);border-radius:8px;padding:5px 10px;text-align:center;">
                   🎯 <span style="color:var(--green);font-weight:700;">Exact score:</span> ${exacters.join(', ')}
@@ -5909,6 +5912,10 @@ Use exactly the formation provided. Only use players from the squad lists above.
     if (id !== 'live' && liveRefreshInterval) {
       clearInterval(liveRefreshInterval);
       liveRefreshInterval = null;
+    }
+    if (id === 'home') {
+      // Start live scores polling for home page live section
+      setTimeout(startLiveScoresPolling, 800);
     }
     if (id === 'matches') {
       document.addEventListener('touchmove', preventZoom, { passive: false });
@@ -6644,10 +6651,13 @@ Use exactly the formation provided. Only use players from the squad lists above.
           if (k > nowTime && !nextMatch) nextMatch = { ...m, kickoff: k };
         });
         if (nextMatch) {
-          const hf = nextMatch.homeFlag || '';
-          const af = nextMatch.awayFlag || '';
+          // Build flag img from ISO code stored in homeFlag/awayFlag (e.g. "se", "tn")
+          const hCode = (nextMatch.homeFlag || '').toLowerCase().replace(/[^a-z]/g,'');
+          const aCode = (nextMatch.awayFlag || '').toLowerCase().replace(/[^a-z]/g,'');
+          const hFlag = hCode ? `<img src="https://flagcdn.com/16x12/${hCode}.png" style="vertical-align:middle;border-radius:2px;margin-right:3px;" onerror="this.style.display='none'">` : '';
+          const aFlag = aCode ? `<img src="https://flagcdn.com/16x12/${aCode}.png" style="vertical-align:middle;border-radius:2px;margin-left:3px;" onerror="this.style.display='none'">` : '';
           const timeStr = nextMatch.kickoff.toLocaleString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hour12:false, timeZone:'Asia/Jerusalem' });
-          nextMatchEl.innerHTML = `${hf} ${nextMatch.homeTeam} vs ${nextMatch.awayTeam} ${af} &nbsp;·&nbsp; ${timeStr}`;
+          nextMatchEl.innerHTML = `<span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:#4ade80;opacity:0.75;display:block;margin-bottom:3px;">Next Game</span>${hFlag}${nextMatch.homeTeam} vs ${nextMatch.awayTeam}${aFlag} &nbsp;·&nbsp; ${timeStr}`;
         } else {
           nextMatchEl.textContent = '';
         }
@@ -9354,6 +9364,17 @@ Use exactly the formation provided. Only use players from the squad lists above.
           if (fd.homeScore !== null && fd.homeScore !== undefined) match.homeScore = fd.homeScore;
           if (fd.awayScore !== null && fd.awayScore !== undefined) match.awayScore = fd.awayScore;
         }
+        // Also pull from openfootball
+        try {
+          const goalsResp = await fetch(`/api/goals?home=${encodeURIComponent(match.homeTeam)}&away=${encodeURIComponent(match.awayTeam)}`);
+          if (goalsResp.ok) {
+            const goalsData = await goalsResp.json();
+            if (goalsData.found && goalsData.goals?.length > 0) {
+              match.goals = goalsData.goals;
+              if (!match.firstGoalscorer && goalsData.firstScorer) match.firstGoalscorer = goalsData.firstScorer;
+            }
+          }
+        } catch(e) {}
         await renderLiveMatch(match, container);
       } catch(e) { console.log('Manual refresh error:', e); }
       // re-enable button (renderLiveMatch re-renders the button anyway)
@@ -9389,7 +9410,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
           if (newStatus) match.status = newStatus;
         }
 
-        // Every 3rd refresh also sync from Firestore for firstGoalscorer etc
+        // Every 3rd refresh also sync from Firestore + openfootball goals
         refreshCount++;
         if (refreshCount % 3 === 0) {
           const snap = await getDocs(collection(db, 'matches'));
@@ -9399,6 +9420,17 @@ Use exactly the formation provided. Only use players from the squad lists above.
             const resSnap = await getDoc(doc(db, 'results', match.id));
             if (resSnap.exists() && resSnap.data().firstScorer && resSnap.data().firstScorer !== 'null') {
               match.firstGoalscorer = match.firstGoalscorer || resSnap.data().firstScorer;
+            }
+          } catch(e) {}
+          // Pull goals from openfootball (free, ~1h delay)
+          try {
+            const goalsResp = await fetch(`/api/goals?home=${encodeURIComponent(match.homeTeam)}&away=${encodeURIComponent(match.awayTeam)}`);
+            if (goalsResp.ok) {
+              const goalsData = await goalsResp.json();
+              if (goalsData.found && goalsData.goals?.length > 0) {
+                match.goals = goalsData.goals;
+                if (!match.firstGoalscorer && goalsData.firstScorer) match.firstGoalscorer = goalsData.firstScorer;
+              }
             }
           } catch(e) {}
         }
