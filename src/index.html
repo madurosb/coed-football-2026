@@ -2896,10 +2896,12 @@
       <div class="form-card">
         <h2>🔍 Score verification</h2>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;">
-          <button onclick="loadScoreVerification()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">🔄 Refresh</button>
-          <button onclick="verifyAllScores()" style="padding:8px 14px;border-radius:8px;border:none;background:#185FA5;color:white;font-size:13px;font-weight:500;cursor:pointer;">✅ Run full check</button>
+          <button onclick="setScoreVerifyTab('summary')" id="svtab-summary" style="padding:8px 14px;border-radius:8px;border:none;background:var(--accent);color:white;font-size:13px;font-weight:600;cursor:pointer;">📊 Summary</button>
+          <button onclick="setScoreVerifyTab('perMatch')" id="svtab-perMatch" style="padding:8px 14px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">🗓 Per Match</button>
+          <button onclick="loadScoreVerification(true)" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">🔄 Refresh</button>
         </div>
         <div id="score-verify-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Click Refresh to load.</div></div>
+        <div id="score-verify-perMatch" style="display:none;"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Click Refresh to load.</div></div>
       </div>
     </div>
 
@@ -2981,8 +2983,18 @@
       <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
       <div class="form-card">
         <h2>🐂 Bold predictions</h2>
-        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Award the 🐂 "Big balls prediction" badge to a player who made a brave call and got it right. They'll wear it proudly in the leaderboard!</p>
-        <div id="bold-pred-users"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div></div>
+        <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;">
+          <button onclick="setBoldTab('award')" id="boldtab-award" style="padding:7px 14px;border-radius:8px;border:none;background:var(--accent);color:white;font-size:13px;font-weight:600;cursor:pointer;">🏅 Award Badge</button>
+          <button onclick="setBoldTab('insights')" id="boldtab-insights" style="padding:7px 14px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">💡 Insights</button>
+          <button onclick="loadBoldPredAdmin()" style="padding:7px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">🔄 Refresh</button>
+        </div>
+        <div id="bold-tab-award">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Award the 🐂 "Big balls prediction" badge to a player who made a brave call and got it right.</p>
+          <div id="bold-pred-users"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div></div>
+        </div>
+        <div id="bold-tab-insights" style="display:none;">
+          <div id="bold-insights-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div></div>
+        </div>
       </div>
     </div>
 
@@ -3418,10 +3430,44 @@
     container.innerHTML = html;
   }
 
-  async function loadScoreVerification() {
+  // Score verify — approved mismatches stored in memory (session only, no DB write)
+  const _svApproved = new Set();
+
+  window.setScoreVerifyTab = (tab) => {
+    const summary = document.getElementById('score-verify-content');
+    const perMatch = document.getElementById('score-verify-perMatch');
+    const btnS = document.getElementById('svtab-summary');
+    const btnP = document.getElementById('svtab-perMatch');
+    if (!summary || !perMatch) return;
+    if (tab === 'summary') {
+      summary.style.display = ''; perMatch.style.display = 'none';
+      if (btnS) { btnS.style.background = 'var(--accent)'; btnS.style.color = 'white'; btnS.style.border = 'none'; btnS.style.fontWeight = '600'; }
+      if (btnP) { btnP.style.background = 'none'; btnP.style.color = 'var(--text-muted)'; btnP.style.border = '0.5px solid var(--border)'; btnP.style.fontWeight = '500'; }
+    } else {
+      summary.style.display = 'none'; perMatch.style.display = '';
+      if (btnP) { btnP.style.background = 'var(--accent)'; btnP.style.color = 'white'; btnP.style.border = 'none'; btnP.style.fontWeight = '600'; }
+      if (btnS) { btnS.style.background = 'none'; btnS.style.color = 'var(--text-muted)'; btnS.style.border = '0.5px solid var(--border)'; btnS.style.fontWeight = '500'; }
+    }
+  };
+
+  window.approveMismatch = (uid) => {
+    _svApproved.add(uid);
+    const row = document.getElementById('svrow-' + uid);
+    if (row) {
+      row.style.background = 'rgba(29,158,117,0.07)';
+      const statusCell = row.querySelector('.sv-status');
+      if (statusCell) statusCell.innerHTML = '<span style="font-size:11px;color:var(--green);font-weight:700;">✅ OK</span>';
+      const approveBtn = row.querySelector('.sv-approve-btn');
+      if (approveBtn) approveBtn.style.display = 'none';
+    }
+  };
+
+  async function loadScoreVerification(force) {
     const container = document.getElementById('score-verify-content');
+    const perMatchContainer = document.getElementById('score-verify-perMatch');
     if (!container) return;
     container.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div>';
+    if (perMatchContainer) perMatchContainer.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div>';
 
     const [usersSnap, matchesSnap, predsSnap] = await Promise.all([
       getDocs(collection(db, 'users')),
@@ -3429,24 +3475,55 @@
       getDocs(collection(db, 'predictions'))
     ]);
 
-    const users = {}, matches = {}, userPreds = {};
+    const users = {}, matches = {}, userPreds = {}, predsByMatch = {};
     usersSnap.forEach(d => { users[d.id] = d.data(); });
     matchesSnap.forEach(d => { matches[d.id] = d.data(); });
 
-    // Group predictions by user
     predsSnap.forEach(d => {
       const p = d.data();
       if (!userPreds[p.userId]) userPreds[p.userId] = [];
       userPreds[p.userId].push(p);
+      if (!predsByMatch[p.matchId]) predsByMatch[p.matchId] = [];
+      predsByMatch[p.matchId].push(p);
     });
 
+    // Helper: calculate pts for one prediction
+    function calcPredPts(pred, m) {
+      if (!m || m.homeScore === null || m.homeScore === undefined || m.status !== 'FINISHED') return 0;
+      const grp = (m.group || '').toUpperCase();
+      const isFinal = grp.includes('FINAL') && !grp.includes('QUARTER') && !grp.includes('SEMI');
+      const isSemi = grp.includes('SEMI');
+      const isQuarter = grp.includes('QUARTER');
+      const isR16 = grp.includes('16') || grp.includes('ROUND_OF_16') || grp.includes('32');
+      const multiplier = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
+      const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
+      const predicted = pred.homeScore > pred.awayScore ? 'H' : pred.homeScore < pred.awayScore ? 'A' : 'D';
+      let pts = 0;
+      if (isFinal) {
+        if (pred.homeScore === m.homeScore && pred.awayScore === m.awayScore) pts = 20;
+        else if (actual === predicted) pts = 10;
+      } else {
+        if (actual === predicted) pts += 1 * multiplier;
+        if (pred.homeScore === m.homeScore && pred.awayScore === m.awayScore) pts += 3 * multiplier;
+      }
+      if (m.firstGoalscorer && pred.firstScorer === m.firstGoalscorer) pts += 2 * multiplier;
+      // Joker/DON
+      if (pred.joker && actual === predicted) pts += (isFinal ? 10 : 1 * multiplier);
+      if (pred.doubleOrNothing) {
+        const won = actual === predicted;
+        if (!won) pts -= (isFinal ? 10 : 1 * multiplier);
+      }
+      return pts;
+    }
+
+    // ── SUMMARY TAB ──────────────────────────────────────────────────
     let html = `
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">
-        Shows stored points vs recalculated points. ⚠️ = mismatch found.
+        Stored pts vs recalculated pts. ⚠️ = mismatch. Approve if you've verified it's correct (Joker/DON).
       </div>
       <div style="background:var(--surface2);border-radius:10px;overflow:hidden;">
-        <div style="display:grid;grid-template-columns:1fr 60px 60px 40px;font-size:11px;color:var(--text-muted);text-transform:uppercase;padding:6px 10px;font-weight:500;">
-          <div>Player</div><div style="text-align:center">Stored</div><div style="text-align:center">Calc.</div><div style="text-align:center">Status</div>
+        <div style="display:grid;grid-template-columns:1fr 60px 60px 60px 80px;font-size:11px;color:var(--text-muted);text-transform:uppercase;padding:6px 10px;font-weight:500;">
+          <div>Player</div><div style="text-align:center">Stored</div><div style="text-align:center">Calc.</div><div style="text-align:center">Diff</div><div style="text-align:center">Status</div>
         </div>`;
 
     let anyMismatch = false;
@@ -3455,60 +3532,116 @@
       const u = users[uid];
       const preds = userPreds[uid] || [];
       let calcPts = 0;
-
-      for (const pred of preds) {
-        const m = matches[pred.matchId];
-        if (!m || m.homeScore === null || m.homeScore === undefined) continue;
-        if (m.status !== 'FINISHED') continue;
-
-        const grp = (m.group || '').toUpperCase();
-        const isFinal = grp.includes('FINAL') && !grp.includes('QUARTER') && !grp.includes('SEMI');
-        const isSemi = grp.includes('SEMI');
-        const isQuarter = grp.includes('QUARTER');
-        const isR16 = grp.includes('16') || grp.includes('ROUND_OF_16') || grp.includes('32');
-        const multiplier = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
-
-        const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
-        const predicted = pred.homeScore > pred.awayScore ? 'H' : pred.homeScore < pred.awayScore ? 'A' : 'D';
-        let pts = 0;
-        if (isFinal) {
-          if (pred.homeScore === m.homeScore && pred.awayScore === m.awayScore) pts = 20;
-          else if (actual === predicted) pts = 10;
-        } else {
-          if (actual === predicted) pts += 1 * multiplier;
-          if (pred.homeScore === m.homeScore && pred.awayScore === m.awayScore) pts += 3 * multiplier;
-        }
-        if (m.firstGoalscorer && pred.firstScorer === m.firstGoalscorer) pts += 2 * multiplier;
-        calcPts += pts;
-      }
-      // Add bonus points (tournament player goals/assists etc)
+      for (const pred of preds) calcPts += calcPredPts(pred, matches[pred.matchId]);
       calcPts += (u.bonusPoints || 0);
 
       const stored = u.points || 0;
       const diff = stored - calcPts;
-      const ok = Math.abs(diff) <= 1; // allow 1pt tolerance for joker/DON adjustments
+      const isApproved = _svApproved.has(uid);
+      const ok = Math.abs(diff) <= 1 || isApproved;
       if (!ok) anyMismatch = true;
 
-      html += `<div style="display:grid;grid-template-columns:1fr 60px 60px 40px;align-items:center;padding:7px 10px;border-top:0.5px solid var(--border);background:${ok?'none':'#FCEBEB'};">
+      const diffLabel = diff === 0 ? '' : (diff > 0 ? `+${diff}` : `${diff}`);
+      html += `<div id="svrow-${uid}" style="display:grid;grid-template-columns:1fr 60px 60px 60px 80px;align-items:center;padding:7px 10px;border-top:0.5px solid var(--border);background:${ok?'none':'rgba(226,75,74,0.06)'};">
         <div style="font-size:12px;font-weight:500;">${u.nickname||u.displayName||uid}</div>
         <div style="text-align:center;font-size:13px;font-weight:600;">${stored}</div>
         <div style="text-align:center;font-size:13px;color:${ok?'var(--text-muted)':'#E24B4A'};font-weight:${ok?'400':'600'};">${calcPts}</div>
-        <div style="text-align:center;font-size:15px;">${ok ? '✅' : '⚠️'}</div>
+        <div style="text-align:center;font-size:12px;color:${diff===0?'var(--text-muted)':diff>0?'#1D9E75':'#E24B4A'};font-weight:600;">${diffLabel||'—'}</div>
+        <div class="sv-status" style="text-align:center;font-size:13px;">
+          ${ok
+            ? (isApproved ? '<span style="font-size:11px;color:var(--green);font-weight:700;">✅ OK</span>' : '✅')
+            : `<button class="sv-approve-btn" onclick="approveMismatch('${uid}')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;border:1px solid #1D9E75;background:none;color:#1D9E75;cursor:pointer;">✓ Approve</button>`}
+        </div>
       </div>`;
     }
 
     html += `</div>`;
-
     if (!anyMismatch) {
       html += `<div style="background:var(--badge-green-bg);border-radius:8px;padding:10px 12px;margin-top:10px;font-size:13px;color:var(--badge-green-text);font-weight:500;">✅ All scores look correct!</div>`;
     } else {
-      html += `<div style="background:var(--badge-red-bg);border-radius:8px;padding:10px 12px;margin-top:10px;font-size:13px;color:var(--badge-red-text);">⚠️ Mismatches found. These may be due to Joker/Double or Nothing bonuses — check manually.</div>`;
+      html += `<div style="background:var(--badge-red-bg);border-radius:8px;padding:10px 12px;margin-top:10px;font-size:13px;color:var(--badge-red-text);">⚠️ Mismatches found. May be Joker/DON bonuses — verify then Approve.</div>`;
+    }
+    container.innerHTML = html;
+
+    // ── PER MATCH TAB ────────────────────────────────────────────────
+    if (!perMatchContainer) return;
+    const finishedMatches = Object.entries(matches)
+      .filter(([,m]) => m.status === 'FINISHED' && m.homeScore !== null)
+      .map(([id,m]) => ({id,...m}))
+      .sort((a,b) => (a.kickoff?.toDate?.() || new Date(a.kickoff)) - (b.kickoff?.toDate?.() || new Date(b.kickoff)));
+
+    if (finishedMatches.length === 0) {
+      perMatchContainer.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">No finished matches yet.</div>';
+      return;
     }
 
-    container.innerHTML = html;
+    const sortedUsers = Object.values(users).sort((a,b) => (a.nickname||'').localeCompare(b.nickname||''));
+
+    let pmHtml = `<div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">Per-match breakdown for every finished match. W=result correct, E=exact score, S=first scorer, J=joker, D=DON.</div>`;
+
+    for (const m of finishedMatches) {
+      const mPreds = predsByMatch[m.id] || [];
+      const kickoffDate = (m.kickoff?.toDate?.() || new Date(m.kickoff))
+        .toLocaleDateString('en-GB', { day:'2-digit', month:'short', timeZone:'Asia/Jerusalem' });
+
+      pmHtml += `
+        <div style="margin-bottom:1.2rem;background:var(--surface2);border-radius:10px;overflow:hidden;">
+          <div style="padding:8px 12px;background:var(--surface);border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:13px;font-weight:700;">${m.homeTeam} ${m.homeScore}–${m.awayScore} ${m.awayTeam}</div>
+            <div style="font-size:11px;color:var(--text-muted);">${kickoffDate}</div>
+          </div>
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:11px;">
+              <thead>
+                <tr style="color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">
+                  <th style="padding:5px 10px;text-align:left;font-weight:500;">Player</th>
+                  <th style="padding:5px 6px;text-align:center;">Pick</th>
+                  <th style="padding:5px 6px;text-align:center;">W/D/L</th>
+                  <th style="padding:5px 6px;text-align:center;">Exact</th>
+                  <th style="padding:5px 6px;text-align:center;">Scorer</th>
+                  <th style="padding:5px 6px;text-align:center;">DON</th>
+                  <th style="padding:5px 6px;text-align:center;">Joker</th>
+                  <th style="padding:5px 6px;text-align:center;">Pts</th>
+                </tr>
+              </thead>
+              <tbody>`;
+
+      const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
+
+      for (const u of sortedUsers) {
+        const pred = mPreds.find(p => p.userId === u.uid);
+        if (!pred) {
+          pmHtml += `<tr style="border-top:0.5px solid var(--border);">
+            <td style="padding:5px 10px;color:var(--text-muted);">${u.nickname||u.displayName}</td>
+            <td colspan="7" style="text-align:center;color:var(--text-muted);font-size:10px;padding:5px;">—</td>
+          </tr>`;
+          continue;
+        }
+        const predicted = pred.homeScore > pred.awayScore ? 'H' : pred.homeScore < pred.awayScore ? 'A' : 'D';
+        const isExact = pred.homeScore === m.homeScore && pred.awayScore === m.awayScore;
+        const isCorrect = actual === predicted;
+        const scorerHit = m.firstGoalscorer && pred.firstScorer && pred.firstScorer.toLowerCase() === m.firstGoalscorer.toLowerCase();
+        const pts = calcPredPts(pred, m);
+
+        pmHtml += `<tr style="border-top:0.5px solid var(--border);background:${isExact?'rgba(29,158,117,0.05)':'none'};">
+          <td style="padding:5px 10px;font-weight:500;">${u.nickname||u.displayName}</td>
+          <td style="text-align:center;color:var(--text-muted);">${pred.homeScore}–${pred.awayScore}</td>
+          <td style="text-align:center;">${isCorrect ? '✅' : '❌'}</td>
+          <td style="text-align:center;">${isExact ? '🎯' : '—'}</td>
+          <td style="text-align:center;font-size:10px;">${pred.firstScorer ? (scorerHit ? '✅' : pred.firstScorer.split(' ').pop()) : '—'}</td>
+          <td style="text-align:center;">${pred.doubleOrNothing ? (isCorrect?'✅':'❌') : '—'}</td>
+          <td style="text-align:center;">${pred.joker ? (isCorrect?'✅':'❌') : '—'}</td>
+          <td style="text-align:center;font-weight:700;color:${pts>0?'var(--green)':'var(--text-muted)'};">${pts}</td>
+        </tr>`;
+      }
+
+      pmHtml += `</tbody></table></div></div>`;
+    }
+
+    perMatchContainer.innerHTML = pmHtml;
   }
 
-  window.verifyAllScores = loadScoreVerification;
+  window.verifyAllScores = () => loadScoreVerification(true);
 
   async function loadKnockoutAdmin() {
     const statusEl = document.getElementById('knockout-status');
@@ -3579,6 +3712,156 @@
     showAdminNotif(award ? '🐂 Badge awarded!' : '🐂 Badge removed');
     loadBoldPredAdmin();
   };
+
+  window.setBoldTab = (tab) => {
+    const award = document.getElementById('bold-tab-award');
+    const insights = document.getElementById('bold-tab-insights');
+    const btnA = document.getElementById('boldtab-award');
+    const btnI = document.getElementById('boldtab-insights');
+    if (!award || !insights) return;
+    if (tab === 'award') {
+      award.style.display = ''; insights.style.display = 'none';
+      if (btnA) { btnA.style.background='var(--accent)'; btnA.style.color='white'; btnA.style.border='none'; btnA.style.fontWeight='600'; }
+      if (btnI) { btnI.style.background='none'; btnI.style.color='var(--text-muted)'; btnI.style.border='0.5px solid var(--border)'; btnI.style.fontWeight='500'; }
+    } else {
+      award.style.display = 'none'; insights.style.display = '';
+      if (btnI) { btnI.style.background='var(--accent)'; btnI.style.color='white'; btnI.style.border='none'; btnI.style.fontWeight='600'; }
+      if (btnA) { btnA.style.background='none'; btnA.style.color='var(--text-muted)'; btnA.style.border='0.5px solid var(--border)'; btnA.style.fontWeight='500'; }
+      loadBoldInsights();
+    }
+  };
+
+  async function loadBoldInsights() {
+    const container = document.getElementById('bold-insights-content');
+    if (!container) return;
+    container.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Analysing...</div>';
+
+    const [matchesSnap, predsSnap, usersSnap] = await Promise.all([
+      getDocs(query(collection(db, 'matches'), orderBy('kickoff'))),
+      getDocs(collection(db, 'predictions')),
+      getDocs(collection(db, 'users'))
+    ]);
+
+    const users = {}, predsByMatch = {};
+    usersSnap.forEach(d => { users[d.id] = d.data(); });
+    predsSnap.forEach(d => {
+      const p = d.data();
+      if (!predsByMatch[p.matchId]) predsByMatch[p.matchId] = [];
+      predsByMatch[p.matchId].push(p);
+    });
+
+    const insights = []; // { type, match, detail, users }
+
+    matchesSnap.forEach(d => {
+      const m = { id: d.id, ...d.data() };
+      if (m.status !== 'FINISHED' || m.homeScore === null) return;
+      const preds = predsByMatch[m.id] || [];
+      if (preds.length === 0) return;
+
+      const total = preds.length;
+      const label = `${m.homeTeam} ${m.homeScore}–${m.awayScore} ${m.awayTeam}`;
+      const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
+
+      // Total goals in the match
+      const totalGoals = m.homeScore + m.awayScore;
+
+      // Exact score pickers
+      const exactPickers = preds.filter(p => p.homeScore === m.homeScore && p.awayScore === m.awayScore)
+        .map(p => users[p.userId]?.nickname || '?');
+
+      // 1. Upset: favourite lost (high-scoring team lost or draw)
+      const scoreDiff = Math.abs(m.homeScore - m.awayScore);
+      if (scoreDiff >= 3) {
+        const winnerStr = m.homeScore > m.awayScore ? m.homeTeam : m.awayTeam;
+        const loserStr = m.homeScore < m.awayScore ? m.homeTeam : m.awayTeam;
+        const pctCorrect = Math.round(preds.filter(p => {
+          const pr = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
+          return pr === actual;
+        }).length / total * 100);
+        if (pctCorrect < 40) {
+          insights.push({
+            type: '😱 Shock result',
+            match: label,
+            detail: `${winnerStr} thrashed ${loserStr} ${m.homeScore}–${m.awayScore} but only ${pctCorrect}% of players called it`,
+            users: exactPickers
+          });
+        }
+      }
+
+      // 2. High-scoring thriller (4+ goals)
+      if (totalGoals >= 4 && exactPickers.length > 0) {
+        insights.push({
+          type: '🔥 Goal fest — exact score nailed',
+          match: label,
+          detail: `${totalGoals} goals in the match — ${exactPickers.length} player${exactPickers.length>1?'s':''} called the exact score`,
+          users: exactPickers
+        });
+      }
+
+      // 3. Draw between clear favourites/underdogs (0-0 or 1-1)
+      if (actual === 'D' && totalGoals <= 1) {
+        const pctDraw = Math.round(preds.filter(p => {
+          const pr = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
+          return pr === 'D';
+        }).length / total * 100);
+        if (pctDraw < 30 && exactPickers.length > 0) {
+          insights.push({
+            type: '🤝 Surprise draw — few called it',
+            match: label,
+            detail: `Only ${pctDraw}% predicted a draw — ${exactPickers.length > 0 ? 'but these players nailed it' : 'nobody got the exact score'}`,
+            users: exactPickers
+          });
+        }
+      }
+
+      // 4. Nobody got exact score but match was unusual
+      if (exactPickers.length === 0 && totalGoals >= 3) {
+        insights.push({
+          type: '🏜️ Unpredictable — zero exact scores',
+          match: label,
+          detail: `${totalGoals} goals, wild match — nobody predicted the exact score`,
+          users: []
+        });
+      }
+
+      // 5. Everyone got it wrong (< 20% correct result)
+      const correctResult = preds.filter(p => {
+        const pr = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
+        return pr === actual;
+      });
+      if (correctResult.length / total < 0.2) {
+        insights.push({
+          type: '💀 Brutal — most got it wrong',
+          match: label,
+          detail: `Only ${correctResult.length}/${total} (${Math.round(correctResult.length/total*100)}%) got the result right`,
+          users: exactPickers
+        });
+      }
+
+      // 6. Almost everyone got it right (> 80%)
+      if (correctResult.length / total > 0.8 && exactPickers.length >= 2) {
+        insights.push({
+          type: '😎 Easy pick — but these got it exactly',
+          match: label,
+          detail: `${Math.round(correctResult.length/total*100)}% got the result — ${exactPickers.length} nailed the exact score`,
+          users: exactPickers
+        });
+      }
+    });
+
+    if (insights.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--text-muted);">No special insights yet — check back after more matches.</div>';
+      return;
+    }
+
+    container.innerHTML = insights.map(ins => `
+      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;margin-bottom:10px;border-left:3px solid var(--accent);">
+        <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">${ins.type}</div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:3px;">${ins.match}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:${ins.users.length?'6px':'0'};">${ins.detail}</div>
+        ${ins.users.length > 0 ? `<div style="font-size:11px;"><span style="color:var(--green);font-weight:600;">🎯 ${ins.users.join(', ')}</span></div>` : ''}
+      </div>`).join('');
+  }
 
   async function loadWatchAdmin() {
     const container = document.getElementById('watch-admin-content');
@@ -8751,7 +9034,17 @@ Use exactly the formation provided. Only use players from the squad lists above.
       }
       await setDoc(doc(db, 'results', matchId), { firstScorer: scorerName }, { merge: true });
       await updateDoc(doc(db, 'matches', matchId), { firstGoalscorer: scorerName });
-      status.innerHTML = `<span style="color:var(--green);">✅ Done! Awarded +${2*multiplier} pts to ${awarded} player${awarded!==1?'s':''} who picked <strong>${scorerName}</strong></span>`;
+      const winnerNames = [];
+      for (const predDoc of predsSnap.docs) {
+        const pred = predDoc.data();
+        if (pred.firstScorer !== scorerName) continue;
+        const uSnap = await getDoc(doc(db, 'users', pred.userId));
+        if (uSnap.exists()) winnerNames.push(uSnap.data().nickname || uSnap.data().displayName || pred.userId);
+      }
+      const winnersHtml = winnerNames.length > 0
+        ? `<div style="margin-top:6px;font-size:11px;color:var(--text-muted);">Winners: <strong style="color:var(--text);">${winnerNames.join(', ')}</strong></div>`
+        : `<div style="margin-top:6px;font-size:11px;color:var(--text-muted);">Nobody picked ${scorerName}</div>`;
+      status.innerHTML = `<span style="color:var(--green);">✅ Done! Awarded +${2*multiplier} pts to ${awarded} player${awarded!==1?'s':''} who picked <strong>${scorerName}</strong></span>${winnersHtml}`;
     } catch(e) {
       status.innerHTML = `<span style="color:#ef4444;">❌ Error: ${e.message}</span>`;
     }
@@ -14437,7 +14730,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
       return;
     }
 
-    container.innerHTML = finishedMatches.slice(0, 10).map(m => {
+    container.innerHTML = finishedMatches.map(m => {
       const preds = predsByMatch[m.id] || [];
       const total = preds.length;
       let exact = 0, correct = 0, wrong = 0;
@@ -14522,7 +14815,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
           ${scorerHTML}
         </div>`;
     }).join('') + `
-      <div style="text-align:center;font-size:12px;color:var(--text-muted);padding:0.5rem;">Showing last ${Math.min(finishedMatches.length, 10)} matches</div>`;
+      <div style="text-align:center;font-size:12px;color:var(--text-muted);padding:0.5rem;">Showing all ${finishedMatches.length} match${finishedMatches.length!==1?'es':''}</div>`;
   }
 
   // ========== WEEKLY DIGEST ==========
