@@ -1612,6 +1612,9 @@
 
   <!-- MATCHES -->
   <div class="page" id="page-matches">
+    <div id="next-match-btn-wrap" style="display:none;position:sticky;top:8px;z-index:50;text-align:center;pointer-events:none;margin-bottom:8px;">
+      <button onclick="scrollToNextMatch()" style="pointer-events:auto;background:var(--green);color:white;border:none;border-radius:99px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 2px 12px rgba(29,158,117,0.35);">⬇️ Jump to next match</button>
+    </div>
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem;gap:12px;">
       <div>
         <div style="font-family:monospace;font-size:11px;letter-spacing:3px;color:var(--green);text-transform:uppercase;margin-bottom:4px;">⚽ Your picks</div>
@@ -3557,6 +3560,30 @@
       status.innerHTML = `<span style="color:#ef4444;">❌ Error: ${e.message}</span>`;
     }
   };
+
+  window.scrollToNextMatch = () => {
+    const cards = document.querySelectorAll('.match-card[data-is-past]');
+    const firstUpcoming = Array.from(cards).find(c => c.dataset.isPast === '0');
+    if (firstUpcoming) {
+      firstUpcoming.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      firstUpcoming.style.transition = 'box-shadow 0.4s';
+      firstUpcoming.style.boxShadow = '0 0 0 2px var(--green)';
+      setTimeout(() => { firstUpcoming.style.boxShadow = ''; }, 1800);
+    }
+  };
+
+  // Show/hide jump button based on whether first upcoming match is above viewport
+  function initNextMatchBtn() {
+    const btn = document.getElementById('next-match-btn-wrap');
+    if (!btn) return;
+    const cards = document.querySelectorAll('.match-card[data-is-past]');
+    const firstUpcoming = Array.from(cards).find(c => c.dataset.isPast === '0');
+    if (!firstUpcoming) { btn.style.display = 'none'; return; }
+    const observer = new IntersectionObserver(entries => {
+      btn.style.display = entries[0].isIntersecting ? 'none' : 'block';
+    }, { threshold: 0.1 });
+    observer.observe(firstUpcoming);
+  }
 
   window.approveMismatch = (uid) => {
     _svApproved.add(uid);
@@ -6348,6 +6375,19 @@ Use exactly the formation provided. Only use players from the squad lists above.
       setTimeout(initAutoSaveToggle, 300);
       // Start live scores polling
       setTimeout(startLiveScoresPolling, 1500);
+      // Auto-scroll to first upcoming match
+      setTimeout(() => {
+        const cards = document.querySelectorAll('.match-card[data-is-past]');
+        const firstUpcoming = Array.from(cards).find(c => c.dataset.isPast === '0');
+        if (firstUpcoming) {
+          firstUpcoming.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // Brief highlight
+          firstUpcoming.style.transition = 'box-shadow 0.4s';
+          firstUpcoming.style.boxShadow = '0 0 0 2px var(--green)';
+          setTimeout(() => { firstUpcoming.style.boxShadow = ''; }, 1800);
+        }
+        initNextMatchBtn();
+      }, 900);
       // Pulse attention on important picks if not yet filled
       setTimeout(() => {
         const playerCard = document.querySelector('.player-pick');
@@ -8099,6 +8139,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
       html += `
         <div class="match-card" data-match-id="${d.id}" data-home="${m.homeTeam}" data-away="${m.awayTeam}"
+          data-is-past="${isPast ? '1' : '0'}"
           data-home-players='${JSON.stringify(getPlayersForTeam(m.homeTeam, m.homePlayers)).replace(/'/g,"&#39;")}'
           data-away-players='${JSON.stringify(getPlayersForTeam(m.awayTeam, m.awayPlayers)).replace(/'/g,"&#39;")}'
           style="${isLive ? 'border-color:#E24B4A;' : ''}">
