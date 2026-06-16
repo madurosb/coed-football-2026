@@ -1353,6 +1353,7 @@
       <button class="nav-btn" data-page="watch" onclick="showPage('watch')"><span class="nav-icon">👀</span>Watch</button>
       <button class="nav-btn" data-page="trash" onclick="showPage('trash')"><span class="nav-icon">💬</span>Trash Talk</button>
       <button class="nav-btn" data-page="highlights" onclick="showPage('highlights')"><span class="nav-icon">🎬</span>Highlights</button>
+      <button class="nav-btn" data-page="updates" onclick="showPage('updates')"><span class="nav-icon">📢</span>Updates</button>
       <button class="nav-btn" data-page="hof" onclick="showPage('hof')"><span class="nav-icon">🏅</span>Hall of Fame</button>
       <button class="nav-btn" data-page="h2h" onclick="showPage('h2h')"><span class="nav-icon">⚔️</span>H2H</button>
       <button class="nav-btn" data-page="analysis" onclick="showPage('analysis')"><span class="nav-icon">📈</span>Analysis</button>
@@ -1442,6 +1443,7 @@
     <button class="mobile-menu-btn" data-page="watch" onclick="mobileNav('watch')">📺 &nbsp; Watch Together</button>
     <button class="mobile-menu-btn" data-page="trash" onclick="mobileNav('trash')">💬 &nbsp; Trash Talk</button>
     <button class="mobile-menu-btn" data-page="highlights" onclick="mobileNav('highlights')">🎬 &nbsp; Highlights</button>
+    <button class="mobile-menu-btn" data-page="updates" onclick="mobileNav('updates')">📢 &nbsp; Updates</button>
     <button class="mobile-menu-btn" data-page="hof" onclick="mobileNav('hof')">🏅 &nbsp; Hall of Fame</button>
     <button class="mobile-menu-btn" data-page="h2h" onclick="mobileNav('h2h')">⚔️ &nbsp; Head-to-Head</button>
     <button class="mobile-menu-btn" data-page="analysis" onclick="mobileNav('analysis')">📊 &nbsp; Analysis</button>
@@ -1489,6 +1491,7 @@
         <div class="drawer-item" data-page="grouppred" onclick="smartNav('grouppred')"><span class="d-icon">🏅</span><span class="d-label">Inner Circle</span></div>
         <div class="drawer-item" data-page="trash" onclick="smartNav('trash')"><span class="d-icon">💬</span><span class="d-label">Trash Talk</span></div>
         <div class="drawer-item" data-page="watch" onclick="smartNav('watch')"><span class="d-icon">👀</span><span class="d-label">Watch</span></div>
+        <div class="drawer-item" data-page="updates" onclick="smartNav('updates')"><span class="d-icon">📢</span><span class="d-label">Updates</span></div>
         <div class="drawer-item" data-page="hof" onclick="smartNav('hof')"><span class="d-icon">🏅</span><span class="d-label">Hall of Fame</span></div>
         <div class="drawer-item" data-page="h2h" onclick="smartNav('h2h')"><span class="d-icon">⚔️</span><span class="d-label">H2H</span></div>
         <div class="drawer-item" data-page="analysis" onclick="smartNav('analysis')"><span class="d-icon">📈</span><span class="d-label">Analysis</span></div>
@@ -2652,6 +2655,16 @@
   </div>
 
   <!-- HIGHLIGHTS -->
+  <div class="page" id="page-updates">
+    <p class="section-title" style="margin-bottom:1rem;">📢 Updates</p>
+    <!-- Date tabs -->
+    <div id="updates-tabs" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:1rem;scrollbar-width:none;"></div>
+    <!-- Content -->
+    <div id="updates-content">
+      <div style="padding:3rem;text-align:center;font-size:13px;color:var(--text-muted);">Loading updates...</div>
+    </div>
+  </div>
+
   <div class="page" id="page-highlights">
     <div style="text-align:center; padding: 2rem 1rem 3rem;">
       <div style="font-size:13px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2rem;">Match Highlights</div>
@@ -2728,6 +2741,7 @@
         <div id="avatar-requests-badge" style="display:none;position:absolute;top:10px;right:10px;width:20px;height:20px;border-radius:50%;background:#E24B4A;color:white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;" id="avatar-badge">0</div>
       </div>
       <div class="admin-card" onclick="showAdminSub('knockout-admin')"><div class="icon">⚡</div><div class="title">Knockout stages</div><div class="desc">Enable predictions for Round of 16, Quarter-finals, Semi-finals and Final once the group stage is done.</div></div>
+        <div class="admin-card" onclick="showAdminSub('updates-admin');loadUpdatesAdmin()"><div class="icon">📢</div><div class="title">Updates</div><div class="desc">Post daily update graphics shown in the Updates page. Upload image URL from GitHub and set a date/title.</div></div>
         <div class="admin-card" onclick="showAdminSub('wc-scorers');loadAdminWCScorers()"><div class="icon">⚽</div><div class="title">WC Scorers Table</div><div class="desc">Manage the World Cup top scorers table shown in Standings. Add/edit manually or auto-fetch from the web.</div></div>
         <div class="admin-card" onclick="showAdminSub('score-verify')"><div class="icon">🔍</div><div class="title">Score verification</div><div class="desc">Check that all points are calculated correctly. Compare predicted vs actual results and audit per player.</div></div>
         <div class="admin-card" onclick="showAdminSub('picks-overview')"><div class="icon">📋</div><div class="title">Picks overview</div><div class="desc">See who picked which tournament player and World Cup winner. Verify everyone submitted before June 10.</div></div>
@@ -2869,6 +2883,29 @@
         </div>
         <div id="squad-editor-content" style="min-height:100px;">
           <div style="color:var(--text-muted);font-size:13px;text-align:center;padding:2rem;">Select a team above to edit their squad.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="admin-updates-admin" class="admin-sub">
+      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
+      <div class="form-card">
+        <h2>📢 Updates Manager</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Post daily update graphics for the Updates page. Upload your image to GitHub and paste the raw URL here.</p>
+
+        <div id="updates-admin-list" style="margin-bottom:1.5rem;"></div>
+
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px;">➕ Add new update</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <input type="text" id="update-title" placeholder="Title (e.g. Day 5 Recap)" style="padding:8px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;">
+          <input type="date" id="update-date" style="padding:8px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;">
+          <input type="text" id="update-image-url" placeholder="Image URL (GitHub raw link)" style="padding:8px 10px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;">
+          <div id="update-preview" style="display:none;margin-top:4px;">
+            <img id="update-preview-img" style="width:100%;border-radius:8px;border:0.5px solid var(--border);" alt="Preview">
+          </div>
+          <button onclick="previewUpdateImage()" style="padding:8px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;cursor:pointer;">👁️ Preview image</button>
+          <button onclick="saveUpdate()" style="padding:10px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:600;cursor:pointer;">💾 Save update</button>
+          <div id="update-save-status" style="font-size:12px;min-height:16px;"></div>
         </div>
       </div>
     </div>
@@ -6433,6 +6470,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       setTimeout(checkAvatarBadge, 500); showAdminMain(); loadAdminUsers(); loadAdminStats(); }
     if (id === 'leaderboard') { loadFullLeaderboard(); document.getElementById('wc-groups-content').dataset.loaded = ''; document.getElementById('wc-scorers-content').dataset.loaded = ''; }
     if (id === 'stats') loadStatsPage();
+    if (id === 'updates') loadUpdatesPage();
     if (id === 'dummies') {
       const seenTutorial = localStorage.getItem('seenTutorialTooltip');
       if (!seenTutorial) {
@@ -8988,6 +9026,140 @@ Use exactly the formation provided. Only use players from the squad lists above.
     if (id === 'trash-admin') {};
     if (id === 'double-admin') loadDoubleOrNothingAdmin();
     if (id === 'wc-scorers') loadAdminWCScorers();
+    if (id === 'updates-admin') loadUpdatesAdmin();
+  };
+
+  // ═══ UPDATES PAGE ═══
+  window.loadUpdatesPage = async function loadUpdatesPage() {
+    const tabsEl = document.getElementById('updates-tabs');
+    const contentEl = document.getElementById('updates-content');
+    if (!tabsEl || !contentEl) return;
+    if (tabsEl.dataset.loaded) return;
+    tabsEl.dataset.loaded = '1';
+
+    try {
+      const snap = await getDocs(query(collection(db, 'updates'), orderBy('date', 'desc')));
+      if (snap.empty) {
+        contentEl.innerHTML = '<div style="padding:3rem;text-align:center;font-size:13px;color:var(--text-muted);">No updates yet — check back soon! 📢</div>';
+        return;
+      }
+
+      const updates = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      // Build date tabs — always open latest first
+      tabsEl.innerHTML = updates.map((u, i) => `
+        <button onclick="switchUpdateTab('${u.id}')" id="utab-${u.id}"
+          style="white-space:nowrap;padding:7px 14px;border-radius:99px;border:0.5px solid ${i===0?'var(--green)':'var(--border)'};background:${i===0?'var(--green)':'none'};color:${i===0?'white':'var(--text-muted)'};font-size:12px;font-weight:${i===0?'600':'400'};cursor:pointer;flex-shrink:0;">
+          ${u.title || u.date}
+        </button>`).join('');
+
+      // Store updates for tab switching
+      window._updatesData = updates;
+
+      // Show latest
+      renderUpdateContent(updates[0]);
+    } catch(e) {
+      contentEl.innerHTML = '<div style="padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);">Could not load updates.</div>';
+    }
+  }
+
+  window.switchUpdateTab = (id) => {
+    const u = (window._updatesData || []).find(x => x.id === id);
+    if (!u) return;
+    // Update tab styles
+    (window._updatesData || []).forEach(x => {
+      const btn = document.getElementById('utab-' + x.id);
+      if (!btn) return;
+      const active = x.id === id;
+      btn.style.background = active ? 'var(--green)' : 'none';
+      btn.style.color = active ? 'white' : 'var(--text-muted)';
+      btn.style.borderColor = active ? 'var(--green)' : 'var(--border)';
+      btn.style.fontWeight = active ? '600' : '400';
+    });
+    renderUpdateContent(u);
+  };
+
+  function renderUpdateContent(u) {
+    const contentEl = document.getElementById('updates-content');
+    if (!contentEl || !u) return;
+    contentEl.innerHTML = `
+      <div style="border-radius:14px;overflow:hidden;border:0.5px solid var(--border);">
+        ${u.imageUrl ? `<img src="${u.imageUrl}" alt="${u.title||''}"
+          style="width:100%;display:block;"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+          <div style="display:none;padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);align-items:center;justify-content:center;">⚠️ Could not load image</div>`
+        : '<div style="padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);">No image for this update.</div>'}
+      </div>
+      ${u.date ? `<div style="margin-top:8px;font-size:11px;color:var(--text-muted);text-align:right;">${u.date}</div>` : ''}`;
+  }
+
+  // ═══ UPDATES ADMIN ═══
+  window.loadUpdatesAdmin = async () => {
+    const list = document.getElementById('updates-admin-list');
+    if (!list) return;
+    list.innerHTML = '<div style="font-size:13px;color:var(--text-muted);">Loading...</div>';
+    // Set today as default date
+    const dateInput = document.getElementById('update-date');
+    if (dateInput && !dateInput.value) dateInput.value = new Date().toISOString().slice(0,10);
+    try {
+      const snap = await getDocs(query(collection(db, 'updates'), orderBy('date', 'desc')));
+      if (snap.empty) { list.innerHTML = '<div style="font-size:13px;color:var(--text-muted);padding:8px 0;">No updates yet.</div>'; return; }
+      list.innerHTML = snap.docs.map(d => {
+        const u = d.data();
+        return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:0.5px solid var(--border);">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;">${u.title||'(no title)'}</div>
+            <div style="font-size:11px;color:var(--text-muted);">${u.date||''}</div>
+          </div>
+          <button onclick="deleteUpdate('${d.id}')" style="padding:4px 8px;border-radius:6px;border:1px solid #E24B4A;background:none;color:#E24B4A;font-size:11px;cursor:pointer;">🗑 Delete</button>
+        </div>`;
+      }).join('');
+    } catch(e) {
+      list.innerHTML = '<div style="font-size:12px;color:#E24B4A;">Error loading updates.</div>';
+    }
+  };
+
+  window.previewUpdateImage = () => {
+    const url = document.getElementById('update-image-url').value.trim();
+    const preview = document.getElementById('update-preview');
+    const img = document.getElementById('update-preview-img');
+    if (!url) return;
+    img.src = url;
+    preview.style.display = 'block';
+  };
+
+  window.saveUpdate = async () => {
+    const title = document.getElementById('update-title').value.trim();
+    const date = document.getElementById('update-date').value;
+    const imageUrl = document.getElementById('update-image-url').value.trim();
+    const status = document.getElementById('update-save-status');
+    if (!date || !imageUrl) { status.innerHTML = '<span style="color:#E24B4A;">Date and image URL are required.</span>'; return; }
+    status.innerHTML = '⏳ Saving...';
+    try {
+      await setDoc(doc(collection(db, 'updates')), { title, date, imageUrl, createdAt: serverTimestamp() });
+      status.innerHTML = '<span style="color:var(--green);">✅ Saved!</span>';
+      document.getElementById('update-title').value = '';
+      document.getElementById('update-image-url').value = '';
+      document.getElementById('update-preview').style.display = 'none';
+      // Reset updates page so it reloads
+      const tabsEl = document.getElementById('updates-tabs');
+      if (tabsEl) tabsEl.dataset.loaded = '';
+      loadUpdatesAdmin();
+    } catch(e) {
+      status.innerHTML = '<span style="color:#E24B4A;">❌ Error: ' + e.message + '</span>';
+    }
+  };
+
+  window.deleteUpdate = async (id) => {
+    if (!confirm('Delete this update?')) return;
+    try {
+      await deleteDoc(doc(db, 'updates', id));
+      const tabsEl = document.getElementById('updates-tabs');
+      if (tabsEl) tabsEl.dataset.loaded = '';
+      loadUpdatesAdmin();
+    } catch(e) {
+      alert('Error: ' + e.message);
+    }
   };
 
   // ═══ WC SCORERS ADMIN ═══
