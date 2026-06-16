@@ -1754,7 +1754,7 @@
     <div style="display:flex;gap:8px;margin-bottom:1rem;">
       <button id="tab-standings" onclick="switchStandingsTab('standings')" style="flex:1;padding:8px;border-radius:8px;border:0.5px solid var(--green);background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">🏆 Player standings</button>
       <button id="tab-groups" onclick="switchStandingsTab('groups')" style="flex:1;padding:8px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">🌍 WC Groups</button>
-      <button id="tab-scorers" onclick="switchStandingsTab('scorers')" style="flex:1;padding:8px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">⚽ Scorers</button>
+      <button id="tab-scorers" onclick="switchStandingsTab('scorers')" style="flex:1;padding:8px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">⚽ Scorers & Assists</button>
       <button id="tab-accuracy" onclick="switchStandingsTab('accuracy')" style="flex:1;padding:8px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">🎯 Accuracy</button>
     </div>
 
@@ -11110,32 +11110,23 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const container = document.getElementById('stats-content');
     container.innerHTML = '<div style="padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);">Loading your stats...</div>';
 
-    let userSnap, predsSnap, matchesSnap, allUsersSnap, jokerSnap;
-    try {
-      [userSnap, predsSnap, matchesSnap, allUsersSnap, jokerSnap] = await Promise.all([
-        getDoc(doc(db, 'users', currentUser.uid)),
-        getDocs(collection(db, 'predictions')),
-        getDocs(query(collection(db, 'matches'), orderBy('kickoff'))),
-        getDocs(collection(db, 'users')),
-        getDocs(query(collection(db, 'jokerCards'), where('userId', '==', currentUser.uid)))
-      ]);
-    } catch(e) {
-      container.innerHTML = '<div style="padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);">⚠️ Could not load stats. Try refreshing.</div>';
-      console.error('loadStatsPage error:', e);
-      return;
-    }
+    const [userSnap, predsSnap, matchesSnap, allUsersSnap, jokerSnap, wcScorersSnap] = await Promise.all([
+      getDoc(doc(db, 'users', currentUser.uid)),
+      getDocs(query(collection(db, 'predictions'), orderBy('submittedAt'))),
+      getDocs(query(collection(db, 'matches'), orderBy('kickoff'))),
+      getDocs(collection(db, 'users')),
+      getDocs(query(collection(db, 'jokerCards'), where('userId', '==', currentUser.uid))),
+      getDocs(collection(db, 'wc_scorers'))
+    ]);
 
     const user = userSnap.data();
     // Inject jokerMatchId from jokerCards collection (not user doc)
     if (!user.jokerMatchId && !jokerSnap.empty) {
       user.jokerMatchId = jokerSnap.docs[0].data().matchId;
     }
-    // Fetch wc_scorers separately — graceful fallback if rules block access
+    // Build wc_scorers lookup by player name
     const wcScorersMap = {};
-    try {
-      const wcScorersSnap = await getDocs(collection(db, 'wc_scorers'));
-      wcScorersSnap.forEach(d => { const s = d.data(); if (s.name) wcScorersMap[s.name] = s; });
-    } catch(e) { /* wc_scorers not accessible */ }
+    wcScorersSnap.forEach(d => { const s = d.data(); if (s.name) wcScorersMap[s.name] = s; });
     const myTourneyPlayerData = user.tournamentPlayer ? (wcScorersMap[user.tournamentPlayer] || null) : null;
     const myTourneyGoals = myTourneyPlayerData ? (myTourneyPlayerData.goals || 0) : 0;
     const myTourneyAssists = myTourneyPlayerData ? (myTourneyPlayerData.assists || 0) : 0;
