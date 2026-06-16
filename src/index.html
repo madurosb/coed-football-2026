@@ -2289,7 +2289,7 @@
           <div class="htp-icon">🎰</div>
           <div>
             <div class="htp-title">Double or Nothing <span class="htp-badge" style="background:rgba(124,58,237,0.2);color:#a78bfa;border:1px solid rgba(124,58,237,0.3);">ONCE PER WEEK</span></div>
-            <div class="htp-desc">Once per tournament week, pick one match to go double or nothing. Correct result = <strong>×2 result points</strong>. Wrong result = those result points are <strong>deducted</strong> from your total. First goalscorer points are always safe. High risk, high reward. For the mentally unhinged.</div>
+            <div class="htp-desc">Once per tournament week, pick one match to go double or nothing. Correct result = <strong>×2 ALL points</strong> (result + first scorer). Wrong result = <strong>all those points are deducted</strong>. High risk, high reward. For the mentally unhinged.</div>
           </div>
         </div>
       </div>
@@ -2787,6 +2787,23 @@
         <div class="form-row"><label>First scorer name</label><input type="text" id="scorer-only-name" placeholder='e.g. Julian Quinones or Own Goal' style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;"></div>
         <button class="submit-btn" id="scorer-only-btn" onclick="awardScorerPoints()" style="background:linear-gradient(135deg,#059669,#047857);margin-top:0.5rem;">🎯 Award +2 pts to correct pickers</button>
         <div id="scorer-only-status" style="margin-top:8px;font-size:12px;text-align:center;min-height:20px;"></div>
+      </div>
+
+      <div class="form-card" style="margin-top:1rem;">
+        <h2>⭐ Award Tournament Player Points</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Award bonus points to users who picked a tournament player that scored goals/assists. +2 per goal, +1 per assist, -1 per red card. Updates <code>wc_scorers</code> and awards to all pickers.</p>
+        <div class="form-row"><label>Player name</label><input type="text" id="tp-player-name" placeholder="e.g. Kylian Mbappé" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
+          <div><label style="font-size:12px;color:var(--text-muted);">⚽ Goals</label><input type="number" id="tp-goals" value="0" min="0" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;"></div>
+          <div><label style="font-size:12px;color:var(--text-muted);">👟 Assists</label><input type="number" id="tp-assists" value="0" min="0" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;"></div>
+          <div><label style="font-size:12px;color:var(--text-muted);">🟥 Red cards</label><input type="number" id="tp-reds" value="0" min="0" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;"></div>
+        </div>
+        <div style="background:var(--surface2);border-radius:8px;padding:10px;font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+          ⚠️ Enter only the <strong>NEW</strong> stats from today's match (not cumulative total). The system adds them to existing totals in <code>wc_scorers</code>.
+        </div>
+        <button onclick="awardTournamentPlayerPoints()" style="width:100%;padding:10px;border-radius:8px;border:none;background:linear-gradient(135deg,#7C3AED,#5B21B6);color:white;font-size:13px;font-weight:600;cursor:pointer;">⭐ Award Tournament Player Points</button>
+        <div id="tp-status" style="margin-top:8px;font-size:12px;text-align:center;min-height:20px;"></div>
+        <div id="tp-pickers" style="margin-top:8px;"></div>
       </div>
     </div>
     <div id="admin-players" class="admin-sub">
@@ -3295,7 +3312,7 @@
 
     const t = document.createElement('div');
     t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#BA7517;color:#fff;font-size:13px;padding:10px 16px;border-radius:10px;z-index:9999;white-space:nowrap;';
-    t.textContent = "🎰 You're in! x2 result pts if correct, deducted if wrong!";
+    t.textContent = "🎰 You're in! x2 ALL points if correct, deducted if wrong!";
     document.body.appendChild(t);
     setTimeout(() => { t.style.transition='opacity 0.5s'; t.style.opacity='0'; setTimeout(()=>t.remove(),500); }, 3000);
   };
@@ -3577,10 +3594,8 @@
         const donSnap = await getDocs(query(collection(db, 'donOptIns'), where('matchId','==',matchId), where('userId','==',pred.userId)));
         if (!donSnap.empty) {
           const isCorrect = predOutcome === actualOutcome;
-          const scorerPts = (firstScorer && pred.firstScorer === firstScorer) ? 2 * multiplier : 0;
-          const resultPts = pts - scorerPts;
           const penalty = isFinal ? 10 : 1 * multiplier;
-          pts = isCorrect ? (resultPts * 2) + scorerPts : scorerPts - penalty;
+          pts = isCorrect ? pts * 2 : -penalty;
         }
         const userRef = doc(db, 'users', pred.userId);
         const userSnap = await getDoc(userRef);
@@ -3598,8 +3613,34 @@
     }
   };
 
+  // Normalize player name for matching (removes accents for comparison)
+  function normalizeName(name) {
+    if (!name) return '';
+    return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  }
+
+  // Build a map from normalized name → canonical name (first seen)
+  function buildNormalizedScorersMap(scorersSnap) {
+    const map = {}; // normalized → { data, canonical }
+    scorersSnap.forEach(d => {
+      const s = d.data();
+      if (!s.name) return;
+      const norm = normalizeName(s.name);
+      if (!map[norm]) {
+        map[norm] = { goals: 0, assists: 0, redCards: 0, name: s.name };
+      }
+      // Merge stats (sum in case of duplicates)
+      map[norm].goals = (map[norm].goals || 0) + (s.goals || 0);
+      map[norm].assists = (map[norm].assists || 0) + (s.assists || 0);
+      map[norm].redCards = (map[norm].redCards || 0) + (s.redCards || 0);
+    });
+    return map; // key=normalized, value={goals,assists,redCards,name(canonical)}
+  }
+
   window.scrollToNextMatch = () => {
-    const cards = document.querySelectorAll('.match-card[data-is-past]');
+    const page = document.getElementById('page-matches');
+    if (!page) return;
+    const cards = page.querySelectorAll('.match-card[data-is-past]');
     const firstUpcoming = Array.from(cards).find(c => c.dataset.isPast === '0');
     if (firstUpcoming) {
       firstUpcoming.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -3612,7 +3653,9 @@
   function initNextMatchBtn() {
     const btn = document.getElementById('next-match-btn-wrap');
     if (!btn) return;
-    const cards = document.querySelectorAll('.match-card[data-is-past]');
+    const page = document.getElementById('page-matches');
+    if (!page) return;
+    const cards = page.querySelectorAll('.match-card[data-is-past]');
     const firstUpcoming = Array.from(cards).find(c => c.dataset.isPast === '0');
     if (!firstUpcoming) { btn.style.display = 'none'; return; }
     const observer = new IntersectionObserver(entries => {
@@ -3697,12 +3740,10 @@
       if (m.firstGoalscorer && pred.firstScorer === m.firstGoalscorer) pts += 2 * multiplier;
       // Joker: doubles total pts (from jokerCards collection, not pred.joker)
       if (hasJoker && correctOutcome) pts *= 2;
-      // DON: doubles result pts if correct, penalises if wrong (from donOptIns collection)
+      // DON: doubles ALL pts (including scorer) if correct, penalises if wrong
       if (hasDon) {
-        const scorerPts = (m.firstGoalscorer && pred.firstScorer === m.firstGoalscorer) ? 2 * multiplier : 0;
-        const resultPts = pts - scorerPts;
         const penalty = isFinal ? 10 : 1 * multiplier;
-        pts = correctOutcome ? (resultPts * 2) + scorerPts : scorerPts - penalty;
+        pts = correctOutcome ? pts * 2 : -penalty;
       }
       return pts;
     }
@@ -6583,7 +6624,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       return;
     }
 
-    const deadline = new Date('2026-06-22T21:00:00Z'); // June 22 midnight Israel
+    const deadline = new Date('2026-06-15T21:00:00Z'); // June 15 midnight Israel
     const isPast = new Date() >= deadline;
     const tournamentDone = new Date() >= new Date('2026-07-20T00:00:00Z'); // approx end
 
@@ -7746,7 +7787,9 @@ Use exactly the formation provided. Only use players from the squad lists above.
         return;
       }
 
-      const allScorers = snap.docs.map(d => d.data());
+      // Merge duplicates (Mbappe/Mbappé etc.) using normalized names
+      const normMap = buildNormalizedScorersMap(snap);
+      const allScorers = Object.values(normMap);
 
       // Table 1: Top Scorers (goals > 0), sorted by goals desc
       const scorers = [...allScorers].filter(s => (s.goals||0) > 0).sort((a,b) => (b.goals||0)-(a.goals||0));
@@ -8182,7 +8225,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
         ...(m.awayPlayers || []).map(p => `<option value="${p}">${p}</option>`)
       ].join('');
 
-      const liveIndicator = isLive ? `<span style="background:#E24B4A;color:white;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;letter-spacing:0.05em;animation:pulse 1.5s infinite;">● LIVE</span>` : '';
+      const liveIndicator = ''; // Badge injected dynamically by updateLiveScoreCards with minute
       const finishedResult = isFinished && m.homeScore !== null ? `
         <div style="background:var(--surface2);border-radius:8px;padding:6px 12px;text-align:center;margin-top:8px;">
           <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Final result</div>
@@ -9083,109 +9126,14 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const contentEl = document.getElementById('updates-content');
     if (!contentEl || !u) return;
     contentEl.innerHTML = `
-      <div style="border-radius:14px;overflow:hidden;border:0.5px solid var(--border);position:relative;">
+      <div style="border-radius:14px;overflow:hidden;border:0.5px solid var(--border);">
         ${u.imageUrl ? `<img src="${u.imageUrl}" alt="${u.title||''}"
-          id="update-zoomable-img"
-          style="width:100%;display:block;touch-action:none;cursor:zoom-in;transform-origin:0 0;"
+          style="width:100%;display:block;"
           onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
           <div style="display:none;padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);align-items:center;justify-content:center;">⚠️ Could not load image</div>`
         : '<div style="padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);">No image for this update.</div>'}
       </div>
-      ${u.date ? `<div style="margin-top:8px;font-size:11px;color:var(--text-muted);text-align:right;">${u.date}</div>` : ''}
-      <div style="margin-top:6px;text-align:center;font-size:11px;color:var(--text-muted);">🤏 Pinch to zoom &amp; drag to pan</div>`;
-
-    const img = document.getElementById('update-zoomable-img');
-    if (!img) return;
-
-    let scale = 1, lastScale = 1;
-    let originX = 0, originY = 0;
-    let translateX = 0, translateY = 0;
-    let lastTranslateX = 0, lastTranslateY = 0;
-    let startDist = 0;
-    let panStartX = 0, panStartY = 0;
-    let isPinching = false;
-
-    function clampTranslate(tx, ty, s) {
-      const rect = img.getBoundingClientRect();
-      const maxX = rect.width * (s - 1) / 2;
-      const maxY = rect.height * (s - 1) / 2;
-      return [Math.max(-maxX, Math.min(maxX, tx)), Math.max(-maxY, Math.min(maxY, ty))];
-    }
-
-    function applyTransform() {
-      img.style.transform = 'scale(' + scale + ') translate(' + (translateX / scale) + 'px,' + (translateY / scale) + 'px)';
-    }
-
-    img.addEventListener('touchstart', e => {
-      if (e.touches.length === 2) {
-        isPinching = true;
-        startDist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-        e.preventDefault();
-      } else if (e.touches.length === 1) {
-        if (scale > 1) {
-          panStartX = e.touches[0].clientX - lastTranslateX;
-          panStartY = e.touches[0].clientY - lastTranslateY;
-        }
-        e.preventDefault();
-      }
-    }, { passive: false });
-
-    img.addEventListener('touchmove', e => {
-      if (e.touches.length === 2 && isPinching) {
-        const dist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-        scale = Math.min(4, Math.max(1, lastScale * (dist / startDist)));
-        applyTransform();
-        e.preventDefault();
-      } else if (e.touches.length === 1 && scale > 1 && !isPinching) {
-        translateX = e.touches[0].clientX - panStartX;
-        translateY = e.touches[0].clientY - panStartY;
-        [translateX, translateY] = clampTranslate(translateX, translateY, scale);
-        applyTransform();
-        e.preventDefault();
-      }
-    }, { passive: false });
-
-    img.addEventListener('touchend', e => {
-      if (e.touches.length === 0) {
-        isPinching = false;
-        lastScale = scale;
-        lastTranslateX = translateX;
-        lastTranslateY = translateY;
-        if (scale <= 1.05) {
-          scale = 1; lastScale = 1;
-          translateX = 0; translateY = 0;
-          lastTranslateX = 0; lastTranslateY = 0;
-          img.style.transform = 'scale(1)';
-          img.style.cursor = 'zoom-in';
-        }
-      }
-    });
-
-    // Double-tap to zoom/reset
-    let lastTap = 0;
-    img.addEventListener('touchend', e => {
-      const now = Date.now();
-      if (now - lastTap < 300) {
-        if (scale > 1) {
-          scale = 1; lastScale = 1;
-          translateX = 0; translateY = 0;
-          lastTranslateX = 0; lastTranslateY = 0;
-          img.style.transform = 'scale(1)';
-          img.style.cursor = 'zoom-in';
-        } else {
-          scale = 2; lastScale = 2;
-          applyTransform();
-          img.style.cursor = 'zoom-out';
-        }
-      }
-      lastTap = now;
-    });
+      ${u.date ? `<div style="margin-top:8px;font-size:11px;color:var(--text-muted);text-align:right;">${u.date}</div>` : ''}`;
   }
 
   // ═══ UPDATES ADMIN ═══
@@ -9254,6 +9202,71 @@ Use exactly the formation provided. Only use players from the squad lists above.
       loadUpdatesAdmin();
     } catch(e) {
       alert('Error: ' + e.message);
+    }
+  };
+
+  window.awardTournamentPlayerPoints = async () => {
+    const playerName = document.getElementById('tp-player-name').value.trim();
+    const newGoals = parseInt(document.getElementById('tp-goals').value) || 0;
+    const newAssists = parseInt(document.getElementById('tp-assists').value) || 0;
+    const newReds = parseInt(document.getElementById('tp-reds').value) || 0;
+    const status = document.getElementById('tp-status');
+    const pickersEl = document.getElementById('tp-pickers');
+
+    if (!playerName) { status.innerHTML = '<span style="color:#ef4444;">Enter player name.</span>'; return; }
+    if (newGoals === 0 && newAssists === 0 && newReds === 0) { status.innerHTML = '<span style="color:#ef4444;">Enter at least one stat.</span>'; return; }
+
+    const ptsPerPicker = (newGoals * 2) + (newAssists * 1) - (newReds * 1);
+    if (!confirm(`Award ${ptsPerPicker > 0 ? '+' : ''}${ptsPerPicker} pts to everyone who picked ${playerName}?\n⚽ ${newGoals} goals × 2 = +${newGoals*2}\n👟 ${newAssists} assists × 1 = +${newAssists}\n🟥 ${newReds} red cards × 1 = -${newReds}\nTotal per picker: ${ptsPerPicker}`)) return;
+
+    status.innerHTML = '⏳ Processing...';
+    pickersEl.innerHTML = '';
+
+    try {
+      // 1. Update wc_scorers totals
+      const scorerRef = doc(db, 'wc_scorers', playerName.toLowerCase().replace(/\s+/g, '_'));
+      const scorerSnap = await getDoc(scorerRef);
+      const existing = scorerSnap.exists() ? scorerSnap.data() : { goals: 0, assists: 0 };
+      await setDoc(scorerRef, {
+        name: playerName,
+        goals: (existing.goals || 0) + newGoals,
+        assists: (existing.assists || 0) + newAssists,
+        redCards: (existing.redCards || 0) + newReds,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+
+      // 2. Find all users who picked this player as tournament player
+      const usersSnap = await getDocs(collection(db, 'users'));
+      const pickers = [];
+      usersSnap.forEach(d => {
+        const u = d.data();
+        if (u.tournamentPlayer === playerName && !u.removed) pickers.push({ ref: d.ref, data: u });
+      });
+
+      if (pickers.length === 0) {
+        status.innerHTML = '<span style="color:var(--green);">✅ wc_scorers updated. Nobody picked ' + playerName + ' as tournament player.</span>';
+        return;
+      }
+
+      // 3. Award points to each picker
+      for (const picker of pickers) {
+        await updateDoc(picker.ref, {
+          points: (picker.data.points || 0) + ptsPerPicker,
+          bonusPoints: (picker.data.bonusPoints || 0) + ptsPerPicker
+        });
+      }
+
+      const names = pickers.map(p => p.data.nickname || p.data.displayName).join(', ');
+      status.innerHTML = '<span style="color:var(--green);">✅ Done! Awarded ' + (ptsPerPicker > 0 ? '+' : '') + ptsPerPicker + ' pts to ' + pickers.length + ' picker' + (pickers.length !== 1 ? 's' : '') + '.</span>';
+      pickersEl.innerHTML = '<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Pickers: <strong style="color:var(--text);">' + names + '</strong></div>';
+
+      // Reset inputs
+      document.getElementById('tp-goals').value = '0';
+      document.getElementById('tp-assists').value = '0';
+      document.getElementById('tp-reds').value = '0';
+
+    } catch(e) {
+      status.innerHTML = '<span style="color:#ef4444;">❌ Error: ' + e.message + '</span>';
     }
   };
 
@@ -9549,17 +9562,8 @@ Use exactly the formation provided. Only use players from the squad lists above.
           const actualResultDON = homeScore > awayScore ? 'H' : homeScore < awayScore ? 'A' : 'D';
           const predResultDON = pred.data.homeScore > pred.data.awayScore ? 'H' : pred.data.homeScore < pred.data.awayScore ? 'A' : 'D';
           const isCorrect = actualResultDON === predResultDON;
-          // Isolate scorer pts (stays safe either way)
-          const scorerPts = (firstScorer && pred.data.firstScorer === firstScorer) ? 2 * multiplier : 0;
-          const resultPts = pts - scorerPts;
-          if (isCorrect) {
-            // Double the result+exact pts, first scorer unchanged
-            pts = (resultPts * 2) + scorerPts;
-          } else {
-            // Penalty = what you would have won on result (min 1 pt * multiplier)
-            const penalty = isFinal ? 10 : 1 * multiplier; // always 1 base pt × stage multiplier
-            pts = scorerPts - penalty;
-          }
+          const penalty = isFinal ? 10 : 1 * multiplier;
+          pts = isCorrect ? pts * 2 : -penalty;
         }
 
         const userRef = doc(db, 'users', pred.data.userId);
@@ -11578,10 +11582,9 @@ Use exactly the formation provided. Only use players from the squad lists above.
     if (!user.jokerMatchId && !jokerSnap.empty) {
       user.jokerMatchId = jokerSnap.docs[0].data().matchId;
     }
-    // Build wc_scorers lookup by player name
-    const wcScorersMap = {};
-    wcScorersSnap.forEach(d => { const s = d.data(); if (s.name) wcScorersMap[s.name] = s; });
-    const myTourneyPlayerData = user.tournamentPlayer ? (wcScorersMap[user.tournamentPlayer] || null) : null;
+    // Build normalized wc_scorers map (merges Mbappe/Mbappé etc.)
+    const normWcMap = buildNormalizedScorersMap(wcScorersSnap);
+    const myTourneyPlayerData = user.tournamentPlayer ? (normWcMap[normalizeName(user.tournamentPlayer)] || null) : null;
     const myTourneyGoals = myTourneyPlayerData ? (myTourneyPlayerData.goals || 0) : 0;
     const myTourneyAssists = myTourneyPlayerData ? (myTourneyPlayerData.assists || 0) : 0;
 
@@ -12264,19 +12267,21 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const users = [];
       usersSnap.forEach(d => { if (d.data().tournamentPlayer) users.push(d.data()); });
 
-      // Build wc_scorers lookup by player name
-      const scorerData = {};
-      scorersSnap.forEach(d => { const s = d.data(); if (s.name) scorerData[s.name] = s; });
+      // Build normalized wc_scorers map (merges Mbappe/Mbappé etc.)
+      const normScorersMap = buildNormalizedScorersMap(scorersSnap);
 
-      // Group by tournament player using actual wc_scorers goals (not bonusPoints from user doc)
+      // Group by tournament player — normalize name for lookup, display canonical stored name
       const playerGoals = {};
       users.forEach(u => {
         const p = u.tournamentPlayer;
-        if (!playerGoals[p]) {
-          const sd = scorerData[p];
-          playerGoals[p] = { goals: sd ? (sd.goals || 0) : 0, assists: sd ? (sd.assists || 0) : 0, pickers: [] };
+        const norm = normalizeName(p);
+        const sd = normScorersMap[norm];
+        // Use the display name from wc_scorers if found, else user's stored name
+        const displayName = sd ? sd.name : p;
+        if (!playerGoals[displayName]) {
+          playerGoals[displayName] = { goals: sd ? (sd.goals || 0) : 0, assists: sd ? (sd.assists || 0) : 0, pickers: [] };
         }
-        playerGoals[p].pickers.push(u.nickname || u.displayName);
+        playerGoals[displayName].pickers.push(u.nickname || u.displayName);
       });
 
       const sorted = Object.entries(playerGoals).sort((a,b) => b[1].goals - a[1].goals || b[1].assists - a[1].assists);
