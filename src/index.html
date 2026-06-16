@@ -11135,9 +11135,9 @@ Use exactly the formation provided. Only use players from the squad lists above.
     try {
       const wcScorersSnap = await getDocs(collection(db, 'wc_scorers'));
       wcScorersSnap.forEach(d => { const s = d.data(); if (s.name) wcScorersMap[s.name] = s; });
-    } catch(e) { /* wc_scorers not accessible — will fall back to bonusPoints */ }
+    } catch(e) { /* wc_scorers not accessible */ }
     const myTourneyPlayerData = user.tournamentPlayer ? (wcScorersMap[user.tournamentPlayer] || null) : null;
-    const myTourneyGoals = myTourneyPlayerData ? (myTourneyPlayerData.goals || 0) : (user.bonusPoints || 0);
+    const myTourneyGoals = myTourneyPlayerData ? (myTourneyPlayerData.goals || 0) : 0;
     const myTourneyAssists = myTourneyPlayerData ? (myTourneyPlayerData.assists || 0) : 0;
 
     // Avatar reminder banner removed
@@ -11796,16 +11796,16 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const container = document.getElementById('goals-king-table');
     if (!container) return;
     try {
-      const usersSnap = await getDocs(collection(db, 'users'));
+      const [usersSnap, scorersSnap] = await Promise.all([
+        getDocs(collection(db, 'users')),
+        getDocs(collection(db, 'wc_scorers'))
+      ]);
       const users = [];
       usersSnap.forEach(d => { if (d.data().tournamentPlayer) users.push(d.data()); });
 
-      // Build wc_scorers lookup — graceful fallback if rules block access
+      // Build wc_scorers lookup by player name
       const scorerData = {};
-      try {
-        const scorersSnap = await getDocs(collection(db, 'wc_scorers'));
-        scorersSnap.forEach(d => { const s = d.data(); if (s.name) scorerData[s.name] = s; });
-      } catch(e) { /* scorerData stays empty, goals show as — */ }
+      scorersSnap.forEach(d => { const s = d.data(); if (s.name) scorerData[s.name] = s; });
 
       // Group by tournament player using actual wc_scorers goals (not bonusPoints from user doc)
       const playerGoals = {};
