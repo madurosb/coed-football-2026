@@ -11114,7 +11114,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     try {
       [userSnap, predsSnap, matchesSnap, allUsersSnap, jokerSnap, wcScorersSnap] = await Promise.all([
         getDoc(doc(db, 'users', currentUser.uid)),
-        getDocs(query(collection(db, 'predictions'), where('userId', '==', currentUser.uid))),
+        getDocs(collection(db, 'predictions')),
         getDocs(query(collection(db, 'matches'), orderBy('kickoff'))),
         getDocs(collection(db, 'users')),
         getDocs(query(collection(db, 'jokerCards'), where('userId', '==', currentUser.uid))),
@@ -11149,7 +11149,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const totalPlayers = allUsers.length;
 
     const myPreds = [];
-    predsSnap.forEach(d => { myPreds.push(d.data()); }); // already filtered by userId in query
+    predsSnap.forEach(d => { if (d.data().userId === currentUser.uid) myPreds.push(d.data()); });
 
     const matches = [];
     matchesSnap.forEach(d => matches.push({id: d.id, ...d.data()}));
@@ -11818,27 +11818,25 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
       const sorted = Object.entries(playerGoals).sort((a,b) => b[1].goals - a[1].goals || b[1].assists - a[1].assists);
 
-      if (sorted.length === 0) {
-        container.innerHTML = `<div style="padding:1.25rem;text-align:center;font-size:13px;color:var(--text-muted);">⚽ No tournament players picked yet.</div>`;
+      if (sorted.length === 0 || sorted.every(([,v]) => v.goals === 0)) {
+        container.innerHTML = `<div style="padding:1.25rem;text-align:center;font-size:13px;color:var(--text-muted);">⚽ Goals will appear here once players start scoring.</div>`;
         return;
       }
 
-      const anyGoals = sorted.some(([,v]) => v.goals > 0);
       const medals = ['🥇','🥈','🥉'];
       container.innerHTML = `
-        ${!anyGoals ? `<div style="padding:8px 12px;background:var(--surface2);border-bottom:0.5px solid var(--border);font-size:11px;color:var(--text-muted);text-align:center;">⏳ No goals scored yet — table will update after each match</div>` : ''}
         <div style="display:grid;grid-template-columns:32px 1fr 50px 50px;font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;padding:0.5rem 1rem;background:var(--surface2);">
           <div></div><div>Player</div><div style="text-align:center;">⚽</div><div style="text-align:center;">🅰️</div>
         </div>
         ${sorted.map(([player, data], i) => `
           <div style="display:grid;grid-template-columns:32px 1fr 50px 50px;align-items:center;padding:0.65rem 1rem;border-top:0.5px solid var(--border);">
-            <div style="font-size:16px;">${anyGoals ? (medals[i] || (i+1)+'.') : '·'}</div>
+            <div style="font-size:16px;">${medals[i] || (i+1)+'.'}</div>
             <div>
               <div style="font-size:13px;font-weight:500;">${player}</div>
               <div style="font-size:11px;color:var(--text-muted);">Picked by: ${data.pickers.join(', ')}</div>
             </div>
-            <div style="text-align:center;font-size:18px;font-weight:700;color:${data.goals > 0 ? 'var(--green)' : 'var(--text-muted)'};">${data.goals > 0 ? data.goals : '—'}</div>
-            <div style="text-align:center;font-size:14px;color:var(--text-muted);">${data.assists > 0 ? data.assists : '—'}</div>
+            <div style="text-align:center;font-size:18px;font-weight:700;color:var(--green);">${data.goals}</div>
+            <div style="text-align:center;font-size:14px;color:var(--text-muted);">${data.assists}</div>
           </div>`).join('')}`;
     } catch(e) {
       if (container) container.innerHTML = `<div style="padding:1rem;font-size:13px;color:var(--text-muted);">Could not load goals.</div>`;
