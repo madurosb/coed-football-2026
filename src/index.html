@@ -9083,15 +9083,54 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const contentEl = document.getElementById('updates-content');
     if (!contentEl || !u) return;
     contentEl.innerHTML = `
-      <div style="border-radius:14px;overflow:hidden;border:0.5px solid var(--border);">
+      <div style="border-radius:14px;overflow:hidden;border:0.5px solid var(--border);touch-action:pinch-zoom;position:relative;">
         ${u.imageUrl ? `<img src="${u.imageUrl}" alt="${u.title||''}"
-          style="width:100%;display:block;"
-          onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+          id="update-zoomable-img"
+          style="width:100%;display:block;touch-action:pinch-zoom;cursor:zoom-in;transition:transform 0.2s ease;transform-origin:center center;"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+          onclick="toggleUpdateZoom(this)">
           <div style="display:none;padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);align-items:center;justify-content:center;">⚠️ Could not load image</div>`
         : '<div style="padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);">No image for this update.</div>'}
       </div>
-      ${u.date ? `<div style="margin-top:8px;font-size:11px;color:var(--text-muted);text-align:right;">${u.date}</div>` : ''}`;
+      ${u.date ? `<div style="margin-top:8px;font-size:11px;color:var(--text-muted);text-align:right;">${u.date}</div>` : ''}
+      <div style="margin-top:6px;text-align:center;font-size:11px;color:var(--text-muted);">🤏 Pinch to zoom · tap to enlarge</div>`;
+
+    // Pinch-to-zoom via touch events
+    const img = document.getElementById('update-zoomable-img');
+    if (!img) return;
+    let startDist = 0, curScale = 1, lastScale = 1;
+    img.addEventListener('touchstart', e => {
+      if (e.touches.length === 2) {
+        startDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        e.preventDefault();
+      }
+    }, { passive: false });
+    img.addEventListener('touchmove', e => {
+      if (e.touches.length === 2) {
+        const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        curScale = Math.min(4, Math.max(1, lastScale * (dist / startDist)));
+        img.style.transform = 'scale(' + curScale + ')';
+        e.preventDefault();
+      }
+    }, { passive: false });
+    img.addEventListener('touchend', e => {
+      if (e.touches.length < 2) {
+        lastScale = curScale;
+        if (curScale <= 1.05) { curScale = 1; lastScale = 1; img.style.transform = 'scale(1)'; }
+      }
+    });
   }
+
+  window.toggleUpdateZoom = (img) => {
+    const cur = img.style.transform;
+    if (!cur || cur === 'scale(1)') {
+      img.style.transform = 'scale(2)';
+      img.style.cursor = 'zoom-out';
+    } else {
+      img.style.transform = 'scale(1)';
+      img.style.cursor = 'zoom-in';
+    }
+  };
 
   // ═══ UPDATES ADMIN ═══
   window.loadUpdatesAdmin = async () => {
