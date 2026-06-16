@@ -2905,10 +2905,23 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;">
           <button onclick="setScoreVerifyTab('summary')" id="svtab-summary" style="padding:8px 14px;border-radius:8px;border:none;background:var(--accent);color:white;font-size:13px;font-weight:600;cursor:pointer;">📊 Summary</button>
           <button onclick="setScoreVerifyTab('perMatch')" id="svtab-perMatch" style="padding:8px 14px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">🗓 Per Match</button>
+          <button onclick="setScoreVerifyTab('reaward')" id="svtab-reaward" style="padding:8px 14px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">🔁 Re-award</button>
           <button onclick="loadScoreVerification(true)" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">🔄 Refresh</button>
         </div>
         <div id="score-verify-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Click Refresh to load.</div></div>
         <div id="score-verify-perMatch" style="display:none;"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Click Refresh to load.</div></div>
+        <div id="score-verify-reaward" style="display:none;padding:1rem;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px;">🔁 Re-award points for a specific match</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Use this if a match result was entered but points were never calculated. This will add points on top of existing ones — only use if you're sure points were NOT previously awarded for this match.</div>
+          <select id="reaward-match-select" style="width:100%;padding:8px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;margin-bottom:8px;"><option value="">Loading matches...</option></select>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+            <input type="number" id="reaward-home" placeholder="Home score" min="0" style="padding:8px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;">
+            <input type="number" id="reaward-away" placeholder="Away score" min="0" style="padding:8px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;">
+          </div>
+          <input type="text" id="reaward-scorer" placeholder="First goalscorer (leave blank if none)" style="width:100%;padding:8px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;margin-bottom:12px;box-sizing:border-box;">
+          <button onclick="reAwardMatchPoints()" style="width:100%;padding:10px;border-radius:8px;border:none;background:#E24B4A;color:white;font-size:13px;font-weight:600;cursor:pointer;">🔁 Re-award Points for This Match</button>
+          <div id="reaward-status" style="margin-top:8px;font-size:12px;"></div>
+        </div>
       </div>
     </div>
 
@@ -3443,17 +3456,105 @@
   window.setScoreVerifyTab = (tab) => {
     const summary = document.getElementById('score-verify-content');
     const perMatch = document.getElementById('score-verify-perMatch');
-    const btnS = document.getElementById('svtab-summary');
-    const btnP = document.getElementById('svtab-perMatch');
-    if (!summary || !perMatch) return;
-    if (tab === 'summary') {
-      summary.style.display = ''; perMatch.style.display = 'none';
-      if (btnS) { btnS.style.background = 'var(--accent)'; btnS.style.color = 'white'; btnS.style.border = 'none'; btnS.style.fontWeight = '600'; }
-      if (btnP) { btnP.style.background = 'none'; btnP.style.color = 'var(--text-muted)'; btnP.style.border = '0.5px solid var(--border)'; btnP.style.fontWeight = '500'; }
-    } else {
-      summary.style.display = 'none'; perMatch.style.display = '';
-      if (btnP) { btnP.style.background = 'var(--accent)'; btnP.style.color = 'white'; btnP.style.border = 'none'; btnP.style.fontWeight = '600'; }
-      if (btnS) { btnS.style.background = 'none'; btnS.style.color = 'var(--text-muted)'; btnS.style.border = '0.5px solid var(--border)'; btnS.style.fontWeight = '500'; }
+    const reaward = document.getElementById('score-verify-reaward');
+    const tabs = ['summary','perMatch','reaward'];
+    const divs = { summary, perMatch, reaward };
+    tabs.forEach(t => {
+      const btn = document.getElementById('svtab-'+t);
+      const active = t === tab;
+      if (btn) { btn.style.background = active ? 'var(--accent)' : 'none'; btn.style.color = active ? 'white' : 'var(--text-muted)'; btn.style.border = active ? 'none' : '0.5px solid var(--border)'; btn.style.fontWeight = active ? '600' : '500'; }
+      if (divs[t]) divs[t].style.display = active ? '' : 'none';
+    });
+    if (tab === 'reaward') loadReawardMatches();
+  };
+
+  async function loadReawardMatches() {
+    const sel = document.getElementById('reaward-match-select');
+    if (!sel || sel.dataset.loaded) return;
+    sel.dataset.loaded = '1';
+    sel.innerHTML = '<option value="">Loading...</option>';
+    const snap = await getDocs(query(collection(db, 'matches'), orderBy('kickoff')));
+    sel.innerHTML = '<option value="">Select finished match...</option>';
+    snap.forEach(d => {
+      const m = d.data();
+      if (m.status !== 'FINISHED' && m.homeScore === null) return;
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = `${m.homeTeam} ${m.homeScore ?? '?'}-${m.awayScore ?? '?'} ${m.awayTeam}`;
+      opt.dataset.home = m.homeScore ?? '';
+      opt.dataset.away = m.awayScore ?? '';
+      opt.dataset.scorer = m.firstGoalscorer ?? '';
+      sel.appendChild(opt);
+    });
+    sel.onchange = () => {
+      const opt = sel.options[sel.selectedIndex];
+      if (!opt.value) return;
+      document.getElementById('reaward-home').value = opt.dataset.home;
+      document.getElementById('reaward-away').value = opt.dataset.away;
+      document.getElementById('reaward-scorer').value = opt.dataset.scorer;
+    };
+  }
+
+  window.reAwardMatchPoints = async () => {
+    const matchId = document.getElementById('reaward-match-select').value;
+    const homeScore = parseInt(document.getElementById('reaward-home').value);
+    const awayScore = parseInt(document.getElementById('reaward-away').value);
+    const firstScorer = document.getElementById('reaward-scorer').value.trim();
+    const status = document.getElementById('reaward-status');
+    if (!matchId) return status.innerHTML = '<span style="color:#ef4444;">Please select a match.</span>';
+    if (isNaN(homeScore) || isNaN(awayScore)) return status.innerHTML = '<span style="color:#ef4444;">Enter both scores.</span>';
+    if (!confirm(`Re-award points for this match?\nHome: ${homeScore} Away: ${awayScore}\nFirst scorer: ${firstScorer||'none'}\n\n⚠️ Only do this if points were NOT previously awarded for this match!`)) return;
+    status.innerHTML = '⏳ Calculating...';
+    try {
+      const predsSnap = await getDocs(collection(db, 'predictions'));
+      const matchSnap = await getDoc(doc(db, 'matches', matchId));
+      const matchData = matchSnap.data();
+      const matchGroup = (matchData?.group || '').toUpperCase();
+      const isFinal = matchGroup.includes('FINAL') && !matchGroup.includes('QUARTER') && !matchGroup.includes('SEMI');
+      const isSemi = matchGroup.includes('SEMI');
+      const isQuarter = matchGroup.includes('QUARTER');
+      const isR16 = matchGroup.includes('16') || matchGroup.includes('ROUND_OF_16');
+      const multiplier = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
+      const actualOutcome = homeScore > awayScore ? 'home' : homeScore < awayScore ? 'away' : 'draw';
+      let count = 0;
+      for (const d of predsSnap.docs) {
+        const pred = d.data();
+        if (pred.matchId !== matchId) continue;
+        let pts = 0, exact = 0;
+        const predOutcome = pred.homeScore > pred.awayScore ? 'home' : pred.homeScore < pred.awayScore ? 'away' : 'draw';
+        if (isFinal) {
+          if (pred.homeScore === homeScore && pred.awayScore === awayScore) { pts = 20; exact = 1; }
+          else if (predOutcome === actualOutcome) pts = 10;
+        } else {
+          if (predOutcome === actualOutcome) pts += 1 * multiplier;
+          if (pred.homeScore === homeScore && pred.awayScore === awayScore) { pts += 3 * multiplier; exact = 1; }
+        }
+        if (firstScorer && pred.firstScorer === firstScorer) pts += 2 * multiplier;
+        // Joker
+        const jokerSnap = await getDocs(query(collection(db, 'jokerCards'), where('matchId','==',matchId), where('userId','==',pred.userId)));
+        if (!jokerSnap.empty) pts *= 2;
+        // DON
+        const donSnap = await getDocs(query(collection(db, 'donOptIns'), where('matchId','==',matchId), where('userId','==',pred.userId)));
+        if (!donSnap.empty) {
+          const isCorrect = predOutcome === actualOutcome;
+          const scorerPts = (firstScorer && pred.firstScorer === firstScorer) ? 2 * multiplier : 0;
+          const resultPts = pts - scorerPts;
+          const penalty = isFinal ? 10 : 1 * multiplier;
+          pts = isCorrect ? (resultPts * 2) + scorerPts : scorerPts - penalty;
+        }
+        const userRef = doc(db, 'users', pred.userId);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          await updateDoc(userRef, {
+            points: (userSnap.data().points || 0) + pts,
+            exactScores: (userSnap.data().exactScores || 0) + exact
+          });
+          count++;
+        }
+      }
+      status.innerHTML = `<span style="color:var(--green);">✅ Points re-awarded for ${count} predictions!</span>`;
+    } catch(e) {
+      status.innerHTML = `<span style="color:#ef4444;">❌ Error: ${e.message}</span>`;
     }
   };
 
@@ -11548,9 +11649,9 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const actualOutcome = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
       const correctOutcome = predOutcome === actualOutcome;
       const exactScore = p.homeScore === m.homeScore && p.awayScore === m.awayScore;
-      if (exactScore) pts += 3;
-      else if (correctOutcome) pts += 1;
-      else pts -= 1; // wrong outcome — dip in chart
+      if (exactScore) pts = 3;
+      else if (correctOutcome) pts = 1;
+      else pts = -1;
       userPreds.push({ date: kickoff, pts });
     });
 
@@ -11606,7 +11707,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     ctx.fill();
     if (minPts < 0) {
       ctx.beginPath();
-      ctx.strokeStyle = 'rgba(239,68,68,0.35)';
+      ctx.strokeStyle = 'rgba(239,68,68,0.4)';
       ctx.lineWidth = 1;
       ctx.setLineDash([4,4]);
       ctx.moveTo(pad.left, zeroY); ctx.lineTo(W - pad.right, zeroY);
@@ -11614,15 +11715,18 @@ Use exactly the formation provided. Only use players from the squad lists above.
       ctx.setLineDash([]);
     }
 
-    // Line
-    ctx.beginPath();
-    ctx.strokeStyle = '#1D9E75';
+    // Line — colored per segment: green if going up/flat, red if going down
     ctx.lineWidth = 2;
     ctx.lineJoin = 'round';
-    points.forEach((v, i) => i === 0 ? ctx.moveTo(toX(i), toY(v)) : ctx.lineTo(toX(i), toY(v)));
-    ctx.stroke();
+    for (let i = 1; i < points.length; i++) {
+      ctx.beginPath();
+      ctx.strokeStyle = points[i] < points[i-1] ? '#ef4444' : '#1D9E75';
+      ctx.moveTo(toX(i-1), toY(points[i-1]));
+      ctx.lineTo(toX(i), toY(points[i]));
+      ctx.stroke();
+    }
 
-    // Dots
+    // Dots — red when cumulative is negative
     points.forEach((v, i) => {
       ctx.beginPath();
       ctx.arc(toX(i), toY(v), 3.5, 0, Math.PI * 2);
