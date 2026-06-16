@@ -1754,7 +1754,7 @@
     <div style="display:flex;gap:8px;margin-bottom:1rem;">
       <button id="tab-standings" onclick="switchStandingsTab('standings')" style="flex:1;padding:8px;border-radius:8px;border:0.5px solid var(--green);background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">🏆 Player standings</button>
       <button id="tab-groups" onclick="switchStandingsTab('groups')" style="flex:1;padding:8px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">🌍 WC Groups</button>
-      <button id="tab-scorers" onclick="switchStandingsTab('scorers')" style="flex:1;padding:8px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">⚽ Scorers & Assists</button>
+      <button id="tab-scorers" onclick="switchStandingsTab('scorers')" style="flex:1;padding:8px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">⚽ Scorers</button>
       <button id="tab-accuracy" onclick="switchStandingsTab('accuracy')" style="flex:1;padding:8px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">🎯 Accuracy</button>
     </div>
 
@@ -7552,32 +7552,62 @@ Use exactly the formation provided. Only use players from the squad lists above.
         return;
       }
 
+      const allScorers = snap.docs.map(d => d.data());
+
+      // Table 1: Top Scorers (goals > 0), sorted by goals desc
+      const scorers = [...allScorers].filter(s => (s.goals||0) > 0).sort((a,b) => (b.goals||0)-(a.goals||0));
+      // Table 2: Top Assists (assists > 0), sorted by assists desc
+      const assisters = [...allScorers].filter(s => (s.assists||0) > 0).sort((a,b) => (b.assists||0)-(a.assists||0));
+
       const medals = ['🥇','🥈','🥉'];
-      const rows = snap.docs.map((d, i) => {
-        const s = d.data();
-        return `<div style="display:grid;grid-template-columns:36px 1fr 50px 50px;align-items:center;padding:8px 12px;border-top:0.5px solid var(--border);${i < 3 ? 'background:var(--surface2);' : ''}">
-          <div style="font-size:16px;text-align:center;">${medals[i] || (i+1)}</div>
-          <div>
-            <div style="font-size:13px;font-weight:600;">${s.name}</div>
-            <div style="font-size:11px;color:var(--text-muted);">${s.country||''}</div>
-          </div>
-          <div style="text-align:center;font-size:14px;font-weight:700;color:var(--green);">⚽ ${s.goals||0}</div>
-          <div style="text-align:center;font-size:13px;color:var(--text-muted);">🅰️ ${s.assists||0}</div>
-        </div>`;
-      }).join('');
+
+      const scorerRows = scorers.length === 0
+        ? '<div style="padding:1.25rem;text-align:center;font-size:13px;color:var(--text-muted);">No goals yet</div>'
+        : scorers.map((s, i) => `
+          <div style="display:grid;grid-template-columns:36px 1fr 44px;align-items:center;padding:8px 12px;border-top:0.5px solid var(--border);${i < 3 ? 'background:var(--surface2);' : ''}">
+            <div style="font-size:16px;text-align:center;">${medals[i] || (i+1)}</div>
+            <div>
+              <div style="font-size:13px;font-weight:600;">${s.name}</div>
+              <div style="font-size:11px;color:var(--text-muted);">${s.country||''}</div>
+            </div>
+            <div style="text-align:center;font-size:16px;font-weight:700;color:var(--green);">${s.goals}</div>
+          </div>`).join('');
+
+      const assistRows = assisters.length === 0
+        ? '<div style="padding:1.25rem;text-align:center;font-size:13px;color:var(--text-muted);">No assists yet</div>'
+        : assisters.map((s, i) => `
+          <div style="display:grid;grid-template-columns:36px 1fr 44px;align-items:center;padding:8px 12px;border-top:0.5px solid var(--border);${i < 3 ? 'background:var(--surface2);' : ''}">
+            <div style="font-size:16px;text-align:center;">${medals[i] || (i+1)}</div>
+            <div>
+              <div style="font-size:13px;font-weight:600;">${s.name}</div>
+              <div style="font-size:11px;color:var(--text-muted);">${s.country||''}</div>
+            </div>
+            <div style="text-align:center;font-size:16px;font-weight:700;color:#3B82F6;">${s.assists}</div>
+          </div>`).join('');
 
       container.innerHTML = `
+        <!-- Top Scorers -->
+        <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1rem;">
+          <div style="background:var(--green);padding:8px 12px;">
+            <div style="font-size:12px;font-weight:600;color:white;letter-spacing:0.04em;">⚽ Top Scorers</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.75);">Updated after each match day</div>
+          </div>
+          <div style="display:grid;grid-template-columns:36px 1fr 44px;font-size:11px;color:var(--text-muted);text-transform:uppercase;padding:6px 12px;background:var(--surface2);">
+            <div></div><div>Player</div><div style="text-align:center;">⚽</div>
+          </div>
+          ${scorerRows}
+        </div>
+
+        <!-- Top Assists -->
         <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;overflow:hidden;">
-          <div style="background:var(--green);padding:8px 12px;display:flex;align-items:center;justify-content:space-between;">
-            <div>
-              <div style="font-size:12px;font-weight:600;color:white;letter-spacing:0.04em;">⚽ World Cup 2026 Top Scorers</div>
-              <div style="font-size:10px;color:rgba(255,255,255,0.75);">Updated by admin after each match day</div>
-            </div>
+          <div style="background:linear-gradient(135deg,#3B82F6,#1d4ed8);padding:8px 12px;">
+            <div style="font-size:12px;font-weight:600;color:white;letter-spacing:0.04em;">👟 Top Assists</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.75);">Updated after each match day</div>
           </div>
-          <div style="display:grid;grid-template-columns:36px 1fr 50px 50px;font-size:11px;color:var(--text-muted);text-transform:uppercase;padding:6px 12px;background:var(--surface2);">
-            <div></div><div>Player</div><div style="text-align:center;">Goals</div><div style="text-align:center;">Ast</div>
+          <div style="display:grid;grid-template-columns:36px 1fr 44px;font-size:11px;color:var(--text-muted);text-transform:uppercase;padding:6px 12px;background:var(--surface2);">
+            <div></div><div>Player</div><div style="text-align:center;">👟</div>
           </div>
-          ${rows}
+          ${assistRows}
         </div>`;
     } catch(e) {
       container.innerHTML = `<div style="text-align:center;padding:2rem;">
