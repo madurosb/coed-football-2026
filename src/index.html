@@ -11110,25 +11110,34 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const container = document.getElementById('stats-content');
     container.innerHTML = '<div style="padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);">Loading your stats...</div>';
 
-    const [userSnap, predsSnap, matchesSnap, allUsersSnap, jokerSnap, wcScorersSnap] = await Promise.all([
-      getDoc(doc(db, 'users', currentUser.uid)),
-      getDocs(query(collection(db, 'predictions'), orderBy('submittedAt'))),
-      getDocs(query(collection(db, 'matches'), orderBy('kickoff'))),
-      getDocs(collection(db, 'users')),
-      getDocs(query(collection(db, 'jokerCards'), where('userId', '==', currentUser.uid))),
-      getDocs(collection(db, 'wc_scorers'))
-    ]);
+    let userSnap, predsSnap, matchesSnap, allUsersSnap, jokerSnap;
+    try {
+      [userSnap, predsSnap, matchesSnap, allUsersSnap, jokerSnap] = await Promise.all([
+        getDoc(doc(db, 'users', currentUser.uid)),
+        getDocs(collection(db, 'predictions')),
+        getDocs(query(collection(db, 'matches'), orderBy('kickoff'))),
+        getDocs(collection(db, 'users')),
+        getDocs(query(collection(db, 'jokerCards'), where('userId', '==', currentUser.uid)))
+      ]);
+    } catch(e) {
+      container.innerHTML = '<div style="padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);">⚠️ Could not load stats. Try refreshing.</div>';
+      console.error('loadStatsPage error:', e);
+      return;
+    }
 
     const user = userSnap.data();
     // Inject jokerMatchId from jokerCards collection (not user doc)
     if (!user.jokerMatchId && !jokerSnap.empty) {
       user.jokerMatchId = jokerSnap.docs[0].data().matchId;
     }
-    // Build wc_scorers lookup by player name
+    // Fetch wc_scorers separately — graceful fallback if rules block access
     const wcScorersMap = {};
-    wcScorersSnap.forEach(d => { const s = d.data(); if (s.name) wcScorersMap[s.name] = s; });
+    try {
+      const wcScorersSnap = await getDocs(collection(db, 'wc_scorers'));
+      wcScorersSnap.forEach(d => { const s = d.data(); if (s.name) wcScorersMap[s.name] = s; });
+    } catch(e) { /* wc_scorers not accessible — will fall back to bonusPoints */ }
     const myTourneyPlayerData = user.tournamentPlayer ? (wcScorersMap[user.tournamentPlayer] || null) : null;
-    const myTourneyGoals = myTourneyPlayerData ? (myTourneyPlayerData.goals || 0) : 0;
+    const myTourneyGoals = myTourneyPlayerData ? (myTourneyPlayerData.goals || 0) : (user.bonusPoints || 0);
     const myTourneyAssists = myTourneyPlayerData ? (myTourneyPlayerData.assists || 0) : 0;
 
     // Avatar reminder banner removed
@@ -11787,16 +11796,16 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const container = document.getElementById('goals-king-table');
     if (!container) return;
     try {
-      const [usersSnap, scorersSnap] = await Promise.all([
-        getDocs(collection(db, 'users')),
-        getDocs(collection(db, 'wc_scorers'))
-      ]);
+      const usersSnap = await getDocs(collection(db, 'users'));
       const users = [];
       usersSnap.forEach(d => { if (d.data().tournamentPlayer) users.push(d.data()); });
 
-      // Build wc_scorers lookup by player name
+      // Build wc_scorers lookup — graceful fallback if rules block access
       const scorerData = {};
-      scorersSnap.forEach(d => { const s = d.data(); if (s.name) scorerData[s.name] = s; });
+      try {
+        const scorersSnap = await getDocs(collection(db, 'wc_scorers'));
+        scorersSnap.forEach(d => { const s = d.data(); if (s.name) scorerData[s.name] = s; });
+      } catch(e) { /* scorerData stays empty, goals show as — */ }
 
       // Group by tournament player using actual wc_scorers goals (not bonusPoints from user doc)
       const playerGoals = {};
