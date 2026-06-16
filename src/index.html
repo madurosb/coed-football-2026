@@ -11110,34 +11110,25 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const container = document.getElementById('stats-content');
     container.innerHTML = '<div style="padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);">Loading your stats...</div>';
 
-    let userSnap, predsSnap, matchesSnap, allUsersSnap, jokerSnap;
-    try {
-      [userSnap, predsSnap, matchesSnap, allUsersSnap, jokerSnap] = await Promise.all([
-        getDoc(doc(db, 'users', currentUser.uid)),
-        getDocs(collection(db, 'predictions')),
-        getDocs(query(collection(db, 'matches'), orderBy('kickoff'))),
-        getDocs(collection(db, 'users')),
-        getDocs(query(collection(db, 'jokerCards'), where('userId', '==', currentUser.uid)))
-      ]);
-    } catch(e) {
-      container.innerHTML = '<div style="padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);">⚠️ Could not load stats. Try refreshing.</div>';
-      console.error('loadStatsPage error:', e);
-      return;
-    }
+    const [userSnap, predsSnap, matchesSnap, allUsersSnap, jokerSnap, wcScorersSnap] = await Promise.all([
+      getDoc(doc(db, 'users', currentUser.uid)),
+      getDocs(query(collection(db, 'predictions'), orderBy('submittedAt'))),
+      getDocs(query(collection(db, 'matches'), orderBy('kickoff'))),
+      getDocs(collection(db, 'users')),
+      getDocs(query(collection(db, 'jokerCards'), where('userId', '==', currentUser.uid))),
+      getDocs(collection(db, 'wc_scorers'))
+    ]);
 
     const user = userSnap.data();
     // Inject jokerMatchId from jokerCards collection (not user doc)
     if (!user.jokerMatchId && !jokerSnap.empty) {
       user.jokerMatchId = jokerSnap.docs[0].data().matchId;
     }
-    // Fetch wc_scorers separately (may fail if rules don't allow — graceful fallback)
+    // Build wc_scorers lookup by player name
     const wcScorersMap = {};
-    try {
-      const wcScorersSnap = await getDocs(collection(db, 'wc_scorers'));
-      wcScorersSnap.forEach(d => { const s = d.data(); if (s.name) wcScorersMap[s.name] = s; });
-    } catch(e) { /* wc_scorers not accessible — tournament player goals will show from bonusPoints */ }
+    wcScorersSnap.forEach(d => { const s = d.data(); if (s.name) wcScorersMap[s.name] = s; });
     const myTourneyPlayerData = user.tournamentPlayer ? (wcScorersMap[user.tournamentPlayer] || null) : null;
-    const myTourneyGoals = myTourneyPlayerData ? (myTourneyPlayerData.goals || 0) : (user.bonusPoints || 0);
+    const myTourneyGoals = myTourneyPlayerData ? (myTourneyPlayerData.goals || 0) : 0;
     const myTourneyAssists = myTourneyPlayerData ? (myTourneyPlayerData.assists || 0) : 0;
 
     // Avatar reminder banner removed
@@ -11796,16 +11787,16 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const container = document.getElementById('goals-king-table');
     if (!container) return;
     try {
-      const usersSnap = await getDocs(collection(db, 'users'));
+      const [usersSnap, scorersSnap] = await Promise.all([
+        getDocs(collection(db, 'users')),
+        getDocs(collection(db, 'wc_scorers'))
+      ]);
       const users = [];
       usersSnap.forEach(d => { if (d.data().tournamentPlayer) users.push(d.data()); });
 
-      // Build wc_scorers lookup by player name (graceful fallback if rules block access)
+      // Build wc_scorers lookup by player name
       const scorerData = {};
-      try {
-        const scorersSnap = await getDocs(collection(db, 'wc_scorers'));
-        scorersSnap.forEach(d => { const s = d.data(); if (s.name) scorerData[s.name] = s; });
-      } catch(e) { /* fallback: scorerData stays empty, goals show as 0 */ }
+      scorersSnap.forEach(d => { const s = d.data(); if (s.name) scorerData[s.name] = s; });
 
       // Group by tournament player using actual wc_scorers goals (not bonusPoints from user doc)
       const playerGoals = {};
@@ -11820,25 +11811,27 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
       const sorted = Object.entries(playerGoals).sort((a,b) => b[1].goals - a[1].goals || b[1].assists - a[1].assists);
 
-      if (sorted.length === 0 || sorted.every(([,v]) => v.goals === 0)) {
-        container.innerHTML = `<div style="padding:1.25rem;text-align:center;font-size:13px;color:var(--text-muted);">⚽ Goals will appear here once players start scoring.</div>`;
+      if (sorted.length === 0) {
+        container.innerHTML = `<div style="padding:1.25rem;text-align:center;font-size:13px;color:var(--text-muted);">No tournament players picked yet.</div>`;
         return;
       }
 
+      const anyGoals = sorted.some(([,v]) => v.goals > 0);
       const medals = ['🥇','🥈','🥉'];
       container.innerHTML = `
+        ${!anyGoals ? `<div style="padding:7px 12px;font-size:11px;color:var(--text-muted);text-align:center;background:var(--surface2);border-bottom:0.5px solid var(--border);">⏳ No goals yet — rankings will update as players score</div>` : ''}
         <div style="display:grid;grid-template-columns:32px 1fr 50px 50px;font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;padding:0.5rem 1rem;background:var(--surface2);">
           <div></div><div>Player</div><div style="text-align:center;">⚽</div><div style="text-align:center;">🅰️</div>
         </div>
         ${sorted.map(([player, data], i) => `
           <div style="display:grid;grid-template-columns:32px 1fr 50px 50px;align-items:center;padding:0.65rem 1rem;border-top:0.5px solid var(--border);">
-            <div style="font-size:16px;">${medals[i] || (i+1)+'.'}</div>
+            <div style="font-size:16px;">${anyGoals ? (medals[i] || (i+1)+'.') : '—'}</div>
             <div>
               <div style="font-size:13px;font-weight:500;">${player}</div>
               <div style="font-size:11px;color:var(--text-muted);">Picked by: ${data.pickers.join(', ')}</div>
             </div>
-            <div style="text-align:center;font-size:18px;font-weight:700;color:var(--green);">${data.goals}</div>
-            <div style="text-align:center;font-size:14px;color:var(--text-muted);">${data.assists}</div>
+            <div style="text-align:center;font-size:18px;font-weight:700;color:${data.goals > 0 ? 'var(--green)' : 'var(--text-muted)'};">${data.goals > 0 ? data.goals : '—'}</div>
+            <div style="text-align:center;font-size:14px;color:var(--text-muted);">${data.assists > 0 ? data.assists : '—'}</div>
           </div>`).join('')}`;
     } catch(e) {
       if (container) container.innerHTML = `<div style="padding:1rem;font-size:13px;color:var(--text-muted);">Could not load goals.</div>`;
