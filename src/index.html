@@ -1612,9 +1612,6 @@
 
   <!-- MATCHES -->
   <div class="page" id="page-matches">
-    <div id="next-match-btn-wrap" style="display:none;position:sticky;top:8px;z-index:50;text-align:center;pointer-events:none;margin-bottom:8px;">
-      <button onclick="scrollToNextMatch()" style="pointer-events:auto;background:var(--green);color:white;border:none;border-radius:99px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 2px 12px rgba(29,158,117,0.35);">⬇️ Jump to next match</button>
-    </div>
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem;gap:12px;">
       <div>
         <div style="font-family:monospace;font-size:11px;letter-spacing:3px;color:var(--green);text-transform:uppercase;margin-bottom:4px;">⚽ Your picks</div>
@@ -3561,30 +3558,6 @@
     }
   };
 
-  window.scrollToNextMatch = () => {
-    const cards = document.querySelectorAll('.match-card[data-is-past]');
-    const firstUpcoming = Array.from(cards).find(c => c.dataset.isPast === '0');
-    if (firstUpcoming) {
-      firstUpcoming.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      firstUpcoming.style.transition = 'box-shadow 0.4s';
-      firstUpcoming.style.boxShadow = '0 0 0 2px var(--green)';
-      setTimeout(() => { firstUpcoming.style.boxShadow = ''; }, 1800);
-    }
-  };
-
-  // Show/hide jump button based on whether first upcoming match is above viewport
-  function initNextMatchBtn() {
-    const btn = document.getElementById('next-match-btn-wrap');
-    if (!btn) return;
-    const cards = document.querySelectorAll('.match-card[data-is-past]');
-    const firstUpcoming = Array.from(cards).find(c => c.dataset.isPast === '0');
-    if (!firstUpcoming) { btn.style.display = 'none'; return; }
-    const observer = new IntersectionObserver(entries => {
-      btn.style.display = entries[0].isIntersecting ? 'none' : 'block';
-    }, { threshold: 0.1 });
-    observer.observe(firstUpcoming);
-  }
-
   window.approveMismatch = (uid) => {
     _svApproved.add(uid);
     const row = document.getElementById('svrow-' + uid);
@@ -3594,6 +3567,8 @@
       if (statusCell) statusCell.innerHTML = '<span style="font-size:11px;color:var(--green);font-weight:700;">✅ OK</span>';
       const approveBtn = row.querySelector('.sv-approve-btn');
       if (approveBtn) approveBtn.style.display = 'none';
+      const diffCell = document.getElementById('svdiff-' + uid);
+      if (diffCell) { diffCell.textContent = '—'; diffCell.style.color = 'var(--text-muted)'; diffCell.style.fontWeight = '400'; }
     }
   };
 
@@ -3682,21 +3657,24 @@
       const stored = u.points || 0;
       const diff = stored - calcPts;
       const isApproved = _svApproved.has(uid);
-      const ok = Math.abs(diff) <= 1 || isApproved;
-      if (!ok) anyMismatch = true;
+      const hasDiff = diff !== 0;
+      const ok = !hasDiff || isApproved;
+      if (hasDiff && !isApproved) anyMismatch = true;
 
-      const diffLabel = diff === 0 ? '' : (diff > 0 ? `+${diff}` : `${diff}`);
-      html += `<div id="svrow-${uid}" style="display:grid;grid-template-columns:1fr 60px 60px 60px 80px;align-items:center;padding:7px 10px;border-top:0.5px solid var(--border);background:${ok?'none':'rgba(226,75,74,0.06)'};">
-        <div style="font-size:12px;font-weight:500;">${u.nickname||u.displayName||uid}</div>
-        <div style="text-align:center;font-size:13px;font-weight:600;">${stored}</div>
-        <div style="text-align:center;font-size:13px;color:${ok?'var(--text-muted)':'#E24B4A'};font-weight:${ok?'400':'600'};">${calcPts}</div>
-        <div style="text-align:center;font-size:12px;color:${diff===0?'var(--text-muted)':diff>0?'#1D9E75':'#E24B4A'};font-weight:600;">${diffLabel||'—'}</div>
-        <div class="sv-status" style="text-align:center;font-size:13px;">
-          ${ok
-            ? (isApproved ? '<span style="font-size:11px;color:var(--green);font-weight:700;">✅ OK</span>' : '✅')
-            : `<button class="sv-approve-btn" onclick="approveMismatch('${uid}')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;border:1px solid #1D9E75;background:none;color:#1D9E75;cursor:pointer;">✓ Approve</button>`}
-        </div>
-      </div>`;
+      const diffLabel = diff === 0 ? '—' : (diff > 0 ? '+' + diff : String(diff));
+      const diffColor = diff === 0 ? 'var(--text-muted)' : (diff > 0 ? '#1D9E75' : '#E24B4A');
+      const approveHtml = isApproved
+        ? '<span style="font-size:11px;color:var(--green);font-weight:700;">✅ OK</span>'
+        : hasDiff
+          ? '<button class="sv-approve-btn" onclick="approveMismatch(\'' + uid + '\')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;border:1px solid #1D9E75;background:none;color:#1D9E75;cursor:pointer;">✓ Approve</button>'
+          : '✅';
+      html += '<div id="svrow-' + uid + '" style="display:grid;grid-template-columns:1fr 60px 60px 60px 80px;align-items:center;padding:7px 10px;border-top:0.5px solid var(--border);background:' + (ok ? 'none' : 'rgba(226,75,74,0.06)') + ';">'
+        + '<div style="font-size:12px;font-weight:500;">' + (u.nickname || u.displayName || uid) + '</div>'
+        + '<div style="text-align:center;font-size:13px;font-weight:600;">' + stored + '</div>'
+        + '<div style="text-align:center;font-size:13px;color:' + (ok ? 'var(--text-muted)' : '#E24B4A') + ';font-weight:' + (ok ? '400' : '600') + ';">' + calcPts + '</div>'
+        + '<div id="svdiff-' + uid + '" style="text-align:center;font-size:12px;color:' + diffColor + ';font-weight:600;">' + diffLabel + '</div>'
+        + '<div class="sv-status" style="text-align:center;font-size:13px;">' + approveHtml + '</div>'
+        + '</div>';
     }
 
     html += `</div>`;
@@ -6375,19 +6353,6 @@ Use exactly the formation provided. Only use players from the squad lists above.
       setTimeout(initAutoSaveToggle, 300);
       // Start live scores polling
       setTimeout(startLiveScoresPolling, 1500);
-      // Auto-scroll to first upcoming match
-      setTimeout(() => {
-        const cards = document.querySelectorAll('.match-card[data-is-past]');
-        const firstUpcoming = Array.from(cards).find(c => c.dataset.isPast === '0');
-        if (firstUpcoming) {
-          firstUpcoming.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          // Brief highlight
-          firstUpcoming.style.transition = 'box-shadow 0.4s';
-          firstUpcoming.style.boxShadow = '0 0 0 2px var(--green)';
-          setTimeout(() => { firstUpcoming.style.boxShadow = ''; }, 1800);
-        }
-        initNextMatchBtn();
-      }, 900);
       // Pulse attention on important picks if not yet filled
       setTimeout(() => {
         const playerCard = document.querySelector('.player-pick');
@@ -8139,7 +8104,6 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
       html += `
         <div class="match-card" data-match-id="${d.id}" data-home="${m.homeTeam}" data-away="${m.awayTeam}"
-          data-is-past="${isPast ? '1' : '0'}"
           data-home-players='${JSON.stringify(getPlayersForTeam(m.homeTeam, m.homePlayers)).replace(/'/g,"&#39;")}'
           data-away-players='${JSON.stringify(getPlayersForTeam(m.awayTeam, m.awayPlayers)).replace(/'/g,"&#39;")}'
           style="${isLive ? 'border-color:#E24B4A;' : ''}">
