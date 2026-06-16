@@ -8894,17 +8894,17 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const status = document.getElementById('wc-scorers-fetch-status');
     status.innerHTML = '⏳ Fetching from Anthropic API...';
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 1000,
-          messages: [{ role: 'user', content: `Give me the current FIFA World Cup 2026 top scorers as of today. Return ONLY a JSON array, no markdown, no explanation. Format: [{"name":"Player Name","country":"Country","goals":2,"assists":1}]. Include all players with at least 1 goal, sorted by goals descending.` }]
+          systemPrompt: 'You are a World Cup 2026 statistics expert. Return ONLY a valid JSON array, no markdown, no explanation, no backticks.',
+          messages: [{ role: 'user', content: `Give me the current FIFA World Cup 2026 top scorers as of today. Return ONLY a JSON array. Format: [{"name":"Player Name","country":"Country","goals":2,"assists":1}]. Include all players with at least 1 goal, sorted by goals descending.` }],
+          maxTokens: 1500
         })
       });
       const data = await response.json();
-      const text = data.content?.[0]?.text || '';
+      const text = (data.text || '').trim();
       const cleaned = text.replace(/```json|```/g, '').trim();
       const scorers = JSON.parse(cleaned);
       if (!Array.isArray(scorers)) throw new Error('Invalid response format');
@@ -11544,12 +11544,13 @@ Use exactly the formation provided. Only use players from the squad lists above.
       if (!m || m.status !== 'FINISHED' || m.homeScore === null) return;
       const kickoff = m.kickoff?.toDate?.() || new Date(m.kickoff);
       let pts = 0;
-      const correctHome = p.homeScore === m.homeScore;
-      const correctAway = p.awayScore === m.awayScore;
-      if (correctHome && correctAway) pts += 3;
-      else if ((p.homeScore > p.awayScore && m.homeScore > m.awayScore) ||
-               (p.homeScore < p.awayScore && m.homeScore < m.awayScore) ||
-               (p.homeScore === p.awayScore && m.homeScore === m.awayScore)) pts += 1;
+      const predOutcome = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
+      const actualOutcome = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
+      const correctOutcome = predOutcome === actualOutcome;
+      const exactScore = p.homeScore === m.homeScore && p.awayScore === m.awayScore;
+      if (exactScore) pts += 3;
+      else if (correctOutcome) pts += 1;
+      else pts -= 1; // wrong outcome — dip in chart
       userPreds.push({ date: kickoff, pts });
     });
 
@@ -11576,6 +11577,8 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const W = canvas.width, H = 120;
     const pad = { top: 16, right: 16, bottom: 24, left: 28 };
     const maxPts = Math.max(...points, 1);
+    const minPts = Math.min(...points, 0);
+    const range = maxPts - minPts || 1;
     const step = (W - pad.left - pad.right) / (points.length - 1);
 
     ctx.clearRect(0, 0, W, H);
@@ -11590,16 +11593,26 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
     // Area fill
     const toX = i => pad.left + i * step;
-    const toY = v => pad.top + (H - pad.top - pad.bottom) * (1 - v / maxPts);
+    const toY = v => pad.top + (H - pad.top - pad.bottom) * (1 - (v - minPts) / range);
 
+    const zeroY = toY(0);
     ctx.beginPath();
-    ctx.moveTo(toX(0), toY(0));
+    ctx.moveTo(toX(0), toY(points[0]));
     points.forEach((v, i) => ctx.lineTo(toX(i), toY(v)));
-    ctx.lineTo(toX(points.length - 1), H - pad.bottom);
-    ctx.lineTo(toX(0), H - pad.bottom);
+    ctx.lineTo(toX(points.length - 1), zeroY);
+    ctx.lineTo(toX(0), zeroY);
     ctx.closePath();
-    ctx.fillStyle = 'rgba(29,158,117,0.15)';
+    ctx.fillStyle = 'rgba(29,158,117,0.12)';
     ctx.fill();
+    if (minPts < 0) {
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(239,68,68,0.35)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4,4]);
+      ctx.moveTo(pad.left, zeroY); ctx.lineTo(W - pad.right, zeroY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
 
     // Line
     ctx.beginPath();
@@ -11613,7 +11626,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     points.forEach((v, i) => {
       ctx.beginPath();
       ctx.arc(toX(i), toY(v), 3.5, 0, Math.PI * 2);
-      ctx.fillStyle = '#1D9E75';
+      ctx.fillStyle = v < 0 ? '#ef4444' : '#1D9E75';
       ctx.fill();
     });
 
