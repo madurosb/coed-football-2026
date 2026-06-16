@@ -807,7 +807,7 @@
       }
 
       /* Standings tabs */
-      #tab-standings, #tab-groups, #tab-scorers { font-size: 11px !important; padding: 7px 4px !important; }
+      #tab-standings, #tab-groups, #tab-scorers, #tab-accuracy { font-size: 10px !important; padding: 6px 3px !important; }
 
       /* Stats gamification grid */
       #stats-content [style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr 1fr; }
@@ -1755,6 +1755,7 @@
       <button id="tab-standings" onclick="switchStandingsTab('standings')" style="flex:1;padding:8px;border-radius:8px;border:0.5px solid var(--green);background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">🏆 Player standings</button>
       <button id="tab-groups" onclick="switchStandingsTab('groups')" style="flex:1;padding:8px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">🌍 WC Groups</button>
       <button id="tab-scorers" onclick="switchStandingsTab('scorers')" style="flex:1;padding:8px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">⚽ Scorers</button>
+      <button id="tab-accuracy" onclick="switchStandingsTab('accuracy')" style="flex:1;padding:8px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">🎯 Accuracy</button>
     </div>
 
     <!-- REFRESH BUTTON -->
@@ -1788,6 +1789,12 @@
       <p class="section-title" style="margin-bottom:1rem;">⚽ Tournament top scorers & assists</p>
       <div id="wc-scorers-content">
         <div style="padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);">Loading scorers...</div>
+      </div>
+    </div>
+
+    <div id="tab-content-accuracy" style="display:none;">
+      <div id="accuracy-content">
+        <div style="padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);">Loading accuracy stats...</div>
       </div>
     </div>
   </div>
@@ -3469,11 +3476,20 @@
     container.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div>';
     if (perMatchContainer) perMatchContainer.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div>';
 
-    const [usersSnap, matchesSnap, predsSnap] = await Promise.all([
+    const [usersSnap, matchesSnap, predsSnap, jokerVerSnap, donVerSnap] = await Promise.all([
       getDocs(collection(db, 'users')),
       getDocs(collection(db, 'matches')),
-      getDocs(collection(db, 'predictions'))
+      getDocs(collection(db, 'predictions')),
+      getDocs(collection(db, 'jokerCards')),
+      getDocs(collection(db, 'donOptIns'))
     ]);
+
+    // Build joker map: userId → matchId
+    const jokerVerMap = {};
+    jokerVerSnap.forEach(d => { const j = d.data(); if (j.userId) jokerVerMap[j.userId] = j.matchId; });
+    // Build DON set: "userId_matchId" → true
+    const donVerSet = new Set();
+    donVerSnap.forEach(d => { const v = d.data(); if (v.userId && v.matchId) donVerSet.add(`${v.userId}_${v.matchId}`); });
 
     const users = {}, matches = {}, userPreds = {}, predsByMatch = {};
     usersSnap.forEach(d => { users[d.id] = d.data(); });
@@ -3623,14 +3639,16 @@
         const scorerHit = m.firstGoalscorer && pred.firstScorer && pred.firstScorer.toLowerCase() === m.firstGoalscorer.toLowerCase();
         const pts = calcPredPts(pred, m);
 
+        const hasJoker = jokerVerMap[u.uid] === m.id;
+        const hasDon = donVerSet.has(`${u.uid}_${m.id}`);
         pmHtml += `<tr style="border-top:0.5px solid var(--border);background:${isExact?'rgba(29,158,117,0.05)':'none'};">
           <td style="padding:5px 10px;font-weight:500;">${u.nickname||u.displayName}</td>
           <td style="text-align:center;color:var(--text-muted);">${pred.homeScore}–${pred.awayScore}</td>
           <td style="text-align:center;">${isCorrect ? '✅' : '❌'}</td>
           <td style="text-align:center;">${isExact ? '🎯' : '—'}</td>
           <td style="text-align:center;font-size:10px;">${pred.firstScorer ? (scorerHit ? '✅' : pred.firstScorer.split(' ').pop()) : '—'}</td>
-          <td style="text-align:center;">${pred.doubleOrNothing ? (isCorrect?'✅':'❌') : '—'}</td>
-          <td style="text-align:center;">${pred.joker ? (isCorrect?'✅':'❌') : '—'}</td>
+          <td style="text-align:center;">${hasDon ? (isCorrect?'🎰✅':'🎰❌') : '—'}</td>
+          <td style="text-align:center;">${hasJoker ? (isCorrect?'🃏✅':'🃏❌') : '—'}</td>
           <td style="text-align:center;font-weight:700;color:${pts>0?'var(--green)':'var(--text-muted)'};">${pts}</td>
         </tr>`;
       }
@@ -7159,7 +7177,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
         </div>
         <div style="background:var(--surface2);border-radius:8px;padding:0.6rem;text-align:center;">
           <div style="font-size:16px;font-weight:600;">${leader.bonusPoints||0}</div>
-          <div style="font-size:11px;color:var(--text-muted);">Scorer hits & assists</div>
+          <div style="font-size:11px;color:var(--text-muted);">Tournament player pts</div>
         </div>
         <div style="background:var(--surface2);border-radius:8px;padding:0.6rem;text-align:center;">
           <div style="font-size:16px;font-weight:600;">${leader.tournamentPlayer ? leader.tournamentPlayer.split(' ').pop() : '-'}</div>
@@ -7360,16 +7378,17 @@ Use exactly the formation provided. Only use players from the squad lists above.
   };
 
   window.switchStandingsTab = (tab) => {
-    const tabs = ['standings', 'groups', 'scorers'];
+    const tabs = ['standings', 'groups', 'scorers', 'accuracy'];
     tabs.forEach(t => {
       const btn = document.getElementById(`tab-${t}`);
       const content = document.getElementById(`tab-content-${t}`);
       const active = t === tab;
-      if (btn) { btn.style.background = active ? 'var(--green)' : 'none'; btn.style.color = active ? 'white' : 'var(--text-muted)'; btn.style.borderColor = active ? 'var(--green)' : 'var(--border)'; }
+      if (btn) { btn.style.background = active ? 'var(--green)' : 'none'; btn.style.color = active ? 'white' : 'var(--text-muted)'; btn.style.borderColor = active ? 'var(--green)' : 'var(--border)'; btn.style.fontWeight = active ? '600' : '500'; }
       if (content) content.style.display = active ? 'block' : 'none';
     });
     if (tab === 'groups') loadWCGroups();
     if (tab === 'scorers') loadWCScorers();
+    if (tab === 'accuracy') loadAccuracyTab();
   };
 
   // World Cup 2026 groups definition
@@ -7566,6 +7585,137 @@ Use exactly the formation provided. Only use players from the squad lists above.
         <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Scorers not available yet</div>
         <div style="font-size:11px;color:var(--text-muted);">The admin will update this tab after each match day.</div>
       </div>`;
+    }
+  }
+
+  async function loadAccuracyTab() {
+    const container = document.getElementById('accuracy-content');
+    if (!container) return;
+    if (container.dataset.loaded) return;
+    container.dataset.loaded = '1';
+    container.innerHTML = '<div style="padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);">Crunching numbers... 📊</div>';
+
+    try {
+      const [usersSnap, predsSnap, matchesSnap] = await Promise.all([
+        getDocs(collection(db, 'users')),
+        getDocs(collection(db, 'predictions')),
+        getDocs(collection(db, 'matches'))
+      ]);
+
+      const matches = {};
+      matchesSnap.forEach(d => { matches[d.id] = d.data(); });
+
+      const finishedMatchIds = new Set(
+        Object.entries(matches).filter(([,m]) => m.status === 'FINISHED' && m.homeScore !== null).map(([id]) => id)
+      );
+
+      // Per user stats
+      const userStats = {};
+      usersSnap.forEach(d => {
+        const u = d.data();
+        if (!u.removed) userStats[u.uid] = { nickname: u.nickname || u.displayName, exact: 0, correct: 0, total: 0, scorerHits: 0 };
+      });
+
+      predsSnap.forEach(d => {
+        const p = d.data();
+        if (!userStats[p.userId]) return;
+        const m = matches[p.matchId];
+        if (!m || !finishedMatchIds.has(p.matchId)) return;
+        userStats[p.userId].total++;
+        const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
+        const predicted = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
+        if (actual === predicted) userStats[p.userId].correct++;
+        if (p.homeScore === m.homeScore && p.awayScore === m.awayScore) userStats[p.userId].exact++;
+        if (m.firstGoalscorer && p.firstScorer && p.firstScorer === m.firstGoalscorer) userStats[p.userId].scorerHits++;
+      });
+
+      const statsArr = Object.values(userStats).filter(u => u.total > 0);
+      const byExact = [...statsArr].sort((a,b) => b.exact - a.exact || b.correct - a.correct);
+      const byOutcome = [...statsArr].sort((a,b) => (b.correct/b.total) - (a.correct/a.total) || b.correct - a.correct);
+      const finishedCount = finishedMatchIds.size;
+
+      const medals = ['🥇','🥈','🥉'];
+      const barColor = (pct) => pct >= 70 ? 'var(--green)' : pct >= 45 ? '#EF9F27' : '#E24B4A';
+
+      const renderExact = byExact.map((u, i) => {
+        const pct = u.total > 0 ? Math.round((u.exact / u.total) * 100) : 0;
+        const maxExact = byExact[0].exact || 1;
+        const barW = Math.round((u.exact / maxExact) * 100);
+        return `<div style="display:grid;grid-template-columns:28px 1fr 52px;align-items:center;gap:8px;padding:10px 14px;border-top:0.5px solid var(--border);">
+          <div style="font-size:16px;text-align:center;">${medals[i] || (i+1)}</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px;">${u.nickname}</div>
+            <div style="height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;">
+              <div style="width:${barW}%;height:100%;background:${barColor(pct)};border-radius:3px;transition:width 0.6s ease;"></div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:15px;font-weight:800;color:${barColor(pct)};">${u.exact}</div>
+            <div style="font-size:10px;color:var(--text-muted);">${pct}%</div>
+          </div>
+        </div>`;
+      }).join('');
+
+      const renderOutcome = byOutcome.map((u, i) => {
+        const pct = u.total > 0 ? Math.round((u.correct / u.total) * 100) : 0;
+        return `<div style="display:grid;grid-template-columns:28px 1fr 52px;align-items:center;gap:8px;padding:10px 14px;border-top:0.5px solid var(--border);">
+          <div style="font-size:16px;text-align:center;">${medals[i] || (i+1)}</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px;">${u.nickname}</div>
+            <div style="height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;">
+              <div style="width:${pct}%;height:100%;background:${barColor(pct)};border-radius:3px;transition:width 0.6s ease;"></div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:15px;font-weight:800;color:${barColor(pct)};">${pct}%</div>
+            <div style="font-size:10px;color:var(--text-muted);">${u.correct}/${u.total}</div>
+          </div>
+        </div>`;
+      }).join('');
+
+      container.innerHTML = `
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px;">Based on ${finishedCount} finished match${finishedCount !== 1 ? 'es' : ''}.</div>
+
+        <!-- Exact Scores -->
+        <div style="margin-bottom:1.5rem;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#1D9E75,#0d6e52);display:flex;align-items:center;justify-content:center;font-size:17px;">🎯</div>
+            <div>
+              <div style="font-size:14px;font-weight:700;">Exact Score Leaderboard</div>
+              <div style="font-size:11px;color:var(--text-muted);">Who's nailing the precise scorelines</div>
+            </div>
+          </div>
+          <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;overflow:hidden;">
+            <div style="background:linear-gradient(135deg,#1D9E75,#0d6e52);padding:8px 14px;display:grid;grid-template-columns:28px 1fr 52px;gap:8px;">
+              <div></div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.8);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Player</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.8);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;text-align:right;">Hits</div>
+            </div>
+            ${renderExact || '<div style="padding:1.5rem;text-align:center;font-size:13px;color:var(--text-muted);">No data yet</div>'}
+          </div>
+        </div>
+
+        <!-- Outcome Accuracy -->
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#3B82F6,#1d4ed8);display:flex;align-items:center;justify-content:center;font-size:17px;">✅</div>
+            <div>
+              <div style="font-size:14px;font-weight:700;">Outcome Accuracy Leaderboard</div>
+              <div style="font-size:11px;color:var(--text-muted);">Win / Draw / Loss — who reads the game best</div>
+            </div>
+          </div>
+          <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;overflow:hidden;">
+            <div style="background:linear-gradient(135deg,#3B82F6,#1d4ed8);padding:8px 14px;display:grid;grid-template-columns:28px 1fr 52px;gap:8px;">
+              <div></div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.8);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Player</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.8);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;text-align:right;">%</div>
+            </div>
+            ${renderOutcome || '<div style="padding:1.5rem;text-align:center;font-size:13px;color:var(--text-muted);">No data yet</div>'}
+          </div>
+        </div>
+      `;
+    } catch(e) {
+      container.innerHTML = '<div style="padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);">Could not load accuracy stats.</div>';
     }
   }
 
@@ -7915,6 +8065,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
                 🙈 OG?
               </button>
               </div>` : `<div id="scorer-label-${d.id}" style="font-size:13px;color:var(--text-muted);font-style:italic;">⚽ —</div>`}
+
             </div>
           </div>
           ${!isPast ? `
@@ -8008,7 +8159,11 @@ Use exactly the formation provided. Only use players from the squad lists above.
             const ogBtnEl = document.getElementById('og-btn-' + matchIdStr);
             const scorerBtnEl = document.getElementById('scorer-btn-' + matchIdStr);
             const scorerLabelEl = document.getElementById('scorer-label-' + matchIdStr);
-            if (!ogBtnEl) { setTimeout(restoreOG, 100); return; } // retry if not yet in DOM
+            // For finished (isPast) cards, there's no og-btn — just update the label directly
+            if (!ogBtnEl) {
+              if (scorerLabelEl) scorerLabelEl.textContent = '🙈 Own Goal prediction';
+              return;
+            }
             if (scorerLabelEl) scorerLabelEl.textContent = '🙈 Own Goal';
             if (scorerBtnEl) { scorerBtnEl.style.opacity = '0.4'; scorerBtnEl.style.pointerEvents = 'none'; }
             ogBtnEl.style.background = 'rgba(239,68,68,0.22)';
@@ -10955,12 +11110,13 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const container = document.getElementById('stats-content');
     container.innerHTML = '<div style="padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);">Loading your stats...</div>';
 
-    const [userSnap, predsSnap, matchesSnap, allUsersSnap, jokerSnap] = await Promise.all([
+    const [userSnap, predsSnap, matchesSnap, allUsersSnap, jokerSnap, wcScorersSnap] = await Promise.all([
       getDoc(doc(db, 'users', currentUser.uid)),
       getDocs(query(collection(db, 'predictions'), orderBy('submittedAt'))),
       getDocs(query(collection(db, 'matches'), orderBy('kickoff'))),
       getDocs(collection(db, 'users')),
-      getDocs(query(collection(db, 'jokerCards'), where('userId', '==', currentUser.uid)))
+      getDocs(query(collection(db, 'jokerCards'), where('userId', '==', currentUser.uid))),
+      getDocs(collection(db, 'wc_scorers'))
     ]);
 
     const user = userSnap.data();
@@ -10968,6 +11124,12 @@ Use exactly the formation provided. Only use players from the squad lists above.
     if (!user.jokerMatchId && !jokerSnap.empty) {
       user.jokerMatchId = jokerSnap.docs[0].data().matchId;
     }
+    // Build wc_scorers lookup by player name
+    const wcScorersMap = {};
+    wcScorersSnap.forEach(d => { const s = d.data(); if (s.name) wcScorersMap[s.name] = s; });
+    const myTourneyPlayerData = user.tournamentPlayer ? (wcScorersMap[user.tournamentPlayer] || null) : null;
+    const myTourneyGoals = myTourneyPlayerData ? (myTourneyPlayerData.goals || 0) : 0;
+    const myTourneyAssists = myTourneyPlayerData ? (myTourneyPlayerData.assists || 0) : 0;
 
     // Avatar reminder banner removed
 
@@ -10994,7 +11156,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
         }).length;
 
     // Calculate stats
-    let correctResults = 0, biggestMiss = null, biggestMissScore = 999;
+    let correctResults = 0, biggestMiss = null, biggestMissScore = 0, myScoreHits = 0;
     let favoriteTeam = {}, mostPredicted = null;
 
     myPreds.forEach(pred => {
@@ -11004,9 +11166,11 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const actual = match.homeScore > match.awayScore ? 'home' : match.homeScore < match.awayScore ? 'away' : 'draw';
       const predicted = pred.homeScore > pred.awayScore ? 'home' : pred.homeScore < pred.awayScore ? 'away' : 'draw';
       if (actual === predicted) correctResults++;
-      // Find biggest miss (total goal difference between prediction and reality)
+      // Count first scorer hits
+      if (match.firstGoalscorer && pred.firstScorer && pred.firstScorer === match.firstGoalscorer) myScoreHits++;
+      // Find WORST prediction (max total goal difference vs reality)
       const diff = Math.abs(pred.homeScore - match.homeScore) + Math.abs(pred.awayScore - match.awayScore);
-      if (diff > 0 && diff < biggestMissScore) {
+      if (diff > biggestMissScore) {
         biggestMissScore = diff;
         biggestMiss = { pred: `${pred.homeScore}-${pred.awayScore}`, actual: `${match.homeScore}-${match.awayScore}`, home: match.homeTeam, away: match.awayTeam };
       }
@@ -11127,8 +11291,8 @@ Use exactly the formation provided. Only use players from the squad lists above.
         </div>
         <div style="background:var(--surface2);border-radius:8px;padding:1rem;text-align:center;">
           <div style="font-size:16px;margin-bottom:2px;">⚽</div>
-          <div style="font-size:24px;font-weight:500;">${user.bonusPoints||0}</div>
-          <div style="font-size:12px;color:var(--text-muted);">Scorer hits & assists</div>
+          <div style="font-size:24px;font-weight:500;">${myScoreHits}</div>
+          <div style="font-size:12px;color:var(--text-muted);">First scorer hits</div>
         </div>
       </div>
 
@@ -11205,7 +11369,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:8px;">
         <div style="font-size:13px;font-weight:500;margin-bottom:3px;">🔮 Tournament player</div>
         <div style="font-size:13px;color:var(--text-muted);">${user.tournamentPlayer
-          ? user.tournamentPlayer + ' &nbsp;·&nbsp; ' + ((user.bonusPoints||0) > 0 ? user.bonusPoints + ' goal' + (user.bonusPoints>1?'s':'') + ' scored. You picked a winner.' : 'No goals yet. Still believing.')
+          ? user.tournamentPlayer + ' &nbsp;·&nbsp; ' + (myTourneyGoals > 0 ? myTourneyGoals + ' goal' + (myTourneyGoals>1?'s':'') + (myTourneyAssists > 0 ? ', ' + myTourneyAssists + ' assist' + (myTourneyAssists>1?'s':'') : '') + '. You picked a winner.' : 'No goals yet. Still believing.')
           : 'You never picked one. Living on the edge.'}</div>
       </div>
 
@@ -11623,39 +11787,49 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const container = document.getElementById('goals-king-table');
     if (!container) return;
     try {
-      const usersSnap = await getDocs(collection(db, 'users'));
+      const [usersSnap, scorersSnap] = await Promise.all([
+        getDocs(collection(db, 'users')),
+        getDocs(collection(db, 'wc_scorers'))
+      ]);
       const users = [];
       usersSnap.forEach(d => { if (d.data().tournamentPlayer) users.push(d.data()); });
 
-      // Group by tournament player and count bonusPoints
+      // Build wc_scorers lookup by player name
+      const scorerData = {};
+      scorersSnap.forEach(d => { const s = d.data(); if (s.name) scorerData[s.name] = s; });
+
+      // Group by tournament player using actual wc_scorers goals (not bonusPoints from user doc)
       const playerGoals = {};
       users.forEach(u => {
         const p = u.tournamentPlayer;
-        if (!playerGoals[p]) playerGoals[p] = { goals: 0, pickers: [] };
-        playerGoals[p].goals = Math.max(playerGoals[p].goals, u.bonusPoints || 0);
+        if (!playerGoals[p]) {
+          const sd = scorerData[p];
+          playerGoals[p] = { goals: sd ? (sd.goals || 0) : 0, assists: sd ? (sd.assists || 0) : 0, pickers: [] };
+        }
         playerGoals[p].pickers.push(u.nickname || u.displayName);
       });
 
-      const sorted = Object.entries(playerGoals).sort((a,b) => b[1].goals - a[1].goals);
+      const sorted = Object.entries(playerGoals).sort((a,b) => b[1].goals - a[1].goals || b[1].assists - a[1].assists);
 
       if (sorted.length === 0 || sorted.every(([,v]) => v.goals === 0)) {
-        container.innerHTML = `<div style="padding:1.25rem;text-align:center;font-size:13px;color:var(--text-muted);">⚽ Goals will appear here once the tournament starts.</div>`;
+        container.innerHTML = `<div style="padding:1.25rem;text-align:center;font-size:13px;color:var(--text-muted);">⚽ Goals will appear here once players start scoring.</div>`;
         return;
       }
 
       const medals = ['🥇','🥈','🥉'];
       container.innerHTML = `
-        <div style="display:grid;grid-template-columns:32px 1fr 60px;font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;padding:0.5rem 1rem;background:var(--surface2);">
-          <div></div><div>Player</div><div style="text-align:center;">Goals</div>
+        <div style="display:grid;grid-template-columns:32px 1fr 50px 50px;font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;padding:0.5rem 1rem;background:var(--surface2);">
+          <div></div><div>Player</div><div style="text-align:center;">⚽</div><div style="text-align:center;">🅰️</div>
         </div>
         ${sorted.map(([player, data], i) => `
-          <div style="display:grid;grid-template-columns:32px 1fr 60px;align-items:center;padding:0.65rem 1rem;border-top:0.5px solid var(--border);">
+          <div style="display:grid;grid-template-columns:32px 1fr 50px 50px;align-items:center;padding:0.65rem 1rem;border-top:0.5px solid var(--border);">
             <div style="font-size:16px;">${medals[i] || (i+1)+'.'}</div>
             <div>
               <div style="font-size:13px;font-weight:500;">${player}</div>
               <div style="font-size:11px;color:var(--text-muted);">Picked by: ${data.pickers.join(', ')}</div>
             </div>
             <div style="text-align:center;font-size:18px;font-weight:700;color:var(--green);">${data.goals}</div>
+            <div style="text-align:center;font-size:14px;color:var(--text-muted);">${data.assists}</div>
           </div>`).join('')}`;
     } catch(e) {
       if (container) container.innerHTML = `<div style="padding:1rem;font-size:13px;color:var(--text-muted);">Could not load goals.</div>`;
