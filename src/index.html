@@ -2793,6 +2793,7 @@
         <h2>⭐ Award Tournament Player Points</h2>
         <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Award bonus points to users who picked a tournament player that scored goals/assists. +2 per goal, +1 per assist, -1 per red card. Updates <code>wc_scorers</code> and awards to all pickers.</p>
         <div class="form-row"><label>Player name</label><input type="text" id="tp-player-name" placeholder="e.g. Kylian Mbappé" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;"></div>
+        <div class="form-row"><label>Match reference <span style="font-size:11px;color:var(--text-muted);">(unique ID — prevents double awards)</span></label><input type="text" id="tp-match-ref" placeholder="e.g. France_vs_Norway_GD1" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
           <div><label style="font-size:12px;color:var(--text-muted);">⚽ Goals</label><input type="number" id="tp-goals" value="0" min="0" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;"></div>
           <div><label style="font-size:12px;color:var(--text-muted);">👟 Assists</label><input type="number" id="tp-assists" value="0" min="0" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;"></div>
@@ -3612,30 +3613,6 @@
       status.innerHTML = `<span style="color:#ef4444;">❌ Error: ${e.message}</span>`;
     }
   };
-
-  // Normalize player name for matching (removes accents for comparison)
-  function normalizeName(name) {
-    if (!name) return '';
-    return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-  }
-
-  // Build a map from normalized name → canonical name (first seen)
-  function buildNormalizedScorersMap(scorersSnap) {
-    const map = {}; // normalized → { data, canonical }
-    scorersSnap.forEach(d => {
-      const s = d.data();
-      if (!s.name) return;
-      const norm = normalizeName(s.name);
-      if (!map[norm]) {
-        map[norm] = { goals: 0, assists: 0, redCards: 0, name: s.name };
-      }
-      // Merge stats (sum in case of duplicates)
-      map[norm].goals = (map[norm].goals || 0) + (s.goals || 0);
-      map[norm].assists = (map[norm].assists || 0) + (s.assists || 0);
-      map[norm].redCards = (map[norm].redCards || 0) + (s.redCards || 0);
-    });
-    return map; // key=normalized, value={goals,assists,redCards,name(canonical)}
-  }
 
   window.scrollToNextMatch = () => {
     const page = document.getElementById('page-matches');
@@ -7787,9 +7764,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
         return;
       }
 
-      // Merge duplicates (Mbappe/Mbappé etc.) using normalized names
-      const normMap = buildNormalizedScorersMap(snap);
-      const allScorers = Object.values(normMap);
+      const allScorers = snap.docs.map(d => d.data());
 
       // Table 1: Top Scorers (goals > 0), sorted by goals desc
       const scorers = [...allScorers].filter(s => (s.goals||0) > 0).sort((a,b) => (b.goals||0)-(a.goals||0));
@@ -9210,21 +9185,34 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const newGoals = parseInt(document.getElementById('tp-goals').value) || 0;
     const newAssists = parseInt(document.getElementById('tp-assists').value) || 0;
     const newReds = parseInt(document.getElementById('tp-reds').value) || 0;
+    const matchRef = document.getElementById('tp-match-ref').value.trim(); // unique ID per award event
     const status = document.getElementById('tp-status');
     const pickersEl = document.getElementById('tp-pickers');
 
     if (!playerName) { status.innerHTML = '<span style="color:#ef4444;">Enter player name.</span>'; return; }
+    if (!matchRef) { status.innerHTML = '<span style="color:#ef4444;">Enter a match reference (e.g. France_vs_Norway_GD1).</span>'; return; }
     if (newGoals === 0 && newAssists === 0 && newReds === 0) { status.innerHTML = '<span style="color:#ef4444;">Enter at least one stat.</span>'; return; }
 
     const ptsPerPicker = (newGoals * 2) + (newAssists * 1) - (newReds * 1);
-    if (!confirm(`Award ${ptsPerPicker > 0 ? '+' : ''}${ptsPerPicker} pts to everyone who picked ${playerName}?\n⚽ ${newGoals} goals × 2 = +${newGoals*2}\n👟 ${newAssists} assists × 1 = +${newAssists}\n🟥 ${newReds} red cards × 1 = -${newReds}\nTotal per picker: ${ptsPerPicker}`)) return;
+
+    // Check if this exact award event was already processed (anti-double protection)
+    const awardEventId = 'tp_' + normalizeName(playerName).replace(/\s+/g,'_') + '_' + matchRef.replace(/\s+/g,'_');
+    const awardRef = doc(db, 'awardLog', awardEventId);
+    const alreadyDone = await getDoc(awardRef);
+    if (alreadyDone.exists()) {
+      status.innerHTML = '<span style="color:#EF9F27;">⚠️ This award was already processed on ' + (alreadyDone.data().awardedAt?.toDate?.().toLocaleDateString?.() || 'a previous date') + '. To re-award, delete the log entry in Firestore → awardLog → ' + awardEventId + '</span>';
+      return;
+    }
+
+    if (!confirm('Award ' + (ptsPerPicker > 0 ? '+' : '') + ptsPerPicker + ' pts to everyone who picked ' + playerName + '?\n⚽ ' + newGoals + ' goals × 2 = +' + (newGoals*2) + '\n👟 ' + newAssists + ' assists × 1 = +' + newAssists + '\n🟥 ' + newReds + ' red cards × 1 = -' + newReds + '\nTotal per picker: ' + ptsPerPicker)) return;
 
     status.innerHTML = '⏳ Processing...';
     pickersEl.innerHTML = '';
 
     try {
-      // 1. Update wc_scorers totals
-      const scorerRef = doc(db, 'wc_scorers', playerName.toLowerCase().replace(/\s+/g, '_'));
+      // 1. Update wc_scorers totals (use normalized key to avoid duplicates)
+      const normKey = normalizeName(playerName).replace(/\s+/g, '_');
+      const scorerRef = doc(db, 'wc_scorers', normKey);
       const scorerSnap = await getDoc(scorerRef);
       const existing = scorerSnap.exists() ? scorerSnap.data() : { goals: 0, assists: 0 };
       await setDoc(scorerRef, {
@@ -9235,26 +9223,38 @@ Use exactly the formation provided. Only use players from the squad lists above.
         updatedAt: serverTimestamp()
       }, { merge: true });
 
-      // 2. Find all users who picked this player as tournament player
+      // 2. Find all pickers — match by normalized name to handle Mbappe/Mbappé
       const usersSnap = await getDocs(collection(db, 'users'));
       const pickers = [];
+      const normInput = normalizeName(playerName);
       usersSnap.forEach(d => {
         const u = d.data();
-        if (u.tournamentPlayer === playerName && !u.removed) pickers.push({ ref: d.ref, data: u });
+        if (!u.removed && u.tournamentPlayer && normalizeName(u.tournamentPlayer) === normInput) {
+          pickers.push({ ref: d.ref, data: u });
+        }
       });
 
       if (pickers.length === 0) {
+        await setDoc(awardRef, { playerName, matchRef, ptsPerPicker, pickers: 0, awardedAt: serverTimestamp() });
         status.innerHTML = '<span style="color:var(--green);">✅ wc_scorers updated. Nobody picked ' + playerName + ' as tournament player.</span>';
         return;
       }
 
       // 3. Award points to each picker
       for (const picker of pickers) {
+        const fresh = await getDoc(picker.ref);
         await updateDoc(picker.ref, {
-          points: (picker.data.points || 0) + ptsPerPicker,
-          bonusPoints: (picker.data.bonusPoints || 0) + ptsPerPicker
+          points: (fresh.data().points || 0) + ptsPerPicker,
+          bonusPoints: (fresh.data().bonusPoints || 0) + ptsPerPicker
         });
       }
+
+      // 4. Log the award to prevent duplicates
+      await setDoc(awardRef, {
+        playerName, matchRef, ptsPerPicker,
+        pickers: pickers.map(p => p.data.nickname || p.data.displayName),
+        awardedAt: serverTimestamp()
+      });
 
       const names = pickers.map(p => p.data.nickname || p.data.displayName).join(', ');
       status.innerHTML = '<span style="color:var(--green);">✅ Done! Awarded ' + (ptsPerPicker > 0 ? '+' : '') + ptsPerPicker + ' pts to ' + pickers.length + ' picker' + (pickers.length !== 1 ? 's' : '') + '.</span>';
@@ -9264,6 +9264,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       document.getElementById('tp-goals').value = '0';
       document.getElementById('tp-assists').value = '0';
       document.getElementById('tp-reds').value = '0';
+      document.getElementById('tp-match-ref').value = '';
 
     } catch(e) {
       status.innerHTML = '<span style="color:#ef4444;">❌ Error: ' + e.message + '</span>';
@@ -9618,6 +9619,16 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const btn = document.getElementById('scorer-only-btn');
     if (!matchId) { status.textContent = '❌ Select a match first'; return; }
     if (!scorerName) { status.textContent = '❌ Enter first scorer name (or "Own Goal")'; return; }
+
+    // Anti-double protection
+    const scorerAwardId = 'scorer_' + matchId + '_' + scorerName.replace(/\s+/g,'_');
+    const scorerAwardRef = doc(db, 'awardLog', scorerAwardId);
+    const scorerAlreadyDone = await getDoc(scorerAwardRef);
+    if (scorerAlreadyDone.exists()) {
+      status.innerHTML = '<span style="color:#EF9F27;">⚠️ First scorer points for ' + scorerName + ' were already awarded on ' + (scorerAlreadyDone.data().awardedAt?.toDate?.().toLocaleDateString?.() || 'a previous date') + '. To re-award, delete awardLog → ' + scorerAwardId + ' in Firestore.</span>';
+      return;
+    }
+
     btn.disabled = true;
     status.innerHTML = '⏳ Processing...';
     try {
@@ -9647,6 +9658,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       }
       await setDoc(doc(db, 'results', matchId), { firstScorer: scorerName }, { merge: true });
       await updateDoc(doc(db, 'matches', matchId), { firstGoalscorer: scorerName });
+      await setDoc(scorerAwardRef, { matchId, scorerName, awarded, awardedAt: serverTimestamp() });
       const winnerNames = [];
       for (const predDoc of predsSnap.docs) {
         const pred = predDoc.data();
@@ -11582,9 +11594,10 @@ Use exactly the formation provided. Only use players from the squad lists above.
     if (!user.jokerMatchId && !jokerSnap.empty) {
       user.jokerMatchId = jokerSnap.docs[0].data().matchId;
     }
-    // Build normalized wc_scorers map (merges Mbappe/Mbappé etc.)
-    const normWcMap = buildNormalizedScorersMap(wcScorersSnap);
-    const myTourneyPlayerData = user.tournamentPlayer ? (normWcMap[normalizeName(user.tournamentPlayer)] || null) : null;
+    // Build wc_scorers lookup by player name
+    const wcScorersMap = {};
+    wcScorersSnap.forEach(d => { const s = d.data(); if (s.name) wcScorersMap[s.name] = s; });
+    const myTourneyPlayerData = user.tournamentPlayer ? (wcScorersMap[user.tournamentPlayer] || null) : null;
     const myTourneyGoals = myTourneyPlayerData ? (myTourneyPlayerData.goals || 0) : 0;
     const myTourneyAssists = myTourneyPlayerData ? (myTourneyPlayerData.assists || 0) : 0;
 
@@ -12267,21 +12280,19 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const users = [];
       usersSnap.forEach(d => { if (d.data().tournamentPlayer) users.push(d.data()); });
 
-      // Build normalized wc_scorers map (merges Mbappe/Mbappé etc.)
-      const normScorersMap = buildNormalizedScorersMap(scorersSnap);
+      // Build wc_scorers lookup by player name
+      const scorerData = {};
+      scorersSnap.forEach(d => { const s = d.data(); if (s.name) scorerData[s.name] = s; });
 
-      // Group by tournament player — normalize name for lookup, display canonical stored name
+      // Group by tournament player using actual wc_scorers goals (not bonusPoints from user doc)
       const playerGoals = {};
       users.forEach(u => {
         const p = u.tournamentPlayer;
-        const norm = normalizeName(p);
-        const sd = normScorersMap[norm];
-        // Use the display name from wc_scorers if found, else user's stored name
-        const displayName = sd ? sd.name : p;
-        if (!playerGoals[displayName]) {
-          playerGoals[displayName] = { goals: sd ? (sd.goals || 0) : 0, assists: sd ? (sd.assists || 0) : 0, pickers: [] };
+        if (!playerGoals[p]) {
+          const sd = scorerData[p];
+          playerGoals[p] = { goals: sd ? (sd.goals || 0) : 0, assists: sd ? (sd.assists || 0) : 0, pickers: [] };
         }
-        playerGoals[displayName].pickers.push(u.nickname || u.displayName);
+        playerGoals[p].pickers.push(u.nickname || u.displayName);
       });
 
       const sorted = Object.entries(playerGoals).sort((a,b) => b[1].goals - a[1].goals || b[1].assists - a[1].assists);
