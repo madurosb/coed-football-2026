@@ -3596,8 +3596,8 @@
       const diffCell = document.getElementById('svdiff-' + uid);
       if (diffCell) { diffCell.textContent = '—'; diffCell.style.color = 'var(--text-muted)'; diffCell.style.fontWeight = '400'; }
       const calcCell = document.getElementById('svcalc-' + uid);
-      const storedCell = row.children[1];
-      if (calcCell && storedCell) { calcCell.textContent = storedCell.textContent; calcCell.style.color = 'var(--text-muted)'; calcCell.style.fontWeight = '400'; }
+      const storedVal = row.dataset.stored;
+      if (calcCell && storedVal !== undefined) { calcCell.textContent = storedVal; calcCell.style.color = 'var(--text-muted)'; calcCell.style.fontWeight = '400'; }
     }
   };
 
@@ -3636,7 +3636,7 @@
     });
 
     // Helper: calculate pts for one prediction
-    function calcPredPts(pred, m) {
+    function calcPredPts(pred, m, hasJoker, hasDon) {
       if (!m || m.homeScore === null || m.homeScore === undefined || m.status !== 'FINISHED') return 0;
       const grp = (m.group || '').toUpperCase();
       const isFinal = grp.includes('FINAL') && !grp.includes('QUARTER') && !grp.includes('SEMI');
@@ -3646,20 +3646,26 @@
       const multiplier = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
       const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
       const predicted = pred.homeScore > pred.awayScore ? 'H' : pred.homeScore < pred.awayScore ? 'A' : 'D';
+      const correctOutcome = actual === predicted;
+      const exactScore = pred.homeScore === m.homeScore && pred.awayScore === m.awayScore;
       let pts = 0;
       if (isFinal) {
-        if (pred.homeScore === m.homeScore && pred.awayScore === m.awayScore) pts = 20;
-        else if (actual === predicted) pts = 10;
+        if (exactScore) pts = 20;
+        else if (correctOutcome) pts = 10;
       } else {
-        if (actual === predicted) pts += 1 * multiplier;
-        if (pred.homeScore === m.homeScore && pred.awayScore === m.awayScore) pts += 3 * multiplier;
+        // Exact score gives +3 total (NOT +1+3=+4). Correct outcome alone gives +1.
+        if (exactScore) pts += 3 * multiplier;
+        else if (correctOutcome) pts += 1 * multiplier;
       }
       if (m.firstGoalscorer && pred.firstScorer === m.firstGoalscorer) pts += 2 * multiplier;
-      // Joker/DON
-      if (pred.joker && actual === predicted) pts += (isFinal ? 10 : 1 * multiplier);
-      if (pred.doubleOrNothing) {
-        const won = actual === predicted;
-        if (!won) pts -= (isFinal ? 10 : 1 * multiplier);
+      // Joker: doubles total points when outcome correct
+      if (hasJoker && correctOutcome) pts *= 2;
+      // DON: doubles result points if correct, penalises if wrong
+      if (hasDon) {
+        const scorerPts = (m.firstGoalscorer && pred.firstScorer === m.firstGoalscorer) ? 2 * multiplier : 0;
+        const resultPts = pts - scorerPts;
+        const penalty = isFinal ? 10 : 1 * multiplier;
+        pts = correctOutcome ? (resultPts * 2) + scorerPts : scorerPts - penalty;
       }
       return pts;
     }
@@ -3680,7 +3686,7 @@
       const u = users[uid];
       const preds = userPreds[uid] || [];
       let calcPts = 0;
-      for (const pred of preds) calcPts += calcPredPts(pred, matches[pred.matchId]);
+      for (const pred of preds) { const hasJ = jokerVerMap[uid] === pred.matchId; const hasD = donVerSet.has(uid + '_' + pred.matchId); calcPts += calcPredPts(pred, matches[pred.matchId], hasJ, hasD); }
       calcPts += (u.bonusPoints || 0);
 
       const stored = u.points || 0;
@@ -3697,7 +3703,7 @@
         : hasDiff
           ? '<button class="sv-approve-btn" onclick="approveMismatch(\'' + uid + '\')" style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;border:1px solid #1D9E75;background:none;color:#1D9E75;cursor:pointer;">✓ Approve</button>'
           : '✅';
-      html += '<div id="svrow-' + uid + '" style="display:grid;grid-template-columns:1fr 60px 60px 60px 80px;align-items:center;padding:7px 10px;border-top:0.5px solid var(--border);background:' + (ok ? 'none' : 'rgba(226,75,74,0.06)') + ';">'
+      html += '<div id="svrow-' + uid + '" data-stored="' + stored + '" style="display:grid;grid-template-columns:1fr 60px 60px 60px 80px;align-items:center;padding:7px 10px;border-top:0.5px solid var(--border);background:' + (ok ? 'none' : 'rgba(226,75,74,0.06)') + ';">'
         + '<div style="font-size:12px;font-weight:500;">' + (u.nickname || u.displayName || uid) + '</div>'
         + '<div style="text-align:center;font-size:13px;font-weight:600;">' + stored + '</div>'
         + '<div id="svcalc-' + uid + '" style="text-align:center;font-size:13px;color:' + (ok ? 'var(--text-muted)' : '#E24B4A') + ';font-weight:' + (ok ? '400' : '600') + ';">' + calcPts + '</div>'
