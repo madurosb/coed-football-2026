@@ -3595,6 +3595,9 @@
       if (approveBtn) approveBtn.style.display = 'none';
       const diffCell = document.getElementById('svdiff-' + uid);
       if (diffCell) { diffCell.textContent = '—'; diffCell.style.color = 'var(--text-muted)'; diffCell.style.fontWeight = '400'; }
+      const calcCell = document.getElementById('svcalc-' + uid);
+      const storedCell = row.children[1];
+      if (calcCell && storedCell) { calcCell.textContent = storedCell.textContent; calcCell.style.color = 'var(--text-muted)'; calcCell.style.fontWeight = '400'; }
     }
   };
 
@@ -3697,7 +3700,7 @@
       html += '<div id="svrow-' + uid + '" style="display:grid;grid-template-columns:1fr 60px 60px 60px 80px;align-items:center;padding:7px 10px;border-top:0.5px solid var(--border);background:' + (ok ? 'none' : 'rgba(226,75,74,0.06)') + ';">'
         + '<div style="font-size:12px;font-weight:500;">' + (u.nickname || u.displayName || uid) + '</div>'
         + '<div style="text-align:center;font-size:13px;font-weight:600;">' + stored + '</div>'
-        + '<div style="text-align:center;font-size:13px;color:' + (ok ? 'var(--text-muted)' : '#E24B4A') + ';font-weight:' + (ok ? '400' : '600') + ';">' + calcPts + '</div>'
+        + '<div id="svcalc-' + uid + '" style="text-align:center;font-size:13px;color:' + (ok ? 'var(--text-muted)' : '#E24B4A') + ';font-weight:' + (ok ? '400' : '600') + ';">' + calcPts + '</div>'
         + '<div id="svdiff-' + uid + '" style="text-align:center;font-size:12px;color:' + diffColor + ';font-weight:600;">' + diffLabel + '</div>'
         + '<div class="sv-status" style="text-align:center;font-size:13px;">' + approveHtml + '</div>'
         + '</div>';
