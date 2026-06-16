@@ -6583,7 +6583,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       return;
     }
 
-    const deadline = new Date('2026-06-15T21:00:00Z'); // June 15 midnight Israel
+    const deadline = new Date('2026-06-22T21:00:00Z'); // June 22 midnight Israel
     const isPast = new Date() >= deadline;
     const tournamentDone = new Date() >= new Date('2026-07-20T00:00:00Z'); // approx end
 
@@ -9083,54 +9083,110 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const contentEl = document.getElementById('updates-content');
     if (!contentEl || !u) return;
     contentEl.innerHTML = `
-      <div style="border-radius:14px;overflow:hidden;border:0.5px solid var(--border);touch-action:pinch-zoom;position:relative;">
+      <div style="border-radius:14px;overflow:hidden;border:0.5px solid var(--border);position:relative;">
         ${u.imageUrl ? `<img src="${u.imageUrl}" alt="${u.title||''}"
           id="update-zoomable-img"
-          style="width:100%;display:block;touch-action:pinch-zoom;cursor:zoom-in;transition:transform 0.2s ease;transform-origin:center center;"
-          onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
-          onclick="toggleUpdateZoom(this)">
+          style="width:100%;display:block;touch-action:none;cursor:zoom-in;transform-origin:0 0;"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
           <div style="display:none;padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);align-items:center;justify-content:center;">⚠️ Could not load image</div>`
         : '<div style="padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);">No image for this update.</div>'}
       </div>
       ${u.date ? `<div style="margin-top:8px;font-size:11px;color:var(--text-muted);text-align:right;">${u.date}</div>` : ''}
-      <div style="margin-top:6px;text-align:center;font-size:11px;color:var(--text-muted);">🤏 Pinch to zoom · tap to enlarge</div>`;
+      <div style="margin-top:6px;text-align:center;font-size:11px;color:var(--text-muted);">🤏 Pinch to zoom &amp; drag to pan</div>`;
 
-    // Pinch-to-zoom via touch events
     const img = document.getElementById('update-zoomable-img');
     if (!img) return;
-    let startDist = 0, curScale = 1, lastScale = 1;
+
+    let scale = 1, lastScale = 1;
+    let originX = 0, originY = 0;
+    let translateX = 0, translateY = 0;
+    let lastTranslateX = 0, lastTranslateY = 0;
+    let startDist = 0;
+    let panStartX = 0, panStartY = 0;
+    let isPinching = false;
+
+    function clampTranslate(tx, ty, s) {
+      const rect = img.getBoundingClientRect();
+      const maxX = rect.width * (s - 1) / 2;
+      const maxY = rect.height * (s - 1) / 2;
+      return [Math.max(-maxX, Math.min(maxX, tx)), Math.max(-maxY, Math.min(maxY, ty))];
+    }
+
+    function applyTransform() {
+      img.style.transform = 'scale(' + scale + ') translate(' + (translateX / scale) + 'px,' + (translateY / scale) + 'px)';
+    }
+
     img.addEventListener('touchstart', e => {
       if (e.touches.length === 2) {
-        startDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        isPinching = true;
+        startDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        e.preventDefault();
+      } else if (e.touches.length === 1) {
+        if (scale > 1) {
+          panStartX = e.touches[0].clientX - lastTranslateX;
+          panStartY = e.touches[0].clientY - lastTranslateY;
+        }
         e.preventDefault();
       }
     }, { passive: false });
+
     img.addEventListener('touchmove', e => {
-      if (e.touches.length === 2) {
-        const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-        curScale = Math.min(4, Math.max(1, lastScale * (dist / startDist)));
-        img.style.transform = 'scale(' + curScale + ')';
+      if (e.touches.length === 2 && isPinching) {
+        const dist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        scale = Math.min(4, Math.max(1, lastScale * (dist / startDist)));
+        applyTransform();
+        e.preventDefault();
+      } else if (e.touches.length === 1 && scale > 1 && !isPinching) {
+        translateX = e.touches[0].clientX - panStartX;
+        translateY = e.touches[0].clientY - panStartY;
+        [translateX, translateY] = clampTranslate(translateX, translateY, scale);
+        applyTransform();
         e.preventDefault();
       }
     }, { passive: false });
+
     img.addEventListener('touchend', e => {
-      if (e.touches.length < 2) {
-        lastScale = curScale;
-        if (curScale <= 1.05) { curScale = 1; lastScale = 1; img.style.transform = 'scale(1)'; }
+      if (e.touches.length === 0) {
+        isPinching = false;
+        lastScale = scale;
+        lastTranslateX = translateX;
+        lastTranslateY = translateY;
+        if (scale <= 1.05) {
+          scale = 1; lastScale = 1;
+          translateX = 0; translateY = 0;
+          lastTranslateX = 0; lastTranslateY = 0;
+          img.style.transform = 'scale(1)';
+          img.style.cursor = 'zoom-in';
+        }
       }
     });
-  }
 
-  window.toggleUpdateZoom = (img) => {
-    const cur = img.style.transform;
-    if (!cur || cur === 'scale(1)') {
-      img.style.transform = 'scale(2)';
-      img.style.cursor = 'zoom-out';
-    } else {
-      img.style.transform = 'scale(1)';
-      img.style.cursor = 'zoom-in';
-    }
-  };
+    // Double-tap to zoom/reset
+    let lastTap = 0;
+    img.addEventListener('touchend', e => {
+      const now = Date.now();
+      if (now - lastTap < 300) {
+        if (scale > 1) {
+          scale = 1; lastScale = 1;
+          translateX = 0; translateY = 0;
+          lastTranslateX = 0; lastTranslateY = 0;
+          img.style.transform = 'scale(1)';
+          img.style.cursor = 'zoom-in';
+        } else {
+          scale = 2; lastScale = 2;
+          applyTransform();
+          img.style.cursor = 'zoom-out';
+        }
+      }
+      lastTap = now;
+    });
+  }
 
   // ═══ UPDATES ADMIN ═══
   window.loadUpdatesAdmin = async () => {
