@@ -3723,8 +3723,8 @@
         if (correctOutcome) pts += 1 * multiplier;
         if (exactScore) pts += 3 * multiplier;
       }
-      const normScorer = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-      if (m.firstGoalscorer && normScorer(pred.firstScorer) === normScorer(m.firstGoalscorer)) pts += 2 * multiplier;
+      const normSc2 = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+      if (m.firstGoalscorer && normSc2(pred.firstScorer) === normSc2(m.firstGoalscorer)) pts += 2 * multiplier;
       // Joker: doubles total pts (from jokerCards collection, not pred.joker)
       if (hasJoker && correctOutcome) pts *= 2;
       // DON: doubles ALL pts (including scorer) if correct, penalises if wrong
@@ -7878,8 +7878,8 @@ Use exactly the formation provided. Only use players from the squad lists above.
         const predicted = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
         if (actual === predicted) userStats[p.userId].correct++;
         if (p.homeScore === m.homeScore && p.awayScore === m.awayScore) userStats[p.userId].exact++;
-        const normS = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-        if (m.firstGoalscorer && p.firstScorer && normS(p.firstScorer) === normS(m.firstGoalscorer)) userStats[p.userId].scorerHits++;
+        const normSc3 = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+        if (m.firstGoalscorer && p.firstScorer && normSc3(p.firstScorer) === normSc3(m.firstGoalscorer)) userStats[p.userId].scorerHits++;
       });
 
       const statsArr = Object.values(userStats).filter(u => u.total > 0);
@@ -9694,6 +9694,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
     btn.disabled = true;
     status.innerHTML = '⏳ Processing...';
+    const normSc = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
     try {
       const matchSnap = await getDoc(doc(db, 'matches', matchId));
       const matchData = matchSnap.data() || {};
@@ -9710,7 +9711,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const winnerNames = [];
       for (const predDoc of predsSnap.docs) {
         const pred = predDoc.data();
-        if (pred.firstScorer !== scorerName) continue;
+        if (normSc(pred.firstScorer) !== normSc(scorerName)) continue;
         const userRef = doc(db, 'users', pred.userId);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
@@ -9724,6 +9725,18 @@ Use exactly the formation provided. Only use players from the squad lists above.
       }
       await setDoc(doc(db, 'results', matchId), { firstScorer: scorerName }, { merge: true });
       await updateDoc(doc(db, 'matches', matchId), { firstGoalscorer: scorerName });
+
+      // Log to awardLog to prevent future duplicates
+      await setDoc(awardRef, {
+        type: 'firstScorer',
+        matchId,
+        matchTeams: (matchData.homeTeam || '') + ' vs ' + (matchData.awayTeam || ''),
+        scorerName,
+        pts,
+        awarded,
+        winners: winnerNames,
+        awardedAt: serverTimestamp()
+      });
 
       const winnersHtml = winnerNames.length > 0
         ? '<div style="margin-top:6px;font-size:11px;color:var(--text-muted);">Winners: <strong style="color:var(--text);">' + winnerNames.join(', ') + '</strong></div>'
@@ -11696,8 +11709,8 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const predicted = pred.homeScore > pred.awayScore ? 'home' : pred.homeScore < pred.awayScore ? 'away' : 'draw';
       if (actual === predicted) correctResults++;
       // Count first scorer hits
-      const normScH = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-      if (match.firstGoalscorer && pred.firstScorer && normScH(pred.firstScorer) === normScH(match.firstGoalscorer)) myScoreHits++;
+      const normSc4 = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+      if (match.firstGoalscorer && pred.firstScorer && normSc4(pred.firstScorer) === normSc4(match.firstGoalscorer)) myScoreHits++;
       // Find WORST prediction (max total goal difference vs reality)
       const diff = Math.abs(pred.homeScore - match.homeScore) + Math.abs(pred.awayScore - match.awayScore);
       if (diff > biggestMissScore) {
