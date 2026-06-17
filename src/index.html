@@ -3623,6 +3623,27 @@
     }
   };
 
+  // Normalize player name for matching (removes accents: Mbappé → Mbappe)
+  function normalizeName(name) {
+    if (!name) return '';
+    return name.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  }
+
+  // Build merged map from wc_scorers snap (merges Mbappe/Mbappé etc.)
+  function buildNormalizedScorersMap(scorersSnap) {
+    const map = {};
+    scorersSnap.forEach(d => {
+      const s = d.data();
+      if (!s.name) return;
+      const norm = normalizeName(s.name);
+      if (!map[norm]) map[norm] = { goals: 0, assists: 0, redCards: 0, name: s.name };
+      map[norm].goals = (map[norm].goals || 0) + (s.goals || 0);
+      map[norm].assists = (map[norm].assists || 0) + (s.assists || 0);
+      map[norm].redCards = (map[norm].redCards || 0) + (s.redCards || 0);
+    });
+    return map;
+  }
+
   window.scrollToNextMatch = () => {
     const page = document.getElementById('page-matches');
     if (!page) return;
