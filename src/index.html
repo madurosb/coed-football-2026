@@ -2787,6 +2787,11 @@
         <div class="form-row"><label>First scorer name</label><input type="text" id="scorer-only-name" placeholder='e.g. Julian Quinones or Own Goal' style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;"></div>
         <button class="submit-btn" id="scorer-only-btn" onclick="awardScorerPoints()" style="background:linear-gradient(135deg,#059669,#047857);margin-top:0.5rem;">🎯 Award +2 pts to correct pickers</button>
         <div id="scorer-only-status" style="margin-top:8px;font-size:12px;text-align:center;min-height:20px;"></div>
+        <div style="margin-top:12px;border-top:0.5px solid var(--border);padding-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button onclick="loadAwardHistory()" style="padding:7px 12px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;cursor:pointer;">📋 Show award history</button>
+          <button onclick="exportAwardHistory()" style="padding:7px 12px;border-radius:8px;border:0.5px solid var(--green);background:none;color:var(--green);font-size:12px;cursor:pointer;">⬇️ Export to JSON</button>
+        </div>
+        <div id="award-history-list" style="margin-top:8px;"></div>
       </div>
 
       <div class="form-card" style="margin-top:1rem;">
@@ -9195,6 +9200,47 @@ Use exactly the formation provided. Only use players from the squad lists above.
     }
   };
 
+  window.loadAwardHistory = async () => {
+    const el = document.getElementById('award-history-list');
+    if (!el) return;
+    el.innerHTML = '<div style="font-size:12px;color:var(--text-muted);">Loading...</div>';
+    try {
+      const snap = await getDocs(query(collection(db, 'awardLog'), orderBy('awardedAt', 'desc')));
+      if (snap.empty) { el.innerHTML = '<div style="font-size:12px;color:var(--text-muted);">No award history yet.</div>'; return; }
+      const rows = snap.docs.map(d => {
+        const a = d.data();
+        const when = a.awardedAt?.toDate?.().toLocaleString?.() || '?';
+        const isTP = a.type === 'tournamentPlayer';
+        const label = isTP
+          ? '⭐ ' + a.playerName + ' (' + (a.matchRef||'') + ') — +' + a.ptsPerPicker + ' pts × ' + (a.pickers?.length||0) + ' pickers'
+          : '🎯 ' + (a.scorerName||a.playerName||'?') + ' — ' + (a.matchTeams||a.matchId||'') + ' — +' + (a.pts||2) + ' pts × ' + (a.awarded||0) + ' winners';
+        return '<div style="padding:6px 0;border-bottom:0.5px solid var(--border);font-size:12px;">'
+          + '<div style="font-weight:600;">' + label + '</div>'
+          + '<div style="color:var(--text-muted);font-size:11px;">' + when + '</div>'
+          + (a.winners?.length ? '<div style="font-size:11px;color:var(--text-muted);">Winners: ' + a.winners.join(', ') + '</div>' : '')
+          + (a.pickers?.length ? '<div style="font-size:11px;color:var(--text-muted);">Pickers: ' + a.pickers.join(', ') + '</div>' : '')
+          + '</div>';
+      }).join('');
+      el.innerHTML = '<div style="font-size:12px;font-weight:600;margin-bottom:6px;">Award History (' + snap.docs.length + ' events):</div>' + rows;
+      window._awardHistoryData = snap.docs.map(d => ({ id: d.id, ...d.data(), awardedAt: d.data().awardedAt?.toDate?.().toISOString?.() }));
+    } catch(e) {
+      el.innerHTML = '<div style="font-size:12px;color:#ef4444;">Error: ' + e.message + '</div>';
+    }
+  };
+
+  window.exportAwardHistory = async () => {
+    if (!window._awardHistoryData) await window.loadAwardHistory();
+    if (!window._awardHistoryData) return;
+    const json = JSON.stringify(window._awardHistoryData, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'award_history_' + new Date().toISOString().slice(0,10) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   window.awardTournamentPlayerPoints = async () => {
     const playerName = document.getElementById('tp-player-name').value.trim();
     const matchRef = document.getElementById('tp-match-ref').value.trim();
@@ -9628,23 +9674,37 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const btn = document.getElementById('scorer-only-btn');
     if (!matchId) { status.textContent = '❌ Select a match first'; return; }
     if (!scorerName) { status.textContent = '❌ Enter first scorer name (or "Own Goal")'; return; }
+
+    // Anti-double protection via awardLog
+    const awardId = 'scorer_' + matchId + '_' + scorerName.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+    const awardRef = doc(db, 'awardLog', awardId);
+    const alreadyDone = await getDoc(awardRef);
+    if (alreadyDone.exists()) {
+      const prev = alreadyDone.data();
+      const when = prev.awardedAt?.toDate?.().toLocaleString?.() || 'previously';
+      status.innerHTML = '<span style="color:#EF9F27;">⚠️ Already awarded on ' + when + ' (' + (prev.awarded||0) + ' players got +' + (prev.pts||2) + ' pts each). To re-run, delete awardLog → ' + awardId + ' in Firestore.</span>';
+      return;
+    }
+
     btn.disabled = true;
     status.innerHTML = '⏳ Processing...';
     try {
       const matchSnap = await getDoc(doc(db, 'matches', matchId));
-      const matchGroup = (matchSnap.data()?.group || '').toUpperCase();
+      const matchData = matchSnap.data() || {};
+      const matchGroup = (matchData.group || '').toUpperCase();
       const isFinal = matchGroup.includes('FINAL') && !matchGroup.includes('QUARTER') && !matchGroup.includes('SEMI');
       const isSemi = matchGroup.includes('SEMI');
       const isQuarter = matchGroup.includes('QUARTER');
       const isR16 = matchGroup.includes('16') || matchGroup.includes('ROUND_OF_16');
       const multiplier = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
+      const pts = 2 * multiplier;
 
       const predsSnap = await getDocs(query(collection(db, 'predictions'), where('matchId', '==', matchId)));
       let awarded = 0;
+      const winnerNames = [];
       for (const predDoc of predsSnap.docs) {
         const pred = predDoc.data();
         if (pred.firstScorer !== scorerName) continue;
-        const pts = 2 * multiplier;
         const userRef = doc(db, 'users', pred.userId);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
@@ -9652,24 +9712,31 @@ Use exactly the formation provided. Only use players from the squad lists above.
             points: (userSnap.data().points || 0) + pts,
             bonusPoints: (userSnap.data().bonusPoints || 0) + 1
           });
+          winnerNames.push(userSnap.data().nickname || userSnap.data().displayName || pred.userId);
           awarded++;
         }
       }
       await setDoc(doc(db, 'results', matchId), { firstScorer: scorerName }, { merge: true });
       await updateDoc(doc(db, 'matches', matchId), { firstGoalscorer: scorerName });
-      const winnerNames = [];
-      for (const predDoc of predsSnap.docs) {
-        const pred = predDoc.data();
-        if (pred.firstScorer !== scorerName) continue;
-        const uSnap = await getDoc(doc(db, 'users', pred.userId));
-        if (uSnap.exists()) winnerNames.push(uSnap.data().nickname || uSnap.data().displayName || pred.userId);
-      }
+
+      // Log to awardLog to prevent future duplicates
+      await setDoc(awardRef, {
+        type: 'firstScorer',
+        matchId,
+        matchTeams: (matchData.homeTeam || '') + ' vs ' + (matchData.awayTeam || ''),
+        scorerName,
+        pts,
+        awarded,
+        winners: winnerNames,
+        awardedAt: serverTimestamp()
+      });
+
       const winnersHtml = winnerNames.length > 0
-        ? `<div style="margin-top:6px;font-size:11px;color:var(--text-muted);">Winners: <strong style="color:var(--text);">${winnerNames.join(', ')}</strong></div>`
-        : `<div style="margin-top:6px;font-size:11px;color:var(--text-muted);">Nobody picked ${scorerName}</div>`;
-      status.innerHTML = `<span style="color:var(--green);">✅ Done! Awarded +${2*multiplier} pts to ${awarded} player${awarded!==1?'s':''} who picked <strong>${scorerName}</strong></span>${winnersHtml}`;
+        ? '<div style="margin-top:6px;font-size:11px;color:var(--text-muted);">Winners: <strong style="color:var(--text);">' + winnerNames.join(', ') + '</strong></div>'
+        : '<div style="margin-top:6px;font-size:11px;color:var(--text-muted);">Nobody picked ' + scorerName + '</div>';
+      status.innerHTML = '<span style="color:var(--green);">✅ Done! Awarded +' + pts + ' pts to ' + awarded + ' player' + (awarded!==1?'s':'') + ' who picked <strong>' + scorerName + '</strong></span>' + winnersHtml;
     } catch(e) {
-      status.innerHTML = `<span style="color:#ef4444;">❌ Error: ${e.message}</span>`;
+      status.innerHTML = '<span style="color:#ef4444;">❌ Error: ' + e.message + '</span>';
     }
     btn.disabled = false;
   };
