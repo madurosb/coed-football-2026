@@ -3634,10 +3634,14 @@
       const s = d.data();
       if (!s.name) return;
       const norm = normalizeName(s.name);
-      if (!map[norm]) map[norm] = { goals: 0, assists: 0, redCards: 0, name: s.name };
-      map[norm].goals = (map[norm].goals || 0) + (s.goals || 0);
-      map[norm].assists = (map[norm].assists || 0) + (s.assists || 0);
-      map[norm].redCards = (map[norm].redCards || 0) + (s.redCards || 0);
+      if (!map[norm]) {
+        map[norm] = { goals: s.goals || 0, assists: s.assists || 0, redCards: s.redCards || 0, name: s.name };
+      } else {
+        // Take max (not sum) — duplicates are same player, keep highest value
+        map[norm].goals = Math.max(map[norm].goals, s.goals || 0);
+        map[norm].assists = Math.max(map[norm].assists, s.assists || 0);
+        map[norm].redCards = Math.max(map[norm].redCards, s.redCards || 0);
+      }
     });
     return map;
   }
