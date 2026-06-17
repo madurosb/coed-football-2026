@@ -2982,10 +2982,19 @@
           <button onclick="setScoreVerifyTab('summary')" id="svtab-summary" style="padding:8px 14px;border-radius:8px;border:none;background:var(--accent);color:white;font-size:13px;font-weight:600;cursor:pointer;">📊 Summary</button>
           <button onclick="setScoreVerifyTab('perMatch')" id="svtab-perMatch" style="padding:8px 14px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">🗓 Per Match</button>
           <button onclick="setScoreVerifyTab('reaward')" id="svtab-reaward" style="padding:8px 14px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">🔁 Re-award</button>
+          <button onclick="setScoreVerifyTab('perUser')" id="svtab-perUser" style="padding:8px 14px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">👤 Per User</button>
           <button onclick="loadScoreVerification(true)" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">🔄 Refresh</button>
         </div>
         <div id="score-verify-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Click Refresh to load.</div></div>
         <div id="score-verify-perMatch" style="display:none;"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Click Refresh to load.</div></div>
+        <div id="score-verify-perUser" style="display:none;padding:1rem;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px;">👤 Per User breakdown</div>
+          <select id="peruser-select" onchange="loadPerUserBreakdown()" style="width:100%;padding:8px 12px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;margin-bottom:12px;">
+            <option value="">Select player...</option>
+          </select>
+          <div id="peruser-content"></div>
+        </div>
+
         <div id="score-verify-reaward" style="display:none;padding:1rem;">
           <div style="font-size:13px;font-weight:600;margin-bottom:8px;">🔁 Re-award points for a specific match</div>
           <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Use this if a match result was entered but points were never calculated. This will add points on top of existing ones — only use if you're sure points were NOT previously awarded for this match.</div>
@@ -3533,8 +3542,9 @@
     const summary = document.getElementById('score-verify-content');
     const perMatch = document.getElementById('score-verify-perMatch');
     const reaward = document.getElementById('score-verify-reaward');
-    const tabs = ['summary','perMatch','reaward'];
-    const divs = { summary, perMatch, reaward };
+    const perUser = document.getElementById('score-verify-perUser');
+    const tabs = ['summary','perMatch','reaward','perUser'];
+    const divs = { summary, perMatch, reaward, perUser };
     tabs.forEach(t => {
       const btn = document.getElementById('svtab-'+t);
       const active = t === tab;
@@ -3542,6 +3552,102 @@
       if (divs[t]) divs[t].style.display = active ? '' : 'none';
     });
     if (tab === 'reaward') loadReawardMatches();
+    if (tab === 'perUser') loadPerUserSelect();
+  };
+
+  function loadPerUserSelect() {
+    const sel = document.getElementById('peruser-select');
+    if (!sel || sel.dataset.loaded) return;
+    sel.dataset.loaded = '1';
+    // Use the already-loaded users from score verification
+    const usersSnap = window._svUsersSnap;
+    if (!usersSnap) { sel.innerHTML = '<option value="">Click Refresh first</option>'; return; }
+    sel.innerHTML = '<option value="">Select player...</option>';
+    Object.entries(usersSnap).forEach(([uid, u]) => {
+      if (u.removed) return;
+      const opt = document.createElement('option');
+      opt.value = uid;
+      opt.textContent = u.nickname || u.displayName || uid;
+      sel.appendChild(opt);
+    });
+  }
+
+  window.loadPerUserBreakdown = async () => {
+    const uid = document.getElementById('peruser-select').value;
+    const container = document.getElementById('peruser-content');
+    if (!uid || !container) return;
+
+    const users = window._svUsersSnap;
+    const matches = window._svMatchesSnap;
+    const jokerVerMap = window._svJokerMap;
+    const donVerSet = window._svDonSet;
+    if (!users || !matches) { container.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">Click Refresh first.</div>'; return; }
+
+    container.innerHTML = '<div style="font-size:13px;color:var(--text-muted);">Loading...</div>';
+    const u = users[uid];
+    const predsSnap = await getDocs(query(collection(db, 'predictions'), where('userId', '==', uid)));
+
+    const rows = [];
+    let calcTotal = 0;
+
+    predsSnap.forEach(d => {
+      const pred = d.data();
+      const m = matches[pred.matchId];
+      if (!m || m.status !== 'FINISHED' || m.homeScore === null) return;
+
+      const hasJ = jokerVerMap[uid] === pred.matchId;
+      const hasD = donVerSet.has(uid + '_' + pred.matchId);
+      const pts = calcPredPts(pred, m, hasJ, hasD);
+      calcTotal += pts;
+
+      const predOut = pred.homeScore > pred.awayScore ? 'H' : pred.homeScore < pred.awayScore ? 'A' : 'D';
+      const actOut = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
+      const correct = predOut === actOut;
+      const exact = pred.homeScore === m.homeScore && pred.awayScore === m.awayScore;
+      const normSc = s => (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+      const scorerHit = m.firstGoalscorer && pred.firstScorer && normSc(pred.firstScorer) === normSc(m.firstGoalscorer);
+
+      const flags = [];
+      if (exact) flags.push('🎯 Exact');
+      else if (correct) flags.push('✅ Outcome');
+      else flags.push('❌ Wrong');
+      if (scorerHit) flags.push('⚽ Scorer');
+      if (hasJ) flags.push('🃏 Joker');
+      if (hasD) flags.push(correct ? '🎰✅ DON' : '🎰❌ DON');
+
+      rows.push({
+        match: (m.homeTeam || '') + ' ' + m.homeScore + '-' + m.awayScore + ' ' + (m.awayTeam || ''),
+        pred: pred.homeScore + '-' + pred.awayScore,
+        scorer: pred.firstScorer || '—',
+        flags: flags.join(' '),
+        pts
+      });
+    });
+
+    rows.sort((a,b) => b.pts - a.pts);
+
+    const stored = u.points || 0;
+    const diff = stored - calcTotal;
+
+    container.innerHTML = '<div style="background:var(--surface2);border-radius:10px;padding:10px 12px;margin-bottom:10px;">'
+      + '<div style="font-size:13px;font-weight:700;">' + (u.nickname || u.displayName) + '</div>'
+      + '<div style="display:flex;gap:16px;margin-top:6px;font-size:12px;">'
+      + '<span>📦 Stored: <strong>' + stored + '</strong></span>'
+      + '<span>🧮 Calc: <strong style="color:' + (diff !== 0 ? '#E24B4A' : 'var(--green)') + '">' + calcTotal + '</strong></span>'
+      + '<span>📊 Diff: <strong style="color:' + (diff > 0 ? '#1D9E75' : diff < 0 ? '#E24B4A' : 'var(--text-muted)') + '">' + (diff > 0 ? '+' : '') + diff + '</strong></span>'
+      + '<span>⭐ TP: <strong>' + (u.tournamentPlayer || '—') + '</strong></span>'
+      + '</div></div>'
+      + '<div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;padding:4px 0;border-bottom:0.5px solid var(--border);margin-bottom:4px;display:grid;grid-template-columns:2fr 80px 100px 1fr 40px;">'
+      + '<div>Match</div><div style="text-align:center">Pick</div><div>Scorer pick</div><div>Result</div><div style="text-align:right">Pts</div>'
+      + '</div>'
+      + rows.map(r => '<div style="display:grid;grid-template-columns:2fr 80px 100px 1fr 40px;align-items:center;padding:5px 0;border-bottom:0.5px solid var(--border);font-size:12px;">'
+        + '<div>' + r.match + '</div>'
+        + '<div style="text-align:center;color:var(--text-muted);">' + r.pred + '</div>'
+        + '<div style="color:var(--text-muted);font-size:11px;">' + r.scorer + '</div>'
+        + '<div style="font-size:11px;">' + r.flags + '</div>'
+        + '<div style="text-align:right;font-weight:700;color:' + (r.pts > 0 ? 'var(--green)' : r.pts < 0 ? '#E24B4A' : 'var(--text-muted)') + ';">' + (r.pts > 0 ? '+' : '') + r.pts + '</div>'
+        + '</div>').join('')
+      + '<div style="padding:8px 0;font-size:13px;font-weight:700;text-align:right;border-top:1px solid var(--border);margin-top:4px;">Total (CALC): ' + calcTotal + '</div>';
   };
 
   async function loadReawardMatches() {
@@ -3725,6 +3831,12 @@
     const users = {}, matches = {}, userPreds = {}, predsByMatch = {};
     usersSnap.forEach(d => { users[d.id] = d.data(); });
     matchesSnap.forEach(d => { matches[d.id] = d.data(); });
+
+    // Store globally for Per User tab
+    window._svUsersSnap = users;
+    window._svMatchesSnap = matches;
+    window._svJokerMap = jokerVerMap;
+    window._svDonSet = donVerSet;
 
     predsSnap.forEach(d => {
       const p = d.data();
