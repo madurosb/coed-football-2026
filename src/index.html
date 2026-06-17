@@ -2793,6 +2793,7 @@
         <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Use when result was already submitted but first scorer was missing. Awards +2 pts to correct pickers only — no duplicate result points. Works for <strong>Own Goal</strong> too.</p>
         <div class="form-row"><label>Match</label><select id="scorer-only-match" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;"><option value="">Select match...</option></select></div>
         <div class="form-row"><label>First scorer name</label><input type="text" id="scorer-only-name" placeholder='e.g. Julian Quinones or Own Goal' style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;"></div>
+        <div class="form-row"><label>Country <span style="font-size:11px;color:var(--text-muted);">(for scorers table)</span></label><input type="text" id="scorer-only-country" placeholder='e.g. France' style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;"></div>
         <button class="submit-btn" id="scorer-only-btn" onclick="awardScorerPoints()" style="background:linear-gradient(135deg,#059669,#047857);margin-top:0.5rem;">🎯 Award +2 pts to correct pickers</button>
         <div id="scorer-only-status" style="margin-top:8px;font-size:12px;text-align:center;min-height:20px;"></div>
         <div style="margin-top:12px;border-top:0.5px solid var(--border);padding-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -3642,10 +3643,15 @@
       const s = d.data();
       if (!s.name) return;
       const norm = normalizeName(s.name);
-      if (!map[norm]) map[norm] = { goals: 0, assists: 0, redCards: 0, name: s.name };
-      map[norm].goals = (map[norm].goals || 0) + (s.goals || 0);
-      map[norm].assists = (map[norm].assists || 0) + (s.assists || 0);
-      map[norm].redCards = (map[norm].redCards || 0) + (s.redCards || 0);
+      if (!map[norm]) {
+        map[norm] = { goals: s.goals || 0, assists: s.assists || 0, redCards: s.redCards || 0, name: s.name, country: s.country || '' };
+      } else {
+        // Use MAX not SUM — duplicate docs are same player
+        map[norm].goals = Math.max(map[norm].goals, s.goals || 0);
+        map[norm].assists = Math.max(map[norm].assists, s.assists || 0);
+        map[norm].redCards = Math.max(map[norm].redCards, s.redCards || 0);
+        if (!map[norm].country && s.country) map[norm].country = s.country;
+      }
     });
     return map;
   }
@@ -9801,6 +9807,20 @@ Use exactly the formation provided. Only use players from the squad lists above.
       }
       await setDoc(doc(db, 'results', matchId), { firstScorer: scorerName }, { merge: true });
       await updateDoc(doc(db, 'matches', matchId), { firstGoalscorer: scorerName });
+      // Update wc_scorers table so scorer appears in Standings → Scorers tab
+      if (scorerName && scorerName !== 'Own Goal') {
+        const scorerCountry = document.getElementById('scorer-only-country')?.value?.trim() || '';
+        const wcRef = doc(db, 'wc_scorers', normSc(scorerName).replace(/\s+/g,'_'));
+        const wcSnap = await getDoc(wcRef);
+        const existing = wcSnap.exists() ? wcSnap.data() : { goals: 0 };
+        await setDoc(wcRef, {
+          name: scorerName,
+          country: scorerCountry || existing.country || '',
+          goals: (existing.goals || 0) + 1,
+          assists: existing.assists || 0,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      }
 
       const winnersHtml = winnerNames.length > 0
         ? '<div style="margin-top:6px;font-size:11px;color:var(--text-muted);">Winners: <strong style="color:var(--text);">' + winnerNames.join(', ') + '</strong></div>'
