@@ -2800,18 +2800,7 @@
         <div class="form-row"><label>Player name</label><input type="text" id="tp-player-name" placeholder="e.g. Kylian Mbappé" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;"></div>
         <div class="form-row"><label>Match reference <span style="font-size:11px;color:var(--text-muted);">(prevents double awards)</span></label>
           <select id="tp-match-ref" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;">
-            <option value="">Select match...</option>
-            <option value="France_vs_Belgium_GD1">🇫🇷 France 3-1 Belgium (Group I, Jun 17)</option>
-            <option value="Spain_vs_Brazil_GD1">🇪🇸 Spain vs Brazil (Group A)</option>
-            <option value="Germany_vs_Uruguay_GD1">🇩🇪 Germany vs Uruguay (Group B)</option>
-            <option value="Portugal_vs_Argentina_GD1">🇵🇹 Portugal vs Argentina (Group C)</option>
-            <option value="England_vs_Netherlands_GD1">🏴󠁧󠁢󠁥󠁮󠁧󠁿 England vs Netherlands (Group D)</option>
-            <option value="USA_vs_Mexico_GD1">🇺🇸 USA vs Mexico (Group E)</option>
-            <option value="Japan_vs_Croatia_GD1">🇯🇵 Japan vs Croatia (Group F)</option>
-            <option value="Morocco_vs_Colombia_GD1">🇲🇦 Morocco vs Colombia (Group G)</option>
-            <option value="Sweden_vs_Curcacao_GD1">🇸🇪 Sweden 4-0 Curaçao (Group H, Jun 13)</option>
-            <option value="USA_vs_Canada_GD1">🇺🇸 USA vs Canada (Group E)</option>
-            <option value="Iran_vs_NewZealand_GD1">🇮🇷 Iran 2-2 New Zealand (Group J, Jun 16)</option>
+            <option value="">Loading matches...</option>
           </select>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
@@ -9065,6 +9054,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     if (id === 'double-admin') loadDoubleOrNothingAdmin();
     if (id === 'wc-scorers') loadAdminWCScorers();
     if (id === 'updates-admin') loadUpdatesAdmin();
+    if (id === 'results') loadTPMatchDropdown();
   };
 
   // ═══ UPDATES PAGE ═══
@@ -9200,6 +9190,29 @@ Use exactly the formation provided. Only use players from the squad lists above.
     }
   };
 
+  async function loadTPMatchDropdown() {
+    const sel = document.getElementById('tp-match-ref');
+    if (!sel || sel.dataset.loaded) return;
+    sel.dataset.loaded = '1';
+    try {
+      const snap = await getDocs(query(collection(db, 'matches'), orderBy('kickoff')));
+      sel.innerHTML = '<option value="">Select match...</option>';
+      snap.forEach(d => {
+        const m = d.data();
+        if (m.status !== 'FINISHED') return;
+        const opt = document.createElement('option');
+        // Build a clean unique ref: HomeTeam_vs_AwayTeam_matchId
+        const ref = (m.homeTeam + '_vs_' + m.awayTeam + '_' + d.id).replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+        opt.value = ref;
+        const score = (m.homeScore !== null && m.awayScore !== null) ? ' ' + m.homeScore + '-' + m.awayScore : '';
+        opt.textContent = (m.homeFlag || '') + ' ' + m.homeTeam + score + ' vs ' + m.awayTeam + (m.awayFlag ? ' ' + m.awayFlag : '') + ' (' + (m.group || '').replace(/_/g,' ') + ')';
+        sel.appendChild(opt);
+      });
+    } catch(e) {
+      sel.innerHTML = '<option value="">Error loading matches</option>';
+    }
+  }
+
   window.loadAwardHistory = async () => {
     const el = document.getElementById('award-history-list');
     if (!el) return;
@@ -9256,15 +9269,17 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
     const ptsPerPicker = (newGoals * 2) + (newAssists * 1) - (newReds * 1);
 
-    // Anti-double protection
+    // Anti-double protection (graceful fallback if rules not set)
     const awardEventId = 'tp_' + normalizeName(playerName).replace(/\s+/g,'_') + '_' + matchRef;
     const awardRef = doc(db, 'awardLog', awardEventId);
-    const alreadyDone = await getDoc(awardRef);
-    if (alreadyDone.exists()) {
-      const when = alreadyDone.data().awardedAt?.toDate?.().toLocaleDateString?.() || 'previously';
-      status.innerHTML = '<span style="color:#EF9F27;">⚠️ Already awarded on ' + when + '. To redo, delete awardLog → ' + awardEventId + ' in Firestore.</span>';
-      return;
-    }
+    try {
+      const alreadyDone = await getDoc(awardRef);
+      if (alreadyDone.exists()) {
+        const when = alreadyDone.data().awardedAt?.toDate?.().toLocaleDateString?.() || 'previously';
+        status.innerHTML = '<span style="color:#EF9F27;">⚠️ Already awarded on ' + when + '. To redo, delete awardLog → ' + awardEventId + ' in Firestore.</span>';
+        return;
+      }
+    } catch(e) { /* awardLog not accessible — proceed without duplicate check */ }
 
     if (!confirm('Award ' + (ptsPerPicker > 0 ? '+' : '') + ptsPerPicker + ' pts to everyone who picked ' + playerName + '?\n⚽ ' + newGoals + ' goals × 2 = +' + (newGoals*2) + '\n👟 ' + newAssists + ' assists × 1 = +' + newAssists + '\n🟥 ' + newReds + ' red cards × 1 = -' + newReds + '\nTotal per picker: ' + ptsPerPicker)) return;
 
@@ -9675,16 +9690,18 @@ Use exactly the formation provided. Only use players from the squad lists above.
     if (!matchId) { status.textContent = '❌ Select a match first'; return; }
     if (!scorerName) { status.textContent = '❌ Enter first scorer name (or "Own Goal")'; return; }
 
-    // Anti-double protection via awardLog
+    // Anti-double protection via awardLog (graceful fallback if rules not set)
     const awardId = 'scorer_' + matchId + '_' + scorerName.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
     const awardRef = doc(db, 'awardLog', awardId);
-    const alreadyDone = await getDoc(awardRef);
-    if (alreadyDone.exists()) {
-      const prev = alreadyDone.data();
-      const when = prev.awardedAt?.toDate?.().toLocaleString?.() || 'previously';
-      status.innerHTML = '<span style="color:#EF9F27;">⚠️ Already awarded on ' + when + ' (' + (prev.awarded||0) + ' players got +' + (prev.pts||2) + ' pts each). To re-run, delete awardLog → ' + awardId + ' in Firestore.</span>';
-      return;
-    }
+    try {
+      const alreadyDone = await getDoc(awardRef);
+      if (alreadyDone.exists()) {
+        const prev = alreadyDone.data();
+        const when = prev.awardedAt?.toDate?.().toLocaleString?.() || 'previously';
+        status.innerHTML = '<span style="color:#EF9F27;">⚠️ Already awarded on ' + when + ' (' + (prev.awarded||0) + ' players got +' + (prev.pts||2) + ' pts each). To re-run, delete awardLog → ' + awardId + ' in Firestore.</span>';
+        return;
+      }
+    } catch(e) { /* awardLog not accessible — proceed without duplicate check */ }
 
     btn.disabled = true;
     status.innerHTML = '⏳ Processing...';
