@@ -1608,6 +1608,14 @@
       </div>
     </div>
 
+    <p class="section-title" style="margin-bottom:0.75rem;">⭐ Tournament Player Picks</p>
+    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1.5rem;">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Who did the group pick as their tournament player?</div>
+      <div id="tp-picks-content">
+        <div style="text-align:center;font-size:13px;color:var(--text-muted);padding:0.5rem;">Loading...</div>
+      </div>
+    </div>
+
     <img src="https://coed-football-2026.vercel.app/logo-full.png" alt="COED&FOOTBALL" style="width:180px; display:block; margin:2rem auto 0; opacity:0.7;">
 
 
@@ -3634,14 +3642,10 @@
       const s = d.data();
       if (!s.name) return;
       const norm = normalizeName(s.name);
-      if (!map[norm]) {
-        map[norm] = { goals: s.goals || 0, assists: s.assists || 0, redCards: s.redCards || 0, name: s.name };
-      } else {
-        // Take max (not sum) — duplicates are same player, keep highest value
-        map[norm].goals = Math.max(map[norm].goals, s.goals || 0);
-        map[norm].assists = Math.max(map[norm].assists, s.assists || 0);
-        map[norm].redCards = Math.max(map[norm].redCards, s.redCards || 0);
-      }
+      if (!map[norm]) map[norm] = { goals: 0, assists: 0, redCards: 0, name: s.name };
+      map[norm].goals = (map[norm].goals || 0) + (s.goals || 0);
+      map[norm].assists = (map[norm].assists || 0) + (s.assists || 0);
+      map[norm].redCards = (map[norm].redCards || 0) + (s.redCards || 0);
     });
     return map;
   }
@@ -7379,6 +7383,55 @@ Use exactly the formation provided. Only use players from the squad lists above.
         </div>`;
     }).join('') + `
       <div style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:8px;">${total} of ${users.length} players have picked a winner · Deadline: June 10</div>`;
+
+    // Load tournament player picks
+    loadTPPicksHome(users);
+  }
+
+  function loadTPPicksHome(users) {
+    const container = document.getElementById('tp-picks-content');
+    if (!container) return;
+
+    const picks = {};
+    users.forEach(u => {
+      if (!u.tournamentPlayer || u.removed) return;
+      const norm = normalizeName(u.tournamentPlayer);
+      if (!picks[norm]) picks[norm] = { name: u.tournamentPlayer, count: 0, pickers: [] };
+      picks[norm].count++;
+      picks[norm].pickers.push(u.nickname || u.displayName);
+    });
+
+    const sorted = Object.values(picks).sort((a,b) => b.count - a.count);
+    const total = sorted.reduce((s, p) => s + p.count, 0);
+
+    if (sorted.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:1rem;font-size:13px;color:var(--text-muted);">No tournament player picks yet.</div>';
+      return;
+    }
+
+    const medals = ['🥇','🥈','🥉'];
+    const maxCount = sorted[0].count;
+    const barColors = ['var(--gold)','#888780','#854F0B','var(--green)'];
+    const rows = sorted.map(function(p, i) {
+      const pct = Math.round(p.count / total * 100);
+      const barW = Math.round(p.count / maxCount * 100);
+      const bg = barColors[i] || 'var(--green)';
+      const fw = i < 3 ? '600' : '400';
+      return '<div style="margin-bottom:10px;">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">'
+        + '<div style="display:flex;align-items:center;gap:6px;">'
+        + '<span style="font-size:14px;">' + (medals[i] || '') + '</span>'
+        + '<span style="font-size:13px;font-weight:' + fw + ';">' + p.name + '</span>'
+        + '</div>'
+        + '<div style="display:flex;align-items:center;gap:8px;">'
+        + '<span style="font-size:11px;color:var(--text-muted);">' + p.pickers.join(', ') + '</span>'
+        + '<span style="font-size:12px;font-weight:700;color:var(--green);min-width:32px;text-align:right;">' + pct + '%</span>'
+        + '</div></div>'
+        + '<div style="height:5px;background:var(--surface2);border-radius:99px;overflow:hidden;">'
+        + '<div style="height:100%;width:' + barW + '%;background:' + bg + ';border-radius:99px;transition:width 0.5s ease;"></div>'
+        + '</div></div>';
+    }).join('');
+    container.innerHTML = rows + '<div style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:8px;">' + total + ' of ' + users.length + ' players have picked a tournament player</div>';
   }
 
   function loadPlayerOfRound(users) {
@@ -9748,18 +9801,6 @@ Use exactly the formation provided. Only use players from the squad lists above.
       }
       await setDoc(doc(db, 'results', matchId), { firstScorer: scorerName }, { merge: true });
       await updateDoc(doc(db, 'matches', matchId), { firstGoalscorer: scorerName });
-
-      // Log to awardLog to prevent future duplicates
-      await setDoc(awardRef, {
-        type: 'firstScorer',
-        matchId,
-        matchTeams: (matchData.homeTeam || '') + ' vs ' + (matchData.awayTeam || ''),
-        scorerName,
-        pts,
-        awarded,
-        winners: winnerNames,
-        awardedAt: serverTimestamp()
-      });
 
       const winnersHtml = winnerNames.length > 0
         ? '<div style="margin-top:6px;font-size:11px;color:var(--text-muted);">Winners: <strong style="color:var(--text);">' + winnerNames.join(', ') + '</strong></div>'
