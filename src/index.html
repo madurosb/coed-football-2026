@@ -2793,7 +2793,22 @@
         <h2>⭐ Award Tournament Player Points</h2>
         <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Award bonus points to users who picked a tournament player that scored goals/assists. +2 per goal, +1 per assist, -1 per red card. Updates <code>wc_scorers</code> and awards to all pickers.</p>
         <div class="form-row"><label>Player name</label><input type="text" id="tp-player-name" placeholder="e.g. Kylian Mbappé" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;"></div>
-        <div class="form-row"><label>Match reference <span style="font-size:11px;color:var(--text-muted);">(unique ID — prevents double awards)</span></label><input type="text" id="tp-match-ref" placeholder="e.g. France_vs_Norway_GD1" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;"></div>
+        <div class="form-row"><label>Match reference <span style="font-size:11px;color:var(--text-muted);">(prevents double awards)</span></label>
+          <select id="tp-match-ref" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;">
+            <option value="">Select match...</option>
+            <option value="France_vs_Belgium_GD1">🇫🇷 France 3-1 Belgium (Group I, Jun 17)</option>
+            <option value="Spain_vs_Brazil_GD1">🇪🇸 Spain vs Brazil (Group A)</option>
+            <option value="Germany_vs_Uruguay_GD1">🇩🇪 Germany vs Uruguay (Group B)</option>
+            <option value="Portugal_vs_Argentina_GD1">🇵🇹 Portugal vs Argentina (Group C)</option>
+            <option value="England_vs_Netherlands_GD1">🏴󠁧󠁢󠁥󠁮󠁧󠁿 England vs Netherlands (Group D)</option>
+            <option value="USA_vs_Mexico_GD1">🇺🇸 USA vs Mexico (Group E)</option>
+            <option value="Japan_vs_Croatia_GD1">🇯🇵 Japan vs Croatia (Group F)</option>
+            <option value="Morocco_vs_Colombia_GD1">🇲🇦 Morocco vs Colombia (Group G)</option>
+            <option value="Sweden_vs_Curcacao_GD1">🇸🇪 Sweden 4-0 Curaçao (Group H, Jun 13)</option>
+            <option value="USA_vs_Canada_GD1">🇺🇸 USA vs Canada (Group E)</option>
+            <option value="Iran_vs_NewZealand_GD1">🇮🇷 Iran 2-2 New Zealand (Group J, Jun 16)</option>
+          </select>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
           <div><label style="font-size:12px;color:var(--text-muted);">⚽ Goals</label><input type="number" id="tp-goals" value="0" min="0" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;"></div>
           <div><label style="font-size:12px;color:var(--text-muted);">👟 Assists</label><input type="number" id="tp-assists" value="0" min="0" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;"></div>
@@ -9182,25 +9197,26 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
   window.awardTournamentPlayerPoints = async () => {
     const playerName = document.getElementById('tp-player-name').value.trim();
+    const matchRef = document.getElementById('tp-match-ref').value.trim();
     const newGoals = parseInt(document.getElementById('tp-goals').value) || 0;
     const newAssists = parseInt(document.getElementById('tp-assists').value) || 0;
     const newReds = parseInt(document.getElementById('tp-reds').value) || 0;
-    const matchRef = document.getElementById('tp-match-ref').value.trim(); // unique ID per award event
     const status = document.getElementById('tp-status');
     const pickersEl = document.getElementById('tp-pickers');
 
     if (!playerName) { status.innerHTML = '<span style="color:#ef4444;">Enter player name.</span>'; return; }
-    if (!matchRef) { status.innerHTML = '<span style="color:#ef4444;">Enter a match reference (e.g. France_vs_Norway_GD1).</span>'; return; }
+    if (!matchRef) { status.innerHTML = '<span style="color:#ef4444;">Select a match reference.</span>'; return; }
     if (newGoals === 0 && newAssists === 0 && newReds === 0) { status.innerHTML = '<span style="color:#ef4444;">Enter at least one stat.</span>'; return; }
 
     const ptsPerPicker = (newGoals * 2) + (newAssists * 1) - (newReds * 1);
 
-    // Check if this exact award event was already processed (anti-double protection)
-    const awardEventId = 'tp_' + normalizeName(playerName).replace(/\s+/g,'_') + '_' + matchRef.replace(/\s+/g,'_');
+    // Anti-double protection
+    const awardEventId = 'tp_' + normalizeName(playerName).replace(/\s+/g,'_') + '_' + matchRef;
     const awardRef = doc(db, 'awardLog', awardEventId);
     const alreadyDone = await getDoc(awardRef);
     if (alreadyDone.exists()) {
-      status.innerHTML = '<span style="color:#EF9F27;">⚠️ This award was already processed on ' + (alreadyDone.data().awardedAt?.toDate?.().toLocaleDateString?.() || 'a previous date') + '. To re-award, delete the log entry in Firestore → awardLog → ' + awardEventId + '</span>';
+      const when = alreadyDone.data().awardedAt?.toDate?.().toLocaleDateString?.() || 'previously';
+      status.innerHTML = '<span style="color:#EF9F27;">⚠️ Already awarded on ' + when + '. To redo, delete awardLog → ' + awardEventId + ' in Firestore.</span>';
       return;
     }
 
@@ -9210,7 +9226,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     pickersEl.innerHTML = '';
 
     try {
-      // 1. Update wc_scorers totals (use normalized key to avoid duplicates)
+      // 1. Update wc_scorers using normalized key
       const normKey = normalizeName(playerName).replace(/\s+/g, '_');
       const scorerRef = doc(db, 'wc_scorers', normKey);
       const scorerSnap = await getDoc(scorerRef);
@@ -9223,7 +9239,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
         updatedAt: serverTimestamp()
       }, { merge: true });
 
-      // 2. Find all pickers — match by normalized name to handle Mbappe/Mbappé
+      // 2. Find pickers using normalized name matching (handles Mbappe/Mbappé)
       const usersSnap = await getDocs(collection(db, 'users'));
       const pickers = [];
       const normInput = normalizeName(playerName);
@@ -9234,13 +9250,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
         }
       });
 
-      if (pickers.length === 0) {
-        await setDoc(awardRef, { playerName, matchRef, ptsPerPicker, pickers: 0, awardedAt: serverTimestamp() });
-        status.innerHTML = '<span style="color:var(--green);">✅ wc_scorers updated. Nobody picked ' + playerName + ' as tournament player.</span>';
-        return;
-      }
-
-      // 3. Award points to each picker
+      // 3. Award points
       for (const picker of pickers) {
         const fresh = await getDoc(picker.ref);
         await updateDoc(picker.ref, {
@@ -9249,7 +9259,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
         });
       }
 
-      // 4. Log the award to prevent duplicates
+      // 4. Log to prevent duplicates
       await setDoc(awardRef, {
         playerName, matchRef, ptsPerPicker,
         pickers: pickers.map(p => p.data.nickname || p.data.displayName),
@@ -9257,10 +9267,9 @@ Use exactly the formation provided. Only use players from the squad lists above.
       });
 
       const names = pickers.map(p => p.data.nickname || p.data.displayName).join(', ');
-      status.innerHTML = '<span style="color:var(--green);">✅ Done! Awarded ' + (ptsPerPicker > 0 ? '+' : '') + ptsPerPicker + ' pts to ' + pickers.length + ' picker' + (pickers.length !== 1 ? 's' : '') + '.</span>';
-      pickersEl.innerHTML = '<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Pickers: <strong style="color:var(--text);">' + names + '</strong></div>';
+      status.innerHTML = '<span style="color:var(--green);">✅ Awarded ' + (ptsPerPicker > 0 ? '+' : '') + ptsPerPicker + ' pts to ' + pickers.length + ' picker' + (pickers.length !== 1 ? 's' : '') + '.</span>';
+      pickersEl.innerHTML = pickers.length > 0 ? '<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Pickers: <strong style="color:var(--text);">' + names + '</strong></div>' : '<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Nobody picked ' + playerName + ' as tournament player.</div>';
 
-      // Reset inputs
       document.getElementById('tp-goals').value = '0';
       document.getElementById('tp-assists').value = '0';
       document.getElementById('tp-reds').value = '0';
@@ -9619,16 +9628,6 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const btn = document.getElementById('scorer-only-btn');
     if (!matchId) { status.textContent = '❌ Select a match first'; return; }
     if (!scorerName) { status.textContent = '❌ Enter first scorer name (or "Own Goal")'; return; }
-
-    // Anti-double protection
-    const scorerAwardId = 'scorer_' + matchId + '_' + scorerName.replace(/\s+/g,'_');
-    const scorerAwardRef = doc(db, 'awardLog', scorerAwardId);
-    const scorerAlreadyDone = await getDoc(scorerAwardRef);
-    if (scorerAlreadyDone.exists()) {
-      status.innerHTML = '<span style="color:#EF9F27;">⚠️ First scorer points for ' + scorerName + ' were already awarded on ' + (scorerAlreadyDone.data().awardedAt?.toDate?.().toLocaleDateString?.() || 'a previous date') + '. To re-award, delete awardLog → ' + scorerAwardId + ' in Firestore.</span>';
-      return;
-    }
-
     btn.disabled = true;
     status.innerHTML = '⏳ Processing...';
     try {
@@ -9658,7 +9657,6 @@ Use exactly the formation provided. Only use players from the squad lists above.
       }
       await setDoc(doc(db, 'results', matchId), { firstScorer: scorerName }, { merge: true });
       await updateDoc(doc(db, 'matches', matchId), { firstGoalscorer: scorerName });
-      await setDoc(scorerAwardRef, { matchId, scorerName, awarded, awardedAt: serverTimestamp() });
       const winnerNames = [];
       for (const predDoc of predsSnap.docs) {
         const pred = predDoc.data();
