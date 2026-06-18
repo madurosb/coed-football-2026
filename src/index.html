@@ -1915,9 +1915,9 @@
       <div style="background:linear-gradient(135deg,var(--badge-blue-bg),var(--badge-blue-bg));border-radius:10px;padding:0.75rem 1rem;margin-top:0.75rem;border:1px solid #7C3AED;">
         <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:#5B21B6;">🎰 Double or Nothing — once per week</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12px;color:#6D28D9;">
-          <div>✅ Correct result</div><div style="font-weight:600;">result + exact pts ×2</div>
-          <div>❌ Wrong result</div><div style="font-weight:600;">−1 pt × stage (from total)</div>
-          <div>⚽ First scorer</div><div style="font-weight:600;">always safe either way</div>
+          <div>✅ Correct result</div><div style="font-weight:600;">ALL pts ×2 (result + scorer)</div>
+          <div>❌ Wrong result</div><div style="font-weight:600;">−1 pt. Everything wiped.</div>
+          <div>⚽ First scorer</div><div style="font-weight:600;">also doubled if correct ×2</div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;font-size:11px;color:#a78bfa;margin-top:8px;text-align:center;">
           <div style="background:rgba(124,58,237,0.08);border-radius:6px;padding:4px;">Group<br><strong>−1</strong></div>
@@ -1969,7 +1969,7 @@
       <div class="rule-row">
         <div>
           <div class="rule-name">🎰 Double or Nothing</div>
-          <div class="rule-desc">Once per week, pick any match and go Double or Nothing. Correct = your result and exact score points for that match are doubled. Wrong = those same points are deducted from your total. First scorer points are always safe either way.</div>
+          <div class="rule-desc">Once per week, pick any match and go Double or Nothing. Correct outcome = <strong>ALL points ×2</strong> (result, exact score, and first scorer). Wrong outcome = <strong>−1 point</strong>, full stop. Everything else is wiped. High risk, high reward.</div>
         </div>
       </div>
       <div class="rule-row">
@@ -2117,7 +2117,7 @@
             <div class="htp-icon">🎰</div>
             <div>
               <div class="htp-title">Double or Nothing — פעם בשבוע</div>
-              <div class="htp-desc">תוצאה נכונה = ×2. תוצאה שגויה = נקודות נגרעות. נקודות המבקיע תמיד בטוחות.</div>
+              <div class="htp-desc">תוצאה נכונה = <strong>כל הנקודות ×2</strong> (תוצאה + מדויק + מבקיע). תוצאה שגויה = <strong>−1 נקודה בלבד</strong>. הכל נמחק, לא משנה אם פגעת במבקיע.</div>
             </div>
           </div>
         </div>
@@ -2297,7 +2297,7 @@
           <div class="htp-icon">🎰</div>
           <div>
             <div class="htp-title">Double or Nothing <span class="htp-badge" style="background:rgba(124,58,237,0.2);color:#a78bfa;border:1px solid rgba(124,58,237,0.3);">ONCE PER WEEK</span></div>
-            <div class="htp-desc">Once per tournament week, pick one match to go double or nothing. Correct result = <strong>×2 ALL points</strong> (result + first scorer). Wrong result = <strong>all those points are deducted</strong>. High risk, high reward. For the mentally unhinged.</div>
+            <div class="htp-desc">Once per tournament week, pick one match to go double or nothing. Correct outcome = <strong>×2 ALL points</strong> (result + exact score + first scorer). Wrong outcome = <strong>−1 point, everything wiped</strong> — even if you nailed the first scorer. High risk, high reward. For the mentally unhinged.</div>
           </div>
         </div>
       </div>
@@ -2471,7 +2471,7 @@
           <div class="htp-icon">🎰</div>
           <div>
             <div class="htp-title">Double or Nothing strategy</div>
-            <div class="htp-desc">Don't use it on matches you're unsure about. The result points are deducted if wrong — that can erase gains from 2-3 correct predictions. Use it on mismatches where the outcome feels certain.</div>
+            <div class="htp-desc">Don't use it on matches you're unsure about. If you're wrong, you lose <strong>−1 point</strong> and all other points from that match disappear — even first scorer points. Use it only on matches where the outcome feels like a certainty.</div>
           </div>
         </div>
       </div>
@@ -3604,8 +3604,7 @@
     if (hasJoker && correctOutcome) pts *= 2;
     // DON: doubles all if correct, penalises -1 if wrong (scorer pts safe)
     if (hasDon) {
-      const penalty = 1 * multiplier;
-      pts = correctOutcome ? pts * 2 : scorerPts - penalty;
+      pts = correctOutcome ? pts * 2 : -1 * multiplier;
     }
     return pts;
   }
@@ -3737,24 +3736,18 @@
           if (predOutcome === actualOutcome) pts += 1 * multiplier;
           if (pred.homeScore === homeScore && pred.awayScore === awayScore) { pts += 3 * multiplier; exact = 1; }
         }
-        const normScR = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-        const scorerTargetsR = (firstScorer||'').split('/').map(s => normScR(s));
-        const predIsOGR = (pred.firstScorer||'').toLowerCase().includes('own goal');
-        const scorerMatchR = firstScorer && pred.firstScorer && (
-          scorerTargetsR.some(t => t === normScR(pred.firstScorer)) ||
-          (predIsOGR && scorerTargetsR.some(t => t.includes('own goal')))
-        );
-        const scorerPtsR = scorerMatchR ? 2 * multiplier : 0;
-        pts += scorerPtsR;
+        const normScSR1 = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+        const scorerTargetsSR1 = (firstScorer||'').split('/').map(s => normScSR1(s));
+        const predIsOGSR1 = (pred.firstScorer||'').toLowerCase().includes('own goal');
+        if (firstScorer && pred.firstScorer && (scorerTargetsSR1.some(t => t === normScSR1(pred.firstScorer)) || (predIsOGSR1 && scorerTargetsSR1.some(t => t.includes('own goal'))))) pts += 2 * multiplier;
         // Joker
         const jokerSnap = await getDocs(query(collection(db, 'jokerCards'), where('matchId','==',matchId), where('userId','==',pred.userId)));
         if (!jokerSnap.empty) pts *= 2;
-        // DON — doubles all if correct, scorer pts safe if wrong
+        // DON
         const donSnap = await getDocs(query(collection(db, 'donOptIns'), where('matchId','==',matchId), where('userId','==',pred.userId)));
         if (!donSnap.empty) {
           const isCorrect = predOutcome === actualOutcome;
-          const penalty = 1 * multiplier;
-          pts = isCorrect ? pts * 2 : scorerPtsR - penalty;
+          pts = isCorrect ? pts * 2 : -1 * multiplier;
         }
         const userRef = doc(db, 'users', pred.userId);
         const userSnap = await getDoc(userRef);
@@ -3912,14 +3905,9 @@
       pts += scorerPts;
       // Joker: doubles total pts when outcome correct
       if (hasJoker && correctOutcome) pts *= 2;
-      // DON: doubles ALL pts if correct, penalises (-1) if wrong (scorer pts safe)
+      // DON: doubles ALL pts if correct, -1 if wrong outcome
       if (hasDon) {
-        const penalty = 1 * multiplier;
-        if (correctOutcome) {
-          pts = pts * 2;
-        } else {
-          pts = scorerPts - penalty;
-        }
+        pts = correctOutcome ? pts * 2 : -1 * multiplier;
       }
       return pts;
     }
@@ -9850,14 +9838,10 @@ Use exactly the formation provided. Only use players from the squad lists above.
           if (actualResult === predResult) pts += 1 * multiplier;
           if (predHome === homeScore && predAway === awayScore) { pts += 3 * multiplier; exact = 1; }
         }
-        const normScMain = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-        const scorerTargetsMain = (firstScorer||'').split('/').map(s => normScMain(s));
-        const predIsOGMain = (pred.data.firstScorer||'').toLowerCase().includes('own goal');
-        const scorerMatchMain = firstScorer && pred.data.firstScorer && (
-          scorerTargetsMain.some(t => t === normScMain(pred.data.firstScorer)) ||
-          (predIsOGMain && scorerTargetsMain.some(t => t.includes('own goal')))
-        );
-        if (scorerMatchMain) { pts += 2 * multiplier; bonus += 1; }
+        const normScSR2 = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+        const scorerTargetsSR2 = (firstScorer||'').split('/').map(s => normScSR2(s));
+        const predIsOGSR2 = (pred.data.firstScorer||'').toLowerCase().includes('own goal');
+        if (firstScorer && pred.data.firstScorer && (scorerTargetsSR2.some(t => t === normScSR2(pred.data.firstScorer)) || (predIsOGSR2 && scorerTargetsSR2.some(t => t.includes('own goal'))))) { pts += 2 * multiplier; bonus += 1; }
 
         // Tournament player scoring: goals x2, assists x1, red card -1
         const tp = userTourneyPlayer[pred.data.userId];
@@ -9874,22 +9858,13 @@ Use exactly the formation provided. Only use players from the squad lists above.
         const jokerSnap = await getDocs(query(collection(db, 'jokerCards'), where('matchId', '==', matchId), where('userId', '==', pred.data.userId)));
         if (!jokerSnap.empty) pts *= 2;
 
-        // DON — doubles all if correct, scorer pts safe if wrong
+        // Double or Nothing — affects ONLY result+exact pts, not first scorer
         const donSnap = await getDocs(query(collection(db, 'donOptIns'), where('matchId', '==', matchId), where('userId', '==', pred.data.userId)));
         if (!donSnap.empty) {
           const actualResultDON = homeScore > awayScore ? 'H' : homeScore < awayScore ? 'A' : 'D';
           const predResultDON = pred.data.homeScore > pred.data.awayScore ? 'H' : pred.data.homeScore < pred.data.awayScore ? 'A' : 'D';
           const isCorrect = actualResultDON === predResultDON;
-          const normScDON = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-          const scorerTargetsDON = (firstScorer||'').split('/').map(s => normScDON(s));
-          const predIsOGDON = (pred.data.firstScorer||'').toLowerCase().includes('own goal');
-          const scorerMatchDON = firstScorer && pred.data.firstScorer && (
-            scorerTargetsDON.some(t => t === normScDON(pred.data.firstScorer)) ||
-            (predIsOGDON && scorerTargetsDON.some(t => t.includes('own goal')))
-          );
-          const scorerPtsDON = scorerMatchDON ? 2 * multiplier : 0;
-          const penalty = 1 * multiplier;
-          pts = isCorrect ? pts * 2 : scorerPtsDON - penalty;
+          pts = isCorrect ? pts * 2 : -1 * multiplier;
         }
 
         const userRef = doc(db, 'users', pred.data.userId);
