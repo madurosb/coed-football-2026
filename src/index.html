@@ -3573,6 +3573,40 @@
       });
   }
 
+  function calcPredPts(pred, m, hasJoker, hasDon) {
+    if (!m || m.homeScore === null || m.homeScore === undefined || m.status !== 'FINISHED') return 0;
+    const grp = (m.group || '').toUpperCase();
+    const isFinal = grp.includes('FINAL') && !grp.includes('QUARTER') && !grp.includes('SEMI');
+    const isSemi = grp.includes('SEMI');
+    const isQuarter = grp.includes('QUARTER');
+    const isR16 = grp.includes('16') || grp.includes('ROUND_OF_16') || grp.includes('32');
+    const multiplier = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
+    const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
+    const predicted = pred.homeScore > pred.awayScore ? 'H' : pred.homeScore < pred.awayScore ? 'A' : 'D';
+    const correctOutcome = actual === predicted;
+    const exactScore = pred.homeScore === m.homeScore && pred.awayScore === m.awayScore;
+    let pts = 0;
+    if (isFinal) {
+      if (exactScore) pts = 20;
+      else if (correctOutcome) pts = 10;
+    } else {
+      if (correctOutcome) pts += 1 * multiplier;
+      if (exactScore) pts += 3 * multiplier;
+    }
+    const normSc2 = s => (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+    const scorerTargets = (m.firstGoalscorer || '').split('/').map(s => normSc2(s));
+    const predIsOG = (pred.firstScorer || '').toLowerCase().includes('own goal') || (pred.firstScorer || '').toLowerCase() === 'og';
+    const scorerMatch = scorerTargets.some(t => t === normSc2(pred.firstScorer)) ||
+      (predIsOG && scorerTargets.some(t => t.includes('own goal') || t === 'og'));
+    if (m.firstGoalscorer && pred.firstScorer && scorerMatch) pts += 2 * multiplier;
+    if (hasJoker && correctOutcome) pts *= 2;
+    if (hasDon) {
+      const penalty = isFinal ? 10 : 1 * multiplier;
+      pts = correctOutcome ? pts * 2 : -penalty;
+    }
+    return pts;
+  }
+
   window.loadPerUserBreakdown = async () => {
     const uid = document.getElementById('peruser-select').value;
     const container = document.getElementById('peruser-content');
@@ -3834,44 +3868,7 @@
       predsByMatch[p.matchId].push(p);
     });
 
-    // Helper: calculate pts for one prediction
-    function calcPredPts(pred, m, hasJoker, hasDon) {
-      if (!m || m.homeScore === null || m.homeScore === undefined || m.status !== 'FINISHED') return 0;
-      const grp = (m.group || '').toUpperCase();
-      const isFinal = grp.includes('FINAL') && !grp.includes('QUARTER') && !grp.includes('SEMI');
-      const isSemi = grp.includes('SEMI');
-      const isQuarter = grp.includes('QUARTER');
-      const isR16 = grp.includes('16') || grp.includes('ROUND_OF_16') || grp.includes('32');
-      const multiplier = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
-      const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
-      const predicted = pred.homeScore > pred.awayScore ? 'H' : pred.homeScore < pred.awayScore ? 'A' : 'D';
-      const correctOutcome = actual === predicted;
-      const exactScore = pred.homeScore === m.homeScore && pred.awayScore === m.awayScore;
-      let pts = 0;
-      if (isFinal) {
-        if (exactScore) pts = 20;
-        else if (correctOutcome) pts = 10;
-      } else {
-        // Outcome: +1. Exact score: +1+3=+4 total (outcome + exact bonus)
-        if (correctOutcome) pts += 1 * multiplier;
-        if (exactScore) pts += 3 * multiplier;
-      }
-      const normSc2 = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-      // Support multiple scorers in same match (e.g. "Haaland / Own Goal")
-      const scorerTargets = (m.firstGoalscorer || '').split('/').map(s => normSc2(s));
-      const predIsOG = (pred.firstScorer || '').toLowerCase().includes('own goal') || (pred.firstScorer || '').toLowerCase() === 'og';
-      const scorerMatch = scorerTargets.some(t => t === normSc2(pred.firstScorer)) ||
-        (predIsOG && scorerTargets.some(t => t.includes('own goal') || t === 'og'));
-      if (m.firstGoalscorer && pred.firstScorer && scorerMatch) pts += 2 * multiplier;
-      // Joker: doubles total pts (from jokerCards collection, not pred.joker)
-      if (hasJoker && correctOutcome) pts *= 2;
-      // DON: doubles ALL pts (including scorer) if correct, penalises if wrong
-      if (hasDon) {
-        const penalty = isFinal ? 10 : 1 * multiplier;
-        pts = correctOutcome ? pts * 2 : -penalty;
-      }
-      return pts;
-    }
+    // calcPredPts is defined at module scope below
 
     // ── SUMMARY TAB ──────────────────────────────────────────────────
     let html = `
