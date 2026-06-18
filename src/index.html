@@ -3618,7 +3618,6 @@
     const matches = window._svMatchesSnap;
     const jokerVerMap = window._svJokerMap;
     const donVerSet = window._svDonSet;
-    const wcNormMap = window._svWcNormMap || {};
     if (!users || !matches) { container.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">Click Refresh first.</div>'; return; }
     container.innerHTML = '<div style="font-size:13px;color:var(--text-muted);">Loading...</div>';
     const u = users[uid];
@@ -3653,18 +3652,6 @@
       if (hasD) flags.push(correct ? '🎰×2' : '🎰-1');
       rows.push({ match: (m.homeTeam||'') + ' ' + m.homeScore + '-' + m.awayScore + ' ' + (m.awayTeam||''), pred: pred.homeScore + '-' + pred.awayScore, scorer: pred.firstScorer || '—', flags: flags.join(' '), pts });
     });
-    // Add tournament player pts to calcTotal
-    let tpCalcPts = 0;
-    let tpLabel = '';
-    if (u.tournamentPlayer) {
-      const tpData = wcNormMap[normalizeName(u.tournamentPlayer)];
-      if (tpData) {
-        tpCalcPts = (tpData.goals || 0) * 2 + (tpData.assists || 0) - (tpData.redCards || 0);
-        tpLabel = u.tournamentPlayer + ': ' + (tpData.goals||0) + '⚽×2 + ' + (tpData.assists||0) + '👟×1 = +' + tpCalcPts;
-        calcTotal += tpCalcPts;
-      }
-    }
-
     rows.sort((a,b) => b.pts - a.pts);
     const stored = u.points || 0;
     const diff = stored - calcTotal;
@@ -3686,7 +3673,6 @@
         + '<div style="font-size:11px;">' + r.flags + '</div>'
         + '<div style="text-align:right;font-weight:700;color:' + (r.pts > 0 ? 'var(--green)' : r.pts < 0 ? '#E24B4A' : 'var(--text-muted)') + ';">' + (r.pts > 0 ? '+' : '') + r.pts + '</div>'
         + '</div>').join('')
-      + (tpLabel ? '<div style="padding:5px 0;font-size:12px;color:var(--green);border-top:0.5px solid var(--border);margin-top:4px;">⭐ TP: ' + tpLabel + '</div>' : '')
       + '<div style="padding:8px 0;font-size:13px;font-weight:700;text-align:right;border-top:1px solid var(--border);margin-top:4px;">Total (CALC): ' + calcTotal + '</div>';
   };
 
@@ -3853,13 +3839,12 @@
     container.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div>';
     if (perMatchContainer) perMatchContainer.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div>';
 
-    const [usersSnap, matchesSnap, predsSnap, jokerVerSnap, donVerSnap, wcScorersSnap] = await Promise.all([
+    const [usersSnap, matchesSnap, predsSnap, jokerVerSnap, donVerSnap] = await Promise.all([
       getDocs(collection(db, 'users')),
       getDocs(collection(db, 'matches')),
       getDocs(collection(db, 'predictions')),
       getDocs(collection(db, 'jokerCards')),
-      getDocs(collection(db, 'donOptIns')),
-      getDocs(collection(db, 'wc_scorers')).catch(() => ({ forEach: () => {} }))
+      getDocs(collection(db, 'donOptIns'))
     ]);
 
     // Build joker map: userId → matchId
@@ -3872,10 +3857,6 @@
     const users = {}, matches = {}, userPreds = {}, predsByMatch = {};
     usersSnap.forEach(d => { users[d.id] = d.data(); });
     matchesSnap.forEach(d => { matches[d.id] = d.data(); });
-    // Build wc_scorers map (normalized, goals/assists/reds)
-    const wcNormMap = buildNormalizedScorersMap(wcScorersSnap);
-    window._svWcNormMap = wcNormMap;
-
     // Store globally for Per User tab
     window._svUsersSnap = users;
     window._svMatchesSnap = matches;
@@ -3955,15 +3936,6 @@
         const hasJ = jokerVerMap[uid] === pred.matchId;
         const hasD = donVerSet.has(uid + '_' + pred.matchId);
         calcPts += calcPredPts(pred, matches[pred.matchId], hasJ, hasD);
-      }
-      // Add tournament player points from wc_scorers
-      if (u.tournamentPlayer) {
-        const tpData = wcNormMap[normalizeName(u.tournamentPlayer)];
-        if (tpData) {
-          calcPts += (tpData.goals || 0) * 2;
-          calcPts += (tpData.assists || 0) * 1;
-          calcPts -= (tpData.redCards || 0) * 1;
-        }
       }
 
       const stored = u.points || 0;
@@ -9994,20 +9966,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
         ? existingScorer + ' / ' + scorerName
         : scorerName;
       await updateDoc(matchDocRef, { firstGoalscorer: newScorer });
-      // Update wc_scorers table so scorer appears in Standings → Scorers tab
-      if (scorerName && scorerName !== 'Own Goal') {
-        const scorerCountry = document.getElementById('scorer-only-country')?.value?.trim() || '';
-        const wcRef = doc(db, 'wc_scorers', normSc(scorerName).replace(/\s+/g,'_'));
-        const wcSnap = await getDoc(wcRef);
-        const existing = wcSnap.exists() ? wcSnap.data() : { goals: 0 };
-        await setDoc(wcRef, {
-          name: scorerName,
-          country: scorerCountry || existing.country || '',
-          goals: (existing.goals || 0) + 1,
-          assists: existing.assists || 0,
-          updatedAt: serverTimestamp()
-        }, { merge: true });
-      }
+      // Note: wc_scorers is NOT updated here — first scorer ≠ tournament player goals
 
       const winnersHtml = winnerNames.length > 0
         ? '<div style="margin-top:6px;font-size:11px;color:var(--text-muted);">Winners: <strong style="color:var(--text);">' + winnerNames.join(', ') + '</strong></div>'
