@@ -1,0 +1,285 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//COED Football Mundial 2026//TP Reminder//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:COED Mundial 2026 - TP Reminders
+X-WR-TIMEZONE:Asia/Jerusalem
+
+BEGIN:VEVENT
+UID:brazil-haiti-20260620@coedworldcup
+DTSTART;TZID=Asia/Jerusalem:20260620T040000
+DTEND;TZID=Asia/Jerusalem:20260620T050000
+SUMMARY:🚨 TP ALERT - Brazil vs Haiti
+DESCRIPTION:Today's match includes a Tournament Player!\n\n🇧🇷 BRAZIL:\n⭐ Raphinha\n→ Check after the match: goals / assists / red cards\n\nUpdate at: coedworldcup.me
+LOCATION:Philadelphia Stadium
+BEGIN:VALARM
+TRIGGER:-PT90M
+ACTION:DISPLAY
+DESCRIPTION:🚨 TP MATCH - Brazil vs Haiti | Watch: Raphinha (🇧🇷) — goals / assists / red cards
+END:VALARM
+END:VEVENT
+
+BEGIN:VEVENT
+UID:netherlands-sweden-20260620@coedworldcup
+DTSTART;TZID=Asia/Jerusalem:20260620T200000
+DTEND;TZID=Asia/Jerusalem:20260620T210000
+SUMMARY:🚨 TP ALERT - Netherlands vs Sweden
+DESCRIPTION:Today's match includes a Tournament Player!\n\n🇳🇱 NETHERLANDS:\n⭐ Cody Gakpo\n→ Check after the match: goals / assists / red cards\n\nUpdate at: coedworldcup.me
+LOCATION:Houston Stadium
+BEGIN:VALARM
+TRIGGER:-PT90M
+ACTION:DISPLAY
+DESCRIPTION:🚨 TP MATCH - Netherlands vs Sweden | Watch: Cody Gakpo (🇳🇱) — goals / assists / red cards
+END:VALARM
+END:VEVENT
+
+BEGIN:VEVENT
+UID:spain-saudiarabia-20260621@coedworldcup
+DTSTART;TZID=Asia/Jerusalem:20260621T190000
+DTEND;TZID=Asia/Jerusalem:20260621T200000
+SUMMARY:🚨 TP ALERT - Spain vs Saudi Arabia
+DESCRIPTION:Today's match includes a Tournament Player!\n\n🇪🇸 SPAIN:\n⭐ Lamine Yamal\n→ Check after the match: goals / assists / red cards\n\nUpdate at: coedworldcup.me
+LOCATION:Atlanta Stadium
+BEGIN:VALARM
+TRIGGER:-PT90M
+ACTION:DISPLAY
+DESCRIPTION:🚨 TP MATCH - Spain vs Saudi Arabia | Watch: Lamine Yamal (🇪🇸) — goals / assists / red cards
+END:VALARM
+END:VEVENT
+
+BEGIN:VEVENT
+UID:argentina-austria-20260622@coedworldcup
+DTSTART;TZID=Asia/Jerusalem:20260622T200000
+DTEND;TZID=Asia/Jerusalem:20260622T210000
+SUMMARY:🚨 TP ALERT - Argentina vs Austria
+DESCRIPTION:Today's match includes a Tournament Player!\n\n🇦🇷 ARGENTINA:\n⭐ Lionel Messi\n→ Check after the match: goals / assists / red cards\n\nUpdate at: coedworldcup.me
+LOCATION:Dallas Stadium
+BEGIN:VALARM
+TRIGGER:-PT90M
+ACTION:DISPLAY
+DESCRIPTION:🚨 TP MATCH - Argentina vs Austria | Watch: Lionel Messi (🇦🇷) — goals / assists / red cards
+END:VALARM
+END:VEVENT
+
+BEGIN:VEVENT
+UID:france-iraq-20260622@coedworldcup
+DTSTART;TZID=Asia/Jerusalem:20260623T000000
+DTEND;TZID=Asia/Jerusalem:20260623T010000
+SUMMARY:🚨 TP ALERT - France vs Iraq
+DESCRIPTION:Today's match includes Tournament Players!\n\n🇫🇷 FRANCE:\n⭐ Kylian Mbappé\n⭐ Michael Olise\n⭐ Ousmane Dembélé\n→ Check after the match: goals / assists / red cards\n\nUpdate at: coedworldcup.me
+LOCATION:Philadelphia Stadium
+BEGIN:VALARM
+TRIGGER:-PT90M
+ACTION:DISPLAY
+DESCRIPTION:🚨 TP MATCH - France vs Iraq | Watch: Mbappé / Olise / Dembélé (🇫🇷) — goals / assists / red cards
+END:VALARM
+END:VEVENT
+
+BEGIN:VEVENT
+UID:norway-senegal-20260622@coedworldcup
+DTSTART;TZID=Asia/Jerusalem:20260623T030000
+DTEND;TZID=Asia/Jerusalem:20260623T040000
+SUMMARY:🚨 TP ALERT - Norway vs Senegal
+DESCRIPTION:Today's match includes a Tournament Player!\n\n🇳🇴 NORWAY:\n⭐ Erling Haaland\n→ Check after the match: goals / assists / red cards\n\nUpdate at: coedworldcup.me
+LOCATION:New York New Jersey Stadium
+BEGIN:VALARM
+TRIGGER:-PT90M
+ACTION:DISPLAY
+DESCRIPTION:🚨 TP MATCH - Norway vs Senegal | Watch: Erling Haaland (🇳🇴) — goals / assists / red cards
+END:VALARM
+END:VEVENT
+
+BEGIN:VEVENT
+UID:portugal-uzbekistan-20260623@coedworldcup
+DTSTART;TZID=Asia/Jerusalem:20260623T200000
+DTEND;TZID=Asia/Jerusalem:20260623T210000
+SUMMARY:🚨 TP ALERT - Portugal vs Uzbekistan
+DESCRIPTION:Today's match includes Tournament Players!\n\n🇵🇹 PORTUGAL:\n⭐ Bruno Fernandes\n⭐ Cristiano Ronaldo\n→ Check after the match: goals / assists / red cards\n\nUpdate at: coedworldcup.me
+LOCATION:Houston Stadium
+BEGIN:VALARM
+TRIGGER:-PT90M
+ACTION:DISPLAY
+DESCRIPTION:🚨 TP MATCH - Portugal vs Uzbekistan | Watch: Bruno Fernandes / Ronaldo (🇵🇹) — goals / assists / red cards
+END:VALARM
+END:VEVENT
+
+BEGIN:VEVENT
+UID:england-ghana-20260623@coedworldcup
+DTSTART;TZID=Asia/Jerusalem:20260623T230000
+DTEND;TZID=Asia/Jerusalem:20260624T000000
+SUMMARY:🚨 TP ALERT - England vs Ghana
+DESCRIPTION:Today's match includes a Tournament Player!\n\n🏴󠁧󠁢󠁥󠁮󠁧󠁿 ENGLAND:\n⭐ Harry Kane\n→ Check after the match: goals / assists / red cards\n\nUpdate at: coedworldcup.me
+LOCATION:Boston Stadium
+BEGIN:VALARM
+TRIGGER:-PT90M
+ACTION:DISPLAY
+DESCRIPTION:🚨 TP MATCH - England vs Ghana | Watch: Harry Kane (🏴󠁧󠁢󠁥󠁮󠁧󠁿) — goals / assists / red cards
+END:VALARM
+END:VEVENT
+
+BEGIN:VEVENT
+UID:scotland-brazil-20260624@coedworldcup
+DTSTART;TZID=Asia/Jerusalem:20260625T040000
+DTEND;TZID=Asia/Jerusalem:20260625T050000
+SUMMARY:🚨 TP ALERT - Scotland vs Brazil
+DESCRIPTION:Today's match includes a Tournament Player!\n\n🇧🇷 BRAZIL:\n⭐ Raphinha\n→ Check after the match: goals / assists / red cards\n\nUpdate at: coedworldcup.me
+LOCATION:Miami Stadium
+BEGIN:VALARM
+TRIGGER:-PT90M
+ACTION:DISPLAY
+DESCRIPTION:🚨 TP MATCH - Scotland vs Brazil | Watch: Raphinha (🇧🇷) — goals / assists / red cards
+END:VALARM
+END:VEVENT
+
+BEGIN:VEVENT
+UID:spain-uruguay-20260625@coedworldcup
+DTSTART;TZID=Asia/Jerusalem:20260626T030000
+DTEND;TZID=Asia/Jerusalem:20260626T040000
+SUMMARY:🚨 TP ALERT - Spain vs Uruguay
+DESCRIPTION:Today's match includes a Tournament Player!\n\n🇪🇸 SPAIN:\n⭐ Lamine Yamal\n→ Check after the match: goals / assists / red cards\n\nUpdate at: coedworldcup.me
+LOCATION:Guadalajara Stadium
+BEGIN:VALARM
+TRIGGER:-PT90M
+ACTION:DISPLAY
+DESCRIPTION:🚨 TP MATCH - Spain vs Uruguay | Watch: Lamine Yamal (🇪🇸) — goals / assists / red cards
+END:VALARM
+END:VEVENT
+
+BEGIN:VEVENT
+UID:norway-france-20260626@coedworldcup
+DTSTART;TZID=Asia/Jerusalem:20260626T220000
+DTEND;TZID=Asia/Jerusalem:20260626T230000
+SUMMARY:🚨 TP ALERT x2 - Norway vs France 🔥
+DESCRIPTION:DOUBLE TP MATCH - Two teams with Tournament Players!\n\n🇳🇴 NORWAY:\n⭐ Erling Haaland\n\n🇫🇷 FRANCE:\n⭐ Kylian Mbappé\n⭐ Michael Olise\n⭐ Ousmane Dembélé\n\n→ Check after the match: goals / assists / red cards for ALL of them\n\nUpdate at: coedworldcup.me
+LOCATION:Boston Stadium
+BEGIN:VALARM
+TRIGGER:-PT90M
+ACTION:DISPLAY
+DESCRIPTION:🚨 DOUBLE TP MATCH - Norway vs France | Watch: Haaland (🇳🇴) + Mbappé / Olise / Dembélé (🇫🇷)
+END:VALARM
+END:VEVENT
+
+BEGIN:VEVENT
+UID:panama-england-20260627@coedworldcup
+DTSTART;TZID=Asia/Jerusalem:20260628T020000
+DTEND;TZID=Asia/Jerusalem:20260628T030000
+SUMMARY:🚨 TP ALERT - Panama vs England
+DESCRIPTION:Today's match includes a Tournament Player!\n\n🏴󠁧󠁢󠁥󠁮󠁧󠁿 ENGLAND:\n⭐ Harry Kane\n→ Check after the match: goals / assists / red cards\n\nUpdate at: coedworldcup.me
+LOCATION:New York New Jersey Stadium
+BEGIN:VALARM
+TRIGGER:-PT90M
+ACTION:DISPLAY
+DESCRIPTION:🚨 TP MATCH - Panama vs England | Watch: Harry Kane (🏴󠁧󠁢󠁥󠁮󠁧󠁿) — goals / assists / red cards
+END:VALARM
+END:VEVENT
+
+BEGIN:VEVENT
+UID:colombia-portugal-20260627@coedworldcup
+DTSTART;TZID=Asia/Jerusalem:20260628T025000
+DTEND;TZID=Asia/Jerusalem:20260628T035000
+SUMMARY:🚨 TP ALERT - Colombia vs Portugal
+DESCRIPTION:Today's match includes Tournament Players!\n\n🇵🇹 PORTUGAL:\n⭐ Bruno Fernandes\n⭐ Cristiano Ronaldo\n→ Check after the match: goals / assists / red cards\n\nUpdate at: coedworldcup.me
+LOCATION:Miami Stadium
+BEGIN:VALARM
+TRIGGER:-PT90M
+ACTION:DISPLAY
+DESCRIPTION:🚨 TP MATCH - Colombia vs Portugal | Watch: Bruno Fernandes / Ronaldo (🇵🇹) — goals / assists / red cards
+END:VALARM
+END:VEVENT
+
+BEGIN:VEVENT
+UID:tunisia-netherlands-20260627@coedworldcup
+DTSTART;TZID=Asia/Jerusalem:20260628T040000
+DTEND;TZID=Asia/Jerusalem:20260628T050000
+SUMMARY:🚨 TP ALERT - Tunisia vs Netherlands
+DESCRIPTION:Today's match includes a Tournament Player!\n\n🇳🇱 NETHERLANDS:\n⭐ Cody Gakpo\n→ Check after the match: goals / assists / red cards\n\nUpdate at: coedworldcup.me
+LOCATION:Kansas City Stadium
+BEGIN:VALARM
+TRIGGER:-PT90M
+ACTION:DISPLAY
+DESCRIPTION:🚨 TP MATCH - Tunisia vs Netherlands | Watch: Cody Gakpo (🇳🇱) — goals / assists / red cards
+END:VALARM
+END:VEVENT
+
+BEGIN:VEVENT
+UID:argentina-jordan-20260627@coedworldcup
+DTSTART;TZID=Asia/Jerusalem:20260628T050000
+DTEND;TZID=Asia/Jerusalem:20260628T060000
+SUMMARY:🚨 TP ALERT - Argentina vs Jordan
+DESCRIPTION:Today's match includes a Tournament Player!\n\n🇦🇷 ARGENTINA:\n⭐ Lionel Messi\n→ Check after the match: goals / assists / red cards\n\nUpdate at: coedworldcup.me
+LOCATION:Dallas Stadium
+BEGIN:VALARM
+TRIGGER:-PT90M
+ACTION:DISPLAY
+DESCRIPTION:🚨 TP MATCH - Argentina vs Jordan | Watch: Lionel Messi (🇦🇷) — goals / assists / red cards
+END:VALARM
+END:VEVENT
+
+BEGIN:VEVENT
+UID:tp-reminder-r32-20260628@coedworldcup
+DTSTART;TZID=Asia/Jerusalem:20260628T100000
+DTEND;TZID=Asia/Jerusalem:20260628T103000
+SUMMARY:⚽ TP NOTE - Round of 32 begins (Jun 28 - Jul 3)
+DESCRIPTION:Round of 32 begins today! Check which TP players' teams are still in and update after every match.\n\nFULL TP PLAYER LIST:\n🇫🇷 France: Kylian Mbappé / Michael Olise / Ousmane Dembélé\n🇦🇷 Argentina: Lionel Messi\n🏴󠁧󠁢󠁥󠁮󠁧󠁿 England: Harry Kane\n🇪🇸 Spain: Lamine Yamal\n🇳🇴 Norway: Erling Haaland\n🇳🇱 Netherlands: Cody Gakpo\n🇧🇷 Brazil: Raphinha\n🇵🇹 Portugal: Bruno Fernandes / Cristiano Ronaldo\n\nFor each match: check goals / assists / red cards\nUpdate at: coedworldcup.me
+BEGIN:VALARM
+TRIGGER:PT0M
+ACTION:DISPLAY
+DESCRIPTION:Round of 32 starts! Check TP teams: France / Argentina / England / Spain / Norway / Netherlands / Brazil / Portugal
+END:VALARM
+END:VEVENT
+
+BEGIN:VEVENT
+UID:tp-reminder-r16-20260704@coedworldcup
+DTSTART;TZID=Asia/Jerusalem:20260704T100000
+DTEND;TZID=Asia/Jerusalem:20260704T103000
+SUMMARY:⚽ TP NOTE - Round of 16 begins (Jul 4-7)
+DESCRIPTION:Round of 16 begins today! Check which TP players are still in.\n\nFULL TP PLAYER LIST:\n🇫🇷 France: Kylian Mbappé / Michael Olise / Ousmane Dembélé\n🇦🇷 Argentina: Lionel Messi\n🏴󠁧󠁢󠁥󠁮󠁧󠁿 England: Harry Kane\n🇪🇸 Spain: Lamine Yamal\n🇳🇴 Norway: Erling Haaland\n🇳🇱 Netherlands: Cody Gakpo\n🇧🇷 Brazil: Raphinha\n🇵🇹 Portugal: Bruno Fernandes / Cristiano Ronaldo\n\nFor each match: check goals / assists / red cards\nUpdate at: coedworldcup.me
+BEGIN:VALARM
+TRIGGER:PT0M
+ACTION:DISPLAY
+DESCRIPTION:Round of 16 starts! Check TP players still in the tournament.
+END:VALARM
+END:VEVENT
+
+BEGIN:VEVENT
+UID:tp-reminder-qf-20260709@coedworldcup
+DTSTART;TZID=Asia/Jerusalem:20260709T100000
+DTEND;TZID=Asia/Jerusalem:20260709T103000
+SUMMARY:⚽ TP NOTE - Quarterfinals begin (Jul 9-11)
+DESCRIPTION:Quarterfinals begin today!\n\nFULL TP PLAYER LIST:\n🇫🇷 France: Kylian Mbappé / Michael Olise / Ousmane Dembélé\n🇦🇷 Argentina: Lionel Messi\n🏴󠁧󠁢󠁥󠁮󠁧󠁿 England: Harry Kane\n🇪🇸 Spain: Lamine Yamal\n🇳🇴 Norway: Erling Haaland\n🇳🇱 Netherlands: Cody Gakpo\n🇧🇷 Brazil: Raphinha\n🇵🇹 Portugal: Bruno Fernandes / Cristiano Ronaldo\n\nFor each match: check goals / assists / red cards\nUpdate at: coedworldcup.me
+BEGIN:VALARM
+TRIGGER:PT0M
+ACTION:DISPLAY
+DESCRIPTION:Quarterfinals start! Check TP players still in the tournament.
+END:VALARM
+END:VEVENT
+
+BEGIN:VEVENT
+UID:tp-reminder-sf-20260714@coedworldcup
+DTSTART;TZID=Asia/Jerusalem:20260714T100000
+DTEND;TZID=Asia/Jerusalem:20260714T103000
+SUMMARY:⚽ TP NOTE - Semifinals begin (Jul 14-15)
+DESCRIPTION:Semifinals begin today!\n\nFULL TP PLAYER LIST:\n🇫🇷 France: Kylian Mbappé / Michael Olise / Ousmane Dembélé\n🇦🇷 Argentina: Lionel Messi\n🏴󠁧󠁢󠁥󠁮󠁧󠁿 England: Harry Kane\n🇪🇸 Spain: Lamine Yamal\n🇳🇴 Norway: Erling Haaland\n🇳🇱 Netherlands: Cody Gakpo\n🇧🇷 Brazil: Raphinha\n🇵🇹 Portugal: Bruno Fernandes / Cristiano Ronaldo\n\nFor each match: check goals / assists / red cards\nUpdate at: coedworldcup.me
+BEGIN:VALARM
+TRIGGER:PT0M
+ACTION:DISPLAY
+DESCRIPTION:Semifinals start! Check TP players still in the tournament.
+END:VALARM
+END:VEVENT
+
+BEGIN:VEVENT
+UID:tp-reminder-final-20260719@coedworldcup
+DTSTART;TZID=Asia/Jerusalem:20260719T220000
+DTEND;TZID=Asia/Jerusalem:20260719T230000
+SUMMARY:🏆 TP FINAL - World Cup Final! (Jul 19)
+DESCRIPTION:IT'S THE FINAL! Don't forget to update Tournament Player points after the match.\n\nFULL TP PLAYER LIST:\n🇫🇷 France: Kylian Mbappé / Michael Olise / Ousmane Dembélé\n🇦🇷 Argentina: Lionel Messi\n🏴󠁧󠁢󠁥󠁮󠁧󠁿 England: Harry Kane\n🇪🇸 Spain: Lamine Yamal\n🇳🇴 Norway: Erling Haaland\n🇳🇱 Netherlands: Cody Gakpo\n🇧🇷 Brazil: Raphinha\n🇵🇹 Portugal: Bruno Fernandes / Cristiano Ronaldo\n\nUpdate at: coedworldcup.me
+LOCATION:MetLife Stadium, New York/New Jersey
+BEGIN:VALARM
+TRIGGER:-PT120M
+ACTION:DISPLAY
+DESCRIPTION:🏆 World Cup Final tonight! Update TP points after the match at coedworldcup.me
+END:VALARM
+END:VEVENT
+
+END:VCALENDAR
