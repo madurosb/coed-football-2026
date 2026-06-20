@@ -2794,6 +2794,10 @@
         <div class="form-row"><label>Match</label><select id="scorer-only-match" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;"><option value="">Select match...</option></select></div>
         <div class="form-row"><label>First scorer name</label><input type="text" id="scorer-only-name" placeholder='e.g. Julian Quinones or Own Goal' style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;"></div>
         <div class="form-row"><label>Country <span style="font-size:11px;color:var(--text-muted);">(for scorers table)</span></label><input type="text" id="scorer-only-country" placeholder='e.g. France' style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;box-sizing:border-box;"></div>
+        <div class="form-row" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(239,68,68,0.07);border-radius:10px;border:1px solid rgba(239,68,68,0.25);">
+          <input type="checkbox" id="scorer-og-checkbox" style="width:18px;height:18px;accent-color:#ef4444;cursor:pointer;flex-shrink:0;">
+          <label for="scorer-og-checkbox" style="font-size:13px;color:var(--text);cursor:pointer;margin:0;">🙈 There was also an <strong>Own Goal</strong> in this match <span style="color:var(--text-muted);font-size:11px;">(awards +2 to all OG pickers)</span></label>
+        </div>
         <button class="submit-btn" id="scorer-only-btn" onclick="awardScorerPoints()" style="background:linear-gradient(135deg,#059669,#047857);margin-top:0.5rem;">🎯 Award +2 pts to correct pickers</button>
         <div id="scorer-only-status" style="margin-top:8px;font-size:12px;text-align:center;min-height:20px;"></div>
         <div style="margin-top:12px;border-top:0.5px solid var(--border);padding-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -3593,13 +3597,14 @@
       if (correctOutcome) pts += 1 * multiplier;
       if (exactScore) pts += 3 * multiplier;
     }
-    const normSc2 = s => (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+    const normSc2 = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
     const scorerTargets = (m.firstGoalscorer || '').split('/').map(s => normSc2(s));
     const predIsOG = (pred.firstScorer || '').toLowerCase().includes('own goal') || (pred.firstScorer || '').toLowerCase() === 'og';
     const scorerMatch = scorerTargets.some(t => t === normSc2(pred.firstScorer)) ||
-      (predIsOG && scorerTargets.some(t => t.includes('own goal') || t === 'og'));
+      (predIsOG && scorerTargets.some(t => t.includes('own goal') || t === 'og')) ||
+      (predIsOG && m.hasOwnGoal === true);
     // Scorer pts awarded even if outcome wrong
-    const scorerPts = (m.firstGoalscorer && pred.firstScorer && scorerMatch) ? 2 * multiplier : 0;
+    const scorerPts = (pred.firstScorer && (m.firstGoalscorer || m.hasOwnGoal) && scorerMatch) ? 2 * multiplier : 0;
     pts += scorerPts;
     if (hasJoker && correctOutcome) pts *= 2;
     // DON: doubles all if correct, penalises -1 if wrong (scorer pts safe)
@@ -3636,12 +3641,13 @@
       const actOut = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
       const correct = predOut === actOut;
       const exact = pred.homeScore === m.homeScore && pred.awayScore === m.awayScore;
-      const normSc = s => (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+      const normSc = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
       const actualTargets = (m.firstGoalscorer||'').split('/').map(s => normSc(s));
-      const predIsOG = (pred.firstScorer||'').toLowerCase().includes('own goal');
-      const scorerHit = m.firstGoalscorer && pred.firstScorer && (
+      const predIsOG = (pred.firstScorer||'').toLowerCase().includes('own goal') || (pred.firstScorer||'').toLowerCase() === 'og';
+      const scorerHit = pred.firstScorer && (m.firstGoalscorer || m.hasOwnGoal) && (
         actualTargets.some(t => t === normSc(pred.firstScorer)) ||
-        (predIsOG && actualTargets.some(t => t.includes('own goal')))
+        (predIsOG && actualTargets.some(t => t.includes('own goal'))) ||
+        (predIsOG && m.hasOwnGoal === true)
       );
       const flags = [];
       if (exact) flags.push('🎯');
@@ -8720,25 +8726,43 @@ Use exactly the formation provided. Only use players from the squad lists above.
         let scorerLabel = '';
         if (pred.firstScorer) {
           const resultSnap = await getDoc(doc(db, 'results', d.id));
-          const actualScorer = resultSnap.exists() ? resultSnap.data().firstScorer : null;
-          if (actualScorer && pred.firstScorer === actualScorer) {
+          const resultData = resultSnap.exists() ? resultSnap.data() : {};
+          const actualScorer = resultData.firstScorer || null;
+          const matchHasOG = m.hasOwnGoal === true;
+          const predIsOG = pred.firstScorer.toLowerCase().includes('own goal') || pred.firstScorer.toLowerCase() === 'og';
+          const actualIsOG = (actualScorer||'').toLowerCase().includes('own goal') || (actualScorer||'').toLowerCase() === 'og';
+
+          // Did the user nail the scorer?
+          const scorerNailed = (actualScorer && pred.firstScorer === actualScorer) ||
+            (predIsOG && actualIsOG) ||
+            (predIsOG && matchHasOG);
+
+          if (scorerNailed) {
             pts += 2;
+            const displayName = predIsOG ? '🙈 Own Goal' : pred.firstScorer;
             scorerLabel = `
               <div style="margin-top:8px;padding:10px 14px;border-radius:10px;
                 background:linear-gradient(135deg,rgba(5,150,105,0.2),rgba(16,185,129,0.1));
                 border:1.5px solid rgba(5,150,105,0.6);
                 animation:scorerPop 0.4s cubic-bezier(0.34,1.56,0.64,1);">
                 <div style="display:flex;align-items:center;gap:8px;">
-                  <span style="font-size:22px;animation:spin 0.5s ease-out;">⚽</span>
+                  <span style="font-size:22px;animation:spin 0.5s ease-out;">${predIsOG ? '🙈' : '⚽'}</span>
                   <div>
                     <div style="font-size:13px;font-weight:800;color:#34d399;letter-spacing:0.02em;">SCORER NAILED IT! +2 pts 🎯</div>
-                    <div style="font-size:11px;color:#6ee7b7;margin-top:1px;">${pred.firstScorer}</div>
+                    <div style="font-size:11px;color:#6ee7b7;margin-top:1px;">${displayName}</div>
                   </div>
                   <span style="margin-left:auto;font-size:20px;">🔥</span>
                 </div>
               </div>`;
-          } else if (actualScorer) {
-            scorerLabel = `<div style="font-size:12px;margin-top:6px;color:var(--badge-red-text);padding:6px 10px;background:rgba(239,68,68,0.08);border-radius:8px;">⚽ Was: ${actualScorer}</div>`;
+          } else if (actualScorer || matchHasOG) {
+            // Show what the actual scorer was
+            const actualDisplay = actualIsOG ? '🙈 Own Goal' : (actualScorer || '');
+            scorerLabel = `<div style="font-size:12px;margin-top:6px;color:var(--badge-red-text);padding:6px 10px;background:rgba(239,68,68,0.08);border-radius:8px;">⚽ Was: ${actualDisplay}${matchHasOG && !actualIsOG && actualScorer ? ' · 🙈 Own Goal also in this match' : ''}</div>`;
+          }
+
+          // If user picked a player (not OG) but there was ALSO an OG — show info badge
+          if (!predIsOG && matchHasOG && scorerNailed) {
+            scorerLabel += `<div style="font-size:11px;margin-top:4px;color:var(--text-muted);padding:4px 8px;background:rgba(239,68,68,0.07);border-radius:6px;">🙈 There was also an Own Goal in this match</div>`;
           }
         }
 
@@ -9937,6 +9961,8 @@ Use exactly the formation provided. Only use players from the squad lists above.
   window.awardScorerPoints = async () => {
     const matchId = document.getElementById('scorer-only-match').value;
     const scorerName = document.getElementById('scorer-only-name').value.trim();
+    const ogCheckbox = document.getElementById('scorer-og-checkbox');
+    const hasOGInMatch = ogCheckbox ? ogCheckbox.checked : false;
     const status = document.getElementById('scorer-only-status');
     const btn = document.getElementById('scorer-only-btn');
     if (!matchId) { status.textContent = '❌ Select a match first'; return; }
@@ -9958,40 +9984,79 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
       const predsSnap = await getDocs(query(collection(db, 'predictions'), where('matchId', '==', matchId)));
       let awarded = 0;
+      let awardedOG = 0;
       const winnerNames = [];
+      const ogWinnerNames = [];
+
       for (const predDoc of predsSnap.docs) {
         const pred = predDoc.data();
-        // Support OG matching
+        // Match for first scorer (player or OG)
         const predIsOG = (pred.firstScorer||'').toLowerCase().includes('own goal') || (pred.firstScorer||'').toLowerCase() === 'og';
         const nameIsOG = scorerName.toLowerCase().includes('own goal') || scorerName.toLowerCase() === 'og';
         const matched = (nameIsOG && predIsOG) || (!nameIsOG && !predIsOG && normSc(pred.firstScorer) === normSc(scorerName));
-        if (!matched) continue;
+
+        // Match for OG checkbox — separate from first scorer
+        const ogMatched = hasOGInMatch && !nameIsOG && predIsOG;
+
+        if (!matched && !ogMatched) continue;
+
         const userRef = doc(db, 'users', pred.userId);
         const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) {
-          await updateDoc(userRef, {
-            points: (userSnap.data().points || 0) + pts,
-            bonusPoints: (userSnap.data().bonusPoints || 0) + 1
-          });
+        if (!userSnap.exists()) continue;
+
+        let ptsToAdd = 0;
+        let bonusToAdd = 0;
+
+        if (matched) {
+          ptsToAdd += pts;
+          bonusToAdd += 1;
           winnerNames.push(userSnap.data().nickname || userSnap.data().displayName || pred.userId);
           awarded++;
         }
+        if (ogMatched) {
+          ptsToAdd += pts;
+          bonusToAdd += 1;
+          ogWinnerNames.push(userSnap.data().nickname || userSnap.data().displayName || pred.userId);
+          awardedOG++;
+        }
+
+        await updateDoc(userRef, {
+          points: (userSnap.data().points || 0) + ptsToAdd,
+          bonusPoints: (userSnap.data().bonusPoints || 0) + bonusToAdd
+        });
       }
+
+      // Save firstScorer to results doc
       await setDoc(doc(db, 'results', matchId), { firstScorer: scorerName }, { merge: true });
-      // Append to firstGoalscorer instead of overwriting (handles Haaland + OG in same match)
+
+      // Append to firstGoalscorer in matches doc (handles Haaland + OG in same match)
       const matchDocRef = doc(db, 'matches', matchId);
       const matchDocSnap = await getDoc(matchDocRef);
       const existingScorer = matchDocSnap.data()?.firstGoalscorer || '';
       const newScorer = existingScorer && existingScorer !== scorerName
         ? existingScorer + ' / ' + scorerName
         : scorerName;
-      await updateDoc(matchDocRef, { firstGoalscorer: newScorer });
+
+      // Save hasOwnGoal flag if checkbox checked
+      const matchUpdateData = { firstGoalscorer: newScorer };
+      if (hasOGInMatch) matchUpdateData.hasOwnGoal = true;
+      await updateDoc(matchDocRef, matchUpdateData);
+
       // Note: wc_scorers is NOT updated here — first scorer ≠ tournament player goals
 
+      // Reset OG checkbox
+      if (ogCheckbox) ogCheckbox.checked = false;
+
+      // Build status message
       const winnersHtml = winnerNames.length > 0
         ? '<div style="margin-top:6px;font-size:11px;color:var(--text-muted);">Winners: <strong style="color:var(--text);">' + winnerNames.join(', ') + '</strong></div>'
         : '<div style="margin-top:6px;font-size:11px;color:var(--text-muted);">Nobody picked ' + scorerName + '</div>';
-      status.innerHTML = '<span style="color:var(--green);">✅ Done! Awarded +' + pts + ' pts to ' + awarded + ' player' + (awarded!==1?'s':'') + ' who picked <strong>' + scorerName + '</strong></span>' + winnersHtml;
+      const ogHtml = hasOGInMatch
+        ? (ogWinnerNames.length > 0
+            ? '<div style="margin-top:4px;font-size:11px;color:#ef4444;">🙈 OG: +' + pts + ' pts to ' + awardedOG + ' OG picker' + (awardedOG!==1?'s':'') + ': <strong>' + ogWinnerNames.join(', ') + '</strong></div>'
+            : '<div style="margin-top:4px;font-size:11px;color:var(--text-muted);">🙈 OG: Nobody picked Own Goal</div>')
+        : '';
+      status.innerHTML = '<span style="color:var(--green);">✅ Done! Awarded +' + pts + ' pts to ' + awarded + ' player' + (awarded!==1?'s':'') + ' who picked <strong>' + scorerName + '</strong></span>' + winnersHtml + ogHtml;
     } catch(e) {
       status.innerHTML = '<span style="color:#ef4444;">❌ Error: ' + e.message + '</span>';
     }
