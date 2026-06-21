@@ -8782,23 +8782,60 @@ Use exactly the formation provided. Only use players from the squad lists above.
     });
 
     // PHASE 2: Load result feedback async (runs after scores are already showing)
-    const [jokerSnap, donAllSnap, wcScorersSnap] = await Promise.all([
+    const myTP = currentUserData?.tournamentPlayer || null;
+    const myTPNorm = myTP ? myTP.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/\s+/g,'_') : null;
+
+    // Load ALL shared data in one shot — including full awardLog for this TP player
+    const sharedFetches = [
       getDoc(doc(db, 'jokerCards', currentUser.uid)),
       getDocs(query(collection(db, 'donOptIns'), where('userId', '==', currentUser.uid))),
-      getDocs(collection(db, 'wc_scorers'))
-    ]);
+    ];
+    if (myTP) {
+      // Load all awardLog entries for this TP player (tp_playernorm_*)
+      // We can't query by prefix in Firestore, so load all awardLog and filter client-side
+      sharedFetches.push(getDocs(collection(db, 'awardLog')));
+    }
+
+    const sharedResults = await Promise.all(sharedFetches);
+    const jokerSnap   = sharedResults[0];
+    const donAllSnap  = sharedResults[1];
+    const awardLogSnap = myTP ? sharedResults[2] : null;
+
     const jokerMatchId = jokerSnap.exists() ? jokerSnap.data().matchId : null;
     const donMatchIds = new Set();
     donAllSnap.forEach(d => donMatchIds.add(d.data().matchId));
+
+    // Build a map: matchRef → ptsPerPicker for this TP player
+    const tpAwardMap = {}; // key: matchDocId extracted from awardLog doc id
+    if (awardLogSnap) {
+      awardLogSnap.forEach(d => {
+        const id = d.id; // e.g. tp_lionel_messi_Argentina_vs_Algeria_abc123
+        if (!id.startsWith('tp_' + myTPNorm + '_')) return;
+        // Extract matchDocId: everything after tp_playernorm_HomeTeam_vs_AwayTeam_
+        // The ref format is: HomeTeam_vs_AwayTeam_matchDocId (all non-alphanumeric stripped)
+        // We store ptsPerPicker keyed by the full ref suffix
+        const suffix = id.slice(('tp_' + myTPNorm + '_').length); // e.g. Argentina_vs_Algeria_abc123
+        tpAwardMap[suffix] = d.data().ptsPerPicker || 0;
+      });
+    }
+
+    // Also build wcMap for fallback country lookup
     const wcMap = {};
-    wcScorersSnap.forEach(d => {
-      const s = d.data();
-      const norm = (s.name || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-      wcMap[norm] = s;
-    });
-    const myTP = currentUserData?.tournamentPlayer || null;
-    const myTPNorm = myTP ? myTP.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim() : null;
-    const myTPData = myTPNorm ? wcMap[myTPNorm] : null;
+
+    // Pre-load all 'results' docs for finished matches — eliminates per-match awaits in loop
+    const finishedMatchIds = matchesSnap.docs
+      .filter(d => { const m = d.data(); return m.homeScore !== null && m.homeScore !== undefined && m.awayScore !== null; })
+      .map(d => d.id);
+    const resultsMap = {}; // matchId → firstScorer
+    if (finishedMatchIds.length > 0) {
+      // Firestore 'in' query max 30 items — chunk if needed
+      const chunks = [];
+      for (let i = 0; i < finishedMatchIds.length; i += 30) chunks.push(finishedMatchIds.slice(i, i + 30));
+      for (const chunk of chunks) {
+        const rSnap = await getDocs(query(collection(db, 'results'), where('__name__', 'in', chunk)));
+        rSnap.forEach(d => { resultsMap[d.id] = d.data().firstScorer || null; });
+      }
+    }
 
     for (const d of matchesSnap.docs) {
       const m = d.data();
@@ -8852,8 +8889,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
       // First Scorer
       if (pred.firstScorer) {
-        const resultSnap = await getDoc(doc(db, 'results', d.id));
-        const actualScorer = resultSnap.exists() ? (resultSnap.data().firstScorer || null) : null;
+        const actualScorer = resultsMap[d.id] || null;
         const matchHasOG = m.hasOwnGoal === true;
         const predIsOG   = pred.firstScorer.toLowerCase().includes('own goal') || pred.firstScorer.toLowerCase() === 'og';
         const actualIsOG = (actualScorer||'').toLowerCase().includes('own goal') || (actualScorer||'').toLowerCase() === 'og';
@@ -8869,25 +8905,29 @@ Use exactly the formation provided. Only use players from the squad lists above.
         }
       }
 
-      // Tournament Player — look up per-match from awardLog
-      if (myTP) {
-        const tpNormKey = 'tp_' + myTP.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/\s+/g,'_') + '_' + d.id;
-        try {
-          const tpLogSnap = await getDoc(doc(db, 'awardLog', tpNormKey));
-          if (tpLogSnap.exists()) {
-            const tpLog = tpLogSnap.data();
-            const tpPts = tpLog.ptsPerPicker || 0;
-            rows.push({ icon: '⭐', text: myTP + ' (TP) played in this match', pts: (tpPts >= 0 ? '+' : '') + tpPts, green: tpPts > 0 });
-          } else {
-            // Check if TP's team played in this match (to show "played · no stats yet")
-            const tpTeams = [m.homeTeam, m.awayTeam].map(t => (t||'').toLowerCase());
-            const myTPCountry = (myTPData?.country || myTP).toLowerCase();
-            const tpPlayedInMatch = tpTeams.some(t => t.includes(myTPCountry) || myTPCountry.includes(t));
-            if (tpPlayedInMatch) {
-              rows.push({ icon: '⭐', text: myTP + ' (TP) played in this match', pts: '—', green: null });
-            }
+      // Tournament Player — use pre-loaded awardLog map
+      if (myTP && myTPNorm) {
+        // Build the matchRef key the same way the admin does:
+        // (homeTeam + '_vs_' + awayTeam + '_' + docId).replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'')
+        const matchRefKey = (m.homeTeam + '_vs_' + m.awayTeam + '_' + d.id)
+          .replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+        if (tpAwardMap.hasOwnProperty(matchRefKey)) {
+          const tpPts = tpAwardMap[matchRefKey];
+          rows.push({ icon: '⭐', text: myTP + ' (TP) played in this match', pts: (tpPts >= 0 ? '+' : '') + tpPts, green: tpPts > 0 });
+        } else {
+          // Check if TP's team played — use team name contains player's country name
+          // Try to match team names against known TP country from wc_scorers or ALL_PLAYERS_DATA
+          const tpPlayerData = (typeof ALL_PLAYERS_DATA !== 'undefined' ? ALL_PLAYERS_DATA : []).find(p =>
+            p.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase() ===
+            myTP.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
+          );
+          const tpCountry = (tpPlayerData?.country || '').toLowerCase();
+          const tpTeams = [m.homeTeam, m.awayTeam].map(t => (t||'').toLowerCase());
+          const tpPlayedInMatch = tpCountry && tpTeams.some(t => t === tpCountry || t.includes(tpCountry) || tpCountry.includes(t));
+          if (tpPlayedInMatch) {
+            rows.push({ icon: '⭐', text: myTP + ' (TP) played · awaiting stats', pts: '—', green: null });
           }
-        } catch(e) { /* awardLog not accessible */ }
+        }
       }
 
       // Build HTML
