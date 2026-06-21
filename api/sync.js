@@ -168,9 +168,21 @@ async function syncLiveResults(db) {
     const awayScore = ft.away ?? null;
     const status = match.status;
 
-    await db.collection('matches').doc(matchId).set({
-      status, homeScore, awayScore, lastSynced: new Date()
-    }, { merge: true });
+    // If already FINISHED in Firebase, don't overwrite the score (admin may have corrected it)
+    const existingMatchSnap = await db.collection('matches').doc(matchId).get();
+    const existingMatch = existingMatchSnap.data() || {};
+    const alreadyFinished = existingMatch.status === 'FINISHED';
+
+    if (!alreadyFinished) {
+      await db.collection('matches').doc(matchId).set({
+        status, homeScore, awayScore, lastSynced: new Date()
+      }, { merge: true });
+    } else {
+      // Still update status and lastSynced, but never touch homeScore/awayScore
+      await db.collection('matches').doc(matchId).set({
+        status, lastSynced: new Date()
+      }, { merge: true });
+    }
 
     if (status === 'FINISHED') {
       const resultRef = db.collection('results').doc(matchId);
