@@ -8733,7 +8733,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
   }
 
   async function loadExistingPredictions(matchesSnap) {
-    matchesSnap.forEach(async (d) => {
+    for (const d of matchesSnap.docs) {
       const m = d.data();
       const predRef = doc(db, 'predictions', `${currentUser.uid}_${d.id}`);
       const predSnap = await getDoc(predRef);
@@ -8895,7 +8895,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
             Final score: ${m.homeTeam} ${m.homeScore} - ${m.awayScore} ${m.awayTeam}
           </div>`;
       }
-    });
+    }
   }
 
   function launchConfetti(btn) {
