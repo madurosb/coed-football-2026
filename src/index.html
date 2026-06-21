@@ -6066,13 +6066,16 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const html = `
         <div style="background:var(--surface2);border-radius:12px;overflow:hidden;border:1px solid var(--border);">
           <!-- Header — tap to expand -->
-          <div onclick="toggleCommunityStats('${panelId}')" style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none;">
+          <div onclick="toggleCommunityStats('${panelId}')" style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none;border-radius:12px;transition:background 0.15s;active:background:var(--surface2);" onmousedown="this.style.background='var(--surface2)'" onmouseup="this.style.background=''" ontouchstart="this.style.background='var(--surface2)'" ontouchend="this.style.background=''">
             <div style="display:flex;align-items:center;gap:8px;">
               <span style="font-size:14px;">👥</span>
               <span style="font-size:12px;font-weight:700;">Community predictions</span>
               <span style="font-size:11px;background:rgba(59,130,246,0.12);color:var(--accent);padding:1px 7px;border-radius:99px;font-weight:600;">${total} players</span>
             </div>
-            <span id="${panelId}-chevron" style="font-size:14px;color:var(--text-muted);transition:transform 0.2s;">▾</span>
+            <div style="display:flex;align-items:center;gap:5px;">
+              <span style="font-size:10px;color:var(--accent);font-weight:600;letter-spacing:0.02em;">TAP</span>
+              <span id="${panelId}-chevron" style="font-size:16px;color:var(--accent);transition:transform 0.2s;font-weight:700;">▾</span>
+            </div>
           </div>
           <!-- Body -->
           <div id="${panelId}" style="display:none;padding:0 14px 14px;">
@@ -8866,22 +8869,25 @@ Use exactly the formation provided. Only use players from the squad lists above.
         }
       }
 
-      // Tournament Player
-      if (myTP && myTPData) {
-        const tpTeams = [m.homeTeam, m.awayTeam].map(t => (t||'').toLowerCase());
-        const tpCountry = (myTPData.country || '').toLowerCase();
-        const tpPlayedInMatch = tpCountry && tpTeams.some(t => t.includes(tpCountry) || tpCountry.includes(t));
-        if (tpPlayedInMatch) {
-          const tpGoals = myTPData.goals || 0;
-          const tpAssists = myTPData.assists || 0;
-          const tpReds = myTPData.redCards || 0;
-          const tpPts = tpGoals * 2 + tpAssists - tpReds;
-          if (tpGoals > 0 || tpAssists > 0 || tpReds > 0) {
-            rows.push({ icon: '⭐', text: myTP + ' (TP) · ' + (tpGoals > 0 ? tpGoals + 'g×2 ' : '') + (tpAssists > 0 ? tpAssists + 'a×1 ' : '') + (tpReds > 0 ? tpReds + ' red×−1 ' : '') + '(tournament total)', pts: (tpPts >= 0 ? '+' : '') + tpPts, green: tpPts > 0 });
+      // Tournament Player — look up per-match from awardLog
+      if (myTP) {
+        const tpNormKey = 'tp_' + myTP.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/\s+/g,'_') + '_' + d.id;
+        try {
+          const tpLogSnap = await getDoc(doc(db, 'awardLog', tpNormKey));
+          if (tpLogSnap.exists()) {
+            const tpLog = tpLogSnap.data();
+            const tpPts = tpLog.ptsPerPicker || 0;
+            rows.push({ icon: '⭐', text: myTP + ' (TP) played in this match', pts: (tpPts >= 0 ? '+' : '') + tpPts, green: tpPts > 0 });
           } else {
-            rows.push({ icon: '⭐', text: myTP + ' (TP) played · no stats yet', pts: '0', green: null });
+            // Check if TP's team played in this match (to show "played · no stats yet")
+            const tpTeams = [m.homeTeam, m.awayTeam].map(t => (t||'').toLowerCase());
+            const myTPCountry = (myTPData?.country || myTP).toLowerCase();
+            const tpPlayedInMatch = tpTeams.some(t => t.includes(myTPCountry) || myTPCountry.includes(t));
+            if (tpPlayedInMatch) {
+              rows.push({ icon: '⭐', text: myTP + ' (TP) played in this match', pts: '—', green: null });
+            }
           }
-        }
+        } catch(e) { /* awardLog not accessible */ }
       }
 
       // Build HTML
