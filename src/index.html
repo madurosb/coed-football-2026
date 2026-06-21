@@ -4238,7 +4238,7 @@
     if (tab === 'matchstats') loadMatchStats();
   };
 
-  // ── shared data loader ──────────────────────────────────────────
+  // ── shared Firestore loader ───────────────────────────────────
   async function loadBoldSharedData() {
     const [matchesSnap, predsSnap, usersSnap] = await Promise.all([
       getDocs(query(collection(db, 'matches'), orderBy('kickoff'))),
@@ -4255,7 +4255,7 @@
     return { matchesSnap, users, predsByMatch };
   }
 
-  // ── Insights tab: Bold candidates + Crazy calls ───────────────
+  // ── Insights tab ──────────────────────────────────────────────
   async function loadBoldInsights() {
     const container = document.getElementById('bold-insights-content');
     if (!container) return;
@@ -4263,7 +4263,7 @@
 
     const { matchesSnap, users, predsByMatch } = await loadBoldSharedData();
 
-    // Load dismissed crazy-call IDs from Firestore (persists across refreshes)
+    // Load dismissed IDs (persists in Firestore so survive refresh)
     let dismissed = new Set();
     try {
       const dimSnap = await getDoc(doc(db, 'adminMeta', 'dismissedCrazyCalls'));
@@ -4279,9 +4279,9 @@
       const preds = predsByMatch[m.id] || [];
       if (preds.length < 3) return;
 
-      const total   = preds.length;
-      const actual  = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
-      const label   = m.homeTeam + ' ' + m.homeScore + '–' + m.awayScore + ' ' + m.awayTeam;
+      const total      = preds.length;
+      const actual     = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
+      const label      = m.homeTeam + ' ' + m.homeScore + '–' + m.awayScore + ' ' + m.awayTeam;
       const totalGoals = m.homeScore + m.awayScore;
       const scoreDiff  = Math.abs(m.homeScore - m.awayScore);
 
@@ -4295,69 +4295,48 @@
       const resultPct = correctResult.length / total;
       const exactPct  = exactPickers.length / total;
 
-      // ── Bold candidate: 1 solo exact score AND < 25% got even the result ──
+      // Bold candidate: only 1 got exact AND < 25% got result
       if (exactPickers.length === 1 && resultPct < 0.25) {
-        boldCandidates.push({
-          user:  users[exactPickers[0].userId]?.nickname || '?',
-          match: label,
-          pct:   Math.round(resultPct * 100)
-        });
+        boldCandidates.push({ user: users[exactPickers[0].userId]?.nickname || '?', match: label, pct: Math.round(resultPct * 100) });
       }
 
-      // ── Crazy call criteria (strict — must meet 2+ conditions) ─────────
-      // Conditions: A) only 1 person got exact, B) < 20% got result right,
-      //             C) scoreline 3+ goal diff with underdog winning,
-      //             D) 0-0 or 1-1 when < 15% expected draw
-      let conditions = 0;
-      let reasons    = [];
-
-      if (exactPickers.length === 1)                              { conditions++; reasons.push('Only 1/' + total + ' got the exact score'); }
-      if (resultPct < 0.20)                                       { conditions++; reasons.push(Math.round(resultPct*100) + '% called the result'); }
-      if (scoreDiff >= 3 && resultPct < 0.35)                     { conditions++; reasons.push(scoreDiff + '-goal margin, few saw it coming'); }
+      // Crazy call: must satisfy 2+ of these conditions
+      let conditions = 0, reasons = [];
+      if (exactPickers.length === 1)                { conditions++; reasons.push('Solo exact — only 1/' + total + ' nailed it'); }
+      if (resultPct < 0.20)                          { conditions++; reasons.push(Math.round(resultPct*100) + '% called the result'); }
+      if (scoreDiff >= 3 && resultPct < 0.35)        { conditions++; reasons.push(scoreDiff + '-goal margin, few saw it coming'); }
       if (actual === 'D' && totalGoals <= 1) {
-        const drawPct = preds.filter(p => { const pr = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D'; return pr === 'D'; }).length / total;
+        const drawPct = preds.filter(p => { const pr = p.homeScore>p.awayScore?'H':p.homeScore<p.awayScore?'A':'D'; return pr==='D'; }).length / total;
         if (drawPct < 0.15) { conditions++; reasons.push('Only ' + Math.round(drawPct*100) + '% predicted the draw'); }
       }
 
-      const callId = m.id; // use matchId as stable key
-      if (conditions >= 2 && exactPickers.length > 0 && !dismissed.has(callId)) {
-        crazyCalls.push({
-          id:     callId,
-          match:  label,
-          reason: reasons.slice(0,2).join(' · '),
-          users:  exactNames,
-          resultPct: Math.round(resultPct * 100),
-          exactPct:  Math.round(exactPct  * 100)
-        });
+      if (conditions >= 2 && exactPickers.length > 0 && !dismissed.has(m.id)) {
+        crazyCalls.push({ id: m.id, match: label, reason: reasons.slice(0,2).join(' · '), users: exactNames,
+          resultPct: Math.round(resultPct*100), exactPct: Math.round(exactPct*100) });
       }
     });
 
     let html = '';
 
-    // ── Section 1: Bold candidates ─────────────────────────────────
+    // Section 1: Bold candidates
     html += '<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">🐂 Bold prediction candidates</div>';
     if (boldCandidates.length > 0) {
       html += '<div style="background:linear-gradient(135deg,#422006,#431407);border-radius:10px;padding:12px 14px;margin-bottom:14px;border:1px solid #BA7517;">';
       html += boldCandidates.map(b =>
         '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid rgba(186,117,23,0.25);">' +
-          '<div>' +
-            '<div style="font-size:13px;font-weight:600;color:#EF9F27;">' + b.user + '</div>' +
-            '<div style="font-size:11px;color:rgba(239,159,39,0.7);">' + b.match + ' — only ' + b.pct + '% got the result</div>' +
-          '</div>' +
-          '<span style="font-size:20px;">🐂</span>' +
-        '</div>'
+          '<div><div style="font-size:13px;font-weight:600;color:#EF9F27;">' + b.user + '</div>' +
+          '<div style="font-size:11px;color:rgba(239,159,39,0.7);">' + b.match + ' — only ' + b.pct + '% got the result</div></div>' +
+          '<span style="font-size:20px;">🐂</span></div>'
       ).join('');
-      html += '<div style="font-size:11px;color:rgba(239,159,39,0.55);margin-top:8px;">→ Go to the Award Badge tab to give them the 🐂</div>';
-      html += '</div>';
+      html += '<div style="font-size:11px;color:rgba(239,159,39,0.55);margin-top:8px;">→ Go to the Award Badge tab to give them the 🐂</div></div>';
     } else {
       html += '<div style="background:var(--surface2);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">' +
-        '<span style="font-size:24px;">🐂</span>' +
-        '<div><div style="font-size:13px;font-weight:600;">No bold prediction candidates yet</div>' +
-        '<div style="font-size:11px;color:var(--text-muted);">Nobody has gone solo on a shock result. Check back after more matches.</div></div>' +
-      '</div>';
+        '<span style="font-size:24px;">🐂</span><div>' +
+        '<div style="font-size:13px;font-weight:600;">No bold prediction candidates yet</div>' +
+        '<div style="font-size:11px;color:var(--text-muted);">Nobody has gone solo on a shock result. Check back after more matches.</div></div></div>';
     }
 
-    // ── Section 2: Crazy calls ─────────────────────────────────────
+    // Section 2: Crazy calls — dismiss uses data-id + delegated listener (no inline quotes)
     html += '<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;margin-top:4px;">🎯 Crazy calls that paid off</div>';
     if (crazyCalls.length > 0) {
       html += crazyCalls.map(c =>
@@ -4370,32 +4349,37 @@
               ' <span style="color:var(--text-muted);">nailed the exact score</span>' +
               ' <span style="font-size:10px;color:var(--text-muted);">(' + c.resultPct + '% result · ' + c.exactPct + '% exact)</span></div>' +
             '</div>' +
-            '<button onclick="dismissCrazyCall(\'' + c.id + '\')" style="flex-shrink:0;padding:4px 10px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:11px;cursor:pointer;white-space:nowrap;">✕ Dismiss</button>' +
+            '<button class="dismiss-crazy-btn" data-id="' + c.id + '" style="flex-shrink:0;padding:5px 12px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;line-height:1.4;">✕ Dismiss</button>' +
           '</div>' +
         '</div>'
       ).join('');
     } else {
-      html += '<div style="background:var(--surface2);border-radius:10px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;">' +
-        '<span style="font-size:22px;">🎯</span>' +
-        '<div><div style="font-size:13px;font-weight:600;">No crazy calls yet</div>' +
-        '<div style="font-size:11px;color:var(--text-muted);">No one has nailed a genuinely wild exact score. Check back after more matches.</div></div>' +
-      '</div>';
+      html += '<div style="background:var(--surface2);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;">' +
+        '<span style="font-size:22px;">🎯</span><div>' +
+        '<div style="font-size:13px;font-weight:600;">No crazy calls yet</div>' +
+        '<div style="font-size:11px;color:var(--text-muted);">No one has nailed a genuinely wild exact score. Check back after more matches.</div></div></div>';
     }
 
     container.innerHTML = html;
-  }
 
-  window.dismissCrazyCall = async (id) => {
-    try {
-      const ref = doc(db, 'adminMeta', 'dismissedCrazyCalls');
-      const snap = await getDoc(ref);
-      const ids = snap.exists() ? (snap.data().ids || []) : [];
-      if (!ids.includes(id)) ids.push(id);
-      await setDoc(ref, { ids }, { merge: true });
-      const card = document.getElementById('crazycard-' + id);
-      if (card) { card.style.opacity = '0'; card.style.transition = 'opacity 0.3s'; setTimeout(() => card.remove(), 300); }
-    } catch(e) { console.error('dismissCrazyCall', e); }
-  };
+    // Attach dismiss listeners via delegation — avoids all inline-onclick quoting issues
+    container.querySelectorAll('.dismiss-crazy-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        btn.disabled = true;
+        btn.textContent = '…';
+        try {
+          const ref  = doc(db, 'adminMeta', 'dismissedCrazyCalls');
+          const snap = await getDoc(ref);
+          const ids  = snap.exists() ? (snap.data().ids || []) : [];
+          if (!ids.includes(id)) ids.push(id);
+          await setDoc(ref, { ids }, { merge: true });
+          const card = document.getElementById('crazycard-' + id);
+          if (card) { card.style.transition = 'opacity 0.3s'; card.style.opacity = '0'; setTimeout(() => card.remove(), 300); }
+        } catch(e) { console.error('dismiss error', e); btn.disabled = false; btn.textContent = '✕ Dismiss'; }
+      });
+    });
+  }
 
   // ── Match Stats tab ───────────────────────────────────────────
   async function loadMatchStats() {
@@ -4420,10 +4404,8 @@
 
       const exactPickers = preds.filter(p => p.homeScore === m.homeScore && p.awayScore === m.awayScore)
         .map(p => users[p.userId]?.nickname || '?');
-
       const correctResult = preds.filter(p => {
-        const pr = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
-        return pr === actual;
+        const pr = p.homeScore>p.awayScore?'H':p.homeScore<p.awayScore?'A':'D'; return pr === actual;
       });
       const resultPct = Math.round(correctResult.length / total * 100);
 
@@ -4433,24 +4415,23 @@
         insights.push({ type: '😱 Shock result', match: label,
           detail: w + ' thrashed ' + l + ' but only ' + resultPct + '% called it', users: exactPickers });
       }
-      if (totalGoals >= 4 && exactPickers.length > 0) {
+      if (totalGoals >= 4 && exactPickers.length > 0)
         insights.push({ type: '🔥 Goal fest — exact score nailed', match: label,
           detail: totalGoals + ' goals — ' + exactPickers.length + ' player' + (exactPickers.length>1?'s':'') + ' got it exactly', users: exactPickers });
-      }
       if (actual === 'D' && totalGoals <= 1) {
-        const drawPct = Math.round(preds.filter(p => { const pr = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D'; return pr === 'D'; }).length / total * 100);
+        const drawPct = Math.round(preds.filter(p => { const pr=p.homeScore>p.awayScore?'H':p.homeScore<p.awayScore?'A':'D'; return pr==='D'; }).length / total * 100);
         if (drawPct < 30 && exactPickers.length > 0)
-          insights.push({ type: '🤝 Surprise draw — few called it', match: label,
+          insights.push({ type: '🤝 Surprise draw', match: label,
             detail: 'Only ' + drawPct + '% predicted a draw — but these nailed it', users: exactPickers });
       }
       if (exactPickers.length === 0 && totalGoals >= 3)
-        insights.push({ type: '🏜️ Unpredictable — zero exact scores', match: label,
+        insights.push({ type: '🏜️ Zero exact scores', match: label,
           detail: totalGoals + ' goals — nobody got the exact score', users: [] });
       if (correctResult.length / total < 0.2)
-        insights.push({ type: '💀 Brutal — most got it wrong', match: label,
+        insights.push({ type: '💀 Most got it wrong', match: label,
           detail: 'Only ' + correctResult.length + '/' + total + ' (' + resultPct + '%) got the result', users: exactPickers });
       if (correctResult.length / total > 0.8 && exactPickers.length >= 2)
-        insights.push({ type: '😎 Easy pick — exact scores nailed', match: label,
+        insights.push({ type: '😎 Easy pick — exact nailed', match: label,
           detail: resultPct + '% got the result — ' + exactPickers.length + ' nailed the exact score', users: exactPickers });
     });
 
@@ -4461,7 +4442,6 @@
         '<div style="font-size:12px;color:var(--text-muted);">Check back after more matches are finished.</div></div>';
       return;
     }
-
     container.innerHTML = insights.map(ins =>
       '<div style="background:var(--surface2);border-radius:10px;padding:10px 14px;margin-bottom:10px;border-left:3px solid var(--accent);">' +
         '<div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">' + ins.type + '</div>' +
