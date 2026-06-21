@@ -8913,6 +8913,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
           .replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
         if (tpAwardMap.hasOwnProperty(matchRefKey)) {
           const tpPts = tpAwardMap[matchRefKey];
+          pts += tpPts;
           rows.push({ icon: '⭐', text: myTP + ' (TP) played in this match', pts: (tpPts >= 0 ? '+' : '') + tpPts, green: tpPts > 0 });
         } else {
           // Check if TP's team played — use team name contains player's country name
