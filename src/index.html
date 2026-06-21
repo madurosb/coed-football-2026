@@ -906,6 +906,42 @@
       border:1px solid rgba(74,222,128,0.35);
       white-space:nowrap;
     }
+    /* LOCKED PICK CARDS */
+    .locked-pick-card {
+      border-radius: 16px; padding: 14px 16px; margin-bottom: 0.75rem;
+      display: flex; align-items: center; gap: 14px;
+      position: relative; overflow: hidden;
+      animation: lockedCardIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    .locked-pick-card::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    }
+    .locked-pick-card.tp-card {
+      background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(99,102,241,0.06));
+      border: 1px solid rgba(59,130,246,0.25);
+    }
+    .locked-pick-card.tp-card::before { background: linear-gradient(90deg,#3b82f6,#6366f1,#8b5cf6); }
+    .locked-pick-card.wc-card {
+      background: linear-gradient(135deg, rgba(212,175,55,0.1), rgba(234,179,8,0.05));
+      border: 1px solid rgba(212,175,55,0.3);
+    }
+    .locked-pick-card.wc-card::before { background: linear-gradient(90deg,#d4af37,#fbbf24,#d4af37); }
+    .locked-pick-icon { font-size: 28px; flex-shrink:0; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.2)); }
+    .locked-pick-main { flex:1; min-width:0; }
+    .locked-pick-label { font-size:10px; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; opacity:0.55; margin-bottom:2px; }
+    .locked-pick-name { font-size:16px; font-weight:900; letter-spacing:-0.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .locked-pick-sub { font-size:11px; opacity:0.55; margin-top:2px; }
+    .locked-pick-badge-wrap { flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+    .locked-stamp {
+      font-size:9px; font-weight:900; letter-spacing:0.08em; padding:3px 9px;
+      border-radius:99px; white-space:nowrap;
+      background:rgba(74,222,128,0.15); color:#4ade80;
+      border:1px solid rgba(74,222,128,0.3);
+    }
+    @keyframes lockedCardIn {
+      from { opacity:0; transform:translateY(8px) scale(0.97); }
+      to   { opacity:1; transform:translateY(0) scale(1); }
+    }
     /* ADMIN NOTIFICATION BAR */
     .admin-notif { position:fixed; top:64px; left:0; right:0; z-index:500; background:#0a1f0a; color:#4ade80; font-size:13px; padding:10px 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #166534; animation:slideDown 0.3s ease; }
     @keyframes slideDown { from { transform:translateY(-100%); opacity:0; } to { transform:translateY(0); opacity:1; } }
@@ -1651,7 +1687,21 @@
     <img src="https://coed-football-2026.vercel.app/match-card.png" alt="" style="width:100%; height:auto; border-radius:12px; margin-bottom:1rem;">
 
     <!-- TOURNAMENT PLAYER collapsible -->
-    <div class="player-pick" style="margin-bottom:0.75rem;padding:0;overflow:hidden;">
+    <!-- TOURNAMENT PLAYER — locked pick card -->
+    <div class="locked-pick-card tp-card" id="tp-locked-card" style="display:none;">
+      <div class="locked-pick-icon">⭐</div>
+      <div class="locked-pick-main">
+        <div class="locked-pick-label">Your Tournament Player</div>
+        <div class="locked-pick-name" id="tp-locked-name">—</div>
+        <div class="locked-pick-sub" id="tp-locked-sub">Goal +2 · Assist +1 · Red card −1</div>
+      </div>
+      <div class="locked-pick-badge-wrap">
+        <img id="tp-locked-flag" src="" width="32" height="24" style="border-radius:4px;display:none;" onerror="this.style.display='none'">
+        <div class="locked-stamp">✦ LOCKED IN</div>
+      </div>
+    </div>
+    <!-- fallback if not yet picked -->
+    <div class="player-pick" id="tp-pick-panel" style="margin-bottom:0.75rem;padding:0;overflow:hidden;">
       <div onclick="togglePickerSection('player-picker-body','player-picker-chevron')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;user-select:none;">
         <div style="display:flex;align-items:center;gap:10px;">
           <span style="font-size:20px;">⭐</span>
@@ -1684,8 +1734,21 @@
       </div>
     </div>
 
-    <!-- TOURNAMENT WINNER collapsible -->
-    <div class="player-pick" style="margin-bottom:1rem;padding:0;overflow:hidden;">
+    <!-- TOURNAMENT WINNER — locked pick card -->
+    <div class="locked-pick-card wc-card" id="winner-locked-card" style="display:none;margin-bottom:1rem;">
+      <div class="locked-pick-icon">🏆</div>
+      <div class="locked-pick-main">
+        <div class="locked-pick-label">Your World Cup Winner</div>
+        <div class="locked-pick-name" id="winner-locked-name">—</div>
+        <div class="locked-pick-sub">Correct pick = +15 pts at the end 🤑</div>
+      </div>
+      <div class="locked-pick-badge-wrap">
+        <img id="winner-locked-flag" src="" width="32" height="24" style="border-radius:4px;display:none;" onerror="this.style.display='none'">
+        <div class="locked-stamp">✦ LOCKED IN</div>
+      </div>
+    </div>
+    <!-- fallback if not yet picked -->
+    <div class="player-pick" id="winner-pick-panel" style="margin-bottom:1rem;padding:0;overflow:hidden;">
       <div onclick="togglePickerSection('winner-picker-body','winner-picker-chevron')" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;user-select:none;">
         <div style="display:flex;align-items:center;gap:10px;">
           <span style="font-size:20px;">🏆</span>
@@ -7348,10 +7411,36 @@ Use exactly the formation provided. Only use players from the squad lists above.
         if (p) selectPlayerCard(p.name, p.country, p.flag);
         const b = document.getElementById('player-pick-badge');
         if (b) { b.className = 'pick-locked-badge'; b.innerHTML = '✦ LOCKED IN'; b.style.cssText = ''; }
+
+        // Show locked card, hide pick panel
+        const lockedCard = document.getElementById('tp-locked-card');
+        const pickPanel  = document.getElementById('tp-pick-panel');
+        if (lockedCard && pickPanel) {
+          const flagCode = p?.flag || '';
+          document.getElementById('tp-locked-name').textContent = currentUserData.tournamentPlayer;
+          document.getElementById('tp-locked-sub').textContent = p ? p.country + '  ·  Goal +2 · Assist +1 · Red card −1' : 'Goal +2 · Assist +1 · Red card −1';
+          const flagImg = document.getElementById('tp-locked-flag');
+          if (flagCode) { flagImg.src = 'https://flagcdn.com/32x24/' + flagCode + '.png'; flagImg.style.display = ''; }
+          lockedCard.style.display = 'flex';
+          pickPanel.style.display = 'none';
+        }
       }
       if (currentUserData.tournamentWinner) {
         const wb = document.getElementById('winner-pick-badge');
         if (wb) { wb.className = 'pick-locked-badge'; wb.innerHTML = '✦ LOCKED IN'; wb.style.cssText = ''; }
+
+        // Show locked card, hide pick panel
+        const wLockedCard = document.getElementById('winner-locked-card');
+        const wPickPanel  = document.getElementById('winner-pick-panel');
+        if (wLockedCard && wPickPanel) {
+          const team = currentUserData.tournamentWinner;
+          const teamData = WC_TEAMS.find(t => t.name === team);
+          document.getElementById('winner-locked-name').textContent = team;
+          const wFlagImg = document.getElementById('winner-locked-flag');
+          if (teamData?.flag) { wFlagImg.src = 'https://flagcdn.com/32x24/' + teamData.flag + '.png'; wFlagImg.style.display = ''; }
+          wLockedCard.style.display = 'flex';
+          wPickPanel.style.display = 'none';
+        }
       }
     }, 100);
 
@@ -8699,27 +8788,58 @@ Use exactly the formation provided. Only use players from the squad lists above.
         const isExact  = pred.homeScore === m.homeScore && pred.awayScore === m.awayScore;
         const isWinner = actualResult === predResult;
 
+        // Load DON + Joker state for this user
+        const [jokerSnap, donSnap] = await Promise.all([
+          getDoc(doc(db, 'jokerCards', currentUser.uid)),
+          getDocs(query(collection(db, 'donCards'), where('userId','==', currentUser.uid), where('matchId','==', d.id)))
+        ]);
+        const hasJoker = jokerSnap.exists() && jokerSnap.data().matchId === d.id;
+        const hasDon   = !donSnap.empty;
+
+        // Stage multiplier
+        const stage = (m.stage || '').toLowerCase();
+        const isFinal   = stage.includes('final') && !stage.includes('semi') && !stage.includes('third');
+        const isSemi    = stage.includes('semi');
+        const isQuarter = stage.includes('quarter');
+        const isR16     = stage.includes('16') || stage.includes('round of 16') || stage.includes('r16');
+        const stageMulti = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
+
         // Build result label
         let resultLabel = '';
         let resultStyle = '';
         let pts = 0;
 
-        if (isExact) {
-          pts += 3;
-          resultLabel = '🎯 Exact score';
-          resultStyle = 'background:var(--badge-green-bg);color:var(--badge-green-text);border:0.5px solid #5DCAA5;';
-        } else if (isWinner) {
-          pts += 1;
-          if (actualResult === 'draw') {
-            resultLabel = '✅ Correct draw';
+        if (hasDon) {
+          // DON: doubles all if correct, -1*stageMulti if wrong
+          if (isWinner) {
+            pts = isExact ? (4 * stageMulti * 2) : (1 * stageMulti * 2);
+            resultLabel = isExact ? '🎯 Exact score (DON x2!)' : (actualResult === 'draw' ? '✅ Correct draw (DON x2!)' : `✅ Correct winner (DON x2!)`);
+            resultStyle = 'background:var(--badge-green-bg);color:var(--badge-green-text);border:0.5px solid #5DCAA5;';
           } else {
-            const winnerTeam = actualResult === 'home' ? m.homeTeam : m.awayTeam;
-            resultLabel = `✅ Correct winner: ${winnerTeam}`;
+            pts = -1 * stageMulti;
+            resultLabel = '💀 Wrong result (DON −' + Math.abs(pts) + ')';
+            resultStyle = 'background:var(--badge-red-bg);color:var(--badge-red-text);border:0.5px solid #E24B4A;';
           }
-          resultStyle = 'background:var(--badge-blue-bg);color:var(--badge-blue-text);border:0.5px solid #378ADD;';
         } else {
-          resultLabel = '❌ Wrong result';
-          resultStyle = 'background:var(--badge-red-bg);color:var(--badge-red-text);border:0.5px solid #E24B4A;';
+          if (isExact) {
+            pts += 4 * stageMulti;
+            resultLabel = '🎯 Exact score';
+            resultStyle = 'background:var(--badge-green-bg);color:var(--badge-green-text);border:0.5px solid #5DCAA5;';
+          } else if (isWinner) {
+            pts += 1 * stageMulti;
+            if (actualResult === 'draw') {
+              resultLabel = '✅ Correct draw';
+            } else {
+              const winnerTeam = actualResult === 'home' ? m.homeTeam : m.awayTeam;
+              resultLabel = `✅ Correct winner: ${winnerTeam}`;
+            }
+            resultStyle = 'background:var(--badge-blue-bg);color:var(--badge-blue-text);border:0.5px solid #378ADD;';
+          } else {
+            resultLabel = '❌ Wrong result';
+            resultStyle = 'background:var(--badge-red-bg);color:var(--badge-red-text);border:0.5px solid #E24B4A;';
+          }
+          // Joker doubles outcome pts if correct
+          if (hasJoker && isWinner && !hasDon) { pts *= 2; resultLabel += ' 🃏×2'; }
         }
 
         // Scorer feedback
@@ -15040,8 +15160,9 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
       const homeScore = parseInt(homeEl.dataset?.val ?? homeEl.textContent ?? 0);
       const awayScore = parseInt(awayEl.dataset?.val ?? awayEl.textContent ?? 0);
 
-      // Only save if user actually touched this match
-      if (!window._touchedMatches?.has(matchId) && homeScore === 0 && awayScore === 0) return;
+      // Only save if user actually touched this match (safe check)
+      const touched = window._touchedMatches instanceof Set ? window._touchedMatches.has(matchId) : false;
+      if (!touched && homeScore === 0 && awayScore === 0) return;
 
       const scorerEl = document.getElementById('scorer-' + matchId);
       const selectValue = scorerEl?.value || '';
@@ -15066,7 +15187,25 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
           card.style.borderColor = 'var(--green)';
           setTimeout(() => { card.style.borderColor = ''; }, 1500);
         }
-      } catch(e) {}
+      } catch(e) {
+        // Show save error feedback so user knows it failed
+        console.error('[AutoSave] Failed for match', matchId, e);
+        const card = document.getElementById('home-' + matchId)?.closest('.match-card');
+        if (card) {
+          card.style.transition = 'border-color 0.3s';
+          card.style.borderColor = '#ef4444';
+          const errMsg = card.querySelector('.autosave-err') || (() => {
+            const d = document.createElement('div');
+            d.className = 'autosave-err';
+            d.style.cssText = 'font-size:10px;color:#ef4444;text-align:center;padding:2px 0;';
+            d.textContent = '⚠ Save failed — check connection';
+            card.appendChild(d);
+            return d;
+          })();
+          errMsg.style.display = '';
+          setTimeout(() => { card.style.borderColor = ''; errMsg.style.display = 'none'; }, 4000);
+        }
+      }
     }, 1500);
   }
 
