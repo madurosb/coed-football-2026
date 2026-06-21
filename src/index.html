@@ -3167,6 +3167,7 @@
         <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;">
           <button onclick="setBoldTab('award')" id="boldtab-award" style="padding:7px 14px;border-radius:8px;border:none;background:var(--accent);color:white;font-size:13px;font-weight:600;cursor:pointer;">🏅 Award Badge</button>
           <button onclick="setBoldTab('insights')" id="boldtab-insights" style="padding:7px 14px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">💡 Insights</button>
+          <button onclick="setBoldTab('matchstats')" id="boldtab-matchstats" style="padding:7px 14px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">📊 Match Stats</button>
           <button onclick="loadBoldPredAdmin()" style="padding:7px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">🔄 Refresh</button>
         </div>
         <div id="bold-tab-award">
@@ -3175,6 +3176,9 @@
         </div>
         <div id="bold-tab-insights" style="display:none;">
           <div id="bold-insights-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div></div>
+        </div>
+        <div id="bold-tab-matchstats" style="display:none;">
+          <div id="bold-matchstats-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div></div>
         </div>
       </div>
     </div>
@@ -4221,34 +4225,36 @@
   };
 
   window.setBoldTab = (tab) => {
-    const award = document.getElementById('bold-tab-award');
-    const insights = document.getElementById('bold-tab-insights');
-    const btnA = document.getElementById('boldtab-award');
-    const btnI = document.getElementById('boldtab-insights');
-    if (!award || !insights) return;
-    if (tab === 'award') {
-      award.style.display = ''; insights.style.display = 'none';
-      if (btnA) { btnA.style.background='var(--accent)'; btnA.style.color='white'; btnA.style.border='none'; btnA.style.fontWeight='600'; }
-      if (btnI) { btnI.style.background='none'; btnI.style.color='var(--text-muted)'; btnI.style.border='0.5px solid var(--border)'; btnI.style.fontWeight='500'; }
-    } else {
-      award.style.display = 'none'; insights.style.display = '';
-      if (btnI) { btnI.style.background='var(--accent)'; btnI.style.color='white'; btnI.style.border='none'; btnI.style.fontWeight='600'; }
-      if (btnA) { btnA.style.background='none'; btnA.style.color='var(--text-muted)'; btnA.style.border='0.5px solid var(--border)'; btnA.style.fontWeight='500'; }
-      loadBoldInsights();
-    }
+    const tabIds = ['award', 'insights', 'matchstats'];
+    const btnIds = ['boldtab-award', 'boldtab-insights', 'boldtab-matchstats'];
+    const accentColors = { award: 'var(--accent)', insights: 'var(--accent)', matchstats: 'var(--accent)' };
+
+    tabIds.forEach(t => {
+      const el = document.getElementById('bold-tab-' + t);
+      const btn = document.getElementById('boldtab-' + t);
+      if (el) el.style.display = (t === tab) ? '' : 'none';
+      if (btn) {
+        if (t === tab) {
+          btn.style.background = 'var(--accent)'; btn.style.color = 'white';
+          btn.style.border = 'none'; btn.style.fontWeight = '600';
+        } else {
+          btn.style.background = 'none'; btn.style.color = 'var(--text-muted)';
+          btn.style.border = '0.5px solid var(--border)'; btn.style.fontWeight = '500';
+        }
+      }
+    });
+
+    if (tab === 'insights') loadBoldInsights();
+    if (tab === 'matchstats') loadMatchStats();
   };
 
-  async function loadBoldInsights() {
-    const container = document.getElementById('bold-insights-content');
-    if (!container) return;
-    container.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Analysing...</div>';
-
+  // Shared data loader to avoid duplicate Firestore calls
+  async function loadBoldSharedData() {
     const [matchesSnap, predsSnap, usersSnap] = await Promise.all([
       getDocs(query(collection(db, 'matches'), orderBy('kickoff'))),
       getDocs(collection(db, 'predictions')),
       getDocs(collection(db, 'users'))
     ]);
-
     const users = {}, predsByMatch = {};
     usersSnap.forEach(d => { users[d.id] = d.data(); });
     predsSnap.forEach(d => {
@@ -4256,8 +4262,131 @@
       if (!predsByMatch[p.matchId]) predsByMatch[p.matchId] = [];
       predsByMatch[p.matchId].push(p);
     });
+    return { matchesSnap, users, predsByMatch };
+  }
 
-    const insights = []; // { type, match, detail, users }
+  async function loadBoldInsights() {
+    const container = document.getElementById('bold-insights-content');
+    if (!container) return;
+    container.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Analysing...</div>';
+
+    const { matchesSnap, users, predsByMatch } = await loadBoldSharedData();
+
+    // --- Bold candidates: solo exact score on a shock result ---
+    const boldCandidates = [];
+    // --- Crazy calls that paid off: exact score on wild/shock match, any number of pickers ---
+    const crazyCalls = [];
+
+    matchesSnap.forEach(d => {
+      const m = { id: d.id, ...d.data() };
+      if (m.status !== 'FINISHED' || m.homeScore === null) return;
+      const preds = predsByMatch[m.id] || [];
+      if (preds.length < 3) return;
+
+      const total = preds.length;
+      const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
+      const label = m.homeTeam + ' ' + m.homeScore + '–' + m.awayScore + ' ' + m.awayTeam;
+      const totalGoals = m.homeScore + m.awayScore;
+      const scoreDiff = Math.abs(m.homeScore - m.awayScore);
+
+      const exactPickers = preds.filter(p => p.homeScore === m.homeScore && p.awayScore === m.awayScore);
+      const exactNames = exactPickers.map(p => users[p.userId]?.nickname || '?');
+
+      const correctResult = preds.filter(p => {
+        const pr = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
+        return pr === actual;
+      });
+      const resultPct = correctResult.length / total;
+      const exactPct = exactPickers.length / total;
+
+      // BOLD candidate: only 1 person got it exact AND < 25% got even the result
+      if (exactPickers.length === 1 && resultPct < 0.25) {
+        boldCandidates.push({
+          user: users[exactPickers[0].userId]?.nickname || '?',
+          match: label,
+          pct: Math.round(resultPct * 100)
+        });
+      }
+
+      // CRAZY CALL: someone nailed the exact score AND it was a wild/unlikely result
+      // Criteria: (a) big scoreline 3+ goal diff, or (b) high-scoring 5+ goals, or (c) < 20% got result right
+      const isWild = scoreDiff >= 3 || totalGoals >= 5 || resultPct < 0.20;
+      if (isWild && exactPickers.length > 0) {
+        let reason = '';
+        if (resultPct < 0.20) reason = 'Only ' + Math.round(resultPct * 100) + '% of players called the result';
+        else if (totalGoals >= 5) reason = totalGoals + ' goals — crazy thriller';
+        else if (scoreDiff >= 3) reason = 'Dominant ' + scoreDiff + '-goal margin';
+        crazyCalls.push({
+          match: label,
+          reason,
+          users: exactNames,
+          resultPct: Math.round(resultPct * 100),
+          exactPct: Math.round(exactPct * 100)
+        });
+      }
+    });
+
+    let html = '';
+
+    // Section 1: Bold candidates
+    if (boldCandidates.length > 0) {
+      html += '<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">🐂 Bold prediction candidates</div>';
+      html += '<div style="background:linear-gradient(135deg,#422006,#431407);border-radius:10px;padding:12px 14px;margin-bottom:14px;border:1px solid #BA7517;">';
+      html += boldCandidates.map(b =>
+        '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid rgba(186,117,23,0.25);">' +
+          '<div>' +
+            '<div style="font-size:13px;font-weight:600;color:#EF9F27;">' + b.user + '</div>' +
+            '<div style="font-size:11px;color:rgba(239,159,39,0.7);">' + b.match + ' — only ' + b.pct + '% got the result</div>' +
+          '</div>' +
+          '<span style="font-size:20px;">🐂</span>' +
+        '</div>'
+      ).join('');
+      html += '<div style="font-size:11px;color:rgba(239,159,39,0.55);margin-top:8px;">→ Go to the Award Badge tab to give them the 🐂</div>';
+      html += '</div>';
+    } else {
+      html += '<div style="background:var(--surface2);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">' +
+        '<span style="font-size:24px;">🐂</span>' +
+        '<div>' +
+          '<div style="font-size:13px;font-weight:600;">No bold prediction candidates yet</div>' +
+          '<div style="font-size:11px;color:var(--text-muted);">Nobody has gone out on a limb and nailed it solo on a shock result. Check back after more matches.</div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    // Section 2: Crazy calls that paid off
+    html += '<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;margin-top:4px;">🎯 Crazy calls that paid off</div>';
+    if (crazyCalls.length > 0) {
+      html += crazyCalls.map(c =>
+        '<div style="background:var(--surface2);border-radius:10px;padding:10px 14px;margin-bottom:10px;border-left:3px solid var(--green);">' +
+          '<div style="font-size:13px;font-weight:600;margin-bottom:3px;">' + c.match + '</div>' +
+          '<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">' + c.reason + '</div>' +
+          '<div style="font-size:11px;"><span style="color:var(--green);font-weight:600;">🎯 ' + c.users.join(', ') + '</span>' +
+            ' <span style="color:var(--text-muted);">nailed the exact score</span>' +
+            ' <span style="font-size:10px;color:var(--text-muted);">(' + c.resultPct + '% got result · ' + c.exactPct + '% got exact)</span>' +
+          '</div>' +
+        '</div>'
+      ).join('');
+    } else {
+      html += '<div style="background:var(--surface2);border-radius:10px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;">' +
+        '<span style="font-size:22px;">🎯</span>' +
+        '<div>' +
+          '<div style="font-size:13px;font-weight:600;">No crazy calls yet</div>' +
+          '<div style="font-size:11px;color:var(--text-muted);">No one has nailed an exact score on a wild match so far.</div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    container.innerHTML = html;
+  }
+
+  async function loadMatchStats() {
+    const container = document.getElementById('bold-matchstats-content');
+    if (!container) return;
+    container.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Analysing...</div>';
+
+    const { matchesSnap, users, predsByMatch } = await loadBoldSharedData();
+
+    const insights = [];
 
     matchesSnap.forEach(d => {
       const m = { id: d.id, ...d.data() };
@@ -4266,46 +4395,43 @@
       if (preds.length === 0) return;
 
       const total = preds.length;
-      const label = `${m.homeTeam} ${m.homeScore}–${m.awayScore} ${m.awayTeam}`;
+      const label = m.homeTeam + ' ' + m.homeScore + '–' + m.awayScore + ' ' + m.awayTeam;
       const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
-
-      // Total goals in the match
       const totalGoals = m.homeScore + m.awayScore;
+      const scoreDiff = Math.abs(m.homeScore - m.awayScore);
 
-      // Exact score pickers
       const exactPickers = preds.filter(p => p.homeScore === m.homeScore && p.awayScore === m.awayScore)
         .map(p => users[p.userId]?.nickname || '?');
 
-      // 1. Upset: favourite lost (high-scoring team lost or draw)
-      const scoreDiff = Math.abs(m.homeScore - m.awayScore);
-      if (scoreDiff >= 3) {
+      const correctResult = preds.filter(p => {
+        const pr = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
+        return pr === actual;
+      });
+      const resultPct = Math.round(correctResult.length / total * 100);
+
+      // 1. Shock result (3+ goal diff, <40% called it)
+      if (scoreDiff >= 3 && resultPct < 40) {
         const winnerStr = m.homeScore > m.awayScore ? m.homeTeam : m.awayTeam;
         const loserStr = m.homeScore < m.awayScore ? m.homeTeam : m.awayTeam;
-        const pctCorrect = Math.round(preds.filter(p => {
-          const pr = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
-          return pr === actual;
-        }).length / total * 100);
-        if (pctCorrect < 40) {
-          insights.push({
-            type: '😱 Shock result',
-            match: label,
-            detail: `${winnerStr} thrashed ${loserStr} ${m.homeScore}–${m.awayScore} but only ${pctCorrect}% of players called it`,
-            users: exactPickers
-          });
-        }
-      }
-
-      // 2. High-scoring thriller (4+ goals)
-      if (totalGoals >= 4 && exactPickers.length > 0) {
         insights.push({
-          type: '🔥 Goal fest — exact score nailed',
+          type: '😱 Shock result',
           match: label,
-          detail: `${totalGoals} goals in the match — ${exactPickers.length} player${exactPickers.length>1?'s':''} called the exact score`,
+          detail: winnerStr + ' thrashed ' + loserStr + ' but only ' + resultPct + '% of players called it',
           users: exactPickers
         });
       }
 
-      // 3. Draw between clear favourites/underdogs (0-0 or 1-1)
+      // 2. High-scoring thriller (4+ goals, someone got exact)
+      if (totalGoals >= 4 && exactPickers.length > 0) {
+        insights.push({
+          type: '🔥 Goal fest — exact score nailed',
+          match: label,
+          detail: totalGoals + ' goals — ' + exactPickers.length + ' player' + (exactPickers.length > 1 ? 's' : '') + ' called the exact score',
+          users: exactPickers
+        });
+      }
+
+      // 3. Surprise low-scoring draw (<30% called draw, someone got exact)
       if (actual === 'D' && totalGoals <= 1) {
         const pctDraw = Math.round(preds.filter(p => {
           const pr = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
@@ -4315,122 +4441,60 @@
           insights.push({
             type: '🤝 Surprise draw — few called it',
             match: label,
-            detail: `Only ${pctDraw}% predicted a draw — ${exactPickers.length > 0 ? 'but these players nailed it' : 'nobody got the exact score'}`,
+            detail: 'Only ' + pctDraw + '% predicted a draw — but these players nailed it',
             users: exactPickers
           });
         }
       }
 
-      // 4. Nobody got exact score but match was unusual
+      // 4. Nobody got exact score, wild match
       if (exactPickers.length === 0 && totalGoals >= 3) {
         insights.push({
           type: '🏜️ Unpredictable — zero exact scores',
           match: label,
-          detail: `${totalGoals} goals, wild match — nobody predicted the exact score`,
+          detail: totalGoals + ' goals, wild match — nobody predicted the exact score',
           users: []
         });
       }
 
-      // 5. Everyone got it wrong (< 20% correct result)
-      const correctResult = preds.filter(p => {
-        const pr = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
-        return pr === actual;
-      });
+      // 5. Most got it wrong
       if (correctResult.length / total < 0.2) {
         insights.push({
           type: '💀 Brutal — most got it wrong',
           match: label,
-          detail: `Only ${correctResult.length}/${total} (${Math.round(correctResult.length/total*100)}%) got the result right`,
+          detail: 'Only ' + correctResult.length + '/' + total + ' (' + resultPct + '%) got the result right',
           users: exactPickers
         });
       }
 
-      // 6. Almost everyone got it right (> 80%)
+      // 6. Easy pick but exact scores nailed
       if (correctResult.length / total > 0.8 && exactPickers.length >= 2) {
         insights.push({
           type: '😎 Easy pick — but these got it exactly',
           match: label,
-          detail: `${Math.round(correctResult.length/total*100)}% got the result — ${exactPickers.length} nailed the exact score`,
+          detail: resultPct + '% got the result — ' + exactPickers.length + ' nailed the exact score',
           users: exactPickers
         });
       }
     });
 
-    // --- Bold Prediction candidates ---
-    // A "bold" pick = exact score on a match where < 15% of players got the exact score
-    const boldCandidates = []; // { user, match, score }
-    matchesSnap.forEach(d => {
-      const m = { id: d.id, ...d.data() };
-      if (m.status !== 'FINISHED' || m.homeScore === null) return;
-      const preds = predsByMatch[m.id] || [];
-      if (preds.length < 3) return; // need at least 3 players to judge boldness
-      const total = preds.length;
-      const exactPickers = preds.filter(p => p.homeScore === m.homeScore && p.awayScore === m.awayScore);
-      const exactPct = exactPickers.length / total;
-      // Bold = only 1 person got it exact AND under 15% of group got the result right
-      const correctResult = preds.filter(p => {
-        const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
-        const pr = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
-        return pr === actual;
-      });
-      const resultPct = correctResult.length / total;
-      if (exactPickers.length === 1 && resultPct < 0.25) {
-        boldCandidates.push({
-          user: users[exactPickers[0].userId]?.nickname || '?',
-          match: `${m.homeTeam} ${m.homeScore}–${m.awayScore} ${m.awayTeam}`,
-          pct: Math.round(resultPct * 100)
-        });
-      }
-    });
-
-    if (insights.length === 0 && boldCandidates.length === 0) {
-      container.innerHTML = `
-        <div style="text-align:center;padding:2rem 1rem;">
-          <div style="font-size:32px;margin-bottom:8px;">🐂</div>
-          <div style="font-size:14px;font-weight:600;margin-bottom:6px;">No bold predictions yet</div>
-          <div style="font-size:12px;color:var(--text-muted);">Nobody has gone out on a limb and nailed it so far.<br>Check back after more matches.</div>
-        </div>`;
+    if (insights.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:2rem 1rem;">' +
+        '<div style="font-size:32px;margin-bottom:8px;">📊</div>' +
+        '<div style="font-size:14px;font-weight:600;margin-bottom:6px;">No match stats yet</div>' +
+        '<div style="font-size:12px;color:var(--text-muted);">Check back after more matches are finished.</div>' +
+      '</div>';
       return;
     }
 
-    let html = '';
-
-    // Bold candidates at the top (most important for admin)
-    if (boldCandidates.length > 0) {
-      html += `<div style="background:linear-gradient(135deg,#422006,#431407);border-radius:10px;padding:12px 14px;margin-bottom:14px;border:1px solid #BA7517;">
-        <div style="font-size:12px;font-weight:700;color:#EF9F27;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">🐂 Bold prediction candidates</div>
-        ${boldCandidates.map(b => `
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid rgba(186,117,23,0.25);">
-            <div>
-              <div style="font-size:13px;font-weight:600;color:#EF9F27;">${b.user}</div>
-              <div style="font-size:11px;color:rgba(239,159,39,0.7);">${b.match} — only ${b.pct}% got the result</div>
-            </div>
-            <span style="font-size:20px;">🐂</span>
-          </div>`).join('')}
-        <div style="font-size:11px;color:rgba(239,159,39,0.55);margin-top:8px;">→ Go to the Award Badge tab to give them the 🐂</div>
-      </div>`;
-    } else {
-      html += `<div style="background:var(--surface2);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
-        <span style="font-size:24px;">🐂</span>
-        <div>
-          <div style="font-size:13px;font-weight:600;">No bold prediction candidates yet</div>
-          <div style="font-size:11px;color:var(--text-muted);">Nobody has gone out on a limb and nailed it so far. Check back after more matches.</div>
-        </div>
-      </div>`;
-    }
-
-    if (insights.length > 0) {
-      html += `<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Match insights</div>`;
-      html += insights.map(ins => `
-        <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;margin-bottom:10px;border-left:3px solid var(--accent);">
-          <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">${ins.type}</div>
-          <div style="font-size:13px;font-weight:600;margin-bottom:3px;">${ins.match}</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-bottom:${ins.users.length?'6px':'0'};">${ins.detail}</div>
-          ${ins.users.length > 0 ? `<div style="font-size:11px;"><span style="color:var(--green);font-weight:600;">🎯 ${ins.users.join(', ')}</span></div>` : ''}
-        </div>`).join('');
-    }
-
-    container.innerHTML = html;
+    container.innerHTML = insights.map(ins =>
+      '<div style="background:var(--surface2);border-radius:10px;padding:10px 14px;margin-bottom:10px;border-left:3px solid var(--accent);">' +
+        '<div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">' + ins.type + '</div>' +
+        '<div style="font-size:13px;font-weight:600;margin-bottom:3px;">' + ins.match + '</div>' +
+        '<div style="font-size:12px;color:var(--text-muted);margin-bottom:' + (ins.users.length ? '6px' : '0') + ';">' + ins.detail + '</div>' +
+        (ins.users.length > 0 ? '<div style="font-size:11px;"><span style="color:var(--green);font-weight:600;">🎯 ' + ins.users.join(', ') + '</span></div>' : '') +
+      '</div>'
+    ).join('');
   }
 
   async function loadWatchAdmin() {
