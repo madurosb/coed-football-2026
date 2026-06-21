@@ -4356,18 +4356,81 @@
       }
     });
 
-    if (insights.length === 0) {
-      container.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--text-muted);">No special insights yet — check back after more matches.</div>';
+    // --- Bold Prediction candidates ---
+    // A "bold" pick = exact score on a match where < 15% of players got the exact score
+    const boldCandidates = []; // { user, match, score }
+    matchesSnap.forEach(d => {
+      const m = { id: d.id, ...d.data() };
+      if (m.status !== 'FINISHED' || m.homeScore === null) return;
+      const preds = predsByMatch[m.id] || [];
+      if (preds.length < 3) return; // need at least 3 players to judge boldness
+      const total = preds.length;
+      const exactPickers = preds.filter(p => p.homeScore === m.homeScore && p.awayScore === m.awayScore);
+      const exactPct = exactPickers.length / total;
+      // Bold = only 1 person got it exact AND under 15% of group got the result right
+      const correctResult = preds.filter(p => {
+        const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
+        const pr = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
+        return pr === actual;
+      });
+      const resultPct = correctResult.length / total;
+      if (exactPickers.length === 1 && resultPct < 0.25) {
+        boldCandidates.push({
+          user: users[exactPickers[0].userId]?.nickname || '?',
+          match: `${m.homeTeam} ${m.homeScore}–${m.awayScore} ${m.awayTeam}`,
+          pct: Math.round(resultPct * 100)
+        });
+      }
+    });
+
+    if (insights.length === 0 && boldCandidates.length === 0) {
+      container.innerHTML = `
+        <div style="text-align:center;padding:2rem 1rem;">
+          <div style="font-size:32px;margin-bottom:8px;">🐂</div>
+          <div style="font-size:14px;font-weight:600;margin-bottom:6px;">No bold predictions yet</div>
+          <div style="font-size:12px;color:var(--text-muted);">Nobody has gone out on a limb and nailed it so far.<br>Check back after more matches.</div>
+        </div>`;
       return;
     }
 
-    container.innerHTML = insights.map(ins => `
-      <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;margin-bottom:10px;border-left:3px solid var(--accent);">
-        <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">${ins.type}</div>
-        <div style="font-size:13px;font-weight:600;margin-bottom:3px;">${ins.match}</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:${ins.users.length?'6px':'0'};">${ins.detail}</div>
-        ${ins.users.length > 0 ? `<div style="font-size:11px;"><span style="color:var(--green);font-weight:600;">🎯 ${ins.users.join(', ')}</span></div>` : ''}
-      </div>`).join('');
+    let html = '';
+
+    // Bold candidates at the top (most important for admin)
+    if (boldCandidates.length > 0) {
+      html += `<div style="background:linear-gradient(135deg,#422006,#431407);border-radius:10px;padding:12px 14px;margin-bottom:14px;border:1px solid #BA7517;">
+        <div style="font-size:12px;font-weight:700;color:#EF9F27;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">🐂 Bold prediction candidates</div>
+        ${boldCandidates.map(b => `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid rgba(186,117,23,0.25);">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:#EF9F27;">${b.user}</div>
+              <div style="font-size:11px;color:rgba(239,159,39,0.7);">${b.match} — only ${b.pct}% got the result</div>
+            </div>
+            <span style="font-size:20px;">🐂</span>
+          </div>`).join('')}
+        <div style="font-size:11px;color:rgba(239,159,39,0.55);margin-top:8px;">→ Go to the Award Badge tab to give them the 🐂</div>
+      </div>`;
+    } else {
+      html += `<div style="background:var(--surface2);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:24px;">🐂</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;">No bold prediction candidates yet</div>
+          <div style="font-size:11px;color:var(--text-muted);">Nobody has gone out on a limb and nailed it so far. Check back after more matches.</div>
+        </div>
+      </div>`;
+    }
+
+    if (insights.length > 0) {
+      html += `<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Match insights</div>`;
+      html += insights.map(ins => `
+        <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;margin-bottom:10px;border-left:3px solid var(--accent);">
+          <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">${ins.type}</div>
+          <div style="font-size:13px;font-weight:600;margin-bottom:3px;">${ins.match}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:${ins.users.length?'6px':'0'};">${ins.detail}</div>
+          ${ins.users.length > 0 ? `<div style="font-size:11px;"><span style="color:var(--green);font-weight:600;">🎯 ${ins.users.join(', ')}</span></div>` : ''}
+        </div>`).join('');
+    }
+
+    container.innerHTML = html;
   }
 
   async function loadWatchAdmin() {
