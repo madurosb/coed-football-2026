@@ -8733,40 +8733,26 @@ Use exactly the formation provided. Only use players from the squad lists above.
   }
 
   async function loadExistingPredictions(matchesSnap) {
-    // Load shared data once (DON cards, Joker, wc_scorers, user TP)
-    const [jokerSnap, donAllSnap, wcScorersSnap] = await Promise.all([
-      getDoc(doc(db, 'jokerCards', currentUser.uid)),
-      getDocs(query(collection(db, 'donCards'), where('userId', '==', currentUser.uid))),
-      getDocs(collection(db, 'wc_scorers'))
-    ]);
-    const jokerMatchId = jokerSnap.exists() ? jokerSnap.data().matchId : null;
-    const donMatchIds = new Set();
-    donAllSnap.forEach(d => donMatchIds.add(d.data().matchId));
-    const wcMap = {};
-    wcScorersSnap.forEach(d => {
-      const s = d.data();
-      const norm = (s.name || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-      wcMap[norm] = s;
+    // PHASE 1: Fill scores/scorers immediately (sync-style forEach, no await needed)
+    const predCache = {};
+    const predPromises = [];
+    matchesSnap.forEach(d => {
+      const p = getDoc(doc(db, 'predictions', `${currentUser.uid}_${d.id}`))
+        .then(snap => { if (snap.exists()) predCache[d.id] = snap.data(); });
+      predPromises.push(p);
     });
-    const myTP = currentUserData?.tournamentPlayer || null;
-    const myTPNorm = myTP ? myTP.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim() : null;
-    const myTPData = myTPNorm ? wcMap[myTPNorm] : null;
+    await Promise.all(predPromises);
 
-    for (const d of matchesSnap.docs) {
-      const m = d.data();
-      const predRef = doc(db, 'predictions', `${currentUser.uid}_${d.id}`);
-      const predSnap = await getDoc(predRef);
-      if (!predSnap.exists()) continue;
-      const pred = predSnap.data();
-
+    // Now fill scores immediately
+    matchesSnap.forEach(d => {
+      const pred = predCache[d.id];
+      if (!pred) return;
       const homeEl = document.getElementById('home-' + d.id);
       const awayEl = document.getElementById('away-' + d.id);
       const scorerEl = document.getElementById('scorer-' + d.id);
       if (homeEl) { homeEl.dataset.val = pred.homeScore ?? 0; homeEl.textContent = pred.homeScore ?? 0; }
       if (awayEl) { awayEl.dataset.val = pred.awayScore ?? 0; awayEl.textContent = pred.awayScore ?? 0; }
       if (scorerEl) scorerEl.value = pred.firstScorer || '';
-
-      // Update scorer button label
       if (pred.firstScorer) {
         const scorerBtn = document.getElementById('scorer-btn-' + d.id);
         const scorerLabel = document.getElementById('scorer-label-' + d.id);
@@ -8790,8 +8776,31 @@ Use exactly the formation provided. Only use players from the squad lists above.
           if (scorerBtn) { scorerBtn.style.borderColor = 'var(--accent)'; scorerBtn.style.background = 'rgba(59,130,246,0.06)'; scorerBtn.style.color = 'var(--text)'; }
         }
       }
+    });
 
-      // ── Result feedback for finished matches ──────────────────────────────
+    // PHASE 2: Load result feedback async (runs after scores are already showing)
+    const [jokerSnap, donAllSnap, wcScorersSnap] = await Promise.all([
+      getDoc(doc(db, 'jokerCards', currentUser.uid)),
+      getDocs(query(collection(db, 'donCards'), where('userId', '==', currentUser.uid))),
+      getDocs(collection(db, 'wc_scorers'))
+    ]);
+    const jokerMatchId = jokerSnap.exists() ? jokerSnap.data().matchId : null;
+    const donMatchIds = new Set();
+    donAllSnap.forEach(d => donMatchIds.add(d.data().matchId));
+    const wcMap = {};
+    wcScorersSnap.forEach(d => {
+      const s = d.data();
+      const norm = (s.name || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+      wcMap[norm] = s;
+    });
+    const myTP = currentUserData?.tournamentPlayer || null;
+    const myTPNorm = myTP ? myTP.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim() : null;
+    const myTPData = myTPNorm ? wcMap[myTPNorm] : null;
+
+    for (const d of matchesSnap.docs) {
+      const m = d.data();
+      const pred = predCache[d.id];
+      if (!pred) continue;
       if (m.status !== 'FINISHED' || m.homeScore === null || m.awayScore === null) continue;
       const resultEl = document.getElementById('result-' + d.id);
       if (!resultEl) continue;
@@ -8800,11 +8809,9 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const predResult   = pred.homeScore > pred.awayScore ? 'home' : pred.homeScore < pred.awayScore ? 'away' : 'draw';
       const isExact  = pred.homeScore === m.homeScore && pred.awayScore === m.awayScore;
       const isWinner = actualResult === predResult;
-
       const hasJoker = jokerMatchId === d.id;
       const hasDon   = donMatchIds.has(d.id);
 
-      // Stage multiplier
       const stage = (m.stage || '').toLowerCase();
       const isFinal   = stage.includes('final') && !stage.includes('semi') && !stage.includes('third');
       const isSemi    = stage.includes('semi');
@@ -8813,14 +8820,14 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const stageMulti = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
 
       let pts = 0;
-      let rows = []; // each row: { icon, text, pts, green }
+      let rows = [];
 
-      // ── Outcome ──────────────────────────────────────────────────────────
+      // Outcome
       if (hasDon) {
         if (isWinner) {
           const raw = isExact ? 4 * stageMulti : 1 * stageMulti;
           pts += raw * 2;
-          rows.push({ icon: isExact ? '🎯' : '✅', text: isExact ? 'Exact score' : (actualResult === 'draw' ? 'Correct draw' : 'Correct result') + ' · 🎰 DON ×2', pts: '+' + (raw * 2), green: true });
+          rows.push({ icon: isExact ? '🎯' : '✅', text: isExact ? 'Exact score · 🎰 DON ×2' : (actualResult === 'draw' ? 'Correct draw · 🎰 DON ×2' : 'Correct result · 🎰 DON ×2'), pts: '+' + (raw * 2), green: true });
         } else {
           pts += -1 * stageMulti;
           rows.push({ icon: '💀', text: 'Wrong result · 🎰 DON penalty', pts: '' + (-1 * stageMulti), green: false });
@@ -8840,7 +8847,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
         }
       }
 
-      // ── First Scorer ──────────────────────────────────────────────────────
+      // First Scorer
       if (pred.firstScorer) {
         const resultSnap = await getDoc(doc(db, 'results', d.id));
         const actualScorer = resultSnap.exists() ? (resultSnap.data().firstScorer || null) : null;
@@ -8848,7 +8855,6 @@ Use exactly the formation provided. Only use players from the squad lists above.
         const predIsOG   = pred.firstScorer.toLowerCase().includes('own goal') || pred.firstScorer.toLowerCase() === 'og';
         const actualIsOG = (actualScorer||'').toLowerCase().includes('own goal') || (actualScorer||'').toLowerCase() === 'og';
         const scorerNailed = (actualScorer && pred.firstScorer === actualScorer) || (predIsOG && actualIsOG) || (predIsOG && matchHasOG);
-
         if (scorerNailed) {
           pts += 2;
           rows.push({ icon: predIsOG ? '🙈' : '⚽', text: 'Scorer nailed it! ' + (predIsOG ? 'Own Goal' : pred.firstScorer), pts: '+2', green: true });
@@ -8860,33 +8866,32 @@ Use exactly the formation provided. Only use players from the squad lists above.
         }
       }
 
-      // ── Tournament Player ─────────────────────────────────────────────────
+      // Tournament Player
       if (myTP && myTPData) {
         const tpTeams = [m.homeTeam, m.awayTeam].map(t => (t||'').toLowerCase());
         const tpCountry = (myTPData.country || '').toLowerCase();
         const tpPlayedInMatch = tpCountry && tpTeams.some(t => t.includes(tpCountry) || tpCountry.includes(t));
         if (tpPlayedInMatch) {
-          const tpGoals   = myTPData.goals   || 0;
-          const tpAssists = myTPData.assists  || 0;
-          const tpReds    = myTPData.redCards || 0;
+          const tpGoals = myTPData.goals || 0;
+          const tpAssists = myTPData.assists || 0;
+          const tpReds = myTPData.redCards || 0;
           const tpPts = tpGoals * 2 + tpAssists - tpReds;
           if (tpGoals > 0 || tpAssists > 0 || tpReds > 0) {
-            rows.push({ icon: '⭐', text: myTP + ' (TP) · ' + (tpGoals > 0 ? tpGoals + ' goal' + (tpGoals>1?'s':'') + ' ×2 ' : '') + (tpAssists > 0 ? tpAssists + ' assist' + (tpAssists>1?'s':'') + ' ×1 ' : '') + (tpReds > 0 ? tpReds + ' red ×−1' : '') + ' (tournament total)', pts: (tpPts >= 0 ? '+' : '') + tpPts, green: tpPts > 0 });
+            rows.push({ icon: '⭐', text: myTP + ' (TP) · ' + (tpGoals > 0 ? tpGoals + 'g×2 ' : '') + (tpAssists > 0 ? tpAssists + 'a×1 ' : '') + (tpReds > 0 ? tpReds + ' red×−1 ' : '') + '(tournament total)', pts: (tpPts >= 0 ? '+' : '') + tpPts, green: tpPts > 0 });
           } else {
             rows.push({ icon: '⭐', text: myTP + ' (TP) played · no stats yet', pts: '0', green: null });
           }
         }
       }
 
-      // ── Build HTML ────────────────────────────────────────────────────────
+      // Build HTML
       const totalLabel = pts > 0 ? `<span style="color:var(--green);font-weight:900;">+${pts} pts</span>` : pts < 0 ? `<span style="color:#ef4444;font-weight:900;">${pts} pts</span>` : `<span style="color:var(--text-muted);">0 pts</span>`;
       const overallStyle = pts > 0 ? 'border-left:3px solid var(--green);' : pts < 0 ? 'border-left:3px solid #ef4444;' : 'border-left:3px solid var(--border);';
-
       const rowsHtml = rows.map(r => `
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
           <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;">
             <span style="font-size:14px;flex-shrink:0;">${r.icon}</span>
-            <span style="font-size:12px;color:${r.green === true ? 'var(--text)' : r.green === false ? 'var(--text-muted)' : 'var(--text-muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.text}</span>
+            <span style="font-size:12px;color:${r.green === true ? 'var(--text)' : 'var(--text-muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.text}</span>
           </div>
           <span style="font-size:12px;font-weight:800;flex-shrink:0;${r.green === true ? 'color:var(--green);' : r.green === false && r.pts !== '0' ? 'color:#ef4444;' : 'color:var(--text-muted);'}">${r.pts}</span>
         </div>`).join('');
