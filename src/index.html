@@ -6329,6 +6329,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     setPersistence(auth, browserLocalPersistence).catch(()=>{});
   }).catch(()=>{});
   const db = getFirestore(app);
+  window._db = db;
   window._db = db; // Expose for debugging and window-scope functions
 
   // Show opening video — after DOM is fully ready
