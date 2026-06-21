@@ -8781,7 +8781,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     // PHASE 2: Load result feedback async (runs after scores are already showing)
     const [jokerSnap, donAllSnap, wcScorersSnap] = await Promise.all([
       getDoc(doc(db, 'jokerCards', currentUser.uid)),
-      getDocs(query(collection(db, 'donCards'), where('userId', '==', currentUser.uid))),
+      getDocs(query(collection(db, 'donOptIns'), where('userId', '==', currentUser.uid))),
       getDocs(collection(db, 'wc_scorers'))
     ]);
     const jokerMatchId = jokerSnap.exists() ? jokerSnap.data().matchId : null;
