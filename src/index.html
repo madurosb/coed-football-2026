@@ -5673,54 +5673,19 @@
           });
         } catch(e) {}
 
-        // ── Status label: LIVE only, no FINAL when live ──────────────
         const statusLabel = isLive
           ? '<span style="background:#E24B4A;color:white;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;animation:pulse 1.5s infinite;">● LIVE' + (liveMatch.minute ? ' ' + liveMatch.minute + "'" : '') + '</span>'
-          : ''; // No FINAL label — only show during live
+          : '<span style="background:var(--surface2);color:var(--text-muted);font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;">✓ FINAL</span>';
 
-        // ── Tournament Player check for this match ────────────────
-        const myTP = currentUser ? (allUsersData[currentUser.uid]?.tournamentPlayer || '') : '';
-        const matchPlayers = [
-          ...(liveMatch.goals || []).map(g => g.name || ''),
-          ...((liveMatch.homePlayers || []).concat(liveMatch.awayPlayers || []))
-        ];
-        // Check if user's TP plays for either team in this match
-        const homeTeamName = (card.dataset.home || '').toLowerCase();
-        const awayTeamName = (card.dataset.away || '').toLowerCase();
-        // Get squad players for both teams from Firestore match data
-        let tpIsPlaying = false;
-        if (myTP) {
-          try {
-            const mSnap = await getDoc(doc(db, 'matches', matchId));
-            const mData = mSnap.data() || {};
-            const allMatchPlayers = [...(mData.homePlayers || []), ...(mData.awayPlayers || [])];
-            const normTP = myTP.toLowerCase().split(' ').pop(); // last name match
-            tpIsPlaying = allMatchPlayers.some(p => p.toLowerCase().includes(normTP)) ||
-                          (liveMatch.goals || []).some(g => (g.name||'').toLowerCase().includes(normTP));
-          } catch(e) {}
-        }
-
-        const tpBanner = (isLive && myTP && tpIsPlaying)
-          ? '<div style="margin-top:8px;padding:8px 12px;border-radius:10px;background:rgba(124,58,237,0.12);border:1px solid rgba(124,58,237,0.35);font-size:12px;color:#a78bfa;font-weight:600;">' +
-            '⭐ ' + myTP + ' is playing right now — check back after the match to see how many points they earned you!' +
-            '</div>'
-          : '';
-
-        // ── My pick message (live only — conditional phrasing) ────
-        const msg = (isLive && currentUser && myPred) ? getLiveMessage(myPred, lH, lA, allPreds, allUsersData) : null;
+        // My pick message
+        const msg = currentUser && myPred ? getLiveMessage(myPred, lH, lA, allPreds, allUsersData) : null;
         const msgColors = { winning:'#1D9E75', sweating:'#d97706', losing:'#E24B4A' };
         const msgBg = { winning:'rgba(29,158,117,0.1)', sweating:'rgba(217,119,6,0.1)', losing:'rgba(226,75,74,0.1)' };
-
-        // Live: "if the score stays like this..." framing
-        const livePrefix = isLive ? '<span style="font-size:10px;opacity:0.75;display:block;margin-bottom:2px;">If the score stays like this...</span>' : '';
-
-        const myPickHtml = msg ? (
-          '<div style="margin-top:8px;padding:10px 12px;border-radius:10px;background:' + msgBg[msg.type] + ';border:1px solid ' + msgColors[msg.type] + '44;">' +
-          livePrefix +
-          '<div style="font-size:12px;color:' + msgColors[msg.type] + ';font-weight:600;line-height:1.5;">' + msg.text + '</div>' +
-          '<div style="font-size:10px;color:var(--text-muted);margin-top:3px;">Your pick: ' + myPred.homeScore + '-' + myPred.awayScore + (myPred.firstScorer ? ' · ⚽ ' + myPred.firstScorer : '') + '</div>' +
-          '</div>'
-        ) : '';
+        const myPickHtml = msg ? `
+          <div style="margin-top:8px;padding:10px 12px;border-radius:10px;background:${msgBg[msg.type]};border:1px solid ${msgColors[msg.type]}44;">
+            <div style="font-size:12px;color:${msgColors[msg.type]};font-weight:600;line-height:1.5;">${msg.text}</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:3px;">Your pick: ${myPred.homeScore}-${myPred.awayScore}${myPred.firstScorer ? ` · ⚽ ${myPred.firstScorer}` : ''}</div>
+          </div>` : '';
 
         // Who picked what
         const byScore = {};
@@ -5740,15 +5705,13 @@
         const othersHtml = othersRows ? '<div style="margin-top:8px;font-size:10px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Who picked what:</div>' + othersRows : '';
 
         livePanel.style.display = 'block';
-        // Only show the panel when LIVE (not finished)
-        if (!isLive) { livePanel.style.display = 'none'; return; }
         livePanel.innerHTML =
-          '<div style="margin-top:10px;background:var(--surface2);border-radius:12px;padding:12px 14px;border:1px solid #E24B4A55;">' +
+          '<div style="margin-top:10px;background:var(--surface2);border-radius:12px;padding:12px 14px;border:1px solid ' + (isLive ? '#E24B4A55' : 'var(--border)') + ';">' +
           '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
           statusLabel +
           '<div style="font-size:26px;font-weight:800;letter-spacing:4px;font-variant-numeric:tabular-nums;">' + lH + ' - ' + lA + '</div>' +
           '</div>' +
-          myPickHtml + tpBanner + othersHtml +
+          myPickHtml + othersHtml +
           '</div>';
 
         if (isLive) {
@@ -8679,7 +8642,8 @@ Use exactly the formation provided. Only use players from the squad lists above.
       ].join('');
 
       const liveIndicator = ''; // Badge injected dynamically by updateLiveScoreCards with minute
-      const finishedResult = isFinished && m.homeScore !== null ? `
+      // Only show final result block when truly FINISHED (not while LIVE)
+      const finishedResult = (isFinished && !isLive) && m.homeScore !== null ? `
         <div style="background:var(--surface2);border-radius:8px;padding:6px 12px;text-align:center;margin-top:8px;">
           <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Final result</div>
           <div style="font-size:20px;font-weight:700;">${m.homeScore} - ${m.awayScore}</div>
@@ -8959,6 +8923,14 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const m = d.data();
       const pred = predCache[d.id];
       if (!pred) continue;
+      // Skip if no score, or if match is currently LIVE (don't show points mid-match)
+      const matchIsLive = ['IN_PLAY','PAUSED','HALFTIME'].includes(m.status);
+      if (matchIsLive) {
+        // Clear any stale result card from before the match went live
+        const staleEl = document.getElementById('result-' + d.id);
+        if (staleEl) staleEl.innerHTML = '';
+        continue;
+      }
       if ((m.status !== 'FINISHED' && m.homeScore === null) || m.homeScore === null || m.homeScore === undefined || m.awayScore === null) continue;
       const resultEl = document.getElementById('result-' + d.id);
       if (!resultEl) continue;
