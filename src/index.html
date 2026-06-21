@@ -8733,11 +8733,30 @@ Use exactly the formation provided. Only use players from the squad lists above.
   }
 
   async function loadExistingPredictions(matchesSnap) {
+    // Load shared data once (DON cards, Joker, wc_scorers, user TP)
+    const [jokerSnap, donAllSnap, wcScorersSnap] = await Promise.all([
+      getDoc(doc(db, 'jokerCards', currentUser.uid)),
+      getDocs(query(collection(db, 'donCards'), where('userId', '==', currentUser.uid))),
+      getDocs(collection(db, 'wc_scorers'))
+    ]);
+    const jokerMatchId = jokerSnap.exists() ? jokerSnap.data().matchId : null;
+    const donMatchIds = new Set();
+    donAllSnap.forEach(d => donMatchIds.add(d.data().matchId));
+    const wcMap = {};
+    wcScorersSnap.forEach(d => {
+      const s = d.data();
+      const norm = (s.name || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+      wcMap[norm] = s;
+    });
+    const myTP = currentUserData?.tournamentPlayer || null;
+    const myTPNorm = myTP ? myTP.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim() : null;
+    const myTPData = myTPNorm ? wcMap[myTPNorm] : null;
+
     for (const d of matchesSnap.docs) {
       const m = d.data();
       const predRef = doc(db, 'predictions', `${currentUser.uid}_${d.id}`);
       const predSnap = await getDoc(predRef);
-      if (!predSnap.exists()) return;
+      if (!predSnap.exists()) continue;
       const pred = predSnap.data();
 
       const homeEl = document.getElementById('home-' + d.id);
@@ -8746,24 +8765,18 @@ Use exactly the formation provided. Only use players from the squad lists above.
       if (homeEl) { homeEl.dataset.val = pred.homeScore ?? 0; homeEl.textContent = pred.homeScore ?? 0; }
       if (awayEl) { awayEl.dataset.val = pred.awayScore ?? 0; awayEl.textContent = pred.awayScore ?? 0; }
       if (scorerEl) scorerEl.value = pred.firstScorer || '';
+
       // Update scorer button label
       if (pred.firstScorer) {
         const scorerBtn = document.getElementById('scorer-btn-' + d.id);
         const scorerLabel = document.getElementById('scorer-label-' + d.id);
-        const ogBtn = document.getElementById('og-btn-' + d.id);
-
         if (pred.firstScorer === 'Own Goal') {
-          // Restore OG active state — defer to ensure DOM elements exist
           const matchIdStr = d.id;
           const restoreOG = () => {
             const ogBtnEl = document.getElementById('og-btn-' + matchIdStr);
             const scorerBtnEl = document.getElementById('scorer-btn-' + matchIdStr);
             const scorerLabelEl = document.getElementById('scorer-label-' + matchIdStr);
-            // For finished (isPast) cards, there's no og-btn — just update the label directly
-            if (!ogBtnEl) {
-              if (scorerLabelEl) scorerLabelEl.textContent = '🙈 Own Goal prediction';
-              return;
-            }
+            if (!ogBtnEl) { if (scorerLabelEl) scorerLabelEl.textContent = '🙈 Own Goal prediction'; return; }
             if (scorerLabelEl) scorerLabelEl.textContent = '🙈 Own Goal';
             if (scorerBtnEl) { scorerBtnEl.style.opacity = '0.4'; scorerBtnEl.style.pointerEvents = 'none'; }
             ogBtnEl.style.background = 'rgba(239,68,68,0.22)';
@@ -8778,123 +8791,117 @@ Use exactly the formation provided. Only use players from the squad lists above.
         }
       }
 
-      // Show result feedback for finished matches
-      if (m.status === 'FINISHED' && m.homeScore !== null && m.awayScore !== null) {
-        const resultEl = document.getElementById('result-' + d.id);
-        if (!resultEl) return;
+      // ── Result feedback for finished matches ──────────────────────────────
+      if (m.status !== 'FINISHED' || m.homeScore === null || m.awayScore === null) continue;
+      const resultEl = document.getElementById('result-' + d.id);
+      if (!resultEl) continue;
 
-        const actualResult = m.homeScore > m.awayScore ? 'home' : m.homeScore < m.awayScore ? 'away' : 'draw';
-        const predResult   = pred.homeScore > pred.awayScore ? 'home' : pred.homeScore < pred.awayScore ? 'away' : 'draw';
-        const isExact  = pred.homeScore === m.homeScore && pred.awayScore === m.awayScore;
-        const isWinner = actualResult === predResult;
+      const actualResult = m.homeScore > m.awayScore ? 'home' : m.homeScore < m.awayScore ? 'away' : 'draw';
+      const predResult   = pred.homeScore > pred.awayScore ? 'home' : pred.homeScore < pred.awayScore ? 'away' : 'draw';
+      const isExact  = pred.homeScore === m.homeScore && pred.awayScore === m.awayScore;
+      const isWinner = actualResult === predResult;
 
-        // Load DON + Joker state for this user
-        const [jokerSnap, donSnap] = await Promise.all([
-          getDoc(doc(db, 'jokerCards', currentUser.uid)),
-          getDocs(query(collection(db, 'donCards'), where('userId','==', currentUser.uid), where('matchId','==', d.id)))
-        ]);
-        const hasJoker = jokerSnap.exists() && jokerSnap.data().matchId === d.id;
-        const hasDon   = !donSnap.empty;
+      const hasJoker = jokerMatchId === d.id;
+      const hasDon   = donMatchIds.has(d.id);
 
-        // Stage multiplier
-        const stage = (m.stage || '').toLowerCase();
-        const isFinal   = stage.includes('final') && !stage.includes('semi') && !stage.includes('third');
-        const isSemi    = stage.includes('semi');
-        const isQuarter = stage.includes('quarter');
-        const isR16     = stage.includes('16') || stage.includes('round of 16') || stage.includes('r16');
-        const stageMulti = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
+      // Stage multiplier
+      const stage = (m.stage || '').toLowerCase();
+      const isFinal   = stage.includes('final') && !stage.includes('semi') && !stage.includes('third');
+      const isSemi    = stage.includes('semi');
+      const isQuarter = stage.includes('quarter');
+      const isR16     = stage.includes('16') || stage.includes('round of 16') || stage.includes('r16');
+      const stageMulti = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
 
-        // Build result label
-        let resultLabel = '';
-        let resultStyle = '';
-        let pts = 0;
+      let pts = 0;
+      let rows = []; // each row: { icon, text, pts, green }
 
-        if (hasDon) {
-          // DON: doubles all if correct, -1*stageMulti if wrong
-          if (isWinner) {
-            pts = isExact ? (4 * stageMulti * 2) : (1 * stageMulti * 2);
-            resultLabel = isExact ? '🎯 Exact score (DON x2!)' : (actualResult === 'draw' ? '✅ Correct draw (DON x2!)' : `✅ Correct winner (DON x2!)`);
-            resultStyle = 'background:var(--badge-green-bg);color:var(--badge-green-text);border:0.5px solid #5DCAA5;';
-          } else {
-            pts = -1 * stageMulti;
-            resultLabel = '💀 Wrong result (DON −' + Math.abs(pts) + ')';
-            resultStyle = 'background:var(--badge-red-bg);color:var(--badge-red-text);border:0.5px solid #E24B4A;';
-          }
+      // ── Outcome ──────────────────────────────────────────────────────────
+      if (hasDon) {
+        if (isWinner) {
+          const raw = isExact ? 4 * stageMulti : 1 * stageMulti;
+          pts += raw * 2;
+          rows.push({ icon: isExact ? '🎯' : '✅', text: isExact ? 'Exact score' : (actualResult === 'draw' ? 'Correct draw' : 'Correct result') + ' · 🎰 DON ×2', pts: '+' + (raw * 2), green: true });
         } else {
-          if (isExact) {
-            pts += 4 * stageMulti;
-            resultLabel = '🎯 Exact score';
-            resultStyle = 'background:var(--badge-green-bg);color:var(--badge-green-text);border:0.5px solid #5DCAA5;';
-          } else if (isWinner) {
-            pts += 1 * stageMulti;
-            if (actualResult === 'draw') {
-              resultLabel = '✅ Correct draw';
-            } else {
-              const winnerTeam = actualResult === 'home' ? m.homeTeam : m.awayTeam;
-              resultLabel = `✅ Correct winner: ${winnerTeam}`;
-            }
-            resultStyle = 'background:var(--badge-blue-bg);color:var(--badge-blue-text);border:0.5px solid #378ADD;';
-          } else {
-            resultLabel = '❌ Wrong result';
-            resultStyle = 'background:var(--badge-red-bg);color:var(--badge-red-text);border:0.5px solid #E24B4A;';
-          }
-          // Joker doubles outcome pts if correct
-          if (hasJoker && isWinner && !hasDon) { pts *= 2; resultLabel += ' 🃏×2'; }
+          pts += -1 * stageMulti;
+          rows.push({ icon: '💀', text: 'Wrong result · 🎰 DON penalty', pts: '' + (-1 * stageMulti), green: false });
         }
-
-        // Scorer feedback
-        let scorerLabel = '';
-        if (pred.firstScorer) {
-          const resultSnap = await getDoc(doc(db, 'results', d.id));
-          const resultData = resultSnap.exists() ? resultSnap.data() : {};
-          const actualScorer = resultData.firstScorer || null;
-          const matchHasOG = m.hasOwnGoal === true;
-          const predIsOG = pred.firstScorer.toLowerCase().includes('own goal') || pred.firstScorer.toLowerCase() === 'og';
-          const actualIsOG = (actualScorer||'').toLowerCase().includes('own goal') || (actualScorer||'').toLowerCase() === 'og';
-
-          // Did the user nail the scorer?
-          const scorerNailed = (actualScorer && pred.firstScorer === actualScorer) ||
-            (predIsOG && actualIsOG) ||
-            (predIsOG && matchHasOG);
-
-          if (scorerNailed) {
-            pts += 2;
-            const displayName = predIsOG ? '🙈 Own Goal' : pred.firstScorer;
-            scorerLabel = `
-              <div style="margin-top:8px;padding:10px 14px;border-radius:10px;
-                background:linear-gradient(135deg,rgba(5,150,105,0.2),rgba(16,185,129,0.1));
-                border:1.5px solid rgba(5,150,105,0.6);
-                animation:scorerPop 0.4s cubic-bezier(0.34,1.56,0.64,1);">
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <span style="font-size:22px;animation:spin 0.5s ease-out;">${predIsOG ? '🙈' : '⚽'}</span>
-                  <div>
-                    <div style="font-size:13px;font-weight:800;color:#34d399;letter-spacing:0.02em;">SCORER NAILED IT! +2 pts 🎯</div>
-                    <div style="font-size:11px;color:#6ee7b7;margin-top:1px;">${displayName}</div>
-                  </div>
-                  <span style="margin-left:auto;font-size:20px;">🔥</span>
-                </div>
-              </div>`;
-          } else if (actualScorer || matchHasOG) {
-            // Show what the actual scorer was
-            const actualDisplay = actualIsOG ? '🙈 Own Goal' : (actualScorer || '');
-            scorerLabel = `<div style="font-size:12px;margin-top:6px;color:var(--badge-red-text);padding:6px 10px;background:rgba(239,68,68,0.08);border-radius:8px;">⚽ Was: ${actualDisplay}${matchHasOG && !actualIsOG && actualScorer ? ' · 🙈 Own Goal also in this match' : ''}</div>`;
-          }
-
-          // If user picked a player (not OG) but there was ALSO an OG — show info badge
-          if (!predIsOG && matchHasOG && scorerNailed) {
-            scorerLabel += `<div style="font-size:11px;margin-top:4px;color:var(--text-muted);padding:4px 8px;background:rgba(239,68,68,0.07);border-radius:6px;">🙈 There was also an Own Goal in this match</div>`;
-          }
+      } else {
+        if (isExact) {
+          const p = 4 * stageMulti;
+          pts += hasJoker ? p * 2 : p;
+          rows.push({ icon: '🎯', text: 'Exact score' + (stageMulti > 1 ? ' ×' + stageMulti : '') + (hasJoker ? ' · 🃏 Joker ×2' : ''), pts: '+' + (hasJoker ? p * 2 : p), green: true });
+        } else if (isWinner) {
+          const p = 1 * stageMulti;
+          pts += hasJoker ? p * 2 : p;
+          const winnerTeam = actualResult === 'home' ? m.homeTeam : actualResult === 'away' ? m.awayTeam : null;
+          rows.push({ icon: '✅', text: (actualResult === 'draw' ? 'Correct draw' : 'Correct result: ' + winnerTeam) + (stageMulti > 1 ? ' ×' + stageMulti : '') + (hasJoker ? ' · 🃏 Joker ×2' : ''), pts: '+' + (hasJoker ? p * 2 : p), green: true });
+        } else {
+          rows.push({ icon: '❌', text: 'Wrong result · predicted ' + pred.homeScore + '-' + pred.awayScore, pts: '0', green: false });
         }
-
-        resultEl.innerHTML = `
-          <div style="margin-top:10px;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:500;${resultStyle}">
-            ${resultLabel} &nbsp;·&nbsp; +${pts} pt${pts !== 1 ? 's' : ''}
-            ${scorerLabel}
-          </div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:6px;text-align:center;">
-            Final score: ${m.homeTeam} ${m.homeScore} - ${m.awayScore} ${m.awayTeam}
-          </div>`;
       }
+
+      // ── First Scorer ──────────────────────────────────────────────────────
+      if (pred.firstScorer) {
+        const resultSnap = await getDoc(doc(db, 'results', d.id));
+        const actualScorer = resultSnap.exists() ? (resultSnap.data().firstScorer || null) : null;
+        const matchHasOG = m.hasOwnGoal === true;
+        const predIsOG   = pred.firstScorer.toLowerCase().includes('own goal') || pred.firstScorer.toLowerCase() === 'og';
+        const actualIsOG = (actualScorer||'').toLowerCase().includes('own goal') || (actualScorer||'').toLowerCase() === 'og';
+        const scorerNailed = (actualScorer && pred.firstScorer === actualScorer) || (predIsOG && actualIsOG) || (predIsOG && matchHasOG);
+
+        if (scorerNailed) {
+          pts += 2;
+          rows.push({ icon: predIsOG ? '🙈' : '⚽', text: 'Scorer nailed it! ' + (predIsOG ? 'Own Goal' : pred.firstScorer), pts: '+2', green: true });
+        } else if (actualScorer || matchHasOG) {
+          const actualDisplay = actualIsOG ? 'Own Goal 🙈' : (actualScorer || '');
+          rows.push({ icon: '⚽', text: 'Picked: ' + (predIsOG ? 'Own Goal 🙈' : pred.firstScorer) + ' · Was: ' + actualDisplay + (matchHasOG && !actualIsOG && actualScorer ? ' (+ OG in match)' : ''), pts: '0', green: false });
+        } else {
+          rows.push({ icon: '⚽', text: 'Picked: ' + (predIsOG ? 'Own Goal 🙈' : pred.firstScorer) + ' · Scorer not yet set', pts: '—', green: null });
+        }
+      }
+
+      // ── Tournament Player ─────────────────────────────────────────────────
+      if (myTP && myTPData) {
+        const tpTeams = [m.homeTeam, m.awayTeam].map(t => (t||'').toLowerCase());
+        const tpCountry = (myTPData.country || '').toLowerCase();
+        const tpPlayedInMatch = tpCountry && tpTeams.some(t => t.includes(tpCountry) || tpCountry.includes(t));
+        if (tpPlayedInMatch) {
+          const tpGoals   = myTPData.goals   || 0;
+          const tpAssists = myTPData.assists  || 0;
+          const tpReds    = myTPData.redCards || 0;
+          const tpPts = tpGoals * 2 + tpAssists - tpReds;
+          if (tpGoals > 0 || tpAssists > 0 || tpReds > 0) {
+            rows.push({ icon: '⭐', text: myTP + ' (TP) · ' + (tpGoals > 0 ? tpGoals + ' goal' + (tpGoals>1?'s':'') + ' ×2 ' : '') + (tpAssists > 0 ? tpAssists + ' assist' + (tpAssists>1?'s':'') + ' ×1 ' : '') + (tpReds > 0 ? tpReds + ' red ×−1' : '') + ' (tournament total)', pts: (tpPts >= 0 ? '+' : '') + tpPts, green: tpPts > 0 });
+          } else {
+            rows.push({ icon: '⭐', text: myTP + ' (TP) played · no stats yet', pts: '0', green: null });
+          }
+        }
+      }
+
+      // ── Build HTML ────────────────────────────────────────────────────────
+      const totalLabel = pts > 0 ? `<span style="color:var(--green);font-weight:900;">+${pts} pts</span>` : pts < 0 ? `<span style="color:#ef4444;font-weight:900;">${pts} pts</span>` : `<span style="color:var(--text-muted);">0 pts</span>`;
+      const overallStyle = pts > 0 ? 'border-left:3px solid var(--green);' : pts < 0 ? 'border-left:3px solid #ef4444;' : 'border-left:3px solid var(--border);';
+
+      const rowsHtml = rows.map(r => `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+          <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;">
+            <span style="font-size:14px;flex-shrink:0;">${r.icon}</span>
+            <span style="font-size:12px;color:${r.green === true ? 'var(--text)' : r.green === false ? 'var(--text-muted)' : 'var(--text-muted)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.text}</span>
+          </div>
+          <span style="font-size:12px;font-weight:800;flex-shrink:0;${r.green === true ? 'color:var(--green);' : r.green === false && r.pts !== '0' ? 'color:#ef4444;' : 'color:var(--text-muted);'}">${r.pts}</span>
+        </div>`).join('');
+
+      resultEl.innerHTML = `
+        <div style="margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--surface2);${overallStyle}">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">This match</span>
+            ${totalLabel}
+          </div>
+          ${rowsHtml}
+          <div style="font-size:10px;color:var(--text-muted);margin-top:6px;text-align:center;">
+            Final: ${m.homeTeam} ${m.homeScore}–${m.awayScore} ${m.awayTeam}${hasDon ? ' · 🎰 DON used' : ''}${hasJoker ? ' · 🃏 Joker used' : ''}
+          </div>
+        </div>`;
     }
   }
 
