@@ -8801,7 +8801,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const m = d.data();
       const pred = predCache[d.id];
       if (!pred) continue;
-      if (m.status !== 'FINISHED' || m.homeScore === null || m.awayScore === null) continue;
+      if ((m.status !== 'FINISHED' && m.homeScore === null) || m.homeScore === null || m.homeScore === undefined || m.awayScore === null) continue;
       const resultEl = document.getElementById('result-' + d.id);
       if (!resultEl) continue;
 
