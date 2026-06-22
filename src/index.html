@@ -906,40 +906,86 @@
       border:1px solid rgba(74,222,128,0.35);
       white-space:nowrap;
     }
-    /* LOCKED PICK CARDS */
+    /* ═══ LOCKED PICK CARDS — premium redesign ═══ */
     .locked-pick-card {
-      border-radius: 16px; padding: 14px 16px; margin-bottom: 0.75rem;
+      border-radius: 18px; padding: 16px; margin-bottom: 0.75rem;
       display: flex; align-items: center; gap: 14px;
       position: relative; overflow: hidden;
       animation: lockedCardIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
     }
-    .locked-pick-card::before {
-      content:''; position:absolute; top:0; left:0; right:0; height:2px;
-    }
+    /* ── Tournament Player — deep purple/indigo ── */
     .locked-pick-card.tp-card {
-      background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(99,102,241,0.06));
-      border: 1px solid rgba(59,130,246,0.25);
+      background: linear-gradient(135deg, #130d2e 0%, #1a1040 60%, #0f0a22 100%);
+      border: 1px solid rgba(139,92,246,0.35);
+      box-shadow: 0 8px 32px rgba(139,92,246,0.12), inset 0 1px 0 rgba(255,255,255,0.06);
     }
-    .locked-pick-card.tp-card::before { background: linear-gradient(90deg,#3b82f6,#6366f1,#8b5cf6); }
+    .locked-pick-card.tp-card::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:2px;
+      background: linear-gradient(90deg,#6366f1,#8b5cf6,#a78bfa);
+    }
+    /* Glow orb behind icon */
+    .locked-pick-card.tp-card::after {
+      content:''; position:absolute; top:-20px; left:-10px;
+      width:100px; height:100px;
+      background: radial-gradient(circle, rgba(139,92,246,0.25) 0%, transparent 70%);
+      pointer-events:none;
+    }
+    /* ── WC Winner — deep gold/amber ── */
     .locked-pick-card.wc-card {
-      background: linear-gradient(135deg, rgba(212,175,55,0.1), rgba(234,179,8,0.05));
-      border: 1px solid rgba(212,175,55,0.3);
+      background: linear-gradient(135deg, #1a1300 0%, #1f1500 60%, #130f00 100%);
+      border: 1px solid rgba(212,175,55,0.4);
+      box-shadow: 0 8px 32px rgba(212,175,55,0.1), inset 0 1px 0 rgba(255,255,255,0.06);
     }
-    .locked-pick-card.wc-card::before { background: linear-gradient(90deg,#d4af37,#fbbf24,#d4af37); }
-    .locked-pick-icon { font-size: 28px; flex-shrink:0; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.2)); }
-    .locked-pick-main { flex:1; min-width:0; }
-    .locked-pick-label { font-size:10px; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; opacity:0.55; margin-bottom:2px; }
-    .locked-pick-name { font-size:16px; font-weight:900; letter-spacing:-0.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .locked-pick-sub { font-size:11px; opacity:0.55; margin-top:2px; }
-    .locked-pick-badge-wrap { flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+    .locked-pick-card.wc-card::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:2px;
+      background: linear-gradient(90deg,#b45309,#d97706,#fbbf24,#d97706,#b45309);
+    }
+    .locked-pick-card.wc-card::after {
+      content:''; position:absolute; top:-20px; left:-10px;
+      width:100px; height:100px;
+      background: radial-gradient(circle, rgba(212,175,55,0.2) 0%, transparent 70%);
+      pointer-events:none;
+    }
+    /* ── Icon container ── */
+    .locked-pick-icon {
+      font-size: 30px; flex-shrink:0;
+      width: 52px; height: 52px;
+      border-radius: 14px; display:flex; align-items:center; justify-content:center;
+      position: relative; z-index:1;
+    }
+    .tp-card .locked-pick-icon {
+      background: rgba(139,92,246,0.18);
+      border: 1px solid rgba(139,92,246,0.3);
+      filter: drop-shadow(0 0 12px rgba(139,92,246,0.5));
+    }
+    .wc-card .locked-pick-icon {
+      background: rgba(212,175,55,0.15);
+      border: 1px solid rgba(212,175,55,0.3);
+      filter: drop-shadow(0 0 12px rgba(212,175,55,0.4));
+    }
+    /* ── Text ── */
+    .locked-pick-main { flex:1; min-width:0; position:relative; z-index:1; }
+    .locked-pick-label { font-size:9px; font-weight:800; letter-spacing:0.12em; text-transform:uppercase; margin-bottom:4px; }
+    .tp-card .locked-pick-label { color: rgba(167,139,250,0.7); }
+    .wc-card .locked-pick-label { color: rgba(251,191,36,0.7); }
+    .locked-pick-name { font-size:17px; font-weight:900; letter-spacing:-0.01em; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .locked-pick-sub { font-size:11px; color:rgba(255,255,255,0.4); margin-top:3px; }
+    /* ── Badge area ── */
+    .locked-pick-badge-wrap { flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; gap:6px; position:relative; z-index:1; }
     .locked-stamp {
-      font-size:9px; font-weight:900; letter-spacing:0.08em; padding:3px 9px;
-      border-radius:99px; white-space:nowrap;
-      background:rgba(74,222,128,0.15); color:#4ade80;
-      border:1px solid rgba(74,222,128,0.3);
+      font-size:9px; font-weight:900; letter-spacing:0.08em; padding:4px 10px;
+      border-radius:8px; white-space:nowrap;
+    }
+    .tp-card .locked-stamp {
+      background: rgba(139,92,246,0.18); color: #a78bfa;
+      border: 1px solid rgba(139,92,246,0.35);
+    }
+    .wc-card .locked-stamp {
+      background: rgba(212,175,55,0.15); color: #fbbf24;
+      border: 1px solid rgba(212,175,55,0.35);
     }
     @keyframes lockedCardIn {
-      from { opacity:0; transform:translateY(8px) scale(0.97); }
+      from { opacity:0; transform:translateY(10px) scale(0.96); }
       to   { opacity:1; transform:translateY(0) scale(1); }
     }
     /* ADMIN NOTIFICATION BAR */
@@ -1806,22 +1852,13 @@
 
     <!-- Week tabs — hidden, still functional for JS, pill above handles display -->
     <div id="matches-date-tabs" style="display:none;"></div>
-    <!-- Save bar — fixed above bottom nav, always visible -->
-    <div style="position:fixed;bottom:calc(64px + env(safe-area-inset-bottom));left:0;right:0;z-index:90;background:var(--surface);border-top:0.5px solid var(--border);padding:8px 16px;box-shadow:0 -4px 16px rgba(0,0,0,0.15);" id="save-bar">
-      <div style="display:flex;align-items:center;gap:10px;max-width:960px;margin:0 auto;">
-        <button id="save-all-global-btn" onclick="saveAllPredictions(this)"
-          style="flex:1;padding:11px 14px;border-radius:10px;border:none;background:var(--green);color:white;font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s;-webkit-tap-highlight-color:transparent;"
-          title="Save all predictions">
-          💾
-        </button>
-        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-          <span style="font-size:11px;color:var(--text-muted);white-space:nowrap;">Auto</span>
-          <div id="autosave-toggle" onclick="toggleAutoSave()" style="width:38px;height:22px;border-radius:99px;background:var(--border);cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0;" title="AutoSave">
-            <div id="autosave-knob" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:white;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
-          </div>
-          <span id="autosave-label" style="font-size:11px;color:var(--text-muted);white-space:nowrap;">Off</span>
-        </div>
-      </div>
+    <!-- Save button — fixed left of MENU -->
+    <div id="save-bar" style="position:fixed;bottom:24px;left:16px;z-index:305;display:none;">
+      <button id="save-all-global-btn" onclick="saveAllPredictions(this)"
+        style="width:52px;height:52px;border-radius:16px;border:none;background:var(--green);color:white;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(29,158,117,0.45);-webkit-tap-highlight-color:transparent;transition:opacity 0.2s,transform 0.1s;"
+        title="Save all predictions">
+        💾
+      </button>
     </div>
     <div id="save-all-area"></div>
     <div class="matches" id="matches-list" style="padding-bottom:90px;">
@@ -17710,4 +17747,37 @@ Rules: realistic scores (0-4 range per team), scorer must be a real known player
 })();
 </script>
 
+
+  <!-- Auto-save widget — fixed right of MENU button -->
+  <div id="autosave-widget" style="position:fixed;bottom:24px;right:16px;z-index:305;display:none;flex-direction:column;align-items:center;gap:3px;">
+    <div id="autosave-toggle" onclick="toggleAutoSave()"
+      style="width:44px;height:26px;border-radius:99px;background:var(--border);cursor:pointer;position:relative;transition:background 0.2s;-webkit-tap-highlight-color:transparent;"
+      title="AutoSave">
+      <div id="autosave-knob" style="position:absolute;top:4px;left:4px;width:18px;height:18px;border-radius:50%;background:white;transition:left 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.25);"></div>
+    </div>
+    <span id="autosave-label" style="font-size:9px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Auto</span>
+  </div>
+
+  <script>
+  // Show save + auto toggle only on predictions page
+  (function() {
+    function updateBottomWidgets() {
+      const saveBar = document.getElementById('save-bar');
+      const autoWidget = document.getElementById('autosave-widget');
+      const predsPage = document.getElementById('page-matches');
+      const visible = predsPage && predsPage.style.display !== 'none';
+      if (saveBar) saveBar.style.display = visible ? 'flex' : 'none';
+      if (autoWidget) autoWidget.style.display = visible ? 'flex' : 'none';
+    }
+    // Watch for page changes via MutationObserver
+    setTimeout(function() {
+      const pages = document.querySelectorAll('.page');
+      pages.forEach(function(p) {
+        new MutationObserver(updateBottomWidgets)
+          .observe(p, { attributes: true, attributeFilter: ['style'] });
+      });
+      updateBottomWidgets();
+    }, 500);
+  })();
+  </script>
 </body>
