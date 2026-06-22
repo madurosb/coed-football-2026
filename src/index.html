@@ -1570,12 +1570,12 @@
       <div class="drawer-section-title">Game Features</div>
       <div class="drawer-grid">
         <div class="drawer-item" data-page="tips" onclick="smartNav('tips')"><span class="d-icon">💡</span><span class="d-label">Tips</span></div>
-        <div class="drawer-item" data-page="grouppred" onclick="smartNav('grouppred')"><span class="d-icon">🏅</span><span class="d-label">Inner Circle</span></div>
-        <div class="drawer-item" data-page="trash" onclick="smartNav('trash')"><span class="d-icon">💬</span><span class="d-label">Trash Talk</span></div>
-        <div class="drawer-item" data-page="watch" onclick="smartNav('watch')"><span class="d-icon">👀</span><span class="d-label">Watch</span></div>
-        <div class="drawer-item" data-page="updates" onclick="smartNav('updates')"><span class="d-icon">📢</span><span class="d-label">Updates</span></div>
+
+
+
+
         <div class="drawer-item" data-page="hof" onclick="smartNav('hof')"><span class="d-icon">🏅</span><span class="d-label">Hall of Fame</span></div>
-        <div class="drawer-item" data-page="h2h" onclick="smartNav('h2h')"><span class="d-icon">⚔️</span><span class="d-label">H2H</span></div>
+
         <div class="drawer-item" data-page="analysis" onclick="smartNav('analysis')"><span class="d-icon">📈</span><span class="d-label">Analysis</span></div>
         <div class="drawer-item" data-page="coach" onclick="smartNav('coach')"><span class="d-icon">🏟️</span><span class="d-label">Coaches</span></div>
       </div>
@@ -1585,7 +1585,8 @@
     <div class="drawer-section">
       <div class="drawer-section-title">More</div>
       <div class="drawer-grid">
-        <div class="drawer-item" data-page="highlights" onclick="smartNav('highlights')"><span class="d-icon">🎬</span><span class="d-label">Highlights</span></div>
+
+        <div class="drawer-item" data-page="funstats" onclick="smartNav('funstats')"><span class="d-icon">😄</span><span class="d-label">Fun Stats</span></div>
         <div class="drawer-item" data-page="rules" onclick="smartNav('rules')"><span class="d-icon">📜</span><span class="d-label">Rules</span></div>
         <div class="drawer-item" data-page="dummies" onclick="smartNav('dummies')"><span class="d-icon">🎓</span><span class="d-label">How to Play</span></div>
         <div class="drawer-item" data-page="admin" id="drawer-admin-item" style="display:none;" onclick="smartNav('admin')"><span class="d-icon">⚙️</span><span class="d-label">Admin</span></div>
@@ -1675,26 +1676,33 @@
       <div id="player-of-round-card" style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:1.25rem;"></div>
     </div>
 
-    <!-- FUN STATS -->
-    <div id="fun-stats-section" style="display:none;margin-bottom:1.5rem;">
-      <p class="section-title">😄 Fun stats</p>
-      <div id="fun-stats-list" style="display:flex;flex-direction:column;gap:8px;"></div>
-    </div>
+    <!-- FUN STATS moved to own page -->
+    <div id="fun-stats-section" style="display:none;"></div>
 
     <!-- WORLD CUP MAP -->
-    <p class="section-title" style="margin-bottom:0.75rem;">🌍 Where the group is backing</p>
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1.5rem;">
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Based on everyone's World Cup winner picks — who does the group trust?</div>
-      <div id="wc-map-content">
-        <div style="text-align:center;font-size:13px;color:var(--text-muted);padding:0.5rem;">Loading...</div>
-      </div>
+    <!-- Group summary sheet backdrop -->
+    <div id="group-sheet-backdrop" onclick="closeGroupSheet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1200;backdrop-filter:blur(3px);"></div>
+    <!-- Group summary bottom sheet -->
+    <div id="group-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:1201;background:var(--surface);border-radius:20px 20px 0 0;padding:16px 16px calc(24px + env(safe-area-inset-bottom));max-height:82vh;overflow-y:auto;transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.32,0.72,0,1);">
+      <div style="width:36px;height:4px;border-radius:99px;background:var(--border);margin:0 auto 16px;"></div>
+      <div id="group-sheet-content"></div>
     </div>
 
-    <p class="section-title" style="margin-bottom:0.75rem;">⭐ Tournament Player Picks</p>
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.25rem;margin-bottom:1.5rem;">
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Who did the group pick as their tournament player?</div>
-      <div id="tp-picks-content">
-        <div style="text-align:center;font-size:13px;color:var(--text-muted);padding:0.5rem;">Loading...</div>
+    <!-- Compact summary row — tappable -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1.5rem;">
+      <div onclick="openGroupSheet('wc')" style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:12px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:opacity 0.15s;active:opacity:0.8;">
+        <div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">🌍 Group's pick</div>
+        <div id="wc-top-summary" style="font-size:15px;font-weight:900;color:var(--text);">—</div>
+        <div id="wc-top-pct" style="font-size:11px;color:var(--text-muted);margin-top:2px;">Loading...</div>
+        <div style="font-size:10px;color:var(--accent);font-weight:600;margin-top:8px;">See all →</div>
+        <div id="wc-map-content" style="display:none;"></div>
+      </div>
+      <div onclick="openGroupSheet('tp')" style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:12px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:opacity 0.15s;">
+        <div style="font-size:9px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">⭐ Top TP pick</div>
+        <div id="tp-top-summary" style="font-size:15px;font-weight:900;color:var(--text);">—</div>
+        <div id="tp-top-pct" style="font-size:11px;color:var(--text-muted);margin-top:2px;">Loading...</div>
+        <div style="font-size:10px;color:var(--accent);font-weight:600;margin-top:8px;">See all →</div>
+        <div id="tp-picks-content" style="display:none;"></div>
       </div>
     </div>
 
@@ -2838,6 +2846,14 @@
   </div>
 
   <!-- ADMIN -->
+  <!-- FUN STATS PAGE -->
+  <div class="page" id="page-funstats">
+    <p class="section-title" style="margin-bottom:1rem;">😄 Fun Stats</p>
+    <div id="fun-stats-list" style="display:flex;flex-direction:column;gap:8px;">
+      <div style="text-align:center;font-size:13px;color:var(--text-muted);padding:1rem;">Loading...</div>
+    </div>
+  </div>
+
   <div class="page" id="page-admin">
     <div id="admin-main">
       <p class="section-title" style="margin-bottom:1rem;">Admin panel</p>
@@ -6827,6 +6843,9 @@ Use exactly the formation provided. Only use players from the squad lists above.
   let currentPage = 'home';
 
   window.showPage = (id) => {
+    if (id === 'funstats' && window._allUsersForFunStats) {
+      setTimeout(() => { loadFunStats(window._allUsersForFunStats); }, 50);
+    }
     currentPage = id;
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -7642,6 +7661,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
   }
 
   async function loadFunStats(users) {
+    window._allUsersForFunStats = users;
     const predsSnap = await getDocs(collection(db, 'predictions'));
     const matchesSnap = await getDocs(collection(db, 'matches'));
     const matches = {};
@@ -7780,6 +7800,15 @@ Use exactly the formation provided. Only use players from the squad lists above.
     }).join('') + `
       <div style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:8px;">${total} of ${users.length} players have picked a winner · Deadline: June 10</div>`;
 
+    // Update compact summary card on Home
+    if (sorted.length > 0) {
+      const topTeam = sorted[0][0];
+      const topPct = Math.round(sorted[0][1] / total * 100);
+      const sumEl = document.getElementById('wc-top-summary');
+      const pctEl = document.getElementById('wc-top-pct');
+      if (sumEl) sumEl.textContent = topTeam;
+      if (pctEl) pctEl.textContent = topPct + '% of the group';
+    }
     // Load tournament player picks
     loadTPPicksHome(users);
   }
@@ -7828,6 +7857,15 @@ Use exactly the formation provided. Only use players from the squad lists above.
         + '</div></div>';
     }).join('');
     container.innerHTML = rows + '<div style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:8px;">' + total + ' of ' + users.length + ' players have picked a tournament player</div>';
+    // Update compact summary card
+    if (sorted.length > 0) {
+      const topPct = Math.round(sorted[0].count / total * 100);
+      const sumEl = document.getElementById('tp-top-summary');
+      const pctEl = document.getElementById('tp-top-pct');
+      if (sumEl) sumEl.textContent = sorted[0].name;
+      if (pctEl) pctEl.textContent = topPct + '% of the group';
+    }
+    window._allUsersForFunStats = window._allUsersForFunStats || users;
   }
 
   function loadPlayerOfRound(users) {
@@ -15344,7 +15382,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
   };
 
   // ========== AUTOSAVE ==========
-  let autoSaveEnabled = localStorage.getItem('autoSave') !== 'false'; // default ON
+  let autoSaveEnabled = true; // Always ON — toggle removed
   let autoSaveTimers = {};
 
   function initAutoSaveToggle() {
@@ -17351,6 +17389,39 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
 
   <script>
   // ── AI Tools menu (bottom sheet) ─────────────────────────────
+  // ── Group summary sheet ───────────────────────────────────
+  window.openGroupSheet = (type) => {
+    const sheet = document.getElementById('group-sheet');
+    const backdrop = document.getElementById('group-sheet-backdrop');
+    const contentEl = document.getElementById('group-sheet-content');
+    if (!sheet || !backdrop || !contentEl) return;
+
+    let html = '';
+    if (type === 'wc') {
+      html = '<div style="font-size:14px;font-weight:800;margin-bottom:14px;">🌍 Where the group is backing</div>';
+      const src = document.getElementById('wc-map-content');
+      html += src ? src.innerHTML : '<div style="color:var(--text-muted);font-size:13px;">Loading...</div>';
+    } else {
+      html = '<div style="font-size:14px;font-weight:800;margin-bottom:14px;">⭐ Tournament Player Picks</div>';
+      const src = document.getElementById('tp-picks-content');
+      html += src ? src.innerHTML : '<div style="color:var(--text-muted);font-size:13px;">Loading...</div>';
+    }
+    contentEl.innerHTML = html;
+
+    sheet.style.display = 'block';
+    backdrop.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => { sheet.style.transform = 'translateY(0)'; });
+  };
+
+  window.closeGroupSheet = () => {
+    const sheet = document.getElementById('group-sheet');
+    const backdrop = document.getElementById('group-sheet-backdrop');
+    if (sheet) { sheet.style.transform = 'translateY(100%)'; setTimeout(() => { sheet.style.display = 'none'; }, 320); }
+    if (backdrop) backdrop.style.display = 'none';
+    document.body.style.overflow = '';
+  };
+
   window.openAIToolsMenu = () => {
     const sheet = document.getElementById('ai-tools-sheet');
     const backdrop = document.getElementById('ai-tools-backdrop');
@@ -17748,14 +17819,12 @@ Rules: realistic scores (0-4 range per team), scorer must be a real known player
 </script>
 
 
-  <!-- Auto-save widget — fixed right of MENU button -->
-  <div id="autosave-widget" style="position:fixed;bottom:24px;right:16px;z-index:305;display:none;flex-direction:column;align-items:center;gap:3px;">
-    <div id="autosave-toggle" onclick="toggleAutoSave()"
-      style="width:44px;height:26px;border-radius:99px;background:var(--border);cursor:pointer;position:relative;transition:background 0.2s;-webkit-tap-highlight-color:transparent;"
-      title="AutoSave">
-      <div id="autosave-knob" style="position:absolute;top:4px;left:4px;width:18px;height:18px;border-radius:50%;background:white;transition:left 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.25);"></div>
+  <!-- Auto-save indicator — fixed right, always ON -->
+  <div id="autosave-widget" style="position:fixed;bottom:24px;right:16px;z-index:305;display:none;">
+    <div style="width:52px;height:52px;border-radius:16px;background:var(--surface2);border:0.5px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-shadow:0 4px 12px rgba(0,0,0,0.2);">
+      <span style="font-size:20px;line-height:1;">💾</span>
+      <span style="font-size:7px;font-weight:800;color:var(--green);text-transform:uppercase;letter-spacing:0.05em;">AUTO</span>
     </div>
-    <span id="autosave-label" style="font-size:9px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Auto</span>
   </div>
 
   <script>
