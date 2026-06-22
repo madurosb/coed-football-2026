@@ -1659,8 +1659,13 @@
 
   <!-- MATCHES -->
   <div class="page" id="page-matches">
-    <div id="next-match-btn-wrap" style="display:none;position:sticky;top:8px;z-index:50;text-align:center;pointer-events:none;margin-bottom:8px;">
-      <button onclick="scrollToNextMatch()" style="pointer-events:auto;background:var(--green);color:white;border:none;border-radius:99px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 2px 12px rgba(29,158,117,0.35);">⬇️ Jump to next match</button>
+    <!-- Week nav — sticky at top, single-pill style -->
+    <div id="week-nav-sticky" style="position:sticky;top:0;z-index:80;background:var(--bg);padding:6px 0 8px;margin:0 -0.75rem;padding-left:0.75rem;padding-right:0.75rem;border-bottom:0.5px solid var(--border);margin-bottom:10px;">
+      <div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:5px 8px;">
+        <button onclick="prevWeekTab()" style="flex-shrink:0;width:34px;height:34px;border-radius:9px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">‹</button>
+        <div id="week-pill-label" style="flex:1;text-align:center;font-size:13px;font-weight:700;color:var(--text);">● Week 2 &nbsp;·&nbsp; Jun 18–24</div>
+        <button onclick="nextWeekTab()" style="flex-shrink:0;width:34px;height:34px;border-radius:9px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">›</button>
+      </div>
     </div>
     <!-- AI Tools bottom sheet backdrop -->
     <div id="ai-tools-backdrop" onclick="closeAIToolsMenu()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1100;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);"></div>
@@ -1688,15 +1693,18 @@
       </div>
     </div>
 
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;gap:12px;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem;gap:12px;">
       <div>
         <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;color:var(--green);text-transform:uppercase;margin-bottom:3px;">⚽ Your picks</div>
         <div style="font-size:22px;font-weight:800;line-height:1.1;margin-bottom:3px;">Predictions</div>
         <div style="font-size:12px;color:var(--text-muted);">Scores &amp; first goalscorers · Deadline: 1h before kickoff</div>
       </div>
-      <button onclick="openAIToolsMenu()" style="flex-shrink:0;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:12px;padding:10px 14px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 3px 10px rgba(124,58,237,0.35);white-space:nowrap;-webkit-tap-highlight-color:transparent;">
-        <span>🤖</span><span>AI Tools</span><span style="font-size:10px;opacity:0.75;">▾</span>
-      </button>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex-shrink:0;">
+        <button onclick="openAIToolsMenu()" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:12px;padding:10px 14px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 3px 10px rgba(124,58,237,0.35);white-space:nowrap;-webkit-tap-highlight-color:transparent;">
+          <span>🤖</span><span>AI Tools</span><span style="font-size:10px;opacity:0.75;">▾</span>
+        </button>
+        <button onclick="confirmResetPredictions()" style="font-size:11px;color:#E24B4A;background:none;border:0.5px solid #E24B4A;padding:5px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent;">🗑 Reset all</button>
+      </div>
     </div>
     <img src="https://coed-football-2026.vercel.app/match-card.png" alt="" style="width:100%; height:auto; border-radius:12px; margin-bottom:1rem;">
 
@@ -1795,42 +1803,28 @@
         <div id="winner-pick-notice" style="font-size:12px;color:var(--text-muted);margin-top:6px;"></div>
       </div>
     </div>
-    <div style="display:flex;justify-content:flex-end;margin-bottom:0.5rem;">
-      <button onclick="confirmResetPredictions()" style="font-size:12px;color:#E24B4A;background:none;border:0.5px solid #E24B4A;padding:5px 12px;border-radius:8px;cursor:pointer;">🗑 Reset all</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.75rem;background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:6px 8px;">
-      <button onclick="scrollDateTabs(-1)" style="flex-shrink:0;width:34px;height:34px;border-radius:9px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">‹</button>
-      <div id="matches-date-tabs" style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;flex:1;padding:2px 0;"></div>
-      <button onclick="scrollDateTabs(1)" style="flex-shrink:0;width:34px;height:34px;border-radius:9px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">›</button>
-    </div>
-    <!-- Save bar — sticky above bottom nav -->
-    <div style="position:sticky;bottom:calc(64px + env(safe-area-inset-bottom));z-index:90;background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:1rem;box-shadow:0 -2px 16px rgba(0,0,0,0.1);" id="save-bar">
-      <!-- Top row: Save All button + AutoSave toggle -->
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+
+    <!-- Week tabs — hidden, still functional for JS, pill above handles display -->
+    <div id="matches-date-tabs" style="display:none;"></div>
+    <!-- Save bar — fixed above bottom nav, always visible -->
+    <div style="position:fixed;bottom:calc(64px + env(safe-area-inset-bottom));left:0;right:0;z-index:90;background:var(--surface);border-top:0.5px solid var(--border);padding:8px 16px;box-shadow:0 -4px 16px rgba(0,0,0,0.15);" id="save-bar">
+      <div style="display:flex;align-items:center;gap:10px;max-width:960px;margin:0 auto;">
         <button id="save-all-global-btn" onclick="saveAllPredictions(this)"
-          style="flex:1;padding:9px 14px;border-radius:8px;border:1.5px solid var(--green);background:var(--green);color:white;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s;">
-          💾 Save all predictions
+          style="flex:1;padding:11px 14px;border-radius:10px;border:none;background:var(--green);color:white;font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s;-webkit-tap-highlight-color:transparent;"
+          title="Save all predictions">
+          💾
         </button>
-        <!-- AutoSave toggle -->
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
           <span style="font-size:11px;color:var(--text-muted);white-space:nowrap;">Auto</span>
-          <div id="autosave-toggle" onclick="toggleAutoSave()" style="width:38px;height:22px;border-radius:99px;background:var(--border);cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0;" title="AutoSave: saves automatically when you change any prediction">
+          <div id="autosave-toggle" onclick="toggleAutoSave()" style="width:38px;height:22px;border-radius:99px;background:var(--border);cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0;" title="AutoSave">
             <div id="autosave-knob" style="position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:white;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
           </div>
           <span id="autosave-label" style="font-size:11px;color:var(--text-muted);white-space:nowrap;">Off</span>
         </div>
       </div>
-      <!-- Explanation row -->
-      <div id="save-bar-hint" style="font-size:11px;color:var(--text-muted);line-height:1.5;display:flex;align-items:flex-start;gap:6px;">
-        <span style="flex-shrink:0;">💡</span>
-        <span id="save-hint-text">
-          <strong style="color:var(--text);">Save all</strong> — saves every prediction across all days in one tap.
-          &nbsp;·&nbsp; <strong style="color:var(--text);">Auto</strong> — saves automatically 1.5s after each change.
-        </span>
-      </div>
     </div>
     <div id="save-all-area"></div>
-    <div class="matches" id="matches-list">
+    <div class="matches" id="matches-list" style="padding-bottom:90px;">
       <div style="padding:1rem; text-align:center; font-size:13px; color:var(--text-muted);">Loading matches...</div>
     </div>
   </div>
@@ -8520,11 +8514,13 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
     tabsEl.innerHTML = tabsHtml;
     renderMatches(matchesSnap, null, activeWeekFilter);
+    // Set initial week pill label
+    updateWeekPillLabel(activeWeekFilter);
   }
 
   window.filterMatchesByWeek = (weekKey) => {
     activeWeekFilter = weekKey;
-    // Update tab styles
+    // Update tab styles (hidden tabs still track state)
     document.querySelectorAll('[id^="week-tab-"]').forEach(btn => {
       const isKnockout = !['week1','week2','week3'].includes(weekKey);
       const isActive = btn.id === `week-tab-${weekKey.replace(/ /g,'_')}`;
@@ -8533,6 +8529,36 @@ Use exactly the formation provided. Only use players from the squad lists above.
       btn.style.borderColor = isActive ? (isKnockout ? 'var(--gold)' : 'var(--accent)') : 'var(--border)';
     });
     renderMatches(allMatchesSnap, null, weekKey);
+    // Update the visible week pill label
+    updateWeekPillLabel(weekKey);
+  };
+
+  function updateWeekPillLabel(weekKey) {
+    const pill = document.getElementById('week-pill-label');
+    if (!pill) return;
+    const weekDates = { 'week1':'Jun 11–17', 'week2':'Jun 18–24', 'week3':'Jun 25–27' };
+    const weekLabels = { 'week1':'🟢 Week 1', 'week2':'🟡 Week 2', 'week3':'🟠 Week 3' };
+    if (weekDates[weekKey]) {
+      pill.textContent = weekLabels[weekKey] + '  ·  ' + weekDates[weekKey];
+    } else {
+      pill.textContent = '⚡ ' + weekKey; // knockout date
+    }
+  }
+
+  window.prevWeekTab = () => {
+    const allTabs = [...document.querySelectorAll('[id^="week-tab-"]')];
+    if (allTabs.length === 0) return;
+    const activeIdx = allTabs.findIndex(btn => btn.style.background && btn.style.background !== 'none' && btn.style.background !== '');
+    const target = activeIdx > 0 ? allTabs[activeIdx - 1] : allTabs[allTabs.length - 1];
+    if (target) target.click();
+  };
+
+  window.nextWeekTab = () => {
+    const allTabs = [...document.querySelectorAll('[id^="week-tab-"]')];
+    if (allTabs.length === 0) return;
+    const activeIdx = allTabs.findIndex(btn => btn.style.background && btn.style.background !== 'none' && btn.style.background !== '');
+    const target = activeIdx < allTabs.length - 1 ? allTabs[activeIdx + 1] : allTabs[0];
+    if (target) target.click();
   };
   window.scrollDateTabs = (dir) => {
     const el = document.getElementById('matches-date-tabs');
