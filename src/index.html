@@ -1861,11 +1861,12 @@
     <!-- Week tabs — hidden, still functional for JS, pill above handles display -->
     <div id="matches-date-tabs" style="display:none;"></div>
     <!-- Save button — fixed left of MENU -->
-    <div id="save-bar" style="position:fixed;bottom:24px;left:16px;z-index:305;display:none;">
+    <div id="save-bar" style="position:fixed;bottom:24px;right:16px;z-index:305;display:none;">
       <button id="save-all-global-btn" onclick="saveAllPredictions(this)"
-        style="width:52px;height:52px;border-radius:16px;border:none;background:var(--green);color:white;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(29,158,117,0.45);-webkit-tap-highlight-color:transparent;transition:opacity 0.2s,transform 0.1s;"
+        style="width:52px;height:52px;border-radius:16px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-shadow:0 4px 12px rgba(0,0,0,0.2);-webkit-tap-highlight-color:transparent;transition:opacity 0.15s,transform 0.1s;"
         title="Save all predictions">
-        💾
+        <span style="line-height:1;">💾</span>
+        <span style="font-size:7px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">SAVE</span>
       </button>
     </div>
     <div id="save-all-area"></div>
@@ -17819,24 +17820,16 @@ Rules: realistic scores (0-4 range per team), scorer must be a real known player
 </script>
 
 
-  <!-- Auto-save indicator — fixed right, always ON -->
-  <div id="autosave-widget" style="position:fixed;bottom:24px;right:16px;z-index:305;display:none;">
-    <div style="width:52px;height:52px;border-radius:16px;background:var(--surface2);border:0.5px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-shadow:0 4px 12px rgba(0,0,0,0.2);">
-      <span style="font-size:20px;line-height:1;">💾</span>
-      <span style="font-size:7px;font-weight:800;color:var(--green);text-transform:uppercase;letter-spacing:0.05em;">AUTO</span>
-    </div>
-  </div>
+
 
   <script>
-  // Show save + auto toggle only on predictions page
+  // Show save button only on predictions page
   (function() {
     function updateBottomWidgets() {
       const saveBar = document.getElementById('save-bar');
-      const autoWidget = document.getElementById('autosave-widget');
       const predsPage = document.getElementById('page-matches');
       const visible = predsPage && predsPage.style.display !== 'none';
       if (saveBar) saveBar.style.display = visible ? 'flex' : 'none';
-      if (autoWidget) autoWidget.style.display = visible ? 'flex' : 'none';
     }
     // Watch for page changes via MutationObserver
     setTimeout(function() {
