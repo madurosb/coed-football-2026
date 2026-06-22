@@ -454,12 +454,8 @@
       .page { padding: 0.75rem 0.75rem 100px 0.75rem; }
 
       /* ── FAB trigger button ── */
+      /* FAB — positioning now handled by #bottom-bar wrapper */
       #smart-menu-fab {
-        position: fixed;
-        bottom: 24px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 310;
         background: linear-gradient(135deg, #3b82f6, #1d4ed8);
         color: white;
         border: none;
@@ -473,19 +469,21 @@
         align-items: center;
         gap: 8px;
         box-shadow: 0 4px 20px rgba(59,130,246,0.5), 0 2px 8px rgba(0,0,0,0.3);
-        transition: bottom 0.35s cubic-bezier(0.32, 0.72, 0, 1), background 0.2s, box-shadow 0.2s;
+        transition: background 0.2s, box-shadow 0.2s;
         white-space: nowrap;
         text-transform: uppercase;
+        flex-shrink: 0;
       }
-      #smart-menu-fab:active { transform: translateX(-50%) scale(0.95); }
+      #smart-menu-fab:active { transform: scale(0.95); }
       #smart-menu-fab .fab-icon { font-size: 18px; transition: transform 0.3s; }
       #smart-menu-fab.open {
-        bottom: calc(82vh + 12px);
         background: rgba(15,24,41,0.95);
         border: 1px solid rgba(59,130,246,0.3);
         box-shadow: 0 4px 16px rgba(0,0,0,0.5);
       }
       #smart-menu-fab.open .fab-icon { transform: rotate(45deg); }
+      /* Bottom bar moves up when drawer is open */
+      #bottom-bar.open { bottom: calc(82vh + 12px); }
 
       /* ── Backdrop ── */
       #smart-menu-backdrop {
@@ -1543,11 +1541,22 @@
   <!-- Backdrop -->
   <div id="smart-menu-backdrop" onclick="closeSmartMenu()"></div>
 
-  <!-- FAB trigger -->
-  <button id="smart-menu-fab" onclick="toggleSmartMenu()">
-    <span class="fab-icon">⚽</span>
-    <span id="fab-label">MENU</span>
-  </button>
+  <!-- Bottom action bar: save (right) + MENU (left) -->
+  <div id="bottom-bar" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:310;display:flex;align-items:center;gap:10px;transition:bottom 0.35s cubic-bezier(0.32,0.72,0,1);">
+    <button id="smart-menu-fab" onclick="toggleSmartMenu()">
+      <span class="fab-icon">⚽</span>
+      <span id="fab-label">MENU</span>
+    </button>
+    <!-- Save button — same size as MENU, shows only on predictions page -->
+    <div id="save-bar" style="display:none;">
+      <button id="save-all-global-btn" onclick="saveAllPredictions(this)"
+        style="height:100%;border-radius:99px;border:none;background:var(--surface2);color:var(--text);font-size:13px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:8px;padding:13px 22px;box-shadow:0 4px 20px rgba(0,0,0,0.25),0 2px 8px rgba(0,0,0,0.2);-webkit-tap-highlight-color:transparent;transition:opacity 0.15s,transform 0.1s;white-space:nowrap;"
+        title="Save all predictions">
+        <span style="font-size:18px;line-height:1;">💾</span>
+        <span>SAVE</span>
+      </button>
+    </div>
+  </div>
 
   <!-- Drawer -->
   <div id="smart-menu-drawer">
@@ -1861,14 +1870,7 @@
     <!-- Week tabs — hidden, still functional for JS, pill above handles display -->
     <div id="matches-date-tabs" style="display:none;"></div>
     <!-- Save button — fixed left of MENU -->
-    <div id="save-bar" style="position:fixed;bottom:24px;right:16px;z-index:305;display:none;">
-      <button id="save-all-global-btn" onclick="saveAllPredictions(this)"
-        style="width:52px;height:52px;border-radius:16px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:20px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-shadow:0 4px 12px rgba(0,0,0,0.2);-webkit-tap-highlight-color:transparent;transition:opacity 0.15s,transform 0.1s;"
-        title="Save all predictions">
-        <span style="line-height:1;">💾</span>
-        <span style="font-size:7px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">SAVE</span>
-      </button>
-    </div>
+
     <div id="save-all-area"></div>
     <div class="matches" id="matches-list" style="padding-bottom:90px;">
       <div style="padding:1rem; text-align:center; font-size:13px; color:var(--text-muted);">Loading matches...</div>
@@ -4766,6 +4768,8 @@
       drawer.classList.add('open');
       backdrop.classList.add('open');
       fab.classList.add('open');
+      const bottomBar = document.getElementById('bottom-bar');
+      if (bottomBar) bottomBar.classList.add('open');
       document.getElementById('fab-label').textContent = 'CLOSE';
       // Lock body scroll
       document.body.style.overflow = 'hidden';
@@ -4780,6 +4784,8 @@
     document.getElementById('smart-menu-backdrop').classList.remove('open');
     const fab = document.getElementById('smart-menu-fab');
     fab.classList.remove('open');
+    const bottomBar = document.getElementById('bottom-bar');
+    if (bottomBar) bottomBar.classList.remove('open');
     document.getElementById('fab-label').textContent = 'MENU';
     // Restore body scroll
     document.body.style.overflow = '';
@@ -17829,7 +17835,7 @@ Rules: realistic scores (0-4 range per team), scorer must be a real known player
       const saveBar = document.getElementById('save-bar');
       const predsPage = document.getElementById('page-matches');
       const visible = predsPage && predsPage.style.display !== 'none';
-      if (saveBar) saveBar.style.display = visible ? 'flex' : 'none';
+      if (saveBar) saveBar.style.display = visible ? 'block' : 'none';
     }
     // Watch for page changes via MutationObserver
     setTimeout(function() {
