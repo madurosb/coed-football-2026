@@ -1662,27 +1662,41 @@
     <div id="next-match-btn-wrap" style="display:none;position:sticky;top:8px;z-index:50;text-align:center;pointer-events:none;margin-bottom:8px;">
       <button onclick="scrollToNextMatch()" style="pointer-events:auto;background:var(--green);color:white;border:none;border-radius:99px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 2px 12px rgba(29,158,117,0.35);">⬇️ Jump to next match</button>
     </div>
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem;gap:12px;">
+    <!-- AI Tools bottom sheet backdrop -->
+    <div id="ai-tools-backdrop" onclick="closeAIToolsMenu()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1100;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);"></div>
+    <!-- AI Tools bottom sheet -->
+    <div id="ai-tools-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:1101;background:var(--surface);border-radius:20px 20px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -8px 32px rgba(0,0,0,0.3);transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.32,0.72,0,1);">
+      <div style="width:36px;height:4px;border-radius:99px;background:var(--border);margin:0 auto 16px;"></div>
+      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;">🤖 AI Tools</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button onclick="closeAIToolsMenu();showAIFillModal()" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:12px;padding:13px 16px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:12px;text-align:left;width:100%;-webkit-tap-highlight-color:transparent;">
+          <span style="font-size:22px;flex-shrink:0;">🤖</span>
+          <div><div style="font-size:14px;">AI Fill picks</div><div style="font-size:11px;font-weight:500;opacity:0.7;margin-top:2px;">Auto-fill all scores with AI predictions</div></div>
+        </button>
+        <button id="ai-scorer-btn-sheet" onclick="closeAIToolsMenu();runAIScorerFill(document.getElementById('ai-scorer-btn-sheet'))" style="background:linear-gradient(135deg,#0891b2,#0e7490);color:white;border:none;border-radius:12px;padding:13px 16px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:12px;text-align:left;width:100%;-webkit-tap-highlight-color:transparent;">
+          <span style="font-size:22px;flex-shrink:0;">🎯</span>
+          <div><div style="font-size:14px;">AI Fill scorers</div><div style="font-size:11px;font-weight:500;opacity:0.7;margin-top:2px;">Fill first goalscorer picks with AI</div></div>
+        </button>
+        <button onclick="closeAIToolsMenu();showAIJokerDonModal()" style="background:linear-gradient(135deg,#d97706,#b45309);color:white;border:none;border-radius:12px;padding:13px 16px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:12px;text-align:left;width:100%;-webkit-tap-highlight-color:transparent;">
+          <span style="font-size:22px;flex-shrink:0;">🃏</span>
+          <div><div style="font-size:14px;">AI Joker &amp; DON</div><div style="font-size:11px;font-weight:500;opacity:0.7;margin-top:2px;">Let AI pick your Joker &amp; Double or Nothing</div></div>
+        </button>
+        <button onclick="closeAIToolsMenu();showDummiesWizard()" style="background:linear-gradient(135deg,#059669,#047857);color:white;border:none;border-radius:12px;padding:13px 16px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:12px;text-align:left;width:100%;-webkit-tap-highlight-color:transparent;">
+          <span style="font-size:22px;flex-shrink:0;">🎮</span>
+          <div><div style="font-size:14px;">COED for Dummies</div><div style="font-size:11px;font-weight:500;opacity:0.7;margin-top:2px;">Fill everything automatically in one tap</div></div>
+        </button>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;gap:12px;">
       <div>
-        <div style="font-family:monospace;font-size:11px;letter-spacing:3px;color:var(--green);text-transform:uppercase;margin-bottom:4px;">⚽ Your picks</div>
-        <div style="font-size:22px;font-weight:800;margin-bottom:4px;">Predictions</div>
-        <div style="font-size:13px;color:var(--text-muted);">Pick scores &amp; first goalscorers · Deadline: 1h before kickoff</div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;color:var(--green);text-transform:uppercase;margin-bottom:3px;">⚽ Your picks</div>
+        <div style="font-size:22px;font-weight:800;line-height:1.1;margin-bottom:3px;">Predictions</div>
+        <div style="font-size:12px;color:var(--text-muted);">Scores &amp; first goalscorers · Deadline: 1h before kickoff</div>
       </div>
-      <!-- AI Auto-fill button -->
-      <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
-        <button onclick="showAIFillModal()" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:10px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:0 3px 10px rgba(124,58,237,0.4);white-space:nowrap;">
-          <span>🤖</span><span>AI Fill picks</span>
-        </button>
-        <button onclick="runAIScorerFill(this)" style="background:linear-gradient(135deg,#0891b2,#0e7490);color:white;border:none;border-radius:10px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:0 3px 10px rgba(8,145,178,0.4);white-space:nowrap;">
-          <span>🎯</span><span>AI Fill scorers</span>
-        </button>
-        <button onclick="showAIJokerDonModal()" style="background:linear-gradient(135deg,#d97706,#b45309);color:white;border:none;border-radius:10px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:0 3px 10px rgba(217,119,6,0.4);white-space:nowrap;">
-          <span>🃏</span><span>AI Joker &amp; DON</span>
-        </button>
-        <button onclick="showDummiesWizard()" style="background:linear-gradient(135deg,#059669,#047857);color:white;border:none;border-radius:10px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:0 3px 10px rgba(5,150,105,0.4);white-space:nowrap;">
-          <span>🎮</span><span>COED for Dummies</span>
-        </button>
-      </div>
+      <button onclick="openAIToolsMenu()" style="flex-shrink:0;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:white;border:none;border-radius:12px;padding:10px 14px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 3px 10px rgba(124,58,237,0.35);white-space:nowrap;-webkit-tap-highlight-color:transparent;">
+        <span>🤖</span><span>AI Tools</span><span style="font-size:10px;opacity:0.75;">▾</span>
+      </button>
     </div>
     <img src="https://coed-football-2026.vercel.app/match-card.png" alt="" style="width:100%; height:auto; border-radius:12px; margin-bottom:1rem;">
 
@@ -1781,19 +1795,16 @@
         <div id="winner-pick-notice" style="font-size:12px;color:var(--text-muted);margin-top:6px;"></div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
-      <p class="section-title" style="margin-bottom:0;">Group stage predictions — June 11-27 · Round of 32 unlocks after group results ⚡</p>
-      <div style="display:flex;gap:8px;">
-        <button onclick="confirmResetPredictions()" style="font-size:12px;color:#E24B4A;background:none;border:0.5px solid #E24B4A;padding:5px 12px;border-radius:8px;cursor:pointer;">🗑 Reset all</button>
-      </div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:0.5rem;">
+      <button onclick="confirmResetPredictions()" style="font-size:12px;color:#E24B4A;background:none;border:0.5px solid #E24B4A;padding:5px 12px;border-radius:8px;cursor:pointer;">🗑 Reset all</button>
     </div>
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:0.75rem;">
-      <button onclick="scrollDateTabs(-1)" style="flex-shrink:0;width:28px;height:28px;border-radius:50%;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">‹</button>
-      <div id="matches-date-tabs" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;flex:1;"></div>
-      <button onclick="scrollDateTabs(1)" style="flex-shrink:0;width:28px;height:28px;border-radius:50%;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">›</button>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:0.75rem;background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:6px 8px;">
+      <button onclick="scrollDateTabs(-1)" style="flex-shrink:0;width:34px;height:34px;border-radius:9px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">‹</button>
+      <div id="matches-date-tabs" style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;flex:1;padding:2px 0;"></div>
+      <button onclick="scrollDateTabs(1)" style="flex-shrink:0;width:34px;height:34px;border-radius:9px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">›</button>
     </div>
-    <!-- Save bar -->
-    <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:1rem;" id="save-bar">
+    <!-- Save bar — sticky above bottom nav -->
+    <div style="position:sticky;bottom:calc(64px + env(safe-area-inset-bottom));z-index:90;background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:1rem;box-shadow:0 -2px 16px rgba(0,0,0,0.1);" id="save-bar">
       <!-- Top row: Save All button + AutoSave toggle -->
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
         <button id="save-all-global-btn" onclick="saveAllPredictions(this)"
@@ -17276,6 +17287,31 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
   </div>
 
   <script>
+  // ── AI Tools menu (bottom sheet) ─────────────────────────────
+  window.openAIToolsMenu = () => {
+    const sheet = document.getElementById('ai-tools-sheet');
+    const backdrop = document.getElementById('ai-tools-backdrop');
+    if (!sheet || !backdrop) return;
+    sheet.style.display = 'block';
+    backdrop.style.display = 'block';
+    // Animate in
+    requestAnimationFrame(() => {
+      sheet.style.transform = 'translateY(0)';
+    });
+    document.body.style.overflow = 'hidden';
+  };
+
+  window.closeAIToolsMenu = () => {
+    const sheet = document.getElementById('ai-tools-sheet');
+    const backdrop = document.getElementById('ai-tools-backdrop');
+    if (!sheet || !backdrop) return;
+    sheet.style.transform = 'translateY(100%)';
+    backdrop.style.display = 'none';
+    document.body.style.overflow = '';
+    // Hide after animation
+    setTimeout(() => { sheet.style.display = 'none'; }, 320);
+  };
+
   window.showAIFillModal = () => {
     const el = document.getElementById('ai-fill-overlay');
     el.style.display = 'flex';
