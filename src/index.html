@@ -8867,21 +8867,24 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const myTP = currentUserData?.tournamentPlayer || null;
     const myTPNorm = myTP ? myTP.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/\s+/g,'_') : null;
 
-    // Load ALL shared data in one shot — including full awardLog for this TP player
-    const sharedFetches = [
+    // Load joker + DON for this user (safe — filtered by userId)
+    const [jokerSnap, donAllSnap] = await Promise.all([
       getDoc(doc(db, 'jokerCards', currentUser.uid)),
       getDocs(query(collection(db, 'donOptIns'), where('userId', '==', currentUser.uid))),
-    ];
-    if (myTP) {
-      // Load all awardLog entries for this TP player (tp_playernorm_*)
-      // We can't query by prefix in Firestore, so load all awardLog and filter client-side
-      sharedFetches.push(getDocs(collection(db, 'awardLog')));
-    }
+    ]);
 
-    const sharedResults = await Promise.all(sharedFetches);
-    const jokerSnap   = sharedResults[0];
-    const donAllSnap  = sharedResults[1];
-    const awardLogSnap = myTP ? sharedResults[2] : null;
+    // Load awardLog separately with try-catch:
+    // Non-admin users may not have read permission on this collection.
+    // If it fails, TP points simply won't show — everything else still works.
+    let awardLogSnap = null;
+    if (myTP) {
+      try {
+        awardLogSnap = await getDocs(collection(db, 'awardLog'));
+      } catch(e) {
+        // Permission denied for this user — TP points won't show, but results will
+        console.log('awardLog not readable for this user (TP pts hidden):', e.code);
+      }
+    }
 
     const jokerMatchId = jokerSnap.exists() ? jokerSnap.data().matchId : null;
     const donMatchIds = new Set();
@@ -8909,14 +8912,18 @@ Use exactly the formation provided. Only use players from the squad lists above.
       .filter(d => { const m = d.data(); return m.homeScore !== null && m.homeScore !== undefined && m.awayScore !== null; })
       .map(d => d.id);
     const resultsMap = {}; // matchId → firstScorer
-    if (finishedMatchIds.length > 0) {
-      // Firestore 'in' query max 30 items — chunk if needed
-      const chunks = [];
-      for (let i = 0; i < finishedMatchIds.length; i += 30) chunks.push(finishedMatchIds.slice(i, i + 30));
-      for (const chunk of chunks) {
-        const rSnap = await getDocs(query(collection(db, 'results'), where('__name__', 'in', chunk)));
-        rSnap.forEach(d => { resultsMap[d.id] = d.data().firstScorer || null; });
+    try {
+      if (finishedMatchIds.length > 0) {
+        // Firestore 'in' query max 30 items — chunk if needed
+        const chunks = [];
+        for (let i = 0; i < finishedMatchIds.length; i += 30) chunks.push(finishedMatchIds.slice(i, i + 30));
+        for (const chunk of chunks) {
+          const rSnap = await getDocs(query(collection(db, 'results'), where('__name__', 'in', chunk)));
+          rSnap.forEach(d => { resultsMap[d.id] = d.data().firstScorer || null; });
+        }
       }
+    } catch(e) {
+      console.log('results collection read error:', e.code);
     }
 
     for (const d of matchesSnap.docs) {
