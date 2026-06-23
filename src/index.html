@@ -8802,13 +8802,6 @@ Use exactly the formation provided. Only use players from the squad lists above.
             <span class="group">${(m.group || '').replace(/_/g, ' ')}</span>
             <div style="display:flex;align-items:center;gap:8px;">
               ${liveIndicator}
-              ${isFinished ? `
-              <button onclick="showPostMatchCard('${d.id}')"
-                style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(220,38,38,0.08));border:1px solid rgba(239,68,68,0.5);border-radius:8px;padding:5px 9px;font-size:10px;font-weight:700;color:#f87171;cursor:pointer;letter-spacing:0.04em;text-transform:uppercase;transition:all 0.18s;box-shadow:0 0 12px rgba(239,68,68,0.2);animation:postMatchGlow 2s ease-in-out infinite;white-space:nowrap;flex-shrink:0;"
-                onmouseover="this.style.background='linear-gradient(135deg,rgba(239,68,68,0.3),rgba(220,38,38,0.2))';this.style.borderColor='rgba(239,68,68,0.9)';this.style.color='#fca5a5'"
-                onmouseout="this.style.background='linear-gradient(135deg,rgba(239,68,68,0.15),rgba(220,38,38,0.08))';this.style.borderColor='rgba(239,68,68,0.5)';this.style.color='#f87171'">
-                <span style="font-size:11px;">🔥</span> Post Match
-              </button>` : ''}
               <button onclick="showMatchPreview('${d.id}')"
                 style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,rgba(99,252,180,0.08),rgba(16,185,129,0.05));border:1px solid rgba(99,252,180,0.35);border-radius:8px;padding:5px 9px;font-size:10px;font-weight:700;color:#34d399;cursor:pointer;letter-spacing:0.04em;text-transform:uppercase;transition:all 0.18s;box-shadow:0 0 8px rgba(99,252,180,0.1);white-space:nowrap;flex-shrink:0;"
                 onmouseover="this.style.background='linear-gradient(135deg,rgba(99,252,180,0.18),rgba(16,185,129,0.12))';this.style.borderColor='rgba(99,252,180,0.7)';this.style.boxShadow='0 0 14px rgba(99,252,180,0.3)';this.style.color='#6ee7b7'"
@@ -8867,7 +8860,15 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
           <div class="match-bonus">
             <div class="bonus-row">
-              <div><div class="bonus-label">First goalscorer</div><div class="bonus-pts">+2 pts if correct</div></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:${isPast ? '0' : '6px'};">
+                <div><div class="bonus-label">First goalscorer</div><div class="bonus-pts">+2 pts if correct</div></div>
+                ${isFinished ? `<button onclick="showPostMatchCard('${d.id}')"
+                  style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(220,38,38,0.08));border:1px solid rgba(239,68,68,0.5);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;color:#f87171;cursor:pointer;letter-spacing:0.04em;text-transform:uppercase;white-space:nowrap;flex-shrink:0;animation:postMatchGlow 2s ease-in-out infinite;"
+                  onmouseover="this.style.background='linear-gradient(135deg,rgba(239,68,68,0.3),rgba(220,38,38,0.2))';this.style.color='#fca5a5'"
+                  onmouseout="this.style.background='linear-gradient(135deg,rgba(239,68,68,0.15),rgba(220,38,38,0.08))';this.style.color='#f87171'">
+                  🔥 Post Match
+                </button>` : ''}
+              </div>
               <!-- Hidden select for data saving -->
               <select id="scorer-${d.id}" ${isPast?'disabled':''} onchange="autoSaveScorer('${d.id}', this)" style="display:none;">
                 <option value="">Select player...</option>
