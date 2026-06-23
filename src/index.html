@@ -211,11 +211,12 @@
     }
     .match-card:hover { box-shadow: 0 4px 20px rgba(59,130,246,0.12); transform: translateY(-1px); }
     .match-card:hover::before { opacity: 1; }
-    .match-meta { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem; }
+    .match-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
     .match-meta .group {
       font-size: 10px; color: var(--accent); font-weight: 800;
       text-transform: uppercase; letter-spacing: 0.1em;
       background: var(--accent-light); padding: 2px 8px; border-radius: 99px;
+      white-space: nowrap; flex-shrink: 0;
     }
     .match-timing .kickoff { font-size: 12px; font-weight: 700; text-align: right; }
     .match-timing .deadline { font-size: 11px; color: var(--text-muted); text-align: right; margin-top: 2px; }
@@ -8797,7 +8798,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
           data-home-players='${JSON.stringify(getPlayersForTeam(m.homeTeam, m.homePlayers)).replace(/'/g,"&#39;")}'
           data-away-players='${JSON.stringify(getPlayersForTeam(m.awayTeam, m.awayPlayers)).replace(/'/g,"&#39;")}'
           style="${isLive ? 'border-color:#E24B4A;' : ''}">
-          <div class="match-meta">
+          <div class="match-meta" style="align-items:center;">
             <span class="group">${(m.group || '').replace(/_/g, ' ')}</span>
             <div style="display:flex;align-items:center;gap:8px;">
               ${liveIndicator}
@@ -8815,8 +8816,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
                 <span style="font-size:12px;">📊</span> Preview
               </button>
               <div class="match-timing">
-                <div class="kickoff">${kickoff.toLocaleDateString('en-GB', {day:'2-digit',month:'short'})} ${kickoff.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})} <span class="tz">(Israel time)</span></div>
-                <div class="deadline">Deadline: ${deadline.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})} ${deadline.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})} (Israel time)</div>
+                <div class="kickoff" style="white-space:nowrap;">${kickoff.toLocaleDateString('en-GB', {day:'2-digit',month:'short'})} ${kickoff.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>
               </div>
             </div>
           </div>
