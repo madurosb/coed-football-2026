@@ -6229,7 +6229,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
         <div style="background:var(--surface2);border-radius:12px;overflow:hidden;border:1px solid var(--border);">
           <!-- Header — tap to expand -->
           <div onclick="toggleCommunityStats('${panelId}')" style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none;border-radius:12px;transition:background 0.15s;active:background:var(--surface2);" onmousedown="this.style.background='var(--surface2)'" onmouseup="this.style.background=''" ontouchstart="this.style.background='var(--surface2)'" ontouchend="this.style.background=''">
-            <div style="display:flex;align-items:center;gap:8px;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;">
               <span style="font-size:14px;">👥</span>
               <span style="font-size:12px;font-weight:700;">Community predictions</span>
               <span style="font-size:11px;background:rgba(59,130,246,0.12);color:var(--accent);padding:1px 7px;border-radius:99px;font-weight:600;">${total} players</span>
@@ -8804,19 +8804,19 @@ Use exactly the formation provided. Only use players from the squad lists above.
               ${liveIndicator}
               ${isFinished ? `
               <button onclick="showPostMatchCard('${d.id}')"
-                style="display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(220,38,38,0.08));border:1px solid rgba(239,68,68,0.5);border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;color:#f87171;cursor:pointer;letter-spacing:0.05em;text-transform:uppercase;transition:all 0.18s;box-shadow:0 0 12px rgba(239,68,68,0.2),0 0 24px rgba(239,68,68,0.08);animation:postMatchGlow 2s ease-in-out infinite;"
-                onmouseover="this.style.background='linear-gradient(135deg,rgba(239,68,68,0.3),rgba(220,38,38,0.2))';this.style.borderColor='rgba(239,68,68,0.9)';this.style.boxShadow='0 0 20px rgba(239,68,68,0.5),0 0 40px rgba(239,68,68,0.2)';this.style.color='#fca5a5'"
-                onmouseout="this.style.background='linear-gradient(135deg,rgba(239,68,68,0.15),rgba(220,38,38,0.08))';this.style.borderColor='rgba(239,68,68,0.5)';this.style.boxShadow='0 0 12px rgba(239,68,68,0.2),0 0 24px rgba(239,68,68,0.08)';this.style.color='#f87171'">
-                <span style="font-size:12px;">🔥</span> Post Match
+                style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(220,38,38,0.08));border:1px solid rgba(239,68,68,0.5);border-radius:8px;padding:5px 9px;font-size:10px;font-weight:700;color:#f87171;cursor:pointer;letter-spacing:0.04em;text-transform:uppercase;transition:all 0.18s;box-shadow:0 0 12px rgba(239,68,68,0.2);animation:postMatchGlow 2s ease-in-out infinite;white-space:nowrap;flex-shrink:0;"
+                onmouseover="this.style.background='linear-gradient(135deg,rgba(239,68,68,0.3),rgba(220,38,38,0.2))';this.style.borderColor='rgba(239,68,68,0.9)';this.style.color='#fca5a5'"
+                onmouseout="this.style.background='linear-gradient(135deg,rgba(239,68,68,0.15),rgba(220,38,38,0.08))';this.style.borderColor='rgba(239,68,68,0.5)';this.style.color='#f87171'">
+                <span style="font-size:11px;">🔥</span> Post Match
               </button>` : ''}
               <button onclick="showMatchPreview('${d.id}')"
-                style="display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,rgba(99,252,180,0.08),rgba(16,185,129,0.05));border:1px solid rgba(99,252,180,0.35);border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;color:#34d399;cursor:pointer;letter-spacing:0.05em;text-transform:uppercase;transition:all 0.18s;box-shadow:0 0 8px rgba(99,252,180,0.1);"
+                style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,rgba(99,252,180,0.08),rgba(16,185,129,0.05));border:1px solid rgba(99,252,180,0.35);border-radius:8px;padding:5px 9px;font-size:10px;font-weight:700;color:#34d399;cursor:pointer;letter-spacing:0.04em;text-transform:uppercase;transition:all 0.18s;box-shadow:0 0 8px rgba(99,252,180,0.1);white-space:nowrap;flex-shrink:0;"
                 onmouseover="this.style.background='linear-gradient(135deg,rgba(99,252,180,0.18),rgba(16,185,129,0.12))';this.style.borderColor='rgba(99,252,180,0.7)';this.style.boxShadow='0 0 14px rgba(99,252,180,0.3)';this.style.color='#6ee7b7'"
                 onmouseout="this.style.background='linear-gradient(135deg,rgba(99,252,180,0.08),rgba(16,185,129,0.05))';this.style.borderColor='rgba(99,252,180,0.35)';this.style.boxShadow='0 0 8px rgba(99,252,180,0.1)';this.style.color='#34d399'">
                 <span style="font-size:12px;">📊</span> Preview
               </button>
-              <div class="match-timing">
-                <div class="kickoff" style="white-space:nowrap;">${kickoff.toLocaleDateString('en-GB', {day:'2-digit',month:'short'})} ${kickoff.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>
+              <div class="match-timing" style="flex-shrink:0;">
+                <div class="kickoff" style="white-space:nowrap;font-size:11px;">${kickoff.toLocaleDateString('en-GB', {day:'2-digit',month:'short'})} ${kickoff.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</div>
               </div>
             </div>
           </div>
