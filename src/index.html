@@ -7983,43 +7983,54 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const predCount = preds.total || 0;
     const exactRate = predCount > 0 ? exact / predCount : 0;
 
-    // Only show during tournament (after June 11)
     const started = new Date() >= new Date('2026-06-11T19:00:00Z');
     if (!started) return null;
 
-    // Multiple badges possible - return array
-    const badges = [];
+    // ── Relative stats across all players ───────────────────────────
+    const maxBonus = Math.max(...allUsers.map(x => x.bonusPoints || 0));
+    const maxExact = Math.max(...allUsers.map(x => x.exactScores || 0));
+    const maxDraws = Math.max(...allUsers.map(x => (predStats?.[x.uid]?.draws) || 0));
+    const maxPreds = Math.max(...allUsers.map(x => (predStats?.[x.uid]?.total) || 0));
 
-    if (i === 0 && pts > 0) badges.push({ emoji: '👑', text: 'El Rey', bg: '#FAEEDA', color: '#633806' });
-    if (i === total - 1 && total > 10) badges.push({ emoji: '🥄', text: 'Wooden spoon', bg: '#FCEBEB', color: '#791F1F' });
-    if (exactRate >= 0.35 && exact >= 4) badges.push({ emoji: '🎯', text: 'Sniper', bg: '#E1F5EE', color: '#085041' });
-    if (exactRate >= 0.5 && exact >= 6) badges.push({ emoji: '🔥', text: 'On fire', bg: '#FFF0E0', color: '#B45309' });
-    if (bonus >= 5) badges.push({ emoji: '⚡', text: 'Scorer hunter', bg: '#E1F5EE', color: '#085041' });
-    // Mr. Draw: needs draws to be > 50% of predictions AND at least 8 draws predicted
-    if (drawCount >= 8 && predCount > 0 && drawCount / predCount > 0.5) badges.push({ emoji: '🤝', text: 'Mr. Draw', bg: '#E6F1FB', color: '#0C447C' });
-    if (predCount === 0) badges.push({ emoji: '😴', text: 'Just watching', bg: '#F1EFE8', color: '#666' });
-    if (predCount >= 40) badges.push({ emoji: '📋', text: 'Prediction machine', bg: '#E6F1FB', color: '#0C447C' });
-    if (pts === 0 && predCount > 10) badges.push({ emoji: '🫠', text: 'Confidently wrong', bg: '#FCEBEB', color: '#791F1F' });
-    if (i === 1 && pts > 0) badges.push({ emoji: '🥈', text: 'So close', bg: '#E6F1FB', color: '#0C447C' });
-    if (i === 2 && pts > 0) badges.push({ emoji: '🥉', text: 'Podium chaser', bg: '#FAEEDA', color: '#633806' });
-    if (pts > 50 && i > 2) badges.push({ emoji: '🚀', text: 'Dark horse', bg: '#EDE9FE', color: '#5B21B6' });
-    if (u.boldPrediction) badges.push({ emoji: '🐂', text: 'Big balls prediction', bg: '#FFF0E0', color: '#92400E' });
-    // Fun badges — stricter thresholds so they're rarer
-    if (predCount >= 1 && predCount <= 5 && pts === 0) badges.push({ emoji: '🦺', text: 'Playing it safe', bg: '#F1EFE8', color: '#666' });
-    if (predCount >= 1 && predCount <= 10 && pts > 0 && i <= Math.floor(total/2)) badges.push({ emoji: '🎲', text: 'Casual punter', bg: '#EDE9FE', color: '#5B21B6' });
-    // Direction only: no exact scores but at least 15 predictions (enough sample)
-    if (exactRate === 0 && predCount >= 15 && pts > 0) badges.push({ emoji: '🪄', text: 'Direction only', bg: '#FFF0E0', color: '#B45309' });
-    // Occasional gambler: low exact rate but meaningful sample (20+ predictions)
-    if (exactRate > 0 && exactRate < 0.1 && predCount >= 20) badges.push({ emoji: '🎰', text: 'Occasional gambler', bg: '#FAEEDA', color: '#633806' });
-    if (pts > 0 && i === Math.floor(total/2)) badges.push({ emoji: '🧘', text: 'Perfectly average', bg: '#E6F1FB', color: '#0C447C' });
-    if (predCount > 5 && drawCount === 0) badges.push({ emoji: '🦅', text: 'Hates draws', bg: '#FAEEDA', color: '#633806' });
-    if (drawCount > 0 && drawCount / predCount > 0.4 && predCount >= 5) badges.push({ emoji: '☮️', text: 'Mr. Peace', bg: '#E6F1FB', color: '#0C447C' });
-    if (predCount >= 10 && predCount < 30 && exactRate < 0.1) badges.push({ emoji: '🌪️', text: 'Chaos theory', bg: '#FCEBEB', color: '#791F1F' });
-    if (i >= total - 3 && i < total - 1 && pts > 0) badges.push({ emoji: '🪸', text: 'Rock bottom adjacent', bg: '#FCEBEB', color: '#791F1F' });
-    if (pts > 0 && predCount >= 5 && pts / predCount < 0.5) badges.push({ emoji: '📉', text: 'Low yield', bg: '#F1EFE8', color: '#666' });
-    if (i > 2 && i <= 5 && pts > 0) badges.push({ emoji: '🔭', text: 'Top 5 vision', bg: '#E1F5EE', color: '#085041' });
+    // ── Rank-based (always unique) ────────────────────────────────
+    if (i === 0 && pts > 0)           return { emoji: '👑', text: 'El Rey',        bg: '#FAEEDA', color: '#633806' };
+    if (i === 1 && pts > 0)           return { emoji: '🥈', text: 'So close',       bg: '#E6F1FB', color: '#0C447C' };
+    if (i === 2 && pts > 0)           return { emoji: '🥉', text: 'Podium',         bg: '#FAEEDA', color: '#633806' };
+    if (i === total-1 && total > 10)  return { emoji: '🥄', text: 'Wooden spoon',   bg: '#FCEBEB', color: '#791F1F' };
 
-    return badges.length > 0 ? badges[0] : null; // return top badge only in leaderboard
+    // ── Unique superlatives (relative to group) ──────────────────
+    if (exact > 0 && exact === maxExact)
+      return { emoji: '🎯', text: 'Top sniper',       bg: '#E1F5EE', color: '#085041' };
+    if (bonus > 0 && bonus === maxBonus)
+      return { emoji: '⚡', text: 'Scorer hunter',    bg: '#FFF9E0', color: '#854D0E' };
+    if (drawCount > 0 && drawCount === maxDraws)
+      return { emoji: '🤝', text: 'Draw king',        bg: '#E6F1FB', color: '#0C447C' };
+    if (predCount > 0 && predCount === maxPreds)
+      return { emoji: '📋', text: 'Prediction machine', bg: '#E6F1FB', color: '#0C447C' };
+
+    // ── Stat-based (ordered from rarest to most common) ─────────
+    if (u.boldPrediction)
+      return { emoji: '🐂', text: 'Bold caller',      bg: '#FFF0E0', color: '#92400E' };
+    if (exactRate >= 0.35 && exact >= 4)
+      return { emoji: '🔥', text: 'On fire',          bg: '#FFF0E0', color: '#B45309' };
+    if (pts > 0 && drawCount === 0 && predCount >= 10)
+      return { emoji: '🦅', text: 'Hates draws',      bg: '#FAEEDA', color: '#633806' };
+    if (drawCount >= 6 && predCount > 0 && drawCount/predCount > 0.4)
+      return { emoji: '☮️', text: 'Mr. Peace',        bg: '#E6F1FB', color: '#0C447C' };
+    if (predCount === 0)
+      return { emoji: '😴', text: 'Just watching',    bg: '#F1EFE8', color: '#666'    };
+    if (pts === 0 && predCount > 5)
+      return { emoji: '🫠', text: 'Confidently wrong',bg: '#FCEBEB', color: '#791F1F' };
+    if (i > 2 && i <= 5 && pts > 0)
+      return { emoji: '🔭', text: 'Top 5 vision',     bg: '#E1F5EE', color: '#085041' };
+    if (i > 5 && i <= 9 && pts > 0)
+      return { emoji: '🚀', text: 'Charging up',      bg: '#EDE9FE', color: '#5B21B6' };
+    if (i >= total-4 && i < total-1 && pts > 0)
+      return { emoji: '🪸', text: 'Rock bottom',      bg: '#FCEBEB', color: '#791F1F' };
+    if (pts > 0)
+      return { emoji: '⚽', text: 'In the game',      bg: '#E1F5EE', color: '#085041' };
+
+    return null;
   }
 
   function getAllBadges(u, i, allUsers, predStats) {
@@ -8056,17 +8067,21 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const isMe = currentUser && u.uid === currentUser.uid;
       let avatarHTML;
       if (u.isAdmin) {
+        const crownAdm = (i === 0 && (u.points||0) > 0) ? `<span style="position:absolute;top:-6px;left:50%;transform:translateX(-50%);font-size:16px;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5));">👑</span>` : '';
         avatarHTML = `<div style="position:relative;width:56px;height:56px;flex-shrink:0;min-width:56px;">
+          ${crownAdm}
           <img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #00ff41;">
-          <span style="position:absolute;top:-4px;right:-4px;font-size:12px;">👑</span>
         </div>`;
       } else {
         const av = getAvatarById(u.avatar);
+        const crownEl = (i === 0 && (u.points||0) > 0)
+          ? `<span style="position:absolute;top:-7px;left:50%;transform:translateX(-50%);font-size:16px;z-index:2;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.4));">👑</span>` : '';
         avatarHTML = u.avatarUrl
-          ? `<div style="width:56px;height:56px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid ${isMe?'var(--accent)':'var(--border)'};"><img src="${u.avatarUrl}" style="width:56px;height:56px;object-fit:cover;border-radius:50%;display:block;"></div>`
+          ? `<div style="position:relative;width:56px;height:56px;flex-shrink:0;">${crownEl}<img src="${u.avatarUrl}" style="width:56px;height:56px;object-fit:cover;border-radius:50%;display:block;border:2px solid ${isMe?'var(--accent)':'var(--border)'};"></div>`
           : av
-            ? `<div style="width:56px;height:56px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid ${isMe?'var(--accent)':'transparent'};">${makeAvatarSVG(av, 56)}</div>`
-            : `<div style="width:56px;height:56px;border-radius:50%;background:${isMe?'linear-gradient(135deg,rgba(59,130,246,0.25),rgba(59,130,246,0.1))':('var(--surface2)')};color:${isMe?'var(--accent)':'var(--text)'};display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;flex-shrink:0;border:2px solid ${isMe?'var(--accent)':'var(--border)'};">${(u.nickname||u.displayName||'?').substring(0,2).toUpperCase()}</div>`;
+            ? `<div style="position:relative;width:56px;height:56px;flex-shrink:0;">${crownEl}<div style="width:56px;height:56px;border-radius:50%;overflow:hidden;border:2px solid ${isMe?'var(--accent)':'transparent'};">${makeAvatarSVG(av, 56)}</div></div>`
+            : `<div style="position:relative;width:56px;height:56px;flex-shrink:0;">${crownEl}<div style="width:56px;height:56px;border-radius:50%;background:${isMe?'linear-gradient(135deg,rgba(59,130,246,0.25),rgba(59,130,246,0.1))':'var(--surface2)'};color:${isMe?'var(--accent)':'var(--text)'};display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;border:2px solid ${isMe?'var(--accent)':'var(--border)'};">` +
+              `${(u.nickname||u.displayName||'?').substring(0,2).toUpperCase()}</div></div>`;
       }
       const badge = getUserBadge(u, i, users, predStats);
       const badgeHTML = badge
