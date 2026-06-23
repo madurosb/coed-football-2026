@@ -3056,6 +3056,7 @@
             <option value="">— Select a team —</option>
           </select>
           <button onclick="loadSquadEditor()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:12px;font-weight:600;cursor:pointer;">🔄 Refresh</button>
+          <button onclick="syncSquadsToGame()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--accent);color:white;font-size:12px;font-weight:700;cursor:pointer;">⚡ Sync to game</button>
         </div>
         <div id="squad-editor-content" style="min-height:100px;">
           <div style="color:var(--text-muted);font-size:13px;text-align:center;padding:2rem;">Select a team above to edit their squad.</div>
@@ -9564,6 +9565,30 @@ Use exactly the formation provided. Only use players from the squad lists above.
     } catch(e) { console.error('[squads] Error:', e); }
   };
 
+  window.syncSquadsToGame = async () => {
+    const btn = document.querySelector('[onclick="syncSquadsToGame()"]');
+    if (btn) { btn.textContent = '⏳ Syncing...'; btn.disabled = true; }
+    await window.loadSquadOverrides();
+    // Refresh all scorer dropdowns in the predictions page
+    let refreshed = 0;
+    document.querySelectorAll('.match-card').forEach(card => {
+      const matchId = card.dataset.matchId;
+      if (!matchId) return;
+      const sel = card.querySelector('#scorer-' + matchId);
+      if (!sel) return;
+      const curVal = sel.value;
+      const home = getPlayersForTeam(card.dataset.home, []);
+      const away = getPlayersForTeam(card.dataset.away, []);
+      sel.innerHTML = `<option value="">— First scorer —</option>` +
+        `<optgroup label="${card.dataset.home}">${home.map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>` +
+        `<optgroup label="${card.dataset.away}">${away.map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>`;
+      if (curVal) sel.value = curVal;
+      refreshed++;
+    });
+    if (btn) { btn.textContent = `✅ Synced (${refreshed} cards)`; btn.disabled = false; setTimeout(() => { if(btn) btn.textContent = '⚡ Sync to game'; }, 3000); }
+    alert(`✅ Squad sync done!\nRefreshed ${refreshed} match cards.\nNew players will appear in scorer pickers.`);
+  };
+
   function initPlayerCardsGrid(currentPlayer) {
     const grid = document.getElementById('player-cards-grid');
     const suggestedGrid = document.getElementById('player-cards-grid-suggested');
@@ -14003,31 +14028,47 @@ Use exactly the formation provided. Only use players from the squad lists above.
   function normalizeTeamName(name) {
     if (!name) return name;
     const map = {
+      // DR Congo variants
       'Congo DR': 'DR Congo',
       'Congo, DR': 'DR Congo',
       'Democratic Republic Congo': 'DR Congo',
       'DR Congo (Congo DR)': 'DR Congo',
       'Republique du Congo': 'DR Congo',
       'Republic of Congo': 'DR Congo',
+      'Democratic Republic of Congo': 'DR Congo',
+      // Cape Verde variants
       'Cape Verde': 'Cabo Verde',
       'Cape Verde Islands': 'Cabo Verde',
+      'Cabo Verde': 'Cabo Verde',
+      // Bosnia variants
       'Bosnia and Herzegovina': 'Bosnia & Herzegovina',
       'Bosnia And Herzegovina': 'Bosnia & Herzegovina',
       'Bosnia-Herzegovina': 'Bosnia & Herzegovina',
+      'Bosnia & Herzegovina': 'Bosnia & Herzegovina',
+      // Other
       'Curacao': 'Curaçao',
       'Korea Republic': 'South Korea',
       'United States': 'USA',
+      'US': 'USA',
       'Ivory Coast': "Côte d'Ivoire",
-      "Côte d'Ivoire": 'Ivory Coast',
+      "Côte d'Ivoire": "Côte d'Ivoire",
+      'Türkiye': 'Turkey',
+      'Turkiye': 'Turkey',
     };
     return map[name] || name;
   }
 
   function getPlayersForTeam(teamName, apiPlayers) {
     // Always prefer ALL_PLAYERS_DATA — has full squads
+    // Normalize BOTH sides so "Cape Verde" matches "Cape Verde Islands" etc.
     const normalized = normalizeTeamName(teamName);
     const fromData = ALL_PLAYERS_DATA
-      .filter(p => p.country === teamName || p.country === normalized)
+      .filter(p => {
+        if (p.country === teamName || p.country === normalized) return true;
+        // Also normalize the stored country name for cross-variant matching
+        const pNorm = normalizeTeamName(p.country);
+        return pNorm === normalized || pNorm === teamName;
+      })
       .map(p => p.name);
     if (fromData.length > 0) return fromData;
     // Fallback to API players or FALLBACK_PLAYERS
