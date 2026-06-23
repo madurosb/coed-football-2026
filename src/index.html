@@ -6881,6 +6881,10 @@ Use exactly the formation provided. Only use players from the squad lists above.
     if (id === 'funstats' && window._allUsersForFunStats) {
       setTimeout(() => { loadFunStats(window._allUsersForFunStats); }, 50);
     }
+    // Re-sync squad overrides when opening predictions page
+    if (id === 'matches' && typeof window.loadSquadOverrides === 'function') {
+      window.loadSquadOverrides();
+    }
     // Show save button + spacer ONLY on predictions page
     const onPreds = (id === 'matches');
     const saveBarEl = document.getElementById('save-bar');
@@ -8570,7 +8574,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const knockoutSnap = await getDoc(doc(db, 'settings', 'knockout'));
     const knockoutEnabled = knockoutSnap.exists() ? knockoutSnap.data().enabled : false;
     window._knockoutEnabled = knockoutEnabled;
-    const KNOCKOUT_START = new Date('2026-06-29T00:00:00Z');
+    const KNOCKOUT_START = new Date('2026-06-28T12:00:00Z');
 
     // Separate group stage vs knockout dates
     const knockoutDateSet = new Set();
@@ -8595,7 +8599,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       if (now < w.start) { defaultWeek = w.key; break; }
     }
     // If past all group stage, default to first knockout date
-    if (now >= new Date('2026-06-29T00:00:00Z') && knockoutDates.length > 0) {
+    if (now >= new Date('2026-06-28T12:00:00Z') && knockoutDates.length > 0) {
       defaultWeek = knockoutDates[0];
     }
     activeWeekFilter = defaultWeek;
@@ -8698,7 +8702,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const saveAllArea = document.getElementById('save-all-area');
     if (saveAllArea) saveAllArea.innerHTML = '';
 
-    const KNOCKOUT_START = new Date('2026-06-29T00:00:00Z');
+    const KNOCKOUT_START = new Date('2026-06-28T12:00:00Z'); // Group stage ends Jun 28 morning
     const GROUP_WEEK_RANGES = {
       'week1': { start: new Date('2026-06-11T00:00:00Z'), end: new Date('2026-06-18T00:00:00Z') },
       'week2': { start: new Date('2026-06-18T00:00:00Z'), end: new Date('2026-06-25T00:00:00Z') },
@@ -8759,7 +8763,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const deadlineSoonMatches = [];
     const liveMatches = [];
     let visibleCount = 0;
-    const KNOCKOUT_START_R = new Date('2026-06-29T00:00:00Z'); // Round of 32 starts June 29
+    const KNOCKOUT_START_R = new Date('2026-06-28T12:00:00Z'); // Noon UTC — after group stage, before knockout
     matchesSnap.forEach(d => {
       const m = d.data();
       const kickoff = m.kickoff?.toDate?.() || new Date(m.kickoff);
@@ -12433,7 +12437,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const matches = [];
     matchesSnap.forEach(d => matches.push({id: d.id, ...d.data()}));
     const finishedMatches = matches.filter(m => m.status === 'FINISHED');
-    const KNOCKOUT_START_DATE = new Date('2026-06-29T00:00:00Z');
+    const KNOCKOUT_START_DATE = new Date('2026-06-28T12:00:00Z');
     const totalMatches = window._knockoutEnabled
       ? matches.length
       : matches.filter(m => {
@@ -12489,7 +12493,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
     // Matches remaining badge — only count matches visible to user (group stage unless knockout enabled)
     const now = new Date();
-    const KNOCKOUT_START_STATS = new Date('2026-06-29T00:00:00Z');
+    const KNOCKOUT_START_STATS = new Date('2026-06-28T12:00:00Z');
     const upcomingMatches = matches.filter(m => {
       const kickoff = m.kickoff?.toDate?.() || new Date(m.kickoff);
       // Hide knockout matches unless admin enabled them
