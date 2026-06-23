@@ -3895,7 +3895,9 @@
           if (predOutcome === actualOutcome) pts += 1 * multiplier;
           if (pred.homeScore === homeScore && pred.awayScore === awayScore) { pts += 3 * multiplier; exact = 1; }
         }
-        if (firstScorer && pred.firstScorer === firstScorer) pts += 2 * multiplier;
+        // Normalize both sides to handle accent variants (e.g. "Mbappe" vs "Mbappé")
+        const _normSc = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+        if (firstScorer && _normSc(pred.firstScorer) === _normSc(firstScorer)) pts += 2 * multiplier;
         // Joker
         const jokerSnap = await getDocs(query(collection(db, 'jokerCards'), where('matchId','==',matchId), where('userId','==',pred.userId)));
         if (!jokerSnap.empty) pts *= 2;
@@ -6174,7 +6176,17 @@ Use exactly the formation provided. Only use players from the squad lists above.
         preds[key].users.push(p.userId);
         const scorerVal = p.firstScorer || p.scorer || null;
         if (scorerVal && scorerVal !== 'Own Goal' && scorerVal !== 'none' && scorerVal !== '') {
-          scorers[scorerVal] = (scorers[scorerVal] || 0) + 1;
+          // Normalize name (strip accents) for grouping key, but keep canonical display name
+          const normKey = scorerVal.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+          if (!scorers[normKey]) {
+            // First time we see this name — store it with the accented version if available, else raw
+            scorers[normKey] = { count: 0, display: scorerVal };
+          }
+          scorers[normKey].count++;
+          // Prefer the accented/longer version as display name
+          if (scorerVal.length >= scorers[normKey].display.length && scorerVal !== scorers[normKey].display) {
+            scorers[normKey].display = scorerVal;
+          }
         }
         usersMap[p.userId] = p;
       });
@@ -6203,8 +6215,10 @@ Use exactly the formation provided. Only use players from the squad lists above.
       // Sort predictions by count
       const sortedPreds = Object.entries(preds).sort((a,b) => b[1].count - a[1].count).slice(0, 6);
 
-      // Scorer picks — sorted by count, show top 5
-      const sortedScorers = Object.entries(scorers).sort((a,b) => b[1]-a[1]);
+      // Scorer picks — sorted by count, show top 5 (normalized grouping)
+      const sortedScorers = Object.entries(scorers)
+        .map(([key, val]) => [val.display, val.count])
+        .sort((a,b) => b[1]-a[1]);
       const totalScorerPicks = sortedScorers.reduce((s,[,c]) => s+c, 0);
       const topScorers = sortedScorers.slice(0, 5);
 
