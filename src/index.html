@@ -8067,7 +8067,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const isMe = currentUser && u.uid === currentUser.uid;
       let avatarHTML;
       if (u.isAdmin) {
-        const crownAdm = (i === 0 && (u.points||0) > 0) ? `<span style="position:absolute;top:-4px;right:-6px;font-size:14px;transform:rotate(20deg);filter:drop-shadow(0 1px 3px rgba(0,0,0,0.6));z-index:2;">👑</span>` : '';
+        const crownAdm = (i === 0 && (u.points||0) > 0) ? `<span style="position:absolute;top:-10px;right:2px;font-size:18px;transform:rotate(15deg);transform-origin:bottom center;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.7));z-index:2;">👑</span>` : '';
         avatarHTML = `<div style="position:relative;width:56px;height:56px;flex-shrink:0;min-width:56px;">
           ${crownAdm}
           <img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #00ff41;">
@@ -8075,7 +8075,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       } else {
         const av = getAvatarById(u.avatar);
         const crownEl = (i === 0 && (u.points||0) > 0)
-          ? `<span style="position:absolute;top:-4px;right:-6px;font-size:14px;transform:rotate(20deg);filter:drop-shadow(0 1px 3px rgba(0,0,0,0.6));z-index:2;">👑</span>` : '';
+          ? `<span style="position:absolute;top:-10px;right:2px;font-size:18px;transform:rotate(15deg);transform-origin:bottom center;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.7));z-index:2;">👑</span>` : '';
         avatarHTML = u.avatarUrl
           ? `<div style="position:relative;width:56px;height:56px;flex-shrink:0;">${crownEl}<img src="${u.avatarUrl}" style="width:56px;height:56px;object-fit:cover;border-radius:50%;display:block;border:2px solid ${isMe?'var(--accent)':'var(--border)'};"></div>`
           : av
