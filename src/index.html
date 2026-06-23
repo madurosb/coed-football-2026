@@ -678,9 +678,8 @@
         gap: 6px;
       }
 
-      /* Save bar — compact */
-      #save-bar { padding: 8px 10px; border-radius: 10px; }
-      #save-bar #save-hint-text { display: none; }
+      /* Save bar — inside bottom-bar, no extra padding */
+      #save-bar { padding: 0; background: none; border: none; }
 
       /* Date tabs — larger, easier to tap */
       #matches-date-tabs button {
@@ -1201,6 +1200,12 @@
   }
 
 } /* end @media (max-width: 768px) */
+
+/* Desktop: hide mobile-only bottom bar */
+@media (min-width: 769px) {
+  #bottom-bar { display: none !important; }
+  #save-bar { display: none !important; }
+}
 
   </style>
 </head>
