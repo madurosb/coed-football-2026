@@ -1543,17 +1543,19 @@
 
   <!-- Bottom action bar: save (right) + MENU (left) -->
   <div id="bottom-bar" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:310;display:flex;align-items:center;gap:10px;transition:bottom 0.35s cubic-bezier(0.32,0.72,0,1);">
+    <!-- Invisible spacer: mirrors save button width to keep MENU centered -->
+    <div id="save-bar-spacer" style="display:none;width:48px;height:48px;flex-shrink:0;pointer-events:none;"></div>
+    <!-- MENU button — always centered -->
     <button id="smart-menu-fab" onclick="toggleSmartMenu()">
       <span class="fab-icon">⚽</span>
       <span id="fab-label">MENU</span>
     </button>
-    <!-- Save button — same size as MENU, shows only on predictions page -->
+    <!-- Save button — emoji only, shows only on predictions page -->
     <div id="save-bar" style="display:none;">
       <button id="save-all-global-btn" onclick="saveAllPredictions(this)"
-        style="height:100%;border-radius:99px;border:none;background:var(--surface2);color:var(--text);font-size:13px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:8px;padding:13px 22px;box-shadow:0 4px 20px rgba(0,0,0,0.25),0 2px 8px rgba(0,0,0,0.2);-webkit-tap-highlight-color:transparent;transition:opacity 0.15s,transform 0.1s;white-space:nowrap;"
+        style="width:48px;height:48px;border-radius:99px;border:none;background:rgba(255,255,255,0.1);color:white;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,0.25);-webkit-tap-highlight-color:transparent;transition:opacity 0.15s,transform 0.1s;flex-shrink:0;"
         title="Save all predictions">
-        <span style="font-size:18px;line-height:1;">💾</span>
-        <span>SAVE</span>
+        💾
       </button>
     </div>
   </div>
@@ -6853,6 +6855,12 @@ Use exactly the formation provided. Only use players from the squad lists above.
     if (id === 'funstats' && window._allUsersForFunStats) {
       setTimeout(() => { loadFunStats(window._allUsersForFunStats); }, 50);
     }
+    // Show save button + spacer ONLY on predictions page
+    const onPreds = (id === 'matches');
+    const saveBarEl = document.getElementById('save-bar');
+    const spacerEl  = document.getElementById('save-bar-spacer');
+    if (saveBarEl) saveBarEl.style.display  = onPreds ? 'block' : 'none';
+    if (spacerEl)  spacerEl.style.display   = onPreds ? 'block' : 'none';
     currentPage = id;
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -17828,24 +17836,5 @@ Rules: realistic scores (0-4 range per team), scorer must be a real known player
 
 
 
-  <script>
-  // Show save button only on predictions page
-  (function() {
-    function updateBottomWidgets() {
-      const saveBar = document.getElementById('save-bar');
-      const predsPage = document.getElementById('page-matches');
-      const visible = predsPage && predsPage.style.display !== 'none';
-      if (saveBar) saveBar.style.display = visible ? 'block' : 'none';
-    }
-    // Watch for page changes via MutationObserver
-    setTimeout(function() {
-      const pages = document.querySelectorAll('.page');
-      pages.forEach(function(p) {
-        new MutationObserver(updateBottomWidgets)
-          .observe(p, { attributes: true, attributeFilter: ['style'] });
-      });
-      updateBottomWidgets();
-    }, 500);
-  })();
-  </script>
+
 </body>
