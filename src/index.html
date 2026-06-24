@@ -7414,12 +7414,20 @@ Use exactly the formation provided. Only use players from the squad lists above.
   // ========== JOKER CARD ==========
   let jokerUsed = false;
   let jokerMatchId = null;
+  let knockoutJokerUsed = false;
+  let knockoutJokerMatchId = null;
 
   async function loadJokerStatus() {
     const snap = await getDocs(query(collection(db, 'jokerCards'), where('userId', '==', currentUser.uid)));
     snap.forEach(d => {
-      jokerMatchId = d.data().matchId;
-      jokerUsed = true;
+      const data = d.data();
+      if (data.type === 'knockout') {
+        knockoutJokerMatchId = data.matchId;
+        knockoutJokerUsed = true;
+      } else {
+        jokerMatchId = data.matchId;
+        jokerUsed = true;
+      }
     });
     // Update all joker buttons
     document.querySelectorAll('[id^="joker-btn-"]').forEach(btn => {
@@ -7444,6 +7452,20 @@ Use exactly the formation provided. Only use players from the squad lists above.
         btn.style.filter = '';
         btn.style.animation = '';
         btn.disabled = false;
+      }
+    });
+    // Update K-Joker buttons
+    document.querySelectorAll('[id^="knockout-joker-btn-"]').forEach(btn => {
+      const matchId = btn.id.replace('knockout-joker-btn-','');
+      if (knockoutJokerUsed && knockoutJokerMatchId === matchId) {
+        btn.style.cssText = 'width:72px;height:72px;border-radius:12px;border:2px solid #7C3AED;background:linear-gradient(145deg,#4C1D95,#7C3AED);color:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-shadow:0 4px 16px rgba(124,58,237,0.6);';
+        btn.style.animation = 'jokerPulse 2s ease infinite';
+        btn.innerHTML = '<span style="font-size:20px;line-height:1;">⚡</span><span style="font-size:7px;font-weight:800;letter-spacing:0.1em;font-family:monospace;">ACTIVE ✅</span>';
+        btn.disabled = false;
+      } else if (knockoutJokerUsed) {
+        btn.style.opacity = '0.25'; btn.style.cursor = 'not-allowed'; btn.style.filter = 'grayscale(1)'; btn.disabled = true;
+      } else {
+        btn.style.opacity = ''; btn.style.cursor = ''; btn.style.filter = ''; btn.style.animation = ''; btn.disabled = false;
       }
     });
   }
@@ -7538,6 +7560,80 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const t = document.createElement('div');
     t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#BA7517,#EF9F27);color:#000;font-size:14px;font-weight:800;padding:12px 20px;border-radius:12px;z-index:9999;white-space:nowrap;animation:jokerEntrance 0.3s ease;';
     t.textContent = '🃏 JOKER ACTIVATED! Points doubled if correct!';
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.transition='opacity 0.5s'; t.style.opacity='0'; setTimeout(()=>t.remove(),500); }, 3000);
+  };
+
+  // ========== KNOCKOUT JOKER ==========
+  window.activateKnockoutJoker = async (matchId) => {
+    if (knockoutJokerUsed && knockoutJokerMatchId === matchId) {
+      const popup = document.createElement('div');
+      popup.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;';
+      popup.innerHTML = `<div style="background:#1a0030;border:2px solid #7C3AED;border-radius:16px;padding:1.5rem;max-width:300px;width:100%;text-align:center;">
+        <div style="font-size:48px;margin-bottom:8px;">⚡</div>
+        <div style="font-size:16px;font-weight:700;color:#C4B5FD;margin-bottom:8px;">Cancel Knockout Joker?</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.65);margin-bottom:1.25rem;">You can then use it on a different knockout match.</div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="this.closest('div[style*=fixed]').remove()" style="flex:1;padding:9px;border-radius:8px;border:0.5px solid #555;background:none;color:#888;font-size:13px;cursor:pointer;">Keep it</button>
+          <button onclick="cancelKnockoutJoker('${matchId}',this.closest('div[style*=fixed]'))" style="flex:1;padding:9px;border-radius:8px;border:none;background:#E24B4A;color:white;font-size:13px;font-weight:600;cursor:pointer;">Cancel it</button>
+        </div>
+      </div>`;
+      document.body.appendChild(popup); return;
+    }
+    if (knockoutJokerUsed) return alert('⚡ Knockout Joker already used on another match!');
+    const matchSnap = await getDoc(doc(db, 'matches', matchId));
+    const kickoff = matchSnap.data()?.kickoff?.toDate?.();
+    if (kickoff && new Date() >= new Date(kickoff.getTime() - 1*60*60*1000))
+      return alert('Deadline passed — can\'t activate Knockout Joker on this match.');
+    const popup = document.createElement('div');
+    popup.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;';
+    popup.innerHTML = `<div style="background:#1a0030;border:2px solid #7C3AED;border-radius:16px;padding:1.5rem;max-width:320px;width:100%;text-align:center;animation:jokerEntrance 0.4s cubic-bezier(0.175,0.885,0.32,1.275);">
+      <div style="font-size:64px;margin-bottom:6px;">⚡</div>
+      <div style="font-family:monospace;font-size:10px;letter-spacing:4px;color:#7C3AED;margin-bottom:6px;">⚠️ ONE PER KNOCKOUT STAGE</div>
+      <div style="font-size:18px;font-weight:800;color:#C4B5FD;margin-bottom:10px;">Play Your Knockout Joker?</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.7);line-height:1.65;margin-bottom:1.25rem;">
+        ✅ Correct → all match points <strong style="color:#4ade80;">×2</strong><br>
+        ❌ Wrong → no penalty, Joker just fizzles<br><br>
+        <strong style="color:#C4B5FD;">One use — Round of 32 to Final.</strong>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="this.closest('div[style*=fixed]').remove()" style="flex:1;padding:10px;border-radius:8px;border:0.5px solid #555;background:none;color:#888;font-size:13px;cursor:pointer;">Not yet</button>
+        <button onclick="confirmKnockoutJoker('${matchId}',this.closest('div[style*=fixed]'))" style="flex:1;padding:10px;border-radius:8px;border:none;background:linear-gradient(135deg,#5B21B6,#7C3AED);color:#fff;font-size:13px;font-weight:800;cursor:pointer;">⚡ PLAY IT!</button>
+      </div>
+    </div>`;
+    document.body.appendChild(popup);
+  };
+
+  window.cancelKnockoutJoker = async (matchId, popupEl) => {
+    if (popupEl) popupEl.remove();
+    await deleteDoc(doc(db, 'jokerCards', currentUser.uid + '_knockout'));
+    knockoutJokerUsed = false; knockoutJokerMatchId = null;
+    loadJokerStatus();
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#555;color:#fff;font-size:13px;padding:10px 16px;border-radius:10px;z-index:9999;white-space:nowrap;';
+    t.textContent = '⚡ Knockout Joker cancelled — use it on another knockout match';
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.transition='opacity 0.5s'; t.style.opacity='0'; setTimeout(()=>t.remove(),500); }, 2500);
+  };
+
+  window.confirmKnockoutJoker = async (matchId, popupEl) => {
+    if (popupEl) popupEl.remove();
+    await setDoc(doc(db, 'jokerCards', currentUser.uid + '_knockout'), {
+      userId: currentUser.uid, matchId, type: 'knockout',
+      nickname: currentUserData?.nickname || currentUser.displayName,
+      activatedAt: serverTimestamp()
+    });
+    knockoutJokerUsed = true; knockoutJokerMatchId = matchId;
+    triggerAutoSave(matchId, '', '');
+    const btn = document.getElementById('knockout-joker-btn-' + matchId);
+    if (btn) {
+      btn.style.cssText = 'width:72px;height:72px;border-radius:12px;border:2px solid #7C3AED;background:linear-gradient(145deg,#4C1D95,#7C3AED);color:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-shadow:0 4px 16px rgba(124,58,237,0.6);';
+      btn.innerHTML = '<span style="font-size:20px;line-height:1;">⚡</span><span style="font-size:7px;font-weight:800;letter-spacing:0.1em;font-family:monospace;">ACTIVE ✅</span>';
+    }
+    loadJokerStatus();
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#5B21B6,#7C3AED);color:#fff;font-size:14px;font-weight:800;padding:12px 20px;border-radius:12px;z-index:9999;white-space:nowrap;';
+    t.textContent = '⚡ KNOCKOUT JOKER ACTIVATED! Points doubled if correct!';
     document.body.appendChild(t);
     setTimeout(() => { t.style.transition='opacity 0.5s'; t.style.opacity='0'; setTimeout(()=>t.remove(),500); }, 3000);
   };
@@ -8932,9 +9028,23 @@ Use exactly the formation provided. Only use players from the squad lists above.
             </div>
           </div>
           ${!isPast ? `
-            <!-- Joker — luxury square card, right aligned — ABOVE DON -->
-            <div style="display:flex;justify-content:flex-end;margin-top:0.75rem;">
-              <button id="joker-btn-${d.id}" onclick="activateJoker('${d.id}')"
+            <!-- Joker row: regular + knockout joker side by side -->
+            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:0.75rem;">
+              <!-- Knockout Joker — only on knockout matches -->
+              ${kickoff >= new Date('2026-06-28T12:00:00Z') ? `
+              <button id="knockout-joker-btn-${d.id}" onclick="activateKnockoutJoker('${d.id}')"
+                title="Knockout Joker — doubles points if correct. One use from Round of 32 onwards."
+                style="width:72px;height:72px;border-radius:12px;border:1.5px solid #7C3AED;background:linear-gradient(145deg,#1a0030,#2d0052);color:#C4B5FD;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-shadow:0 4px 12px rgba(124,58,237,0.35),inset 0 1px 0 rgba(255,255,255,0.08);transition:all 0.2s;position:relative;overflow:hidden;"
+                onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 6px 20px rgba(124,58,237,0.5)'"
+                onmouseout="this.style.transform='';this.style.boxShadow='0 4px 12px rgba(124,58,237,0.35),inset 0 1px 0 rgba(255,255,255,0.08)'">
+                <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(196,181,253,0.8),transparent);"></div>
+                <span style="font-size:22px;line-height:1;filter:drop-shadow(0 0 6px rgba(196,181,253,0.6));">⚡</span>
+                <span style="font-size:7px;font-weight:800;letter-spacing:0.1em;font-family:monospace;color:#C4B5FD;">K-JOKER</span>
+                <div style="position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(124,58,237,0.4),transparent);"></div>
+              </button>` : ''}
+              <!-- Regular Joker -->
+              <button id="joker-btn-${d.id}" onclick="activateJoker('${d.id}')"\
+
                 title="Use your Joker — doubles all points if correct. Once per tournament."
                 style="width:72px;height:72px;border-radius:12px;border:1.5px solid #BA7517;background:linear-gradient(145deg,#1a0f00,#2a1800);color:#EF9F27;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-shadow:0 4px 12px rgba(186,117,23,0.35),inset 0 1px 0 rgba(255,255,255,0.1);transition:all 0.2s;position:relative;overflow:hidden;"
                 onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 6px 20px rgba(186,117,23,0.5),inset 0 1px 0 rgba(255,255,255,0.15)'"
@@ -9065,6 +9175,12 @@ Use exactly the formation provided. Only use players from the squad lists above.
     }
 
     const jokerMatchId = jokerSnap.exists() ? jokerSnap.data().matchId : null;
+    // Load knockout joker
+    let knockoutJokerMatchIdStr = null;
+    try {
+      const kSnap = await getDoc(doc(db, 'jokerCards', currentUser.uid + '_knockout'));
+      if (kSnap.exists()) knockoutJokerMatchIdStr = kSnap.data().matchId;
+    } catch(e) {}
     const donMatchIds = new Set();
     donAllSnap.forEach(d => donMatchIds.add(d.data().matchId));
 
@@ -9124,7 +9240,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const predResult   = pred.homeScore > pred.awayScore ? 'home' : pred.homeScore < pred.awayScore ? 'away' : 'draw';
       const isExact  = pred.homeScore === m.homeScore && pred.awayScore === m.awayScore;
       const isWinner = actualResult === predResult;
-      const hasJoker = jokerMatchId === d.id;
+      const hasJoker = jokerMatchId === d.id || knockoutJokerMatchIdStr === d.id;
       const hasDon   = donMatchIds.has(d.id);
 
       const stage = (m.stage || '').toLowerCase();
