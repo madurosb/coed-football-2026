@@ -3779,7 +3779,7 @@
       const pred = d.data();
       const m = matches[pred.matchId];
       if (!m || m.status !== 'FINISHED' || m.homeScore === null) return;
-      const hasJ = jokerVerMap[uid] === pred.matchId;
+      const hasJ = jokerVerMap[uid]?.has(pred.matchId) || false;
       const hasD = donVerSet.has(uid + '_' + pred.matchId);
       const pts = calcPredPts(pred, m, hasJ, hasD);
       calcTotal += pts;
@@ -4014,9 +4014,15 @@
       getDocs(collection(db, 'wc_scorers')).catch(() => ({ forEach: () => {} }))
     ]);
 
-    // Build joker map: userId → matchId
+    // Build joker map: userId → Set of matchIds (supports regular + knockout joker)
     const jokerVerMap = {};
-    jokerVerSnap.forEach(d => { const j = d.data(); if (j.userId) jokerVerMap[j.userId] = j.matchId; });
+    jokerVerSnap.forEach(d => {
+      const j = d.data();
+      if (j.userId && j.matchId) {
+        if (!jokerVerMap[j.userId]) jokerVerMap[j.userId] = new Set();
+        jokerVerMap[j.userId].add(j.matchId);
+      }
+    });
     // Build DON set: "userId_matchId" → true
     const donVerSet = new Set();
     donVerSnap.forEach(d => { const v = d.data(); if (v.userId && v.matchId) donVerSet.add(`${v.userId}_${v.matchId}`); });
@@ -4099,7 +4105,7 @@
       const preds = userPreds[uid] || [];
       let calcPts = 0;
       for (const pred of preds) {
-        const hasJ = jokerVerMap[uid] === pred.matchId;
+        const hasJ = jokerVerMap[uid]?.has(pred.matchId) || false;
         const hasD = donVerSet.has(uid + '_' + pred.matchId);
         calcPts += calcPredPts(pred, matches[pred.matchId], hasJ, hasD);
       }
@@ -4204,7 +4210,7 @@
         const scorerHit = m.firstGoalscorer && pred.firstScorer && pred.firstScorer.toLowerCase() === m.firstGoalscorer.toLowerCase();
         const pts = calcPredPts(pred, m);
 
-        const hasJoker = jokerVerMap[u.uid] === m.id;
+        const hasJoker = jokerVerMap[u.uid]?.has(m.id) || false;
         const hasDon = donVerSet.has(`${u.uid}_${m.id}`);
         pmHtml += `<tr style="border-top:0.5px solid var(--border);background:${isExact?'rgba(29,158,117,0.05)':'none'};">
           <td style="padding:5px 10px;font-weight:500;">${u.nickname||u.displayName}</td>
