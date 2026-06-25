@@ -3729,21 +3729,18 @@
     const isFinal = grp.includes('FINAL') && !grp.includes('QUARTER') && !grp.includes('SEMI');
     const isSemi = grp.includes('SEMI');
     const isQuarter = grp.includes('QUARTER');
-    const isR16 = grp.includes('16') || grp.includes('ROUND_OF_16') || grp.includes('32');
-    const multiplier = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
+    const isR32 = grp.includes('32') && !grp.includes('16');
+    const isR16 = grp.includes('16') || grp.includes('ROUND_OF_16');
+    const multiplier = isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32 ? 2 : 1;
     const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
     const predicted = pred.homeScore > pred.awayScore ? 'H' : pred.homeScore < pred.awayScore ? 'A' : 'D';
     const correctOutcome = actual === predicted;
     const exactScore = pred.homeScore === m.homeScore && pred.awayScore === m.awayScore;
     let pts = 0;
-    if (isFinal) {
-      if (exactScore) pts = 20;
-      else if (correctOutcome) pts = 10;
-    } else {
-      if (correctOutcome) pts += 1 * multiplier;
-      if (exactScore) pts += 3 * multiplier;
-    }
-    const normSc2 = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+    // All stages use multiplier consistently (Final = ×6)
+    if (correctOutcome) pts += 1 * multiplier;
+    if (exactScore) pts += 3 * multiplier;
+    const normSc2 = s => { let n=(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); n=n.replace(/\bjr\b\.?/g,'junior').replace(/\bsr\b\.?/g,'senior').replace(/\bst\b\./g,'saint'); return n; };
     const scorerTargets = (m.firstGoalscorer || '').split('/').map(s => normSc2(s));
     const predIsOG = (pred.firstScorer || '').toLowerCase().includes('own goal') || (pred.firstScorer || '').toLowerCase() === 'og';
     const scorerMatch = scorerTargets.some(t => t === normSc2(pred.firstScorer)) ||
@@ -3787,7 +3784,7 @@
       const actOut = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
       const correct = predOut === actOut;
       const exact = pred.homeScore === m.homeScore && pred.awayScore === m.awayScore;
-      const normSc = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+      const normSc = s => { let n=(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); n=n.replace(/\bjr\b\.?/g,'junior').replace(/\bsr\b\.?/g,'senior').replace(/\bst\b\./g,'saint'); return n; };
       const actualTargets = (m.firstGoalscorer||'').split('/').map(s => normSc(s));
       const predIsOG = (pred.firstScorer||'').toLowerCase().includes('own goal') || (pred.firstScorer||'').toLowerCase() === 'og';
       const scorerHit = pred.firstScorer && (m.firstGoalscorer || m.hasOwnGoal) && (
@@ -3886,8 +3883,9 @@
       const isFinal = matchGroup.includes('FINAL') && !matchGroup.includes('QUARTER') && !matchGroup.includes('SEMI');
       const isSemi = matchGroup.includes('SEMI');
       const isQuarter = matchGroup.includes('QUARTER');
+      const isR32 = matchGroup.includes('32') && !matchGroup.includes('16');
       const isR16 = matchGroup.includes('16') || matchGroup.includes('ROUND_OF_16');
-      const multiplier = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
+      const multiplier = isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32 ? 2 : 1;
       const actualOutcome = homeScore > awayScore ? 'home' : homeScore < awayScore ? 'away' : 'draw';
       let count = 0;
       for (const d of predsSnap.docs) {
@@ -3903,7 +3901,7 @@
           if (pred.homeScore === homeScore && pred.awayScore === awayScore) { pts += 3 * multiplier; exact = 1; }
         }
         // Normalize both sides to handle accent variants (e.g. "Mbappe" vs "Mbappé")
-        const _normSc = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+        const _normSc = s => { let n=(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); n=n.replace(/\bjr\b\.?/g,'junior').replace(/\bsr\b\.?/g,'senior').replace(/\bst\b\./g,'saint'); return n; };
         if (firstScorer && _normSc(pred.firstScorer) === _normSc(firstScorer)) pts += 2 * multiplier;
         // Joker
         const jokerSnap = await getDocs(query(collection(db, 'jokerCards'), where('matchId','==',matchId), where('userId','==',pred.userId)));
@@ -4055,8 +4053,9 @@
       const isFinal = grp.includes('FINAL') && !grp.includes('QUARTER') && !grp.includes('SEMI');
       const isSemi = grp.includes('SEMI');
       const isQuarter = grp.includes('QUARTER');
-      const isR16 = grp.includes('16') || grp.includes('ROUND_OF_16') || grp.includes('32');
-      const multiplier = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
+      const isR32 = grp.includes('32') && !grp.includes('16');
+      const isR16 = grp.includes('16') || grp.includes('ROUND_OF_16');
+      const multiplier = isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32 ? 2 : 1;
       const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
       const predicted = pred.homeScore > pred.awayScore ? 'H' : pred.homeScore < pred.awayScore ? 'A' : 'D';
       const correctOutcome = actual === predicted;
@@ -4070,7 +4069,7 @@
         if (correctOutcome) pts += 1 * multiplier;
         if (exactScore) pts += 3 * multiplier;
       }
-      const normSc2 = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+      const normSc2 = s => { let n=(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); n=n.replace(/\bjr\b\.?/g,'junior').replace(/\bsr\b\.?/g,'senior').replace(/\bst\b\./g,'saint'); return n; };
       // Support multiple scorers in same match (e.g. "Haaland / Own Goal")
       const scorerTargets = (m.firstGoalscorer || '').split('/').map(s => normSc2(s));
       const predIsOG = (pred.firstScorer || '').toLowerCase().includes('own goal') || (pred.firstScorer || '').toLowerCase() === 'og';
@@ -8521,8 +8520,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
   async function loadAccuracyTab() {
     const container = document.getElementById('accuracy-content');
     if (!container) return;
-    if (container.dataset.loaded) return;
-    container.dataset.loaded = '1';
+    // Always reload fresh — no cache (data changes as matches finish)
     container.innerHTML = '<div style="padding:2rem;text-align:center;font-size:13px;color:var(--text-muted);">Crunching numbers... 📊</div>';
 
     try {
@@ -8535,9 +8533,15 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const matches = {};
       matchesSnap.forEach(d => { matches[d.id] = d.data(); });
 
+      // Only count matches that are truly finished with valid scores
       const finishedMatchIds = new Set(
-        Object.entries(matches).filter(([,m]) => m.status === 'FINISHED' && m.homeScore !== null).map(([id]) => id)
+        Object.entries(matches)
+          .filter(([,m]) => m.status === 'FINISHED' && m.homeScore !== null && m.homeScore !== undefined && m.awayScore !== null)
+          .map(([id]) => id)
       );
+
+      // Normalizer for scorer names (strips accents, lowercase)
+      const normSc3 = s => { let n=(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); n=n.replace(/\bjr\b\.?/g,'junior').replace(/\bsr\b\.?/g,'senior').replace(/\bst\b\./g,'saint'); return n; };
 
       // Per user stats
       const userStats = {};
@@ -8551,13 +8555,23 @@ Use exactly the formation provided. Only use players from the squad lists above.
         if (!userStats[p.userId]) return;
         const m = matches[p.matchId];
         if (!m || !finishedMatchIds.has(p.matchId)) return;
+        // Skip predictions where user didn't actually fill in a score
+        if (p.homeScore === null || p.homeScore === undefined || p.awayScore === null || p.awayScore === undefined) return;
+
         userStats[p.userId].total++;
         const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
         const predicted = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
         if (actual === predicted) userStats[p.userId].correct++;
         if (p.homeScore === m.homeScore && p.awayScore === m.awayScore) userStats[p.userId].exact++;
-        const normSc3 = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-        if (m.firstGoalscorer && p.firstScorer && normSc3(p.firstScorer) === normSc3(m.firstGoalscorer)) userStats[p.userId].scorerHits++;
+
+        // Scorer matching — handles multi-scorer format "Mbappe / Own Goal" + accent variants
+        if (m.firstGoalscorer && p.firstScorer) {
+          const scorerTargets = m.firstGoalscorer.split('/').map(s => normSc3(s));
+          const predIsOG = normSc3(p.firstScorer).includes('own goal') || normSc3(p.firstScorer) === 'og';
+          const scorerHit = scorerTargets.some(t => t === normSc3(p.firstScorer)) ||
+            (predIsOG && (scorerTargets.some(t => t.includes('own goal')) || m.hasOwnGoal));
+          if (scorerHit) userStats[p.userId].scorerHits++;
+        }
       });
 
       const statsArr = Object.values(userStats).filter(u => u.total > 0);
@@ -9010,8 +9024,8 @@ Use exactly the formation provided. Only use players from the squad lists above.
               <!-- Hidden select for data saving -->
               <select id="scorer-${d.id}" ${isPast?'disabled':''} onchange="autoSaveScorer('${d.id}', this)" style="display:none;">
                 <option value="">Select player...</option>
-                <optgroup label="${m.homeTeam}">${getPlayersForTeam(m.homeTeam, m.homePlayers).map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
-                <optgroup label="${m.awayTeam}">${getPlayersForTeam(m.awayTeam, m.awayPlayers).map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
+                <optgroup label="${m.homeTeam}">${(()=>{const s=new Set();return getPlayersForTeam(m.homeTeam,m.homePlayers).filter(p=>{const n=p.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\bjr\b\.?/g,'junior');return s.has(n)?false:!!s.add(n)});})().map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
+                <optgroup label="${m.awayTeam}">${(()=>{const s=new Set();return getPlayersForTeam(m.awayTeam,m.awayPlayers).filter(p=>{const n=p.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\bjr\b\.?/g,'junior');return s.has(n)?false:!!s.add(n)});})().map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
               </select>
               ${!isPast ? `
               <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
@@ -9253,8 +9267,9 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const isFinal   = stage.includes('final') && !stage.includes('semi') && !stage.includes('third');
       const isSemi    = stage.includes('semi');
       const isQuarter = stage.includes('quarter');
+      const isR32s    = stage.includes('32') && !stage.includes('16');
       const isR16     = stage.includes('16') || stage.includes('round of 16') || stage.includes('r16');
-      const stageMulti = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
+      const stageMulti = isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32s ? 2 : 1;
 
       let pts = 0;
       let rows = [];
@@ -10469,8 +10484,9 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const isFinal = matchGroup.includes('FINAL') && !matchGroup.includes('QUARTER') && !matchGroup.includes('SEMI');
       const isSemi = matchGroup.includes('SEMI');
       const isQuarter = matchGroup.includes('QUARTER');
+      const isR32 = matchGroup.includes('32') && !matchGroup.includes('16');
       const isR16 = matchGroup.includes('16') || matchGroup.includes('ROUND_OF_16');
-      const multiplier = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
+      const multiplier = isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32 ? 2 : 1;
 
       for (const pred of batch) {
         let pts = 0, exact = 0, bonus = 0;
@@ -10570,7 +10586,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
     btn.disabled = true;
     status.innerHTML = '⏳ Processing...';
-    const normSc = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+    const normSc = s => { let n=(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); n=n.replace(/\bjr\b\.?/g,'junior').replace(/\bsr\b\.?/g,'senior').replace(/\bst\b\./g,'saint'); return n; };
     try {
       const matchSnap = await getDoc(doc(db, 'matches', matchId));
       const matchData = matchSnap.data() || {};
@@ -10578,8 +10594,9 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const isFinal = matchGroup.includes('FINAL') && !matchGroup.includes('QUARTER') && !matchGroup.includes('SEMI');
       const isSemi = matchGroup.includes('SEMI');
       const isQuarter = matchGroup.includes('QUARTER');
+      const isR32 = matchGroup.includes('32') && !matchGroup.includes('16');
       const isR16 = matchGroup.includes('16') || matchGroup.includes('ROUND_OF_16');
-      const multiplier = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
+      const multiplier = isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32 ? 2 : 1;
       const pts = 2 * multiplier;
 
       const predsSnap = await getDocs(query(collection(db, 'predictions'), where('matchId', '==', matchId)));
@@ -12624,7 +12641,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const predicted = pred.homeScore > pred.awayScore ? 'home' : pred.homeScore < pred.awayScore ? 'away' : 'draw';
       if (actual === predicted) correctResults++;
       // Count first scorer hits
-      const normSc4 = s => (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+      const normSc4 = s => { let n=(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); n=n.replace(/\bjr\b\.?/g,'junior').replace(/\bsr\b\.?/g,'senior').replace(/\bst\b\./g,'saint'); return n; };
       if (match.firstGoalscorer && pred.firstScorer && normSc4(pred.firstScorer) === normSc4(match.firstGoalscorer)) myScoreHits++;
       // Find WORST prediction (max total goal difference vs reality)
       const diff = Math.abs(pred.homeScore - match.homeScore) + Math.abs(pred.awayScore - match.awayScore);
@@ -16440,7 +16457,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
           if (!scorerPicks[sc]) scorerPicks[sc] = [];
           scorerPicks[sc].push(p.nickname);
           // Support multiple scorers (e.g. "Haaland / Own Goal")
-          const normSc = s => (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+          const normSc = s => { let n=(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); n=n.replace(/\bjr\b\.?/g,'junior').replace(/\bsr\b\.?/g,'senior'); return n; };
           const actualTargets = (actualScorer||'').split('/').map(s => normSc(s));
           const predIsOG = sc.toLowerCase().includes('own goal') || sc.toLowerCase() === 'og';
           const isHit = actualScorer && (
@@ -16473,7 +16490,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
             const mainHits = scorerHits.filter(n => {
               const pred = Object.entries(scorerPicks).find(([k,v]) => v.includes(n));
               if (!pred) return false;
-              const normSc = s => (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+              const normSc = s => { let n=(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); n=n.replace(/\bjr\b\.?/g,'junior').replace(/\bsr\b\.?/g,'senior'); return n; };
               return normSc(pred[0]) === normSc(mainScorer);
             });
             const ogHits = scorerHits.filter(n => {
@@ -16493,7 +16510,7 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
             return html;
           })() : ''}
           ${sortedScorers.map(([name, pickers]) => {
-            const normSc = s => (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+            const normSc = s => { let n=(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); n=n.replace(/\bjr\b\.?/g,'junior').replace(/\bsr\b\.?/g,'senior'); return n; };
             const actualTargets = (actualScorer||'').split('/').map(s => normSc(s));
             const nameIsOG = name.toLowerCase().includes('own goal') || name.toLowerCase() === 'og';
             const isRight = actualScorer && (
@@ -17480,10 +17497,18 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
     panel.className = 'inline-scorer-panel';
     panel.dataset.for = matchId;
 
+    // Deduplicate by normalized name — prevents "Vinicius Jr." + "Vinicius Junior" both appearing
+    const _normDd = s => { let n=(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); n=n.replace(/\bjr\b\.?/g,'junior').replace(/\bsr\b\.?/g,'senior'); return n; };
+    const _seenNorms = new Set();
     const allPlayers = [
       ...homePlayers.map(n => ({name:n, team:homeTeam})),
       ...awayPlayers.map(n => ({name:n, team:awayTeam}))
-    ];
+    ].filter(p => {
+      const norm = _normDd(p.name);
+      if (_seenNorms.has(norm)) return false;
+      _seenNorms.add(norm);
+      return true;
+    });
 
     const teamFlagCode = window.TEAM_FLAGS_GLOBAL || {};
 
