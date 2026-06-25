@@ -6696,11 +6696,26 @@ Use exactly the formation provided. Only use players from the squad lists above.
         if (currentPage === 'leaderboard') {
           const predsSnap = await getDocs(collection(db, 'predictions'));
           const predStats = {};
+          // Also fetch matches for live exact score calculation
+          let finishedMatchesRef = {};
+          try {
+            const mSnap = await getDocs(collection(db, 'matches'));
+            mSnap.forEach(d => {
+              const m = d.data();
+              if (m.status === 'FINISHED' && m.homeScore !== null && m.awayScore !== null)
+                finishedMatchesRef[d.id] = m;
+            });
+          } catch(e) {}
           predsSnap.forEach(d => {
             const p = d.data();
-            if (!predStats[p.userId]) predStats[p.userId] = { total: 0, draws: 0 };
+            if (!p.userId) return;
+            if (!predStats[p.userId]) predStats[p.userId] = { total: 0, draws: 0, exactScores: 0 };
             predStats[p.userId].total++;
             if ((p.homeScore ?? -1) === (p.awayScore ?? -2)) predStats[p.userId].draws++;
+            const m = finishedMatchesRef[p.matchId];
+            if (m && p.homeScore !== null && p.homeScore !== undefined &&
+                p.homeScore === m.homeScore && p.awayScore === m.awayScore)
+              predStats[p.userId].exactScores++;
           });
           renderLeaderboard('full-leaderboard', users, predStats);
         }
@@ -8213,7 +8228,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
           </div>
         </div>
         <div class="lb-pts" style="${isMe?'color:var(--accent);font-weight:800;':''}">${u.points || 0}</div>
-        <div class="lb-pts muted">${u.exactScores || 0}</div>
+        <div class="lb-pts muted">${predStats?.[u.uid]?.exactScores ?? u.exactScores ?? 0}</div>
         <div class="lb-pts muted">${u.bonusPoints || 0}</div>
       </div>`;
     }).join('');
@@ -8665,21 +8680,38 @@ Use exactly the formation provided. Only use players from the squad lists above.
   }
 
   async function loadFullLeaderboard() {
-    const [usersSnap, predsSnap] = await Promise.all([
+    const [usersSnap, predsSnap, matchesSnap] = await Promise.all([
       getDocs(collection(db, 'users')),
-      getDocs(collection(db, 'predictions'))
+      getDocs(collection(db, 'predictions')),
+      getDocs(collection(db, 'matches'))
     ]);
     const users = [];
     usersSnap.forEach(d => users.push(d.data()));
     users.sort((a, b) => (b.points || 0) - (a.points || 0));
 
-    // Build pred stats per user
+    // Build finished matches map for live exact score calculation
+    const finishedMatches = {};
+    matchesSnap.forEach(d => {
+      const m = d.data();
+      if (m.status === 'FINISHED' && m.homeScore !== null && m.homeScore !== undefined && m.awayScore !== null) {
+        finishedMatches[d.id] = m;
+      }
+    });
+
+    // Build pred stats per user — including live exact scores from actual results
     const predStats = {};
     predsSnap.forEach(d => {
       const p = d.data();
-      if (!predStats[p.userId]) predStats[p.userId] = { total: 0, draws: 0 };
+      if (!p.userId) return;
+      if (!predStats[p.userId]) predStats[p.userId] = { total: 0, draws: 0, exactScores: 0 };
       predStats[p.userId].total++;
       if ((p.homeScore ?? -1) === (p.awayScore ?? -2)) predStats[p.userId].draws++;
+      // Live exact score: compare prediction vs actual finished match result
+      const m = finishedMatches[p.matchId];
+      if (m && p.homeScore !== null && p.homeScore !== undefined &&
+          p.homeScore === m.homeScore && p.awayScore === m.awayScore) {
+        predStats[p.userId].exactScores++;
+      }
     });
 
     renderLeaderboard('full-leaderboard', users, predStats);
