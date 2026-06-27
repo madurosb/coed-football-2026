@@ -3779,13 +3779,9 @@
     const correctOutcome = actual === predicted;
     const exactScore = pred.homeScore === m.homeScore && pred.awayScore === m.awayScore;
     let pts = 0;
-    if (isFinal) {
-      if (exactScore) pts = 20;
-      else if (correctOutcome) pts = 10;
-    } else {
-      if (correctOutcome) pts += 1 * multiplier;
-      if (exactScore) pts += 3 * multiplier;
-    }
+    // All stages use the stage multiplier (Final ×6): outcome +1×mult, exact adds +3×mult
+    if (correctOutcome) pts += 1 * multiplier;
+    if (exactScore) pts += 3 * multiplier;
     const normSc2 = s => { let n=(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); n=n.replace(/\bjr\b\.?/g,'junior').replace(/\bsr\b\.?/g,'senior').replace(/\bst\b\./g,'saint'); return n; };
     const scorerTargets = (m.firstGoalscorer || '').split('/').map(s => normSc2(s));
     const predIsOG = (pred.firstScorer || '').toLowerCase().includes('own goal') || (pred.firstScorer || '').toLowerCase() === 'og';
@@ -4056,13 +4052,9 @@
         if (pred.matchId !== matchId) continue;
         let pts = 0, exact = 0;
         const predOutcome = pred.homeScore > pred.awayScore ? 'home' : pred.homeScore < pred.awayScore ? 'away' : 'draw';
-        if (isFinal) {
-          if (pred.homeScore === homeScore && pred.awayScore === awayScore) { pts = 20; exact = 1; }
-          else if (predOutcome === actualOutcome) pts = 10;
-        } else {
-          if (predOutcome === actualOutcome) pts += 1 * multiplier;
-          if (pred.homeScore === homeScore && pred.awayScore === awayScore) { pts += 3 * multiplier; exact = 1; }
-        }
+        // All stages use the stage multiplier (Final ×6)
+        if (predOutcome === actualOutcome) pts += 1 * multiplier;
+        if (pred.homeScore === homeScore && pred.awayScore === awayScore) { pts += 3 * multiplier; exact = 1; }
         // Normalize both sides to handle accent variants (e.g. "Mbappe" vs "Mbappé")
         const _normSc = s => { let n=(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); n=n.replace(/\bjr\b\.?/g,'junior').replace(/\bsr\b\.?/g,'senior').replace(/\bst\b\./g,'saint'); return n; };
         if (firstScorer && _normSc(pred.firstScorer) === _normSc(firstScorer)) pts += 2 * multiplier;
@@ -4224,14 +4216,9 @@
       const correctOutcome = actual === predicted;
       const exactScore = pred.homeScore === m.homeScore && pred.awayScore === m.awayScore;
       let pts = 0;
-      if (isFinal) {
-        if (exactScore) pts = 20;
-        else if (correctOutcome) pts = 10;
-      } else {
-        // Outcome: +1. Exact score: +1+3=+4 total (outcome + exact bonus)
-        if (correctOutcome) pts += 1 * multiplier;
-        if (exactScore) pts += 3 * multiplier;
-      }
+      // All stages use the stage multiplier (Final ×6): outcome +1×mult, exact adds +3×mult
+      if (correctOutcome) pts += 1 * multiplier;
+      if (exactScore) pts += 3 * multiplier;
       const normSc2 = s => { let n=(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); n=n.replace(/\bjr\b\.?/g,'junior').replace(/\bsr\b\.?/g,'senior').replace(/\bst\b\./g,'saint'); return n; };
       // Support multiple scorers in same match (e.g. "Haaland / Own Goal")
       const scorerTargets = (m.firstGoalscorer || '').split('/').map(s => normSc2(s));
@@ -10669,14 +10656,9 @@ Use exactly the formation provided. Only use players from the squad lists above.
         const actualResult = homeScore > awayScore ? 'home' : homeScore < awayScore ? 'away' : 'draw';
         const predResult = predHome > predAway ? 'home' : predHome < predAway ? 'away' : 'draw';
 
-        if (isFinal) {
-          // Final special: exact=50, correct result=30
-          if (predHome === homeScore && predAway === awayScore) { pts = 20; exact = 1; }
-          else if (actualResult === predResult) { pts = 10; }
-        } else {
-          if (actualResult === predResult) pts += 1 * multiplier;
-          if (predHome === homeScore && predAway === awayScore) { pts += 3 * multiplier; exact = 1; }
-        }
+        // All stages use the stage multiplier (Final ×6)
+        if (actualResult === predResult) pts += 1 * multiplier;
+        if (predHome === homeScore && predAway === awayScore) { pts += 3 * multiplier; exact = 1; }
         if (firstScorer && _normSc(pred.data.firstScorer) === _normSc(firstScorer)) { pts += 2 * multiplier; bonus += 1; }
 
         // Tournament-player points are awarded ONLY via the dedicated
