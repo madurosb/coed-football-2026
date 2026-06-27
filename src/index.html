@@ -10519,6 +10519,8 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const isR32 = matchGroup.includes('32') && !matchGroup.includes('16');
       const isR16 = matchGroup.includes('16') || matchGroup.includes('ROUND_OF_16');
       const multiplier = isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32 ? 2 : 1;
+      // Normalize scorer names (accent/Jr/Junior/case-insensitive) — same logic as reAward & CALC
+      const _normSc = s => { let n=(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); n=n.replace(/\bjr\b\.?/g,'junior').replace(/\bsr\b\.?/g,'senior').replace(/\bst\b\./g,'saint'); return n; };
 
       for (const pred of batch) {
         let pts = 0, exact = 0, bonus = 0;
@@ -10535,7 +10537,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
           if (actualResult === predResult) pts += 1 * multiplier;
           if (predHome === homeScore && predAway === awayScore) { pts += 3 * multiplier; exact = 1; }
         }
-        if (firstScorer && pred.data.firstScorer === firstScorer) { pts += 2 * multiplier; bonus += 1; }
+        if (firstScorer && _normSc(pred.data.firstScorer) === _normSc(firstScorer)) { pts += 2 * multiplier; bonus += 1; }
 
         // Tournament player scoring: goals x2, assists x1, red card -1
         const tp = userTourneyPlayer[pred.data.userId];
