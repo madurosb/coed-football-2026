@@ -3129,6 +3129,7 @@
           <button onclick="setScoreVerifyTab('perMatch')" id="svtab-perMatch" style="padding:8px 14px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">🗓 Per Match</button>
           <button onclick="setScoreVerifyTab('reaward')" id="svtab-reaward" style="padding:8px 14px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">🔁 Re-award</button>
           <button onclick="setScoreVerifyTab('perUser')" id="svtab-perUser" style="padding:8px 14px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">👤 Per User</button>
+          <button onclick="setScoreVerifyTab('recompute')" id="svtab-recompute" style="padding:8px 14px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">🔄 Recompute</button>
           <button onclick="loadScoreVerification(true)" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">🔄 Refresh</button>
         </div>
         <div id="score-verify-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Click Refresh to load.</div></div>
@@ -3152,6 +3153,11 @@
           <input type="text" id="reaward-scorer" placeholder="First goalscorer (leave blank if none)" style="width:100%;padding:8px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;margin-bottom:12px;box-sizing:border-box;">
           <button onclick="reAwardMatchPoints()" style="width:100%;padding:10px;border-radius:8px;border:none;background:#E24B4A;color:white;font-size:13px;font-weight:600;cursor:pointer;">🔁 Re-award Points for This Match</button>
           <div id="reaward-status" style="margin-top:8px;font-size:12px;"></div>
+        </div>
+
+        <div id="score-verify-recompute" style="display:none;padding:1rem;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px;">🔄 Recompute all points to CALC</div>
+          <div id="score-verify-recompute-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading…</div></div>
         </div>
       </div>
     </div>
@@ -3693,8 +3699,9 @@
     const perMatch = document.getElementById('score-verify-perMatch');
     const reaward = document.getElementById('score-verify-reaward');
     const perUser = document.getElementById('score-verify-perUser');
-    const tabs = ['summary','perMatch','reaward','perUser'];
-    const divs = { summary, perMatch, reaward, perUser };
+    const recompute = document.getElementById('score-verify-recompute');
+    const tabs = ['summary','perMatch','reaward','perUser','recompute'];
+    const divs = { summary, perMatch, reaward, perUser, recompute };
     tabs.forEach(t => {
       const btn = document.getElementById('svtab-'+t);
       const active = t === tab;
@@ -3703,6 +3710,7 @@
     });
     if (tab === 'reaward') loadReawardMatches();
     if (tab === 'perUser') loadPerUserSelect();
+    if (tab === 'recompute') loadRecomputePreview();
   };
 
   function loadPerUserSelect() {
@@ -3756,6 +3764,164 @@
     }
     return pts;
   }
+
+  // ── RECOMPUTE: authoritative one-time sync of stored points to CALC ──────
+  // _recalcPredPts MUST mirror loadScoreVerification's calcPredPts (Summary "Calc." column).
+  // If scoring rules change, update BOTH this and the one inside loadScoreVerification.
+  function _recalcPredPts(pred, m, hasJoker, hasDon) {
+    if (!m || m.homeScore === null || m.homeScore === undefined || m.status !== 'FINISHED') return 0;
+    const grp = (m.group || '').toUpperCase();
+    const isFinal = grp.includes('FINAL') && !grp.includes('QUARTER') && !grp.includes('SEMI');
+    const isSemi = grp.includes('SEMI');
+    const isQuarter = grp.includes('QUARTER');
+    const isR32 = grp.includes('32') && !grp.includes('16');
+    const isR16 = grp.includes('16') || grp.includes('ROUND_OF_16');
+    const multiplier = isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32 ? 2 : 1;
+    const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
+    const predicted = pred.homeScore > pred.awayScore ? 'H' : pred.homeScore < pred.awayScore ? 'A' : 'D';
+    const correctOutcome = actual === predicted;
+    const exactScore = pred.homeScore === m.homeScore && pred.awayScore === m.awayScore;
+    let pts = 0;
+    if (isFinal) {
+      if (exactScore) pts = 20;
+      else if (correctOutcome) pts = 10;
+    } else {
+      if (correctOutcome) pts += 1 * multiplier;
+      if (exactScore) pts += 3 * multiplier;
+    }
+    const normSc2 = s => { let n=(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); n=n.replace(/\bjr\b\.?/g,'junior').replace(/\bsr\b\.?/g,'senior').replace(/\bst\b\./g,'saint'); return n; };
+    const scorerTargets = (m.firstGoalscorer || '').split('/').map(s => normSc2(s));
+    const predIsOG = (pred.firstScorer || '').toLowerCase().includes('own goal') || (pred.firstScorer || '').toLowerCase() === 'og';
+    const scorerMatch = scorerTargets.some(t => t === normSc2(pred.firstScorer)) ||
+      (predIsOG && scorerTargets.some(t => t.includes('own goal') || t === 'og'));
+    const scorerPts = (m.firstGoalscorer && pred.firstScorer && scorerMatch) ? 2 * multiplier : 0;
+    pts += scorerPts;
+    if (hasJoker && correctOutcome) pts *= 2;
+    if (hasDon) { pts = correctOutcome ? pts * 2 : -1 * multiplier; }
+    return pts;
+  }
+
+  // Compute every user's authoritative CALC total. READ-ONLY — performs no DB writes.
+  async function computeAllCalcTotals() {
+    const [usersSnap, matchesSnap, predsSnap, jokerVerSnap, donVerSnap, wcScorersSnap] = await Promise.all([
+      getDocs(collection(db, 'users')),
+      getDocs(collection(db, 'matches')),
+      getDocs(collection(db, 'predictions')),
+      getDocs(collection(db, 'jokerCards')),
+      getDocs(collection(db, 'donOptIns')),
+      getDocs(collection(db, 'wc_scorers')).catch(() => ({ forEach: () => {} }))
+    ]);
+    const jokerVerMap = {};
+    jokerVerSnap.forEach(d => { const j = d.data(); if (j.userId && j.matchId) { if (!jokerVerMap[j.userId]) jokerVerMap[j.userId] = new Set(); jokerVerMap[j.userId].add(j.matchId); } });
+    const donVerSet = new Set();
+    donVerSnap.forEach(d => { const v = d.data(); if (v.userId && v.matchId) donVerSet.add(v.userId + '_' + v.matchId); });
+    const users = {}, matches = {}, userPreds = {};
+    usersSnap.forEach(d => { users[d.id] = d.data(); });
+    matchesSnap.forEach(d => { matches[d.id] = d.data(); });
+    const wcNormMap = buildNormalizedScorersMap(wcScorersSnap);
+    predsSnap.forEach(d => { const p = d.data(); if (!userPreds[p.userId]) userPreds[p.userId] = []; userPreds[p.userId].push(p); });
+    const rows = [];
+    for (const uid of Object.keys(users)) {
+      const u = users[uid];
+      const preds = userPreds[uid] || [];
+      let calc = 0;
+      for (const pred of preds) {
+        const hasJ = jokerVerMap[uid] ? jokerVerMap[uid].has(pred.matchId) : false;
+        const hasD = donVerSet.has(uid + '_' + pred.matchId);
+        calc += _recalcPredPts(pred, matches[pred.matchId], hasJ, hasD);
+      }
+      if (u.tournamentPlayer) {
+        const tpData = wcNormMap[normalizeName(u.tournamentPlayer)];
+        if (tpData) { calc += (tpData.goals || 0) * 2 + (tpData.assists || 0) * 1 - (tpData.redCards || 0) * 1; }
+      }
+      const stored = u.points || 0;
+      rows.push({ uid: uid, name: u.nickname || u.displayName || uid, stored: stored, calc: calc, diff: stored - calc, removed: !!u.removed });
+    }
+    rows.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
+    window._recomputeRows = rows;
+    return rows;
+  }
+
+  // Read-only preview of what a recompute would change. Writes NOTHING.
+  window.loadRecomputePreview = async () => {
+    const c = document.getElementById('score-verify-recompute-content');
+    if (!c) return;
+    if (!window._isAdmin) { c.innerHTML = '<div style="color:#E24B4A;font-size:13px;">Admin only.</div>'; return; }
+    c.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Computing… (read-only, nothing is saved)</div>';
+    try {
+      const rows = await computeAllCalcTotals();
+      const changed = rows.filter(r => r.diff !== 0);
+      let html = '<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Preview only — <strong>nothing is written until you press Apply.</strong> Sets each player\'s stored points to the CALC value. Current points are backed up automatically (restorable). Only the <strong>points</strong> field changes — predictions, results, jokers, DON and wc_scorers are untouched.</div>';
+      if (changed.length === 0) {
+        html += '<div style="background:var(--badge-green-bg);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--badge-green-text);font-weight:500;">✅ All points already match CALC. Nothing to do.</div>';
+        c.innerHTML = html;
+        return;
+      }
+      html += '<div style="background:var(--surface2);border-radius:10px;overflow:hidden;margin-bottom:12px;">'
+        + '<div style="display:grid;grid-template-columns:1fr 56px 56px 56px;font-size:11px;color:var(--text-muted);text-transform:uppercase;padding:6px 10px;font-weight:500;"><div>Player</div><div style="text-align:center">Now</div><div style="text-align:center">→ New</div><div style="text-align:center">Δ</div></div>';
+      changed.forEach(r => {
+        const delta = -r.diff; // new - old
+        const dCol = delta < 0 ? '#E24B4A' : '#1D9E75';
+        const dTxt = (delta > 0 ? '+' : '') + delta;
+        html += '<div style="display:grid;grid-template-columns:1fr 56px 56px 56px;align-items:center;padding:7px 10px;border-top:0.5px solid var(--border);">'
+          + '<div style="font-size:12px;font-weight:500;">' + r.name + (r.removed ? ' <span style="color:var(--text-muted);font-size:10px;">(removed)</span>' : '') + '</div>'
+          + '<div style="text-align:center;font-size:13px;color:var(--text-muted);">' + r.stored + '</div>'
+          + '<div style="text-align:center;font-size:13px;font-weight:700;">' + r.calc + '</div>'
+          + '<div style="text-align:center;font-size:12px;font-weight:700;color:' + dCol + ';">' + dTxt + '</div>'
+          + '</div>';
+      });
+      html += '</div>';
+      html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;"><strong>' + changed.length + '</strong> player(s) will change.</div>';
+      html += '<button onclick="applyRecompute()" style="width:100%;padding:11px;border-radius:8px;border:none;background:#E24B4A;color:white;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px;">✅ Apply — set points = CALC (' + changed.length + ' players)</button>';
+      html += '<button onclick="restorePointsBackup()" style="width:100%;padding:9px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;">↩️ Restore last backup</button>';
+      html += '<div id="recompute-status" style="margin-top:10px;font-size:13px;"></div>';
+      c.innerHTML = html;
+    } catch (e) {
+      c.innerHTML = '<div style="color:#E24B4A;font-size:13px;">Error: ' + e.message + '</div>';
+    }
+  };
+
+  // Writes points=CALC for changed users only, after confirm. Backs up old value to pointsBackup.
+  window.applyRecompute = async () => {
+    if (!window._isAdmin) return;
+    const rows = window._recomputeRows;
+    if (!rows) { alert('Run the preview first (open the Recompute tab).'); return; }
+    const changed = rows.filter(r => r.diff !== 0);
+    if (changed.length === 0) { alert('Nothing to apply — all points already match CALC.'); return; }
+    if (!confirm('Apply CALC totals to ' + changed.length + ' player(s)?\n\n• Current points are backed up first (restorable via "Restore last backup").\n• ONLY the points field changes.\n• Predictions, results, jokers, DON and wc_scorers are NOT touched.')) return;
+    const status = document.getElementById('recompute-status');
+    if (status) status.innerHTML = '⏳ Applying…';
+    let done = 0, failed = 0;
+    for (const r of changed) {
+      try {
+        await updateDoc(doc(db, 'users', r.uid), { points: r.calc, pointsBackup: r.stored, pointsBackupAt: serverTimestamp() });
+        done++;
+      } catch (e) { failed++; console.error('recompute write failed for', r.uid, e); }
+    }
+    if (status) status.innerHTML = '<span style="color:var(--green);font-weight:700;">✅ Applied to ' + done + ' player(s).' + (failed ? ' ⚠️ ' + failed + ' failed.' : '') + '</span> Open the Summary tab and press Refresh to verify.';
+  };
+
+  // Reverts the last Apply by restoring pointsBackup → points for every user that has one.
+  window.restorePointsBackup = async () => {
+    if (!window._isAdmin) return;
+    if (!confirm('Restore points from the last backup for every player who has one?\n\nThis undoes the most recent Apply. Only the points field is restored.')) return;
+    const status = document.getElementById('recompute-status');
+    if (status) status.innerHTML = '⏳ Restoring…';
+    try {
+      const usersSnap = await getDocs(collection(db, 'users'));
+      let restored = 0, failed = 0;
+      for (const d of usersSnap.docs) {
+        const u = d.data();
+        if (u.pointsBackup !== undefined && u.pointsBackup !== null) {
+          try { await updateDoc(d.ref, { points: u.pointsBackup }); restored++; }
+          catch (e) { failed++; console.error('restore failed for', d.id, e); }
+        }
+      }
+      if (status) status.innerHTML = '<span style="color:var(--green);font-weight:700;">↩️ Restored ' + restored + ' player(s) from backup.' + (failed ? ' ⚠️ ' + failed + ' failed.' : '') + '</span>';
+    } catch (e) {
+      if (status) status.innerHTML = '<span style="color:#E24B4A;">Error: ' + e.message + '</span>';
+    }
+  };
 
   window.loadPerUserBreakdown = async () => {
     const uid = document.getElementById('peruser-select').value;
@@ -3903,9 +4069,9 @@
         // Normalize both sides to handle accent variants (e.g. "Mbappe" vs "Mbappé")
         const _normSc = s => { let n=(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); n=n.replace(/\bjr\b\.?/g,'junior').replace(/\bsr\b\.?/g,'senior').replace(/\bst\b\./g,'saint'); return n; };
         if (firstScorer && _normSc(pred.firstScorer) === _normSc(firstScorer)) pts += 2 * multiplier;
-        // Joker
+        // Joker — double ONLY if outcome correct (matches CALC & DON rule)
         const jokerSnap = await getDocs(query(collection(db, 'jokerCards'), where('matchId','==',matchId), where('userId','==',pred.userId)));
-        if (!jokerSnap.empty) pts *= 2;
+        if (!jokerSnap.empty && predOutcome === actualOutcome) pts *= 2;
         // DON
         const donSnap = await getDocs(query(collection(db, 'donOptIns'), where('matchId','==',matchId), where('userId','==',pred.userId)));
         if (!donSnap.empty) {
@@ -10550,9 +10716,9 @@ Use exactly the formation provided. Only use players from the squad lists above.
           bonus += goals + assists; // track in bonusPoints for display
         }
 
-        // Joker card — double points if activated for this match
+        // Joker card — double points ONLY if outcome correct (matches CALC & DON rule)
         const jokerSnap = await getDocs(query(collection(db, 'jokerCards'), where('matchId', '==', matchId), where('userId', '==', pred.data.userId)));
-        if (!jokerSnap.empty) pts *= 2;
+        if (!jokerSnap.empty && actualResult === predResult) pts *= 2;
 
         // Double or Nothing — affects ONLY result+exact pts, not first scorer
         const donSnap = await getDocs(query(collection(db, 'donOptIns'), where('matchId', '==', matchId), where('userId', '==', pred.data.userId)));
