@@ -2924,9 +2924,6 @@
           <div class="form-row"><label id="result-away-label">Away score</label><input type="number" min="0" id="result-away-score" placeholder="0"></div>
         </div>
         <div class="form-row" id="result-scorer-row" style="display:none;"><label>First goalscorer</label><select id="result-scorer"><option value="">Select player...</option><option value="og">Own goal</option><option value="none">No goals scored</option></select></div>
-        <div class="form-row"><label>Tournament player goals in this match</label><input type="text" id="result-tourney-goals" placeholder="e.g. Mbappe x1, Haaland x0"></div>
-        <div class="form-row"><label>Tournament player assists in this match</label><input type="text" id="result-tourney-assists" placeholder="e.g. Mbappe x1"></div>
-        <div class="form-row"><label>Tournament player red cards in this match</label><input type="text" id="result-tourney-reds" placeholder="e.g. Vinicius x1 (or leave empty)"></div>
         <button class="submit-btn" onclick="submitResult()">Submit results and calculate points</button>
       </div>
       <div class="form-card" style="margin-top:1rem;">
@@ -10630,28 +10627,11 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const homeScore = parseInt(document.getElementById('result-home-score').value);
     const awayScore = parseInt(document.getElementById('result-away-score').value);
     const firstScorer = document.getElementById('result-scorer').value;
-    const tourneyGoalsRaw = document.getElementById('result-tourney-goals').value;
-    const tourneyAssistsRaw = document.getElementById('result-tourney-assists').value;
-    const tourneyRedsRaw = document.getElementById('result-tourney-reds').value;
     if (!matchId) return alert('Please select a match');
     if (isNaN(homeScore) || isNaN(awayScore)) return alert('Please enter both scores');
 
     btn.textContent = 'Saving...';
     btn.disabled = true;
-
-    // Parse "Mbappe x2, Haaland x1" → { 'Mbappe': 2, 'Haaland': 1 }
-    const parsePlayerCounts = (raw) => {
-      const result = {};
-      if (!raw) return result;
-      raw.split(',').forEach(part => {
-        const match = part.trim().match(/^(.+?)\s*x(\d+)$/i);
-        if (match) result[match[1].trim()] = parseInt(match[2]);
-      });
-      return result;
-    };
-    const goalMap = parsePlayerCounts(tourneyGoalsRaw);
-    const assistMap = parsePlayerCounts(tourneyAssistsRaw);
-    const redMap = parsePlayerCounts(tourneyRedsRaw);
 
     try {
       await setDoc(doc(db, 'results', matchId), {
@@ -10668,12 +10648,6 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const batch = [];
       predsSnap.forEach(d => {
         if (d.data().matchId === matchId) batch.push({ id: d.id, data: d.data() });
-      });
-
-      // Build user → tournamentPlayer map
-      const userTourneyPlayer = {};
-      usersSnap.forEach(d => {
-        if (d.data().tournamentPlayer) userTourneyPlayer[d.data().uid] = d.data().tournamentPlayer;
       });
 
       // Get match group to determine stage multiplier
@@ -10705,16 +10679,8 @@ Use exactly the formation provided. Only use players from the squad lists above.
         }
         if (firstScorer && _normSc(pred.data.firstScorer) === _normSc(firstScorer)) { pts += 2 * multiplier; bonus += 1; }
 
-        // Tournament player scoring: goals x2, assists x1, red card -1
-        const tp = userTourneyPlayer[pred.data.userId];
-        if (tp) {
-          const goals = goalMap[tp] || 0;
-          const assists = assistMap[tp] || 0;
-          const reds = redMap[tp] || 0;
-          const tpPts = (goals * 2) + (assists * 1) - (reds * 1);
-          pts += tpPts;
-          bonus += goals + assists; // track in bonusPoints for display
-        }
+        // Tournament-player points are awarded ONLY via the dedicated
+        // "⭐ Award Tournament Player Points" tool (writes wc_scorers + points). Not here.
 
         // Joker card — double points ONLY if outcome correct (matches CALC & DON rule)
         const jokerSnap = await getDocs(query(collection(db, 'jokerCards'), where('matchId', '==', matchId), where('userId', '==', pred.data.userId)));
