@@ -6190,11 +6190,12 @@ Return ONLY this JSON:
 Position codes: GK, RB, CB, LB, LWB, RWB, CDM, CM, CAM, RM, LM, RW, LW, ST, CF
 Use exactly the formation provided. Only use players from the squad lists above.`
           }],
-          maxTokens: 1200
+          maxTokens: 1800
         })
       });
       const data = await resp.json();
       let text = (data.text || '').trim();
+      if (!text) throw new Error('empty lineup response');
       const m = text.match(/\{[\s\S]*\}/);
       if (m) text = m[0];
       const lineup = JSON.parse(text);
@@ -6202,7 +6203,8 @@ Use exactly the formation provided. Only use players from the squad lists above.
       lineupCache[matchId] = html;
       panel.innerHTML = html;
     } catch(e) {
-      panel.innerHTML = '<div style="text-align:center;padding:12px;color:#ef4444;font-size:12px;">Could not load lineups. Try again.</div>';
+      console.error('lineup load failed:', e);
+      panel.innerHTML = '<div style="text-align:center;padding:12px;color:#ef4444;font-size:12px;">Could not load lineups. Tap again to retry.</div>';
     }
   };
 
@@ -7113,18 +7115,8 @@ Use exactly the formation provided. Only use players from the squad lists above.
       setTimeout(initAutoSaveToggle, 300);
       // Start live scores polling
       setTimeout(startLiveScoresPolling, 1500);
-      // Auto-scroll to first upcoming match + init jump button
-      setTimeout(() => {
-        const cards = document.querySelectorAll('.match-card[data-is-past]');
-        const firstUpcoming = Array.from(cards).find(c => c.dataset.isPast === '0');
-        if (firstUpcoming) {
-          firstUpcoming.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          firstUpcoming.style.transition = 'box-shadow 0.4s';
-          firstUpcoming.style.boxShadow = '0 0 0 2px var(--green)';
-          setTimeout(() => { firstUpcoming.style.boxShadow = ''; }, 1800);
-        }
-        initNextMatchBtn();
-      }, 900);
+      // Auto-scroll disabled per user request — keep only the jump-to-next-match button
+      setTimeout(() => { initNextMatchBtn(); }, 900);
       // Pulse attention on important picks if not yet filled
       setTimeout(() => {
         const playerCard = document.querySelector('.player-pick');
@@ -7986,8 +7978,21 @@ Use exactly the formation provided. Only use players from the squad lists above.
       let current = null;
       for (const s of STAGES) { if (byStage[s.key].some(k => k.m.status !== 'FINISHED')) { current = s.key; break; } }
       if (!current) current = present[present.length-1].key;
-      window._predBracket = { STAGES, byStage };
-      if (!window._koStageFilter) window._koStageFilter = current;
+      // Stage locking: R32 always open; a later round unlocks once the previous round is fully finished (or admin override)
+      const _order = ['R32','R16','QF','SF','FINAL'];
+      const unlocked = {};
+      for (let i = 0; i < _order.length; i++) {
+        const k = _order[i];
+        if (i === 0) { unlocked[k] = true; continue; }
+        const prevMs = byStage[_order[i-1]] || [];
+        const prevDone = prevMs.length > 0 && prevMs.every(x => x.m.status === 'FINISHED');
+        unlocked[k] = prevDone || !!window._adminUnlockAllStages;
+      }
+      window._predBracket = { STAGES, byStage, unlocked };
+      // Default selection must be an unlocked stage
+      if (!window._koStageFilter || !unlocked[window._koStageFilter]) {
+        window._koStageFilter = unlocked[current] ? current : 'R32';
+      }
       window._predBracketSel = window._koStageFilter;
       _paintPredBracket();
       // Sync the card list to the selected round (skip if viewing the group archive)
@@ -8009,6 +8014,22 @@ Use exactly the formation provided. Only use players from the squad lists above.
     try { if (allMatchesSnap) renderMatches(allMatchesSnap, null, 'knockout-stage'); } catch(e){ console.error(e); }
   };
 
+  window.predStageLocked = (key) => {
+    const order = ['R32','R16','QF','SF','FINAL'];
+    const names = { R16:'Round of 16', QF:'Quarter-finals', SF:'Semi-finals', FINAL:'the Final' };
+    const prevNames = { R32:'Round of 32', R16:'Round of 16', QF:'Quarter-finals', SF:'Semi-finals' };
+    const prev = order[order.indexOf(key) - 1];
+    const el = document.getElementById('predictions-bracket');
+    if (!el) return;
+    const old = el.querySelector('.bracket-lock-toast'); if (old) old.remove();
+    const t = document.createElement('div');
+    t.className = 'bracket-lock-toast';
+    t.style.cssText = 'margin-top:8px;text-align:center;font-size:11px;font-weight:600;color:#fbbf24;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:7px 10px;';
+    t.textContent = '🔒 ' + (names[key] || key) + ' unlocks once the ' + (prevNames[prev] || 'previous round') + ' is complete';
+    el.appendChild(t);
+    setTimeout(() => { try { t.remove(); } catch(e){} }, 2800);
+  };
+
   function _paintPredBracket() {
     const el = document.getElementById('predictions-bracket');
     if (!el || !window._predBracket) return;
@@ -8027,12 +8048,17 @@ Use exactly the formation provided. Only use players from the squad lists above.
          + '<span style="font-size:14px;color:var(--text-muted);display:inline-block;transform:rotate('+(collapsed?'0':'180')+'deg);'+(collapsed?'animation:bracketHintBounce 1.4s ease-in-out infinite;':'')+'">▾</span>'
          + '</div>';
     html += '<div style="display:flex;align-items:center;gap:4px;margin-bottom:6px;">';
+    const _unlocked = (window._predBracket && window._predBracket.unlocked) || {};
     STAGES.forEach((s, i) => {
       const isSel = s.key === sel;
-      const bg = isSel ? s.color : 'transparent';
-      const txt = isSel ? '#fff' : 'var(--text-muted)';
-      const bd = isSel ? s.color : 'var(--border)';
-      html += '<div onclick="setPredBracketStage(\''+s.key+'\')" style="flex:1;cursor:pointer;text-align:center;background:'+bg+';border:1.5px solid '+bd+';border-radius:10px;padding:6px 2px;-webkit-tap-highlight-color:transparent;"><div style="font-size:12px;font-weight:800;color:'+txt+';">'+s.short+'</div><div style="font-size:10px;font-weight:700;color:'+txt+';opacity:0.85;">'+s.mult+'</div></div>';
+      const isLocked = _unlocked[s.key] === undefined ? (s.key !== 'R32') : !_unlocked[s.key];
+      const bg = (isSel && !isLocked) ? s.color : 'transparent';
+      const txt = (isSel && !isLocked) ? '#fff' : 'var(--text-muted)';
+      const bd = (isSel && !isLocked) ? s.color : 'var(--border)';
+      const op = isLocked ? '0.4' : '1';
+      const onclk = isLocked ? ('predStageLocked(\''+s.key+'\')') : ('setPredBracketStage(\''+s.key+'\')');
+      const sub = isLocked ? '🔒' : s.mult;
+      html += '<div onclick="'+onclk+'" style="flex:1;cursor:pointer;text-align:center;background:'+bg+';border:1.5px solid '+bd+';border-radius:10px;padding:6px 2px;opacity:'+op+';-webkit-tap-highlight-color:transparent;"><div style="font-size:12px;font-weight:800;color:'+txt+';">'+s.short+'</div><div style="font-size:10px;font-weight:700;color:'+txt+';opacity:0.85;">'+sub+'</div></div>';
       if (i < STAGES.length-1) html += '<div style="width:6px;height:1.5px;background:var(--border);flex:0 0 auto;"></div>';
     });
     html += '</div>';
@@ -9481,27 +9507,27 @@ Use exactly the formation provided. Only use players from the squad lists above.
                 <optgroup label="${m.awayTeam}">${(()=>{const s=new Set();return getPlayersForTeam(m.awayTeam,m.awayPlayers).filter(p=>{const n=p.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\bjr\b\.?/g,'junior');return s.has(n)?false:!!s.add(n)});})().map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
               </select>
               ${!isPast ? `
-              <div style="display:flex;justify-content:center;">
+              <div style="display:flex;justify-content:center;align-items:center;gap:8px;">
               <button id="scorer-btn-${d.id}"
                 data-match-id="${d.id}"
                 data-home-team="${m.homeTeam.replace(/"/g,'&quot;')}"
                 data-away-team="${m.awayTeam.replace(/"/g,'&quot;')}"
                 onclick="openScorerPickerById('${d.id}')"
-                style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;width:100%;max-width:280px;text-align:left;">
+                style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;flex:1;max-width:230px;text-align:left;">
                 <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="scorer-label-${d.id}">⚽ Pick scorer...</span>
                 <span style="font-size:11px;flex-shrink:0;">▾</span>
               </button>
+              <button id="og-btn-${d.id}" onclick="toggleOwnGoal('${d.id}')"
+                title="Predict an Own Goal as the first scorer"
+                style="width:56px;height:56px;flex-shrink:0;padding:0;border-radius:12px;border:2px solid rgba(239,68,68,0.45);background-color:#2a0a0a;background-image:url('https://raw.githubusercontent.com/madurosb/coed-football-2026/refs/heads/main/src/icons/own_goal.png');background-size:cover;background-position:center;background-repeat:no-repeat;cursor:pointer;box-shadow:0 2px 10px rgba(239,68,68,0.2);transition:transform 0.2s;overflow:hidden;position:relative;-webkit-tap-highlight-color:transparent;"
+                onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform=''"></button>
               </div>` : `<div id="scorer-label-${d.id}" style="font-size:13px;color:var(--text-muted);font-style:italic;">⚽ —</div>`}
 
             </div>
           </div>
           ${!isPast ? `
-            <!-- Match actions: Own Goal + K-Joker + Double or Nothing (graphic image buttons) -->
-            <div style="display:flex;justify-content:center;align-items:center;gap:12px;margin-top:0.85rem;">
-              <button id="og-btn-${d.id}" onclick="toggleOwnGoal('${d.id}')"
-                title="Predict an Own Goal as the first scorer"
-                style="width:88px;height:88px;flex-shrink:0;padding:0;border-radius:16px;border:2px solid rgba(239,68,68,0.45);background-color:#2a0a0a;background-image:url('https://raw.githubusercontent.com/madurosb/coed-football-2026/refs/heads/main/src/icons/own_goal.png');background-size:cover;background-position:center;background-repeat:no-repeat;cursor:pointer;box-shadow:0 2px 10px rgba(239,68,68,0.2);transition:transform 0.2s;overflow:hidden;position:relative;-webkit-tap-highlight-color:transparent;"
-                onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform=''"></button>
+            <!-- Match actions: K-Joker (square) + Double or Nothing (wide banner) -->
+            <div style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:0.85rem;">
               ${kickoff >= new Date('2026-06-28T12:00:00Z') ? `
               <button id="knockout-joker-btn-${d.id}" onclick="activateKnockoutJoker('${d.id}')"
                 title="Knockout Joker — doubles points if correct. One use per stage."
@@ -9510,8 +9536,8 @@ Use exactly the formation provided. Only use players from the squad lists above.
               <button id="don-btn-${d.id}" onclick="toggleDON('${d.id}')"
                 data-week="${donStageKey(m) || getMatchWeekKey(kickoff)}"
                 title="Double or Nothing — correct doubles result points, wrong deducts them. One per stage."
-                style="width:88px;height:88px;flex-shrink:0;padding:0;border-radius:16px;border:2px solid #7C3AED;background-color:#1a0030;background-image:url('https://raw.githubusercontent.com/madurosb/coed-football-2026/refs/heads/main/src/icons/don.png');background-size:cover;background-position:center;background-repeat:no-repeat;cursor:pointer;box-shadow:0 2px 10px rgba(124,58,237,0.2);transition:transform 0.2s;overflow:hidden;position:relative;-webkit-tap-highlight-color:transparent;"
-                onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform=''"></button>
+                style="width:100%;max-width:340px;aspect-ratio:2 / 1;flex-shrink:0;padding:0;border-radius:14px;border:2px solid #7C3AED;background-color:#1a0030;background-image:url('https://raw.githubusercontent.com/madurosb/coed-football-2026/refs/heads/main/src/icons/don.png');background-size:cover;background-position:center;background-repeat:no-repeat;cursor:pointer;box-shadow:0 4px 14px rgba(124,58,237,0.3);transition:transform 0.2s;overflow:hidden;position:relative;-webkit-tap-highlight-color:transparent;"
+                onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform=''"></button>
             </div>` : `<p style="font-size:12px;color:var(--text-muted);margin-top:0.75rem;text-align:center;">${isFinished ? '✅ Match finished' : '🔒 Deadline passed - predictions locked'}</p>`}
           ${finishedResult}
           ${isPast ? `
@@ -9581,10 +9607,11 @@ Use exactly the formation provided. Only use players from the squad lists above.
             const scorerBtnEl = document.getElementById('scorer-btn-' + matchIdStr);
             const scorerLabelEl = document.getElementById('scorer-label-' + matchIdStr);
             if (!ogBtnEl) { if (scorerLabelEl) scorerLabelEl.textContent = 'Own Goal prediction'; return; }
-            if (scorerLabelEl) scorerLabelEl.textContent = 'Own Goal';
+            if (scorerLabelEl) scorerLabelEl.textContent = '🥅 Own Goal ✓';
             if (scorerBtnEl) { scorerBtnEl.style.opacity = '0.4'; scorerBtnEl.style.pointerEvents = 'none'; }
-            ogBtnEl.style.boxShadow = '0 0 0 3px #ef4444';
-            ogBtnEl.style.borderColor = '#ef4444';
+            ogBtnEl.style.boxShadow = '0 0 0 3px #22c55e';
+            ogBtnEl.style.borderColor = '#22c55e';
+            ogBtnEl.innerHTML = '<span style="position:absolute;top:2px;right:4px;font-size:15px;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.7));">✅</span>';
             _ogActive.add(matchIdStr);
           };
           setTimeout(restoreOG, 200);
@@ -17793,11 +17820,12 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
     if (!isActive) {
       _ogActive.add(matchId);
       // Visual state
-      if (scorerLabel) scorerLabel.textContent = 'Own Goal';
+      if (scorerLabel) scorerLabel.textContent = '🥅 Own Goal ✓';
       if (scorerBtn) { scorerBtn.style.opacity = '0.4'; scorerBtn.style.pointerEvents = 'none'; }
-      ogBtn.style.boxShadow = '0 0 0 3px #ef4444';
-      ogBtn.style.borderColor = '#ef4444';
+      ogBtn.style.boxShadow = '0 0 0 3px #22c55e';
+      ogBtn.style.borderColor = '#22c55e';
       ogBtn.style.animation = 'ogBounce 0.5s ease';
+      ogBtn.innerHTML = '<span style="position:absolute;top:2px;right:4px;font-size:15px;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.7));">✅</span>';
       showOGToast(matchId);
       // Save directly to Firestore — don't rely on select element
       try {
@@ -17813,8 +17841,9 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
       if (scorerLabel) scorerLabel.textContent = scorerSelect?.options[scorerSelect.selectedIndex]?.value || '⚽ Pick scorer...';
       if (scorerBtn) { scorerBtn.style.opacity = ''; scorerBtn.style.pointerEvents = ''; }
       ogBtn.style.boxShadow = '';
-      ogBtn.style.borderColor = 'rgba(239,68,68,0.3)';
+      ogBtn.style.borderColor = 'rgba(239,68,68,0.45)';
       ogBtn.style.animation = '';
+      ogBtn.innerHTML = '';
       // Clear Own Goal from Firestore — restore to empty scorer
       try {
         const predRef = doc(db, 'predictions', `${currentUser.uid}_${matchId}`);
@@ -17834,16 +17863,16 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
     toast.style.cssText = `
       position:absolute;top:50%;left:50%;
       transform:translate(-50%,-50%);
-      background:linear-gradient(135deg,#1a0505,#2d0808);
-      border:1.5px solid #ef4444;border-radius:14px;
+      background:linear-gradient(135deg,#052e16,#064e3b);
+      border:1.5px solid #22c55e;border-radius:14px;
       padding:14px 20px;text-align:center;z-index:100;
       animation:ogSlideIn 0.4s ease forwards;
       pointer-events:none;white-space:nowrap;
-      box-shadow:0 8px 32px rgba(239,68,68,0.4);`;
+      box-shadow:0 8px 32px rgba(34,197,94,0.4);`;
     toast.innerHTML = `
-      <div style="font-size:28px;margin-bottom:6px;">⚽🥅😱</div>
-      <div style="font-size:13px;font-weight:800;color:#f87171;letter-spacing:0.03em;">Oops, wrong end!</div>
-      <div style="font-size:11px;color:#fca5a5;margin-top:3px;font-style:italic;">That wasn't the right side...</div>`;
+      <div style="font-size:28px;margin-bottom:6px;">🥅⚽✅</div>
+      <div style="font-size:13px;font-weight:800;color:#4ade80;letter-spacing:0.03em;">Own Goal selected!</div>
+      <div style="font-size:11px;color:#86efac;margin-top:3px;font-style:italic;">Set as your first-scorer pick</div>`;
     card.style.position = 'relative';
     card.appendChild(toast);
     setTimeout(() => toast.remove(), 2200);
