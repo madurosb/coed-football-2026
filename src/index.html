@@ -1207,6 +1207,9 @@
   #save-bar { display: none !important; }
 }
 
+  /* Regular Joker removed for knockout — K-Joker is the only joker now */
+  [id^="joker-btn-"] { display: none !important; }
+  @keyframes bracketHintBounce { 0%,100%{transform:translateY(0);} 50%{transform:translateY(3px);} }
   </style>
 </head>
 <body>
@@ -3388,6 +3391,17 @@
     return 'wc2026-week-0';
   }
 
+  // One DON per knockout STAGE (group matches keep their weekly DON via getMatchWeekKey)
+  function donStageKey(m) {
+    const g = ((m && (m.group || m.stage)) || '').toString().toUpperCase();
+    if (g.includes('FINAL') && !g.includes('QUARTER') && !g.includes('SEMI')) return 'wc2026-stage-FINAL';
+    if (g.includes('SEMI')) return 'wc2026-stage-SF';
+    if (g.includes('QUARTER')) return 'wc2026-stage-QF';
+    if (g.includes('16')) return 'wc2026-stage-R16';
+    if (g.includes('32')) return 'wc2026-stage-R32';
+    return null;
+  }
+
   function getMatchWeekKey(kickoffDate) {
     const d = kickoffDate instanceof Date ? kickoffDate : new Date(kickoffDate);
     return getWeekKey(d);
@@ -3461,11 +3475,15 @@
     const kickoff = matchSnap.data()?.kickoff?.toDate?.();
     if (kickoff && new Date() >= new Date(kickoff.getTime() - 1*60*60*1000)) return alert('Deadline passed for this match!');
 
-    const week = getMatchWeekKey(kickoff);
+    const week = donStageKey(matchSnap.data()) || getMatchWeekKey(kickoff);
     const weekSnap = await getDocs(query(collection(db, 'donOptIns'), where('userId', '==', currentUser.uid), where('week', '==', week)));
     const otherOptIns = weekSnap.docs.filter(d => d.data().matchId !== matchId);
     if (otherOptIns.length > 0) {
       const used = otherOptIns[0].data();
+      if (week.indexOf('wc2026-stage-') === 0) {
+        const stageName = { 'wc2026-stage-R32':'Round of 32','wc2026-stage-R16':'Round of 16','wc2026-stage-QF':'Quarter-finals','wc2026-stage-SF':'Semi-finals','wc2026-stage-FINAL':'Final' }[week] || 'this stage';
+        return alert('🎰 You already used Double or Nothing in the ' + stageName + ' on ' + (used.matchTeams || 'another match') + '!\n\nOne DON per stage — tap the active DON to cancel it first.');
+      }
       const weekNum = week.replace('wc2026-week-','');
       const weekLabel = getWeekLabel(week);
       // Next week start = start of week AFTER the used match's week
@@ -3509,36 +3527,43 @@
       }
 
       if (isActive) {
-        // This match has DON — show as active + cancellable
-        btn.style.cssText = 'width:100%;padding:10px 14px;border-radius:12px;border:2px solid #7C3AED;background:linear-gradient(135deg,#5B21B6,#7C3AED);color:white;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:10px;';
-        btn.innerHTML = `<span style="font-size:24px;line-height:1;flex-shrink:0;">🎰</span>
-          <div style="text-align:left;flex:1;">
-            <div style="font-size:12px;font-weight:700;">DOUBLE OR NOTHING — ACTIVE ✅</div>
-            <div style="font-size:10px;opacity:0.8;margin-top:1px;">Tap again to cancel</div>
-          </div>
-          <span style="font-size:18px;">×</span>`;
+        // This match has DON — green glow + ✅ badge, still cancellable
+        btn.style.boxShadow = '0 0 0 3px #4ade80, 0 4px 14px rgba(124,58,237,0.5)';
+        btn.style.borderColor = '#4ade80';
+        btn.style.opacity = '';
+        btn.style.filter = '';
+        btn.style.cursor = 'pointer';
+        btn.style.animation = 'jokerPulse 2s ease infinite';
+        btn.title = 'Double or Nothing ACTIVE — tap to cancel';
+        btn.innerHTML = '<span style="position:absolute;top:3px;right:5px;font-size:15px;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.6));">✅</span>';
       } else if (isLocked) {
-        // Another match already has DON — grey out
-        // Find which week this match is in and when next DON is available
-        // Use stored activeDonWeek (works even when active match is on different day tab)
-        const activeWeekKey = activeDonWeek || getWeekKey(new Date());
-        const nextStart = getNextWeekStart(activeWeekKey);
-        const nextStr = nextStart ? nextStart.toLocaleDateString('en-GB',{day:'2-digit',month:'short',timeZone:'Asia/Jerusalem'}) : 'next week';
-        btn.style.cssText = 'width:100%;padding:10px 14px;border-radius:12px;border:1.5px dashed #555;background:var(--surface2);color:var(--text-muted);cursor:not-allowed;display:flex;align-items:center;gap:10px;opacity:0.45;';
-        btn.title = 'DON already used this week. Next available: ' + nextStr;
-        btn.innerHTML = `<span style="font-size:24px;line-height:1;flex-shrink:0;">🎰</span>
-          <div style="text-align:left;">
-            <div style="font-size:12px;font-weight:700;">DOUBLE OR NOTHING</div>
-            <div style="font-size:10px;margin-top:1px;">Used this week · Next DON available ${nextStr}</div>
-          </div>`;
+        // Another match already has DON in this week/stage — dim + lock badge
+        btn.style.boxShadow = 'none';
+        btn.style.borderColor = '#555';
+        btn.style.opacity = '0.4';
+        btn.style.filter = 'grayscale(0.7)';
+        btn.style.cursor = 'not-allowed';
+        btn.style.animation = '';
+        const thisWeek = btn.dataset?.week || '';
+        if (thisWeek.indexOf('wc2026-stage-') === 0) {
+          btn.title = 'One DON per stage — already used this stage.';
+        } else {
+          const activeWeekKey = activeDonWeek || getWeekKey(new Date());
+          const nextStart = getNextWeekStart(activeWeekKey);
+          const nextStr = nextStart ? nextStart.toLocaleDateString('en-GB',{day:'2-digit',month:'short',timeZone:'Asia/Jerusalem'}) : 'next week';
+          btn.title = 'DON already used this week. Next available: ' + nextStr;
+        }
+        btn.innerHTML = '<span style="position:absolute;top:3px;right:5px;font-size:13px;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.6));">🔒</span>';
       } else {
         // Available
-        btn.style.cssText = 'width:100%;padding:10px 14px;border-radius:12px;border:1.5px dashed #7C3AED;background:linear-gradient(135deg,var(--badge-blue-bg),var(--badge-blue-bg));color:#5B21B6;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(124,58,237,0.12);';
-        btn.innerHTML = `<span style="font-size:24px;line-height:1;flex-shrink:0;">🎰</span>
-          <div style="text-align:left;">
-            <div style="font-size:12px;font-weight:700;letter-spacing:0.03em;">DOUBLE OR NOTHING</div>
-            <div style="font-size:10px;font-weight:400;opacity:0.7;margin-top:1px;">Correct = x2 result pts · Wrong = those pts deducted · First scorer always safe</div>
-          </div>`;
+        btn.style.boxShadow = '0 2px 10px rgba(124,58,237,0.2)';
+        btn.style.borderColor = '#7C3AED';
+        btn.style.opacity = '';
+        btn.style.filter = '';
+        btn.style.cursor = 'pointer';
+        btn.style.animation = '';
+        btn.title = 'Double or Nothing — correct doubles result points, wrong deducts them. One per stage.';
+        btn.innerHTML = '';
       }
     });
   }
@@ -7622,14 +7647,18 @@ Use exactly the formation provided. Only use players from the squad lists above.
     document.querySelectorAll('[id^="knockout-joker-btn-"]').forEach(btn => {
       const matchId = btn.id.replace('knockout-joker-btn-','');
       if (knockoutJokerUsed && knockoutJokerMatchId === matchId) {
-        btn.style.cssText = 'width:72px;height:72px;border-radius:12px;border:2px solid #7C3AED;background:linear-gradient(145deg,#4C1D95,#7C3AED);color:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-shadow:0 4px 16px rgba(124,58,237,0.6);';
+        btn.style.boxShadow = '0 0 0 3px #4ade80, 0 4px 16px rgba(124,58,237,0.6)';
+        btn.style.borderColor = '#4ade80';
+        btn.style.opacity = '';
+        btn.style.filter = '';
+        btn.style.cursor = 'pointer';
         btn.style.animation = 'jokerPulse 2s ease infinite';
-        btn.innerHTML = '<span style="font-size:20px;line-height:1;">⚡</span><span style="font-size:7px;font-weight:800;letter-spacing:0.1em;font-family:monospace;">ACTIVE ✅</span>';
+        btn.innerHTML = '<span style="position:absolute;top:3px;right:5px;font-size:15px;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.6));">✅</span>';
         btn.disabled = false;
       } else if (knockoutJokerUsed) {
-        btn.style.opacity = '0.25'; btn.style.cursor = 'not-allowed'; btn.style.filter = 'grayscale(1)'; btn.disabled = true;
+        btn.style.opacity = '0.25'; btn.style.cursor = 'not-allowed'; btn.style.filter = 'grayscale(1)'; btn.style.boxShadow = 'none'; btn.style.animation = ''; btn.innerHTML = ''; btn.disabled = true;
       } else {
-        btn.style.opacity = ''; btn.style.cursor = ''; btn.style.filter = ''; btn.style.animation = ''; btn.disabled = false;
+        btn.style.opacity = ''; btn.style.cursor = ''; btn.style.filter = ''; btn.style.animation = ''; btn.style.boxShadow = '0 4px 14px rgba(124,58,237,0.35)'; btn.style.borderColor = '#7C3AED'; btn.innerHTML = ''; btn.disabled = false;
       }
     });
   }
@@ -7967,19 +7996,27 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
   window.setPredBracketStage = (key) => {
     window._predBracketSel = key;
+    window._predBracketCollapsed = false;
     try { _paintPredBracket(); } catch(e){ console.error(e); }
   };
 
   function _paintPredBracket() {
     const el = document.getElementById('predictions-bracket');
     if (!el || !window._predBracket) return;
+    if (window._predBracketCollapsed === undefined) window._predBracketCollapsed = true;
+    const collapsed = window._predBracketCollapsed;
     const STAGES = window._predBracket.STAGES, byStage = window._predBracket.byStage;
     const sel = window._predBracketSel || (STAGES[0] && STAGES[0].key);
     const selStage = STAGES.find(s => s.key === sel) || STAGES[0];
     const fmt = (d) => { try { return d ? d.toLocaleString('en-GB',{ timeZone:'Asia/Jerusalem', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hour12:false }) : ''; } catch(e){ return ''; } };
 
     let html = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;">';
-    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;"><span style="font-size:18px;">🏆</span><span style="font-size:15px;font-weight:800;color:var(--text);">Knockout bracket</span></div>';
+    html += '<div onclick="togglePredBracket()" style="cursor:pointer;display:flex;align-items:center;gap:8px;margin-bottom:12px;-webkit-tap-highlight-color:transparent;">'
+         + '<span style="font-size:18px;">🏆</span>'
+         + '<span style="font-size:15px;font-weight:800;color:var(--text);flex:1;">Knockout bracket</span>'
+         + '<span style="font-size:11px;font-weight:700;color:var(--text-muted);">'+(collapsed ? 'Show matches' : 'Hide')+'</span>'
+         + '<span style="font-size:14px;color:var(--text-muted);display:inline-block;transform:rotate('+(collapsed?'0':'180')+'deg);'+(collapsed?'animation:bracketHintBounce 1.4s ease-in-out infinite;':'')+'">▾</span>'
+         + '</div>';
     html += '<div style="display:flex;align-items:center;gap:4px;margin-bottom:6px;">';
     STAGES.forEach((s, i) => {
       const isSel = s.key === sel;
@@ -7991,26 +8028,33 @@ Use exactly the formation provided. Only use players from the squad lists above.
     });
     html += '</div>';
 
-    const matches = (byStage[sel] || []).slice().sort((a,b) => (a.kdate ? a.kdate.getTime() : 0) - (b.kdate ? b.kdate.getTime() : 0));
-    html += '<div style="background:'+selStage.color+';color:#fff;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:800;display:inline-block;margin:12px 0 4px;letter-spacing:0.03em;">'+selStage.short.toUpperCase()+' · '+selStage.mult+'</div>';
-    if (matches.length === 0) {
-      html += '<div style="padding:16px 4px;text-align:center;font-size:12px;color:var(--text-muted);">Matchups appear once this stage is set 🔒</div>';
-    } else {
-      matches.forEach(k => {
-        const m = k.m; const fin = m.status === 'FINISHED' && m.homeScore != null && m.awayScore != null;
-        const mid = fin
-          ? ('<span style="font-weight:800;color:var(--text);font-size:14px;">'+m.homeScore+'–'+m.awayScore+'</span>')
-          : ('<span style="font-size:11px;color:var(--text-muted);font-weight:600;white-space:nowrap;">'+fmt(k.kdate)+'</span>');
-        html += '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--border);">'
-             + '<span style="flex:1;text-align:right;font-size:13px;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(m.homeTeam||'TBD')+' '+(m.homeFlag||'')+'</span>'
-             + '<span style="flex:0 0 auto;min-width:54px;text-align:center;">'+mid+'</span>'
-             + '<span style="flex:1;text-align:left;font-size:13px;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(m.awayFlag||'')+' '+(m.awayTeam||'TBD')+'</span>'
-             + '</div>';
-      });
+    if (!collapsed) {
+      const matches = (byStage[sel] || []).slice().sort((a,b) => (a.kdate ? a.kdate.getTime() : 0) - (b.kdate ? b.kdate.getTime() : 0));
+      html += '<div style="background:'+selStage.color+';color:#fff;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:800;display:inline-block;margin:12px 0 4px;letter-spacing:0.03em;">'+selStage.short.toUpperCase()+' · '+selStage.mult+'</div>';
+      if (matches.length === 0) {
+        html += '<div style="padding:16px 4px;text-align:center;font-size:12px;color:var(--text-muted);">Matchups appear once this stage is set 🔒</div>';
+      } else {
+        matches.forEach(k => {
+          const m = k.m; const fin = m.status === 'FINISHED' && m.homeScore != null && m.awayScore != null;
+          const mid = fin
+            ? ('<span style="font-weight:800;color:var(--text);font-size:14px;">'+m.homeScore+'–'+m.awayScore+'</span>')
+            : ('<span style="font-size:11px;color:var(--text-muted);font-weight:600;white-space:nowrap;">'+fmt(k.kdate)+'</span>');
+          html += '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--border);">'
+               + '<span style="flex:1;text-align:right;font-size:13px;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(m.homeTeam||'TBD')+' '+(m.homeFlag||'')+'</span>'
+               + '<span style="flex:0 0 auto;min-width:54px;text-align:center;">'+mid+'</span>'
+               + '<span style="flex:1;text-align:left;font-size:13px;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(m.awayFlag||'')+' '+(m.awayTeam||'TBD')+'</span>'
+               + '</div>';
+        });
+      }
     }
     html += '</div>';
     el.innerHTML = html;
   }
+
+  window.togglePredBracket = () => {
+    window._predBracketCollapsed = !window._predBracketCollapsed;
+    try { _paintPredBracket(); } catch(e){ console.error(e); }
+  };
 
   async function loadHomeData() {
     if (!currentUserData) return;
@@ -9415,53 +9459,24 @@ Use exactly the formation provided. Only use players from the squad lists above.
               </button>
               <button id="og-btn-${d.id}" onclick="toggleOwnGoal('${d.id}')"
                 title="Predict an Own Goal as the first scorer"
-                style="padding:9px 10px;border-radius:10px;border:1.5px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.07);color:#ef4444;font-size:11px;font-weight:700;cursor:pointer;transition:all 0.15s;white-space:nowrap;letter-spacing:0.02em;">
-                🙈 OG?
-              </button>
+                style="width:52px;height:52px;flex-shrink:0;padding:0;border-radius:10px;border:1.5px solid rgba(239,68,68,0.3);background-color:#2a0a0a;background-image:url('https://raw.githubusercontent.com/madurosb/coed-football-2026/refs/heads/main/src/icons/own_goal.png');background-size:cover;background-position:center;background-repeat:no-repeat;cursor:pointer;transition:all 0.15s;overflow:hidden;position:relative;-webkit-tap-highlight-color:transparent;"></button>
               </div>` : `<div id="scorer-label-${d.id}" style="font-size:13px;color:var(--text-muted);font-style:italic;">⚽ —</div>`}
 
             </div>
           </div>
           ${!isPast ? `
-            <!-- Joker row: regular + knockout joker side by side -->
-            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:0.75rem;">
-              <!-- Knockout Joker — only on knockout matches -->
+            <!-- Knockout actions: K-Joker + Double or Nothing (graphic image buttons) -->
+            <div style="display:flex;justify-content:center;align-items:flex-start;gap:14px;margin-top:0.85rem;">
               ${kickoff >= new Date('2026-06-28T12:00:00Z') ? `
               <button id="knockout-joker-btn-${d.id}" onclick="activateKnockoutJoker('${d.id}')"
-                title="Knockout Joker — doubles points if correct. One use from Round of 32 onwards."
-                style="width:72px;height:72px;border-radius:12px;border:1.5px solid #7C3AED;background:linear-gradient(145deg,#1a0030,#2d0052);color:#C4B5FD;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-shadow:0 4px 12px rgba(124,58,237,0.35),inset 0 1px 0 rgba(255,255,255,0.08);transition:all 0.2s;position:relative;overflow:hidden;"
-                onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 6px 20px rgba(124,58,237,0.5)'"
-                onmouseout="this.style.transform='';this.style.boxShadow='0 4px 12px rgba(124,58,237,0.35),inset 0 1px 0 rgba(255,255,255,0.08)'">
-                <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(196,181,253,0.8),transparent);"></div>
-                <span style="font-size:22px;line-height:1;filter:drop-shadow(0 0 6px rgba(196,181,253,0.6));">⚡</span>
-                <span style="font-size:7px;font-weight:800;letter-spacing:0.1em;font-family:monospace;color:#C4B5FD;">K-JOKER</span>
-                <div style="position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(124,58,237,0.4),transparent);"></div>
-              </button>` : ''}
-              <!-- Regular Joker -->
-              <button id="joker-btn-${d.id}" onclick="activateJoker('${d.id}')"\
-
-                title="Use your Joker — doubles all points if correct. Once per tournament."
-                style="width:72px;height:72px;border-radius:12px;border:1.5px solid #BA7517;background:linear-gradient(145deg,#1a0f00,#2a1800);color:#EF9F27;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-shadow:0 4px 12px rgba(186,117,23,0.35),inset 0 1px 0 rgba(255,255,255,0.1);transition:all 0.2s;position:relative;overflow:hidden;"
-                onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 6px 20px rgba(186,117,23,0.5),inset 0 1px 0 rgba(255,255,255,0.15)'"
-                onmouseout="this.style.transform='';this.style.boxShadow='0 4px 12px rgba(186,117,23,0.35),inset 0 1px 0 rgba(255,255,255,0.1)'">
-                <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(239,159,39,0.8),transparent);"></div>
-                <span style="font-size:26px;line-height:1;filter:drop-shadow(0 0 6px rgba(239,159,39,0.6));">🃏</span>
-                <span style="font-size:8px;font-weight:800;letter-spacing:0.12em;font-family:monospace;color:#EF9F27;">JOKER</span>
-                <div style="position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(239,159,39,0.4),transparent);"></div>
-              </button>
-            </div>
-            <!-- DON row -->
-            <div id="don-row-${d.id}" style="margin-top:8px;">
+                title="Knockout Joker — doubles points if correct. One use per stage."
+                style="width:96px;height:96px;flex-shrink:0;padding:0;border-radius:16px;border:2px solid #7C3AED;background-color:#1a0030;background-image:url('https://raw.githubusercontent.com/madurosb/coed-football-2026/refs/heads/main/src/icons/joker.png');background-size:cover;background-position:center;background-repeat:no-repeat;cursor:pointer;box-shadow:0 4px 14px rgba(124,58,237,0.35);transition:transform 0.2s;overflow:hidden;position:relative;-webkit-tap-highlight-color:transparent;"
+                onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform=''"></button>` : ''}
               <button id="don-btn-${d.id}" onclick="toggleDON('${d.id}')"
-                data-week="${getMatchWeekKey(kickoff)}"
-                style="width:100%;padding:10px 14px;border-radius:12px;border:1.5px dashed #7C3AED;background:linear-gradient(135deg,var(--badge-blue-bg),var(--badge-blue-bg));color:#5B21B6;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(124,58,237,0.12);"
-                onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'">
-                <span style="font-size:24px;line-height:1;flex-shrink:0;">🎰</span>
-                <div style="text-align:left;">
-                  <div style="font-size:12px;font-weight:700;letter-spacing:0.03em;">DOUBLE OR NOTHING</div>
-                  <div style="font-size:10px;font-weight:400;opacity:0.7;margin-top:1px;">Correct = x2 result pts · Wrong = those pts deducted · First scorer always safe</div>
-                </div>
-              </button>
+                data-week="${donStageKey(m) || getMatchWeekKey(kickoff)}"
+                title="Double or Nothing — correct doubles result points, wrong deducts them. One per stage."
+                style="width:96px;height:96px;flex-shrink:0;padding:0;border-radius:16px;border:2px solid #7C3AED;background-color:#1a0030;background-image:url('https://raw.githubusercontent.com/madurosb/coed-football-2026/refs/heads/main/src/icons/don.png');background-size:cover;background-position:center;background-repeat:no-repeat;cursor:pointer;box-shadow:0 2px 10px rgba(124,58,237,0.2);transition:transform 0.2s;overflow:hidden;position:relative;-webkit-tap-highlight-color:transparent;"
+                onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform=''"></button>
             </div>` : `<p style="font-size:12px;color:var(--text-muted);margin-top:0.75rem;text-align:center;">${isFinished ? '✅ Match finished' : '🔒 Deadline passed - predictions locked'}</p>`}
           ${finishedResult}
           ${isPast ? `
@@ -9530,12 +9545,11 @@ Use exactly the formation provided. Only use players from the squad lists above.
             const ogBtnEl = document.getElementById('og-btn-' + matchIdStr);
             const scorerBtnEl = document.getElementById('scorer-btn-' + matchIdStr);
             const scorerLabelEl = document.getElementById('scorer-label-' + matchIdStr);
-            if (!ogBtnEl) { if (scorerLabelEl) scorerLabelEl.textContent = '🙈 Own Goal prediction'; return; }
-            if (scorerLabelEl) scorerLabelEl.textContent = '🙈 Own Goal';
+            if (!ogBtnEl) { if (scorerLabelEl) scorerLabelEl.textContent = 'Own Goal prediction'; return; }
+            if (scorerLabelEl) scorerLabelEl.textContent = 'Own Goal';
             if (scorerBtnEl) { scorerBtnEl.style.opacity = '0.4'; scorerBtnEl.style.pointerEvents = 'none'; }
-            ogBtnEl.style.background = 'rgba(239,68,68,0.22)';
+            ogBtnEl.style.boxShadow = '0 0 0 3px #ef4444';
             ogBtnEl.style.borderColor = '#ef4444';
-            ogBtnEl.textContent = '🙈 OG! ON';
             _ogActive.add(matchIdStr);
           };
           setTimeout(restoreOG, 200);
@@ -17744,12 +17758,11 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
     if (!isActive) {
       _ogActive.add(matchId);
       // Visual state
-      if (scorerLabel) scorerLabel.textContent = '🙈 Own Goal';
+      if (scorerLabel) scorerLabel.textContent = 'Own Goal';
       if (scorerBtn) { scorerBtn.style.opacity = '0.4'; scorerBtn.style.pointerEvents = 'none'; }
-      ogBtn.style.background = 'rgba(239,68,68,0.22)';
+      ogBtn.style.boxShadow = '0 0 0 3px #ef4444';
       ogBtn.style.borderColor = '#ef4444';
       ogBtn.style.animation = 'ogBounce 0.5s ease';
-      ogBtn.textContent = '🙈 OG! ON';
       showOGToast(matchId);
       // Save directly to Firestore — don't rely on select element
       try {
@@ -17764,10 +17777,9 @@ Hebrew: "חברה!", picks end **🎭 כאוס: ...**`,
       // Visual state
       if (scorerLabel) scorerLabel.textContent = scorerSelect?.options[scorerSelect.selectedIndex]?.value || '⚽ Pick scorer...';
       if (scorerBtn) { scorerBtn.style.opacity = ''; scorerBtn.style.pointerEvents = ''; }
-      ogBtn.style.background = 'rgba(239,68,68,0.07)';
+      ogBtn.style.boxShadow = '';
       ogBtn.style.borderColor = 'rgba(239,68,68,0.3)';
       ogBtn.style.animation = '';
-      ogBtn.textContent = '🙈 OG?';
       // Clear Own Goal from Firestore — restore to empty scorer
       try {
         const predRef = doc(db, 'predictions', `${currentUser.uid}_${matchId}`);
