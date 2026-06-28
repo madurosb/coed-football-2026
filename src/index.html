@@ -1606,6 +1606,7 @@
       <div class="drawer-section-title">More</div>
       <div class="drawer-grid">
 
+        <div class="drawer-item" onclick="openGroupArchive()"><span class="d-icon">🗂️</span><span class="d-label">Group Archive</span></div>
         <div class="drawer-item" data-page="funstats" onclick="smartNav('funstats')"><span class="d-icon">😄</span><span class="d-label">Fun Stats</span></div>
         <div class="drawer-item" data-page="rules" onclick="smartNav('rules')"><span class="d-icon">📜</span><span class="d-label">Rules</span></div>
         <div class="drawer-item" data-page="dummies" onclick="smartNav('dummies')"><span class="d-icon">🎓</span><span class="d-label">How to Play</span></div>
@@ -1727,7 +1728,7 @@
   <!-- MATCHES -->
   <div class="page" id="page-matches">
     <!-- Week nav — sticky at top, single-pill style -->
-    <div id="week-nav-sticky" style="position:sticky;top:0;z-index:80;background:var(--bg);padding:6px 0 8px;margin:0 -0.75rem;padding-left:0.75rem;padding-right:0.75rem;border-bottom:0.5px solid var(--border);margin-bottom:10px;">
+    <div id="week-nav-sticky" style="display:none;position:sticky;top:0;z-index:80;background:var(--bg);padding:6px 0 8px;margin:0 -0.75rem;padding-left:0.75rem;padding-right:0.75rem;border-bottom:0.5px solid var(--border);margin-bottom:10px;">
       <div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:5px 8px;">
         <button onclick="prevWeekTab()" style="flex-shrink:0;width:34px;height:34px;border-radius:9px;border:0.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;">‹</button>
         <div id="week-pill-label" style="flex:1;text-align:center;font-size:13px;font-weight:700;color:var(--text);">● Week 2 &nbsp;·&nbsp; Jun 18–24</div>
@@ -7986,8 +7987,13 @@ Use exactly the formation provided. Only use players from the squad lists above.
       for (const s of STAGES) { if (byStage[s.key].some(k => k.m.status !== 'FINISHED')) { current = s.key; break; } }
       if (!current) current = present[present.length-1].key;
       window._predBracket = { STAGES, byStage };
-      window._predBracketSel = current;
+      if (!window._koStageFilter) window._koStageFilter = current;
+      window._predBracketSel = window._koStageFilter;
       _paintPredBracket();
+      // Sync the card list to the selected round (skip if viewing the group archive)
+      if (!window._groupArchive) {
+        try { if (allMatchesSnap) renderMatches(allMatchesSnap, null, 'knockout-stage'); } catch(e){ console.error('bracket card sync failed', e); }
+      }
     } catch (e) {
       console.error('renderPredictionsBracket failed', e);
       try { el.style.display = 'none'; } catch(_){}
@@ -7996,8 +8002,11 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
   window.setPredBracketStage = (key) => {
     window._predBracketSel = key;
-    window._predBracketCollapsed = false;
+    window._koStageFilter = key;
+    window._groupArchive = false;
     try { _paintPredBracket(); } catch(e){ console.error(e); }
+    try { const wn = document.getElementById('week-nav-sticky'); if (wn) wn.style.display = 'none'; } catch(e){}
+    try { if (allMatchesSnap) renderMatches(allMatchesSnap, null, 'knockout-stage'); } catch(e){ console.error(e); }
   };
 
   function _paintPredBracket() {
@@ -8054,6 +8063,22 @@ Use exactly the formation provided. Only use players from the squad lists above.
   window.togglePredBracket = () => {
     window._predBracketCollapsed = !window._predBracketCollapsed;
     try { _paintPredBracket(); } catch(e){ console.error(e); }
+  };
+
+  // Group-stage archive (opened from the MENU). Shows the week navigator + group matches.
+  window.openGroupArchive = () => {
+    try { closeSmartMenu(); } catch(e){}
+    window._groupArchive = true;
+    try { showPage('matches'); } catch(e){}
+    setTimeout(() => {
+      try {
+        window._groupArchive = true;
+        const wn = document.getElementById('week-nav-sticky'); if (wn) wn.style.display = '';
+        if (typeof window.filterMatchesByWeek === 'function') window.filterMatchesByWeek('week1');
+        else if (allMatchesSnap) renderMatches(allMatchesSnap, null, 'week1');
+        const list = document.getElementById('matches-list'); if (list) list.scrollIntoView({ behavior:'smooth', block:'start' });
+      } catch(e){ console.error('openGroupArchive failed', e); }
+    }, 140);
   };
 
   async function loadHomeData() {
@@ -9139,9 +9164,9 @@ Use exactly the formation provided. Only use players from the squad lists above.
       if (now >= w.start && now < w.end) { defaultWeek = w.key; break; }
       if (now < w.start) { defaultWeek = w.key; break; }
     }
-    // If past all group stage, show ALL knockout matches at once (no day scroll)
+    // If past all group stage, the bracket drives the view (selected knockout round)
     if (now >= new Date('2026-06-28T12:00:00Z') && knockoutDates.length > 0) {
-      defaultWeek = 'knockout-all';
+      defaultWeek = 'knockout-stage';
     }
     activeWeekFilter = defaultWeek;
     activeMatchDate = null;
@@ -9313,8 +9338,12 @@ Use exactly the formation provided. Only use players from the squad lists above.
       // Hide knockout matches if not enabled
       if (kickoff >= KNOCKOUT_START_R && !window._knockoutEnabled) return;
       // Filter by week or date
-      if (weekFilter === 'knockout-all') {
-        // Temporary: show ONLY the current round (Round of 32) at once — later rounds aren't determined yet
+      if (weekFilter === 'knockout-stage') {
+        // Bracket-driven: show ONLY the currently selected knockout round
+        const want = 'wc2026-stage-' + (window._koStageFilter || 'R32');
+        if (donStageKey(m) !== want) return;
+      } else if (weekFilter === 'knockout-all') {
+        // (legacy) current round only
         if (donStageKey(m) !== 'wc2026-stage-R32') return;
       } else if (weekFilter) {
         if (GROUP_WEEK_RANGES[weekFilter]) {
