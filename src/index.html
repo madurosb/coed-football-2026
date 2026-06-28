@@ -9314,8 +9314,8 @@ Use exactly the formation provided. Only use players from the squad lists above.
       if (kickoff >= KNOCKOUT_START_R && !window._knockoutEnabled) return;
       // Filter by week or date
       if (weekFilter === 'knockout-all') {
-        // Temporary: show ALL knockout matches at once (no per-day scroll)
-        if (kickoff < KNOCKOUT_START_R) return;
+        // Temporary: show ONLY the current round (Round of 32) at once — later rounds aren't determined yet
+        if (donStageKey(m) !== 'wc2026-stage-R32') return;
       } else if (weekFilter) {
         if (GROUP_WEEK_RANGES[weekFilter]) {
           // Group stage week filter
