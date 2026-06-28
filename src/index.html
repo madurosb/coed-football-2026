@@ -1628,7 +1628,10 @@
     <!-- LAST MATCH BANNER — injected by loadHomeData -->
     <div id="last-match-banner" style="display:none;margin-bottom:1rem;"></div>
 
-    <div style="background:#0a1f0a;border-radius:16px;padding:1.25rem 1rem;text-align:center;margin-bottom:1rem;">
+    <!-- KNOCKOUT BRACKET (compact) — replaces the old countdown hero on home -->
+    <div id="home-bracket" style="margin-bottom:1rem;"></div>
+
+    <div style="background:#0a1f0a;border-radius:16px;padding:1.25rem 1rem;text-align:center;margin-bottom:1rem;display:none;">
       <div style="font-size:11px;letter-spacing:0.15em;color:#4ade80;text-transform:uppercase;margin-bottom:4px;font-family:monospace;">⚽ COED&FOOTBALL &nbsp;·&nbsp; 🏆 WORLD CUP 2026</div>
       <div style="font-size:13px;color:#86efac;margin-bottom:1rem;" id="cd-sub">Kickoff countdown</div>
       <div style="display:flex;justify-content:center;align-items:flex-start;gap:8px;flex-wrap:nowrap;" id="cd-units">
@@ -1655,7 +1658,7 @@
       <div id="cd-next-match" style="font-size:12px;color:#4ade80;margin-top:10px;"></div>
     </div>
     <div class="hero">
-      <img src="https://coed-football-2026.vercel.app/hero-banner.png" alt="COED&FOOTBALL" style="width:100%; max-height:280px; object-fit:cover; border-radius:8px; margin-bottom:1rem;">
+      <!-- tournament hero image removed for knockout redesign -->
       <h1>COED&FOOTBALL Mundial 2026</h1>
       <p>Tournament starts June 11, 2026 - USA / Mexico / Canada</p>
       <div class="hero-stats">
@@ -7837,11 +7840,103 @@ Use exactly the formation provided. Only use players from the squad lists above.
   // Show streak in leaderboard - added to renderLeaderboard via user.currentStreak
 
   // LOAD HOME DATA
+  // ── KNOCKOUT BRACKET (home compact overview) — defensive: any error just hides it, never breaks home ──
+  async function renderHomeBracket() {
+    const el = document.getElementById('home-bracket');
+    if (!el) return;
+    try {
+      const snap = await getDocs(collection(db, 'matches'));
+      const STAGES = [
+        { key:'R32',   label:'R32',   mult:'×2', color:'#2563EB' },
+        { key:'R16',   label:'R16',   mult:'×3', color:'#16A34A' },
+        { key:'QF',    label:'QF',    mult:'×4', color:'#EA580C' },
+        { key:'SF',    label:'SF',    mult:'×5', color:'#7C3AED' },
+        { key:'FINAL', label:'Final', mult:'×6', color:'#CA8A04' }
+      ];
+      const order = { R32:0, R16:1, QF:2, SF:3, FINAL:4 };
+      const classify = (m) => {
+        const g = ((m.group || m.stage || '') + '').toUpperCase();
+        if (g.includes('3RD') || g.includes('THIRD') || g.includes('BRONZE')) return null;
+        if (g.includes('FINAL') && !g.includes('QUARTER') && !g.includes('SEMI')) return 'FINAL';
+        if (g.includes('SEMI')) return 'SF';
+        if (g.includes('QUARTER')) return 'QF';
+        if (g.includes('16')) return 'R16';
+        if (g.includes('32')) return 'R32';
+        return null;
+      };
+      const ko = [];
+      snap.forEach(d => {
+        const m = d.data();
+        const st = classify(m);
+        if (!st) return;
+        let kdate = null;
+        try { kdate = (m.kickoff && m.kickoff.toDate) ? m.kickoff.toDate() : (m.kickoff ? new Date(m.kickoff) : null); } catch(e){}
+        ko.push({ st, m, kdate });
+      });
+      if (ko.length === 0) { el.style.display = 'none'; return; }
+      el.style.display = '';
+      let current = null;
+      for (const s of STAGES) {
+        if (ko.some(k => k.st === s.key && k.m.status !== 'FINISHED')) { current = s.key; break; }
+      }
+      if (!current) {
+        const present = STAGES.filter(s => ko.some(k => k.st === s.key));
+        current = present.length ? present[present.length-1].key : 'R32';
+      }
+      const cur = STAGES.find(s => s.key === current);
+      const curMatches = ko.filter(k => k.st === current).sort((a,b) => (a.kdate ? a.kdate.getTime() : 0) - (b.kdate ? b.kdate.getTime() : 0));
+      const fmt = (d) => { try { return d ? d.toLocaleString('en-GB',{ timeZone:'Asia/Jerusalem', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hour12:false }) : ''; } catch(e){ return ''; } };
+
+      let html = '<div onclick="showPage(\'matches\')" style="cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">'
+           + '<div style="display:flex;align-items:center;gap:8px;"><span style="font-size:18px;">🏆</span><span style="font-size:15px;font-weight:800;color:var(--text);letter-spacing:-0.01em;">Knockout bracket</span></div>'
+           + '<span style="font-size:12px;color:var(--accent);font-weight:700;">Predict →</span></div>';
+      html += '<div style="display:flex;align-items:center;gap:4px;margin-bottom:14px;">';
+      STAGES.forEach((s, i) => {
+        const isCur = s.key === current;
+        const isPast = order[s.key] < order[current];
+        const bg = (isCur || isPast) ? s.color : 'transparent';
+        const op = isPast ? '0.45' : '1';
+        const txt = (isCur || isPast) ? '#fff' : 'var(--text-muted)';
+        const bd = (isCur || isPast) ? s.color : 'var(--border)';
+        html += '<div style="flex:1;text-align:center;background:'+bg+';opacity:'+op+';border:1.5px solid '+bd+';border-radius:10px;padding:6px 2px;">'
+             + '<div style="font-size:12px;font-weight:800;color:'+txt+';line-height:1.1;">'+s.label+'</div>'
+             + '<div style="font-size:10px;font-weight:700;color:'+txt+';opacity:0.85;">'+s.mult+'</div></div>';
+        if (i < STAGES.length-1) html += '<div style="width:6px;height:1.5px;background:var(--border);flex:0 0 auto;"></div>';
+      });
+      html += '</div>';
+      html += '<div style="background:'+cur.color+';color:#fff;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:800;display:inline-block;margin-bottom:8px;letter-spacing:0.03em;">'+cur.label.toUpperCase()+' · '+cur.mult+'</div>';
+      const show = curMatches.slice(0, 6);
+      show.forEach(k => {
+        const m = k.m;
+        const finished = m.status === 'FINISHED' && m.homeScore != null && m.awayScore != null;
+        const mid = finished
+          ? ('<span style="font-weight:800;color:var(--text);font-size:14px;">'+m.homeScore+'–'+m.awayScore+'</span>')
+          : ('<span style="font-size:11px;color:var(--text-muted);font-weight:600;white-space:nowrap;">'+fmt(k.kdate)+'</span>');
+        html += '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--border);">'
+             + '<span style="flex:1;text-align:right;font-size:13px;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(m.homeTeam||'TBD')+' '+(m.homeFlag||'')+'</span>'
+             + '<span style="flex:0 0 auto;min-width:54px;text-align:center;">'+mid+'</span>'
+             + '<span style="flex:1;text-align:left;font-size:13px;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(m.awayFlag||'')+' '+(m.awayTeam||'TBD')+'</span>'
+             + '</div>';
+      });
+      if (curMatches.length > show.length) {
+        html += '<div style="text-align:center;padding-top:10px;font-size:12px;color:var(--accent);font-weight:700;">+'+(curMatches.length-show.length)+' more · See all →</div>';
+      }
+      html += '</div>';
+      el.innerHTML = html;
+    } catch (e) {
+      console.error('renderHomeBracket failed', e);
+      try { el.style.display = 'none'; } catch(_){}
+    }
+  }
+
   async function loadHomeData() {
     if (!currentUserData) return;
     document.getElementById('home-pts').textContent = currentUserData.points || 0;
     document.getElementById('home-exact').textContent = currentUserData.exactScores || 0;
     document.getElementById('home-player').textContent = currentUserData.tournamentPlayer || 'Not set';
+
+    renderHomeBracket();
 
     // Tournament player deadline check
     const tournamentDeadline = new Date('2026-06-11T16:00:00Z');
