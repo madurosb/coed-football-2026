@@ -9139,9 +9139,9 @@ Use exactly the formation provided. Only use players from the squad lists above.
       if (now >= w.start && now < w.end) { defaultWeek = w.key; break; }
       if (now < w.start) { defaultWeek = w.key; break; }
     }
-    // If past all group stage, default to first knockout date
+    // If past all group stage, show ALL knockout matches at once (no day scroll)
     if (now >= new Date('2026-06-28T12:00:00Z') && knockoutDates.length > 0) {
-      defaultWeek = knockoutDates[0];
+      defaultWeek = 'knockout-all';
     }
     activeWeekFilter = defaultWeek;
     activeMatchDate = null;
@@ -9201,6 +9201,8 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const weekLabels = { 'week1':'🟢 Week 1', 'week2':'🟡 Week 2', 'week3':'🟠 Week 3' };
     if (weekDates[weekKey]) {
       pill.textContent = weekLabels[weekKey] + '  ·  ' + weekDates[weekKey];
+    } else if (weekKey === 'knockout-all') {
+      pill.textContent = '⚡ Knockout — all matches';
     } else {
       pill.textContent = '⚡ ' + weekKey; // knockout date
     }
@@ -9311,7 +9313,10 @@ Use exactly the formation provided. Only use players from the squad lists above.
       // Hide knockout matches if not enabled
       if (kickoff >= KNOCKOUT_START_R && !window._knockoutEnabled) return;
       // Filter by week or date
-      if (weekFilter) {
+      if (weekFilter === 'knockout-all') {
+        // Temporary: show ALL knockout matches at once (no per-day scroll)
+        if (kickoff < KNOCKOUT_START_R) return;
+      } else if (weekFilter) {
         if (GROUP_WEEK_RANGES[weekFilter]) {
           // Group stage week filter
           const { start, end } = GROUP_WEEK_RANGES[weekFilter];
@@ -9447,35 +9452,36 @@ Use exactly the formation provided. Only use players from the squad lists above.
                 <optgroup label="${m.awayTeam}">${(()=>{const s=new Set();return getPlayersForTeam(m.awayTeam,m.awayPlayers).filter(p=>{const n=p.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\bjr\b\.?/g,'junior');return s.has(n)?false:!!s.add(n)});})().map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
               </select>
               ${!isPast ? `
-              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <div style="display:flex;justify-content:center;">
               <button id="scorer-btn-${d.id}"
                 data-match-id="${d.id}"
                 data-home-team="${m.homeTeam.replace(/"/g,'&quot;')}"
                 data-away-team="${m.awayTeam.replace(/"/g,'&quot;')}"
                 onclick="openScorerPickerById('${d.id}')"
-                style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;min-width:140px;max-width:180px;text-align:left;">
+                style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;width:100%;max-width:280px;text-align:left;">
                 <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="scorer-label-${d.id}">⚽ Pick scorer...</span>
                 <span style="font-size:11px;flex-shrink:0;">▾</span>
               </button>
-              <button id="og-btn-${d.id}" onclick="toggleOwnGoal('${d.id}')"
-                title="Predict an Own Goal as the first scorer"
-                style="width:52px;height:52px;flex-shrink:0;padding:0;border-radius:10px;border:1.5px solid rgba(239,68,68,0.3);background-color:#2a0a0a;background-image:url('https://raw.githubusercontent.com/madurosb/coed-football-2026/refs/heads/main/src/icons/own_goal.png');background-size:cover;background-position:center;background-repeat:no-repeat;cursor:pointer;transition:all 0.15s;overflow:hidden;position:relative;-webkit-tap-highlight-color:transparent;"></button>
               </div>` : `<div id="scorer-label-${d.id}" style="font-size:13px;color:var(--text-muted);font-style:italic;">⚽ —</div>`}
 
             </div>
           </div>
           ${!isPast ? `
-            <!-- Knockout actions: K-Joker + Double or Nothing (graphic image buttons) -->
-            <div style="display:flex;justify-content:center;align-items:flex-start;gap:14px;margin-top:0.85rem;">
+            <!-- Match actions: Own Goal + K-Joker + Double or Nothing (graphic image buttons) -->
+            <div style="display:flex;justify-content:center;align-items:center;gap:12px;margin-top:0.85rem;">
+              <button id="og-btn-${d.id}" onclick="toggleOwnGoal('${d.id}')"
+                title="Predict an Own Goal as the first scorer"
+                style="width:88px;height:88px;flex-shrink:0;padding:0;border-radius:16px;border:2px solid rgba(239,68,68,0.45);background-color:#2a0a0a;background-image:url('https://raw.githubusercontent.com/madurosb/coed-football-2026/refs/heads/main/src/icons/own_goal.png');background-size:cover;background-position:center;background-repeat:no-repeat;cursor:pointer;box-shadow:0 2px 10px rgba(239,68,68,0.2);transition:transform 0.2s;overflow:hidden;position:relative;-webkit-tap-highlight-color:transparent;"
+                onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform=''"></button>
               ${kickoff >= new Date('2026-06-28T12:00:00Z') ? `
               <button id="knockout-joker-btn-${d.id}" onclick="activateKnockoutJoker('${d.id}')"
                 title="Knockout Joker — doubles points if correct. One use per stage."
-                style="width:96px;height:96px;flex-shrink:0;padding:0;border-radius:16px;border:2px solid #7C3AED;background-color:#1a0030;background-image:url('https://raw.githubusercontent.com/madurosb/coed-football-2026/refs/heads/main/src/icons/joker.png');background-size:cover;background-position:center;background-repeat:no-repeat;cursor:pointer;box-shadow:0 4px 14px rgba(124,58,237,0.35);transition:transform 0.2s;overflow:hidden;position:relative;-webkit-tap-highlight-color:transparent;"
+                style="width:88px;height:88px;flex-shrink:0;padding:0;border-radius:16px;border:2px solid #7C3AED;background-color:#1a0030;background-image:url('https://raw.githubusercontent.com/madurosb/coed-football-2026/refs/heads/main/src/icons/joker.png');background-size:cover;background-position:center;background-repeat:no-repeat;cursor:pointer;box-shadow:0 4px 14px rgba(124,58,237,0.35);transition:transform 0.2s;overflow:hidden;position:relative;-webkit-tap-highlight-color:transparent;"
                 onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform=''"></button>` : ''}
               <button id="don-btn-${d.id}" onclick="toggleDON('${d.id}')"
                 data-week="${donStageKey(m) || getMatchWeekKey(kickoff)}"
                 title="Double or Nothing — correct doubles result points, wrong deducts them. One per stage."
-                style="width:96px;height:96px;flex-shrink:0;padding:0;border-radius:16px;border:2px solid #7C3AED;background-color:#1a0030;background-image:url('https://raw.githubusercontent.com/madurosb/coed-football-2026/refs/heads/main/src/icons/don.png');background-size:cover;background-position:center;background-repeat:no-repeat;cursor:pointer;box-shadow:0 2px 10px rgba(124,58,237,0.2);transition:transform 0.2s;overflow:hidden;position:relative;-webkit-tap-highlight-color:transparent;"
+                style="width:88px;height:88px;flex-shrink:0;padding:0;border-radius:16px;border:2px solid #7C3AED;background-color:#1a0030;background-image:url('https://raw.githubusercontent.com/madurosb/coed-football-2026/refs/heads/main/src/icons/don.png');background-size:cover;background-position:center;background-repeat:no-repeat;cursor:pointer;box-shadow:0 2px 10px rgba(124,58,237,0.2);transition:transform 0.2s;overflow:hidden;position:relative;-webkit-tap-highlight-color:transparent;"
                 onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform=''"></button>
             </div>` : `<p style="font-size:12px;color:var(--text-muted);margin-top:0.75rem;text-align:center;">${isFinished ? '✅ Match finished' : '🔒 Deadline passed - predictions locked'}</p>`}
           ${finishedResult}
