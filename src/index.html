@@ -7921,20 +7921,19 @@ Use exactly the formation provided. Only use players from the squad lists above.
     }
   }
 
-  // ── KNOCKOUT BRACKET (predictions page, full all-stages overview) — defensive ──
+  // ── KNOCKOUT BRACKET (predictions page) — dynamic: one stage at a time, clickable chips ──
   async function renderPredictionsBracket() {
     const el = document.getElementById('predictions-bracket');
     if (!el) return;
     try {
       const snap = await getDocs(collection(db, 'matches'));
       const STAGES = [
-        { key:'R32',   label:'Round of 32',    short:'R32',   mult:'×2', color:'#2563EB' },
-        { key:'R16',   label:'Round of 16',    short:'R16',   mult:'×3', color:'#16A34A' },
-        { key:'QF',    label:'Quarter-finals', short:'QF',    mult:'×4', color:'#EA580C' },
-        { key:'SF',    label:'Semi-finals',    short:'SF',    mult:'×5', color:'#7C3AED' },
-        { key:'FINAL', label:'Final',          short:'Final', mult:'×6', color:'#CA8A04' }
+        { key:'R32',   short:'R32',   mult:'×2', color:'#2563EB' },
+        { key:'R16',   short:'R16',   mult:'×3', color:'#16A34A' },
+        { key:'QF',    short:'QF',    mult:'×4', color:'#EA580C' },
+        { key:'SF',    short:'SF',    mult:'×5', color:'#7C3AED' },
+        { key:'FINAL', short:'Final', mult:'×6', color:'#CA8A04' }
       ];
-      const order = { R32:0, R16:1, QF:2, SF:3, FINAL:4 };
       const classify = (m) => {
         const g = ((m.group || m.stage || '') + '').toUpperCase();
         if (g.includes('3RD') || g.includes('THIRD') || g.includes('BRONZE')) return null;
@@ -7957,42 +7956,60 @@ Use exactly the formation provided. Only use players from the squad lists above.
       let current = null;
       for (const s of STAGES) { if (byStage[s.key].some(k => k.m.status !== 'FINISHED')) { current = s.key; break; } }
       if (!current) current = present[present.length-1].key;
-      const fmt = (d) => { try { return d ? d.toLocaleString('en-GB',{ timeZone:'Asia/Jerusalem', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hour12:false }) : ''; } catch(e){ return ''; } };
-
-      let html = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;">';
-      html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;"><span style="font-size:18px;">🏆</span><span style="font-size:15px;font-weight:800;color:var(--text);">Knockout bracket</span></div>';
-      html += '<div style="display:flex;align-items:center;gap:4px;margin-bottom:6px;">';
-      STAGES.forEach((s, i) => {
-        const isCur = s.key === current; const isPast = order[s.key] < order[current]; const has = byStage[s.key].length > 0;
-        const bg = (isCur || isPast) ? s.color : 'transparent';
-        const op = isPast ? '0.45' : (has ? '1' : '0.55');
-        const txt = (isCur || isPast) ? '#fff' : 'var(--text-muted)';
-        const bd = (isCur || isPast) ? s.color : 'var(--border)';
-        html += '<div style="flex:1;text-align:center;background:'+bg+';opacity:'+op+';border:1.5px solid '+bd+';border-radius:10px;padding:6px 2px;"><div style="font-size:12px;font-weight:800;color:'+txt+';">'+s.short+'</div><div style="font-size:10px;font-weight:700;color:'+txt+';opacity:0.85;">'+s.mult+'</div></div>';
-        if (i < STAGES.length-1) html += '<div style="width:6px;height:1.5px;background:var(--border);flex:0 0 auto;"></div>';
-      });
-      html += '</div>';
-      present.forEach(s => {
-        const matches = byStage[s.key].slice().sort((a,b) => (a.kdate ? a.kdate.getTime() : 0) - (b.kdate ? b.kdate.getTime() : 0));
-        html += '<div style="background:'+s.color+';color:#fff;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:800;display:inline-block;margin:12px 0 4px;letter-spacing:0.03em;">'+s.label.toUpperCase()+' · '+s.mult+'</div>';
-        matches.forEach(k => {
-          const m = k.m; const fin = m.status === 'FINISHED' && m.homeScore != null && m.awayScore != null;
-          const mid = fin
-            ? ('<span style="font-weight:800;color:var(--text);font-size:14px;">'+m.homeScore+'–'+m.awayScore+'</span>')
-            : ('<span style="font-size:11px;color:var(--text-muted);font-weight:600;white-space:nowrap;">'+fmt(k.kdate)+'</span>');
-          html += '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--border);">'
-               + '<span style="flex:1;text-align:right;font-size:13px;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(m.homeTeam||'TBD')+' '+(m.homeFlag||'')+'</span>'
-               + '<span style="flex:0 0 auto;min-width:54px;text-align:center;">'+mid+'</span>'
-               + '<span style="flex:1;text-align:left;font-size:13px;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(m.awayFlag||'')+' '+(m.awayTeam||'TBD')+'</span>'
-               + '</div>';
-        });
-      });
-      html += '</div>';
-      el.innerHTML = html;
+      window._predBracket = { STAGES, byStage };
+      window._predBracketSel = current;
+      _paintPredBracket();
     } catch (e) {
       console.error('renderPredictionsBracket failed', e);
       try { el.style.display = 'none'; } catch(_){}
     }
+  }
+
+  window.setPredBracketStage = (key) => {
+    window._predBracketSel = key;
+    try { _paintPredBracket(); } catch(e){ console.error(e); }
+  };
+
+  function _paintPredBracket() {
+    const el = document.getElementById('predictions-bracket');
+    if (!el || !window._predBracket) return;
+    const STAGES = window._predBracket.STAGES, byStage = window._predBracket.byStage;
+    const sel = window._predBracketSel || (STAGES[0] && STAGES[0].key);
+    const selStage = STAGES.find(s => s.key === sel) || STAGES[0];
+    const fmt = (d) => { try { return d ? d.toLocaleString('en-GB',{ timeZone:'Asia/Jerusalem', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hour12:false }) : ''; } catch(e){ return ''; } };
+
+    let html = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;">';
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;"><span style="font-size:18px;">🏆</span><span style="font-size:15px;font-weight:800;color:var(--text);">Knockout bracket</span></div>';
+    html += '<div style="display:flex;align-items:center;gap:4px;margin-bottom:6px;">';
+    STAGES.forEach((s, i) => {
+      const isSel = s.key === sel;
+      const bg = isSel ? s.color : 'transparent';
+      const txt = isSel ? '#fff' : 'var(--text-muted)';
+      const bd = isSel ? s.color : 'var(--border)';
+      html += '<div onclick="setPredBracketStage(\''+s.key+'\')" style="flex:1;cursor:pointer;text-align:center;background:'+bg+';border:1.5px solid '+bd+';border-radius:10px;padding:6px 2px;-webkit-tap-highlight-color:transparent;"><div style="font-size:12px;font-weight:800;color:'+txt+';">'+s.short+'</div><div style="font-size:10px;font-weight:700;color:'+txt+';opacity:0.85;">'+s.mult+'</div></div>';
+      if (i < STAGES.length-1) html += '<div style="width:6px;height:1.5px;background:var(--border);flex:0 0 auto;"></div>';
+    });
+    html += '</div>';
+
+    const matches = (byStage[sel] || []).slice().sort((a,b) => (a.kdate ? a.kdate.getTime() : 0) - (b.kdate ? b.kdate.getTime() : 0));
+    html += '<div style="background:'+selStage.color+';color:#fff;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:800;display:inline-block;margin:12px 0 4px;letter-spacing:0.03em;">'+selStage.short.toUpperCase()+' · '+selStage.mult+'</div>';
+    if (matches.length === 0) {
+      html += '<div style="padding:16px 4px;text-align:center;font-size:12px;color:var(--text-muted);">Matchups appear once this stage is set 🔒</div>';
+    } else {
+      matches.forEach(k => {
+        const m = k.m; const fin = m.status === 'FINISHED' && m.homeScore != null && m.awayScore != null;
+        const mid = fin
+          ? ('<span style="font-weight:800;color:var(--text);font-size:14px;">'+m.homeScore+'–'+m.awayScore+'</span>')
+          : ('<span style="font-size:11px;color:var(--text-muted);font-weight:600;white-space:nowrap;">'+fmt(k.kdate)+'</span>');
+        html += '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--border);">'
+             + '<span style="flex:1;text-align:right;font-size:13px;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(m.homeTeam||'TBD')+' '+(m.homeFlag||'')+'</span>'
+             + '<span style="flex:0 0 auto;min-width:54px;text-align:center;">'+mid+'</span>'
+             + '<span style="flex:1;text-align:left;font-size:13px;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(m.awayFlag||'')+' '+(m.awayTeam||'TBD')+'</span>'
+             + '</div>';
+      });
+    }
+    html += '</div>';
+    el.innerHTML = html;
   }
 
   async function loadHomeData() {
@@ -9278,6 +9295,21 @@ Use exactly the formation provided. Only use players from the squad lists above.
         ...(m.awayPlayers || []).map(p => `<option value="${p}">${p}</option>`)
       ].join('');
 
+      // Stage-aware label: colored stage+multiplier badge for knockout, plain GROUP label otherwise
+      const _koStage = (() => {
+        const g = ((m.group || m.stage || '') + '').toUpperCase();
+        if (g.includes('3RD') || g.includes('THIRD') || g.includes('BRONZE')) return null;
+        if (g.includes('FINAL') && !g.includes('QUARTER') && !g.includes('SEMI')) return { short:'FINAL', mult:'×6', color:'#CA8A04' };
+        if (g.includes('SEMI')) return { short:'SEMI-FINAL', mult:'×5', color:'#7C3AED' };
+        if (g.includes('QUARTER')) return { short:'QUARTER-FINAL', mult:'×4', color:'#EA580C' };
+        if (g.includes('16')) return { short:'ROUND OF 16', mult:'×3', color:'#16A34A' };
+        if (g.includes('32')) return { short:'ROUND OF 32', mult:'×2', color:'#2563EB' };
+        return null;
+      })();
+      const stageBadge = _koStage
+        ? `<span style="background:${_koStage.color};color:#fff;border-radius:999px;padding:3px 10px;font-size:10px;font-weight:800;letter-spacing:0.04em;white-space:nowrap;">${_koStage.short} · ${_koStage.mult}</span>`
+        : `<span class="group">${(m.group || '').replace(/_/g, ' ')}</span>`;
+
       const liveIndicator = ''; // Badge injected dynamically by updateLiveScoreCards with minute
       // Only show final result block when truly FINISHED (not while LIVE)
       const finishedResult = (isFinished && !isLive) && m.homeScore !== null ? `
@@ -9294,7 +9326,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
           data-away-players='${JSON.stringify(getPlayersForTeam(m.awayTeam, m.awayPlayers)).replace(/'/g,"&#39;")}'
           style="${isLive ? 'border-color:#E24B4A;' : ''}">
           <div class="match-meta" style="align-items:center;">
-            <span class="group">${(m.group || '').replace(/_/g, ' ')}</span>
+            ${stageBadge}
             <div style="display:flex;align-items:center;gap:8px;">
               ${liveIndicator}
               <button onclick="showMatchPreview('${d.id}')"
