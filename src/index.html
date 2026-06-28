@@ -1615,16 +1615,6 @@
 
   <!-- HOME -->
   <div class="page" id="page-home">
-    <!-- Mobile sticky predictions CTA — top of home page -->
-    <div class="mobile-only-cta" style="margin-bottom:1rem;">
-      <button onclick="showPage('matches')"
-        style="width:100%;padding:14px 16px;border-radius:12px;border:none;background:linear-gradient(135deg,#1D9E75,#16a34a);color:white;font-size:15px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 16px rgba(29,158,117,0.35);position:relative;overflow:hidden;letter-spacing:0.02em;">
-        <span style="position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent);animation:shimmer 2.5s linear infinite;background-size:200%;"></span>
-        <span style="font-size:20px;">⚽</span>
-        <span>Make your predictions</span>
-        <span style="font-size:16px;opacity:0.8;">→</span>
-      </button>
-    </div>
     <!-- LAST MATCH BANNER — injected by loadHomeData -->
     <div id="last-match-banner" style="display:none;margin-bottom:1rem;"></div>
 
@@ -1780,7 +1770,8 @@
         <button onclick="confirmResetPredictions()" style="font-size:11px;color:#E24B4A;background:none;border:0.5px solid #E24B4A;padding:5px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent;">🗑 Reset all</button>
       </div>
     </div>
-    <img src="https://coed-football-2026.vercel.app/match-card.png" alt="" style="width:100%; height:auto; border-radius:12px; margin-bottom:1rem;">
+    <!-- KNOCKOUT BRACKET (full overview) — replaces decorative image on predictions -->
+    <div id="predictions-bracket" style="margin-bottom:1rem;"></div>
 
     <!-- TOURNAMENT PLAYER collapsible -->
     <!-- TOURNAMENT PLAYER — locked pick card -->
@@ -7930,6 +7921,80 @@ Use exactly the formation provided. Only use players from the squad lists above.
     }
   }
 
+  // ── KNOCKOUT BRACKET (predictions page, full all-stages overview) — defensive ──
+  async function renderPredictionsBracket() {
+    const el = document.getElementById('predictions-bracket');
+    if (!el) return;
+    try {
+      const snap = await getDocs(collection(db, 'matches'));
+      const STAGES = [
+        { key:'R32',   label:'Round of 32',    short:'R32',   mult:'×2', color:'#2563EB' },
+        { key:'R16',   label:'Round of 16',    short:'R16',   mult:'×3', color:'#16A34A' },
+        { key:'QF',    label:'Quarter-finals', short:'QF',    mult:'×4', color:'#EA580C' },
+        { key:'SF',    label:'Semi-finals',    short:'SF',    mult:'×5', color:'#7C3AED' },
+        { key:'FINAL', label:'Final',          short:'Final', mult:'×6', color:'#CA8A04' }
+      ];
+      const order = { R32:0, R16:1, QF:2, SF:3, FINAL:4 };
+      const classify = (m) => {
+        const g = ((m.group || m.stage || '') + '').toUpperCase();
+        if (g.includes('3RD') || g.includes('THIRD') || g.includes('BRONZE')) return null;
+        if (g.includes('FINAL') && !g.includes('QUARTER') && !g.includes('SEMI')) return 'FINAL';
+        if (g.includes('SEMI')) return 'SF';
+        if (g.includes('QUARTER')) return 'QF';
+        if (g.includes('16')) return 'R16';
+        if (g.includes('32')) return 'R32';
+        return null;
+      };
+      const byStage = { R32:[], R16:[], QF:[], SF:[], FINAL:[] };
+      snap.forEach(d => {
+        const m = d.data(); const st = classify(m); if (!st) return;
+        let kdate = null; try { kdate = (m.kickoff && m.kickoff.toDate) ? m.kickoff.toDate() : (m.kickoff ? new Date(m.kickoff) : null); } catch(e){}
+        byStage[st].push({ m, kdate });
+      });
+      const present = STAGES.filter(s => byStage[s.key].length);
+      if (present.length === 0) { el.style.display = 'none'; return; }
+      el.style.display = '';
+      let current = null;
+      for (const s of STAGES) { if (byStage[s.key].some(k => k.m.status !== 'FINISHED')) { current = s.key; break; } }
+      if (!current) current = present[present.length-1].key;
+      const fmt = (d) => { try { return d ? d.toLocaleString('en-GB',{ timeZone:'Asia/Jerusalem', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hour12:false }) : ''; } catch(e){ return ''; } };
+
+      let html = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px;">';
+      html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;"><span style="font-size:18px;">🏆</span><span style="font-size:15px;font-weight:800;color:var(--text);">Knockout bracket</span></div>';
+      html += '<div style="display:flex;align-items:center;gap:4px;margin-bottom:6px;">';
+      STAGES.forEach((s, i) => {
+        const isCur = s.key === current; const isPast = order[s.key] < order[current]; const has = byStage[s.key].length > 0;
+        const bg = (isCur || isPast) ? s.color : 'transparent';
+        const op = isPast ? '0.45' : (has ? '1' : '0.55');
+        const txt = (isCur || isPast) ? '#fff' : 'var(--text-muted)';
+        const bd = (isCur || isPast) ? s.color : 'var(--border)';
+        html += '<div style="flex:1;text-align:center;background:'+bg+';opacity:'+op+';border:1.5px solid '+bd+';border-radius:10px;padding:6px 2px;"><div style="font-size:12px;font-weight:800;color:'+txt+';">'+s.short+'</div><div style="font-size:10px;font-weight:700;color:'+txt+';opacity:0.85;">'+s.mult+'</div></div>';
+        if (i < STAGES.length-1) html += '<div style="width:6px;height:1.5px;background:var(--border);flex:0 0 auto;"></div>';
+      });
+      html += '</div>';
+      present.forEach(s => {
+        const matches = byStage[s.key].slice().sort((a,b) => (a.kdate ? a.kdate.getTime() : 0) - (b.kdate ? b.kdate.getTime() : 0));
+        html += '<div style="background:'+s.color+';color:#fff;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:800;display:inline-block;margin:12px 0 4px;letter-spacing:0.03em;">'+s.label.toUpperCase()+' · '+s.mult+'</div>';
+        matches.forEach(k => {
+          const m = k.m; const fin = m.status === 'FINISHED' && m.homeScore != null && m.awayScore != null;
+          const mid = fin
+            ? ('<span style="font-weight:800;color:var(--text);font-size:14px;">'+m.homeScore+'–'+m.awayScore+'</span>')
+            : ('<span style="font-size:11px;color:var(--text-muted);font-weight:600;white-space:nowrap;">'+fmt(k.kdate)+'</span>');
+          html += '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--border);">'
+               + '<span style="flex:1;text-align:right;font-size:13px;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(m.homeTeam||'TBD')+' '+(m.homeFlag||'')+'</span>'
+               + '<span style="flex:0 0 auto;min-width:54px;text-align:center;">'+mid+'</span>'
+               + '<span style="flex:1;text-align:left;font-size:13px;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(m.awayFlag||'')+' '+(m.awayTeam||'TBD')+'</span>'
+               + '</div>';
+        });
+      });
+      html += '</div>';
+      el.innerHTML = html;
+    } catch (e) {
+      console.error('renderPredictionsBracket failed', e);
+      try { el.style.display = 'none'; } catch(_){}
+    }
+  }
+
   async function loadHomeData() {
     if (!currentUserData) return;
     document.getElementById('home-pts').textContent = currentUserData.points || 0;
@@ -8979,6 +9044,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
   async function loadMatches() {
     const matchesSnap = await getDocs(query(collection(db, 'matches'), orderBy('kickoff')));
     allMatchesSnap = matchesSnap;
+    renderPredictionsBracket();
     const container = document.getElementById('matches-list');
     if (matchesSnap.empty) {
       container.innerHTML = '<div style="padding:1rem;text-align:center;font-size:13px;color:var(--text-muted);">No matches scheduled yet. Check back soon!</div>';
