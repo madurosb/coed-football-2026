@@ -1651,11 +1651,6 @@
       </div>
       <div id="cd-next-match" style="font-size:12px;color:#4ade80;margin-top:10px;"></div>
     </div>
-    <div class="hero">
-      <!-- tournament hero image removed for knockout redesign -->
-      <h1>COED&FOOTBALL Mundial 2026</h1>
-      <p>Tournament starts June 11, 2026 - USA / Mexico / Canada</p>
-    </div>
     <div class="stat-grid">
       <!-- LIVE MATCHES on home (only shown when games are active) -->
       <div id="home-live-section" style="display:none;grid-column:1/-1;margin-bottom:0.5rem;"></div>
@@ -7705,8 +7700,11 @@ Use exactly the formation provided. Only use players from the squad lists above.
   let jokerMatchId = null;
   let knockoutJokerUsed = false;
   let knockoutJokerMatchId = null;
+  let knockoutJokerMatchDone = false;
 
   async function loadJokerStatus() {
+    knockoutJokerUsed = false; knockoutJokerMatchId = null; knockoutJokerMatchDone = false;
+    jokerUsed = false; jokerMatchId = null;
     const snap = await getDocs(query(collection(db, 'jokerCards'), where('userId', '==', currentUser.uid)));
     snap.forEach(d => {
       const data = d.data();
@@ -7718,6 +7716,14 @@ Use exactly the formation provided. Only use players from the squad lists above.
         jokerUsed = true;
       }
     });
+    // Has the match the user played the K-Joker on already finished?
+    // Only then is the K-Joker truly spent (before that, the user can still cancel & move it).
+    if (knockoutJokerUsed && knockoutJokerMatchId) {
+      try {
+        const md = await getDoc(doc(db, 'matches', knockoutJokerMatchId));
+        knockoutJokerMatchDone = md.exists() && md.data().status === 'FINISHED';
+      } catch (e) { knockoutJokerMatchDone = false; }
+    }
     // Update all joker buttons
     document.querySelectorAll('[id^="joker-btn-"]').forEach(btn => {
       const matchId = btn.id.replace('joker-btn-','');
@@ -7757,8 +7763,13 @@ Use exactly the formation provided. Only use players from the squad lists above.
         btn.innerHTML = '<span style="position:absolute;top:3px;right:5px;font-size:15px;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.6));">✅</span>';
         btn.disabled = false;
       } else if (knockoutJokerUsed) {
-        // Used on another match — K-Joker is spent (one-time), hide it so DON fills the row
-        btn.style.display = 'none'; btn.innerHTML = ''; btn.disabled = true;
+        if (knockoutJokerMatchDone) {
+          // The match it was played on has finished → K-Joker is spent, hide it so DON fills the row
+          btn.style.display = 'none'; btn.innerHTML = ''; btn.disabled = true;
+        } else {
+          // Played on another match that hasn't finished yet → grey it (still cancellable & movable from the active match)
+          btn.style.display = ''; btn.style.opacity = '0.25'; btn.style.cursor = 'not-allowed'; btn.style.filter = 'grayscale(1)'; btn.style.boxShadow = 'none'; btn.style.animation = ''; btn.style.borderColor = '#7C3AED'; btn.innerHTML = ''; btn.disabled = true;
+        }
       } else {
         btn.style.display = ''; btn.style.opacity = ''; btn.style.cursor = ''; btn.style.filter = ''; btn.style.animation = ''; btn.style.boxShadow = '0 4px 14px rgba(124,58,237,0.35)'; btn.style.borderColor = '#7C3AED'; btn.innerHTML = ''; btn.disabled = false;
       }
