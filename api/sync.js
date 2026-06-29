@@ -133,7 +133,15 @@ async function syncMatches(db) {
     const homePlayers = getSquad(home.name || home.shortName || '');
     const awayPlayers = getSquad(away.name || away.shortName || '');
 
-    await db.collection('matches').doc(String(match.id)).set({
+    // ── 90-MINUTE LOCK GUARD ─────────────────────────────────────────────
+    // If a match is already FINISHED in Firebase, NEVER overwrite its score.
+    // The admin may have locked the correct 90-minute score for a knockout
+    // game that went to extra time / penalties (via the Knockout 90-min tool).
+    const matchId = String(match.id);
+    const existingSnap = await db.collection('matches').doc(matchId).get();
+    const alreadyFinished = existingSnap.exists && existingSnap.data().status === 'FINISHED';
+
+    const docData = {
       footballDataId: match.id,
       homeTeam: home.name || home.shortName || '',
       awayTeam: away.name || away.shortName || '',
@@ -142,13 +150,18 @@ async function syncMatches(db) {
       kickoff,
       kickoffIsrael: israelTime,
       group: match.group || match.stage || 'World Cup 2026',
-      status: match.status || 'SCHEDULED',
-      homeScore: ft.home ?? null,
-      awayScore: ft.away ?? null,
+      status: alreadyFinished ? 'FINISHED' : (match.status || 'SCHEDULED'),
       homePlayers,
       awayPlayers,
       lastSynced: new Date()
-    }, { merge: true });
+    };
+    // Only write the score if the match is NOT already finalized in Firebase
+    if (!alreadyFinished) {
+      docData.homeScore = ft.home ?? null;
+      docData.awayScore = ft.away ?? null;
+    }
+
+    await db.collection('matches').doc(matchId).set(docData, { merge: true });
   }
   return matches.length;
 }
