@@ -2002,6 +2002,7 @@
       <div class="rule-row"><div><div class="rule-name">Tournament player goal</div><div class="rule-desc">Your chosen player scores a goal at any point in the tournament</div></div><div class="rule-pts">+2 pts per goal</div></div>
       <div class="rule-row"><div><div class="rule-name">Tournament player assist</div><div class="rule-desc">Your chosen player provides an assist at any point in the tournament</div></div><div class="rule-pts">+1 pt per assist</div></div>
       <div class="rule-row"><div><div class="rule-name">Tournament player red card</div><div class="rule-desc">Your chosen player receives a red card</div></div><div class="rule-pts" style="color:#E24B4A;">−1 pt</div></div>
+      <div class="rule-row" style="background:rgba(124,58,237,0.06);"><div><div class="rule-name">⏱️ Tournament player — extra time</div><div class="rule-desc">Your player's goals, assists & red cards count through <strong>extra time</strong> — but <strong>not</strong> the penalty shootout (shootout goals don't count, same as official stats).</div></div><div class="rule-pts" style="font-size:12px;color:var(--text-muted);white-space:nowrap;">ET ✓ · PENs ✗</div></div>
       <div class="rule-row"><div><div class="rule-name">Tournament winner</div><div class="rule-desc">You correctly predicted the World Cup winner</div></div><div class="rule-pts">+15 pts</div></div>
 
       <div style="background:var(--surface2);border-radius:10px;padding:0.75rem 1rem;margin-top:0.75rem;">
@@ -2913,6 +2914,18 @@
         </div>
         <div class="form-row" id="result-scorer-row" style="display:none;"><label>First goalscorer</label><select id="result-scorer"><option value="">Select player...</option><option value="og">Own goal</option><option value="none">No goals scored</option></select></div>
         <button class="submit-btn" onclick="submitResult()">Submit results and calculate points</button>
+      </div>
+      <div class="form-card" style="margin-top:1rem;border:1.5px solid #7C3AED;">
+        <h2>🏆 Knockout 90-min Result <span style="font-size:11px;font-weight:600;color:var(--text-muted);">(extra-time games)</span></h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:0.5rem;">For a knockout match that went to <strong>extra time / penalties</strong>: enter the score at the <strong>end of 90 minutes</strong> only. This locks the result as FINISHED, scores <strong>result + exact</strong> with the correct stage multiplier, and <strong>blocks the auto-sync</strong> from re-scoring or overwriting it. Safe to re-run (no double-counting).</p>
+        <p style="font-size:12px;color:#fbbf24;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:8px;padding:8px 10px;margin-bottom:1rem;">⚡ Best used <strong>during extra time</strong> (before the auto-sync scores it). First scorer & tournament player are entered <strong>separately</strong> (90-min scorer below; TP via its own tool).</p>
+        <div class="form-row"><label>Knockout match</label><select id="ko90-match-select" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;"><option value="">Select match...</option></select></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="form-row"><label id="ko90-home-label">Home score (90')</label><input type="number" min="0" id="ko90-home-score" placeholder="0"></div>
+          <div class="form-row"><label id="ko90-away-label">Away score (90')</label><input type="number" min="0" id="ko90-away-score" placeholder="0"></div>
+        </div>
+        <button class="submit-btn" id="ko90-btn" onclick="lockKnockout90()" style="background:linear-gradient(135deg,#7C3AED,#5B21B6);">🔒 Lock 90-min result & score</button>
+        <div id="ko90-status" style="margin-top:8px;font-size:12px;text-align:center;min-height:20px;"></div>
       </div>
       <div class="form-card" style="margin-top:1rem;">
         <h2>🎯 Award Scorer Points Only</h2>
@@ -10494,7 +10507,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     document.getElementById('admin-main').style.display = 'none';
     document.querySelectorAll('.admin-sub').forEach(s => s.classList.remove('active'));
     document.getElementById('admin-' + id).classList.add('active');
-    if (id === 'results') { loadMatchesForAdmin(); loadScorerOnlyMatches(); }
+    if (id === 'results') { loadMatchesForAdmin(); loadScorerOnlyMatches(); loadKnockout90Matches(); }
     if (id === 'players') loadMatchesForPlayerAdmin();
     if (id === 'members') loadMembersLog();
     if (id === 'watch-admin') loadWatchAdmin();
@@ -10945,6 +10958,136 @@ Use exactly the formation provided. Only use players from the squad lists above.
   window.showAdminMain = () => {
     document.getElementById('admin-main').style.display = 'block';
     document.querySelectorAll('.admin-sub').forEach(s => s.classList.remove('active'));
+  };
+
+  async function loadKnockout90Matches() {
+    const sel = document.getElementById('ko90-match-select');
+    if (!sel) return;
+    const snap = await getDocs(query(collection(db, 'matches'), orderBy('kickoff')));
+    sel.innerHTML = '<option value="">Select match...</option>';
+    snap.forEach(d => {
+      const m = d.data();
+      if (!donStageKey(m)) return; // knockout matches only
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = `${m.homeTeam} vs ${m.awayTeam}`;
+      opt.dataset.home = m.homeTeam || 'Home';
+      opt.dataset.away = m.awayTeam || 'Away';
+      sel.appendChild(opt);
+    });
+    sel.onchange = () => {
+      const opt = sel.options[sel.selectedIndex];
+      if (!opt || !opt.value) return;
+      const hl = document.getElementById('ko90-home-label');
+      const al = document.getElementById('ko90-away-label');
+      if (hl) hl.textContent = opt.dataset.home + " (90')";
+      if (al) al.textContent = opt.dataset.away + " (90')";
+    };
+  }
+
+  // Knockout 90-minute result: locks the 90' score as FINISHED, scores RESULT + EXACT
+  // (canonical multipliers + Joker + DON), blocks the auto-sync (pointsCalculated=true),
+  // and is idempotent via a per-match ledger (koLedger). Does NOT touch first-scorer or TP.
+  window.lockKnockout90 = async () => {
+    if (!window._isAdmin) return;
+    const matchId = document.getElementById('ko90-match-select').value;
+    const h = parseInt(document.getElementById('ko90-home-score').value);
+    const a = parseInt(document.getElementById('ko90-away-score').value);
+    const status = document.getElementById('ko90-status');
+    const btn = document.getElementById('ko90-btn');
+    if (!matchId) { if (status) status.innerHTML = '<span style="color:#E24B4A;">❌ Select a match.</span>'; return; }
+    if (isNaN(h) || isNaN(a) || h < 0 || a < 0) { if (status) status.innerHTML = '<span style="color:#E24B4A;">❌ Enter both 90-minute scores.</span>'; return; }
+
+    try {
+      const matchSnap = await getDoc(doc(db, 'matches', matchId));
+      if (!matchSnap.exists()) { if (status) status.innerHTML = '<span style="color:#E24B4A;">❌ Match not found.</span>'; return; }
+      const m = matchSnap.data();
+      const grp = (m.group || '').toUpperCase();
+      const isFinal = grp.includes('FINAL') && !grp.includes('QUARTER') && !grp.includes('SEMI');
+      const isSemi = grp.includes('SEMI');
+      const isQuarter = grp.includes('QUARTER');
+      const isR32 = grp.includes('32') && !grp.includes('16');
+      const isR16 = grp.includes('16') || grp.includes('ROUND_OF_16');
+      const mult = isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32 ? 2 : 1;
+      const stageName = isFinal ? 'Final' : isSemi ? 'Semi-final' : isQuarter ? 'Quarter-final' : isR16 ? 'Round of 16' : isR32 ? 'Round of 32' : 'Group';
+
+      const resRef = doc(db, 'results', matchId);
+      const resSnap = await getDoc(resRef);
+      const resData = resSnap.exists() ? resSnap.data() : {};
+      const priorLedger = resData.koLedger || null;
+      const priorExact = resData.koExactLedger || null;
+
+      // Guard: if the auto-sync already scored this match (and this tool didn't), refuse — would double-count
+      if (resData.pointsCalculated === true && !priorLedger) {
+        if (status) status.innerHTML = '<span style="color:#E24B4A;">⚠️ The auto-sync already scored this match. To avoid double-counting, use the full Recompute instead (Score Verification → Recompute). This tool is best used DURING extra time, before the sync scores it.</span>';
+        return;
+      }
+
+      const actual = h > a ? 'home' : h < a ? 'away' : 'draw';
+
+      if (!confirm('Lock ' + (m.homeTeam || 'Home') + ' ' + h + '–' + a + ' ' + (m.awayTeam || 'Away') + ' (90-min) for the ' + stageName + ' (×' + mult + ')?\n\n• Scores RESULT + EXACT for everyone.\n• Blocks the auto-sync from re-scoring/overwriting it.\n• First scorer & tournament player are entered separately.\n• Safe to re-run (no double-counting).')) return;
+
+      if (btn) btn.disabled = true;
+      if (status) status.innerHTML = '⏳ Scoring…';
+
+      const [predsSnap, jokerSnap, donSnap] = await Promise.all([
+        getDocs(query(collection(db, 'predictions'), where('matchId', '==', matchId))),
+        getDocs(query(collection(db, 'jokerCards'), where('matchId', '==', matchId))),
+        getDocs(query(collection(db, 'donOptIns'), where('matchId', '==', matchId)))
+      ]);
+      const jokerSet = new Set(); jokerSnap.forEach(d => { if (d.data().userId) jokerSet.add(d.data().userId); });
+      const donSet = new Set(); donSnap.forEach(d => { if (d.data().userId) donSet.add(d.data().userId); });
+
+      const newLedger = {}, newExact = {};
+      predsSnap.forEach(d => {
+        const p = d.data();
+        if (!p.userId) return;
+        if (p.homeScore == null || p.awayScore == null) return;
+        const ph = Number(p.homeScore), pa = Number(p.awayScore);
+        const predRes = ph > pa ? 'home' : ph < pa ? 'away' : 'draw';
+        let pts = 0, ex = 0;
+        if (actual === predRes) pts += 1 * mult;
+        if (ph === h && pa === a) { pts += 3 * mult; ex = 1; }
+        if (jokerSet.has(p.userId) && actual === predRes) pts *= 2;
+        if (donSet.has(p.userId)) pts = (actual === predRes) ? pts * 2 : -1 * mult;
+        newLedger[p.userId] = pts;
+        newExact[p.userId] = ex;
+      });
+
+      // Apply deltas (new − prior) per user, so re-runs never double-count
+      const uids = new Set([...Object.keys(newLedger), ...(priorLedger ? Object.keys(priorLedger) : [])]);
+      let changed = 0, failed = 0;
+      for (const uid of uids) {
+        const dPts = (newLedger[uid] || 0) - (priorLedger ? (priorLedger[uid] || 0) : 0);
+        const dEx = (newExact[uid] || 0) - (priorExact ? (priorExact[uid] || 0) : 0);
+        if (dPts === 0 && dEx === 0) continue;
+        try {
+          const uRef = doc(db, 'users', uid);
+          const uSnap = await getDoc(uRef);
+          if (uSnap.exists()) {
+            await updateDoc(uRef, {
+              points: (uSnap.data().points || 0) + dPts,
+              exactScores: Math.max(0, (uSnap.data().exactScores || 0) + dEx)
+            });
+            changed++;
+          }
+        } catch (e) { failed++; console.error('ko90 write failed for', uid, e); }
+      }
+
+      // Lock the match score as FINISHED and block the auto-sync from re-scoring/overwriting
+      await updateDoc(doc(db, 'matches', matchId), { homeScore: h, awayScore: a, status: 'FINISHED' });
+      await setDoc(resRef, {
+        homeScore: h, awayScore: a, pointsCalculated: true,
+        koLedger: newLedger, koExactLedger: newExact,
+        ninetyMinLocked: true, lockedAt: serverTimestamp()
+      }, { merge: true });
+
+      if (status) status.innerHTML = '<span style="color:var(--green);font-weight:700;">✅ Locked ' + h + '–' + a + ' · scored ' + changed + ' player(s) (result+exact, ×' + mult + ').' + (failed ? ' ⚠️ ' + failed + ' failed.' : '') + '</span> Auto-sync is now blocked for this match. Enter the 90-min first scorer & tournament-player separately.';
+      if (btn) btn.disabled = false;
+    } catch (e) {
+      if (status) status.innerHTML = '<span style="color:#E24B4A;">Error: ' + e.message + '</span>';
+      if (btn) btn.disabled = false;
+    }
   };
 
   async function loadMatchesForAdmin() {
