@@ -191,9 +191,11 @@ async function syncLiveResults(db) {
         status, homeScore, awayScore, lastSynced: new Date()
       }, { merge: true });
     } else {
-      // Still update status and lastSynced, but never touch homeScore/awayScore
+      // Already FINISHED in Firebase (e.g. admin locked the 90-minute result for an
+      // extra-time game). NEVER touch status or score — just a heartbeat. Overwriting
+      // status here would flip a locked match back to IN_PLAY during extra time.
       await db.collection('matches').doc(matchId).set({
-        status, lastSynced: new Date()
+        lastSynced: new Date()
       }, { merge: true });
     }
 
