@@ -1595,6 +1595,7 @@
 
 
         <div class="drawer-item" data-page="hof" onclick="smartNav('hof')"><span class="d-icon">🏅</span><span class="d-label">Hall of Fame</span></div>
+        <div class="drawer-item" onclick="document.getElementById('smart-menu-drawer').classList.remove('open');openFinale()"><span class="d-icon">🎆</span><span class="d-label">Closing Ceremony</span></div>
 
         <div class="drawer-item" data-page="analysis" onclick="smartNav('analysis')"><span class="d-icon">📈</span><span class="d-label">Analysis</span></div>
         <div class="drawer-item" data-page="coach" onclick="smartNav('coach')"><span class="d-icon">🏟️</span><span class="d-label">Coaches</span></div>
@@ -4050,6 +4051,328 @@
       if (status) status.innerHTML = '<span style="color:var(--green);font-weight:700;">↩️ Restored ' + restored + '.' + (failed ? ' ⚠️ ' + failed + ' failed.' : '') + '</span>';
     } catch (e) { if (status) status.innerHTML = '<span style="color:#E24B4A;">Error: ' + e.message + '</span>'; }
   };
+
+  // ============ GRAND FINALE — Closing Ceremony (self-contained overlay) ============
+  window.closeFinale = () => { const o = document.getElementById('fin-ov'); if (o) o.remove(); };
+
+  function _finNorm(s){ let n=(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); return n; }
+
+  window.openFinale = async () => {
+    if (document.getElementById('fin-ov')) return;
+    // fonts
+    if (!document.getElementById('fin-fonts')) {
+      const l = document.createElement('link'); l.id = 'fin-fonts'; l.rel = 'stylesheet';
+      l.href = 'https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:wght@700&display=swap';
+      document.head.appendChild(l);
+    }
+    if (!document.getElementById('fin-style')) {
+      const s = document.createElement('style'); s.id = 'fin-style';
+      s.textContent = `
+      #fin-ov{position:fixed;inset:0;z-index:99999;background:#080B14;color:#F3F5FA;overflow-y:auto;overflow-x:hidden;font-family:'Inter',system-ui,sans-serif;-webkit-overflow-scrolling:touch}
+      #fin-ov *{margin:0;padding:0;box-sizing:border-box}
+      #fin-ov::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(120% 60% at 50% -10%,rgba(245,197,24,.10),transparent 60%),radial-gradient(90% 50% at 50% 110%,rgba(29,158,117,.08),transparent 60%)}
+      .fin-disp{font-family:'Anton',sans-serif;text-transform:uppercase;line-height:.92;font-weight:400}
+      .fin-mono{font-family:'Space Mono',monospace;font-variant-numeric:tabular-nums}
+      #fin-close{position:fixed;top:14px;right:14px;z-index:60;width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.4);color:#fff;font-size:17px;cursor:pointer}
+      .fin-wrap{position:relative;z-index:1;max-width:520px;margin:0 auto}
+      .fin-act{min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding:64px 22px;position:relative}
+      .fin-eb{font-size:11px;font-weight:800;letter-spacing:.28em;text-transform:uppercase;color:#7C879B;margin-bottom:18px;display:flex;align-items:center;gap:10px}
+      .fin-eb::before{content:'';width:26px;height:2px;background:#F5C518;display:inline-block}
+      .fin-rv{opacity:0;transform:translateY(34px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
+      .fin-rv.in{opacity:1;transform:none}
+      .fin-d1{transition-delay:.08s}.fin-d2{transition-delay:.16s}.fin-d3{transition-delay:.24s}.fin-d4{transition-delay:.32s}.fin-d5{transition-delay:.4s}
+      #fin-intro{position:absolute;inset:0;z-index:50;background:#040610;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;transition:opacity .8s ease,transform .8s ease}
+      #fin-intro.gone{opacity:0;transform:translateY(-40px);pointer-events:none}
+      #fin-intro .pre{font-size:13px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#7C879B;margin-bottom:24px}
+      #fin-count{font-family:'Anton',sans-serif;font-size:34vw;color:#F5C518;line-height:1;text-shadow:0 0 60px rgba(245,197,24,.5)}
+      #fin-skip{position:absolute;bottom:28px;font-size:12px;color:#7C879B;background:none;border:1px solid rgba(255,255,255,.12);padding:8px 16px;border-radius:99px;font-weight:600;cursor:pointer}
+      .fin-champ{text-align:center}
+      .fin-flag{font-size:96px;line-height:1;filter:drop-shadow(0 12px 30px rgba(0,0,0,.6));animation:finpop .9s cubic-bezier(.2,1.4,.4,1) both}
+      @keyframes finpop{0%{transform:scale(.2);opacity:0}60%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+      .fin-champ .cl{font-size:12px;font-weight:800;letter-spacing:.3em;color:#F5C518;text-transform:uppercase;margin:22px 0 8px}
+      .fin-champ h1{font-size:clamp(48px,17vw,92px);background:linear-gradient(180deg,#fff,#F5C518);-webkit-background-clip:text;background-clip:text;color:transparent;margin:4px 0}
+      .fin-champ .sub{font-size:13px;color:#7C879B;margin-top:14px;font-weight:500}
+      .fin-champ .rb{display:inline-block;margin-top:22px;font-family:'Space Mono',monospace;font-size:12px;color:#F3F5FA;border:1px solid #F5C518;border-radius:99px;padding:7px 18px;background:rgba(245,197,24,.07)}
+      .fin-pod{display:flex;align-items:flex-end;gap:10px;justify-content:center;margin-top:30px}
+      .fin-pcol{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center}
+      .fin-pcol .av{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Anton';font-size:22px;color:#0b0b0b;margin-bottom:8px}
+      .fin-pcol .nm{font-size:13px;font-weight:800;margin-bottom:2px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .fin-pcol .pts{font-family:'Space Mono';font-size:12px;color:#7C879B}
+      .fin-bar{width:100%;border-radius:12px 12px 0 0;margin-top:12px;display:flex;align-items:flex-start;justify-content:center;padding-top:10px;font-family:'Anton';font-size:26px;color:rgba(0,0,0,.55);transform-origin:bottom;animation:finrise .8s cubic-bezier(.2,.8,.2,1) both}
+      @keyframes finrise{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+      .fin-p1 .av{background:linear-gradient(160deg,#FFE16B,#F5C518)}.fin-p1 .fin-bar{background:linear-gradient(180deg,#F5C518,#B8860B);height:150px}
+      .fin-p2 .av{background:linear-gradient(160deg,#fff,#C7CDD6)}.fin-p2 .fin-bar{background:linear-gradient(180deg,#C7CDD6,#8a909a);height:108px}
+      .fin-p3 .av{background:linear-gradient(160deg,#E8A765,#CD7F32)}.fin-p3 .fin-bar{background:linear-gradient(180deg,#CD7F32,#9c5e24);height:78px}
+      .fin-crown{font-size:22px;margin-bottom:-2px}
+      .fin-snp{text-align:center}
+      .fin-scope{width:200px;height:200px;margin:18px auto 0;border-radius:50%;border:2px solid rgba(226,75,74,.5);display:flex;align-items:center;justify-content:center;position:relative;background:radial-gradient(circle,rgba(226,75,74,.08),transparent 70%)}
+      .fin-scope::before,.fin-scope::after{content:'';position:absolute;background:rgba(226,75,74,.4)}
+      .fin-scope::before{width:100%;height:1px}.fin-scope::after{height:100%;width:1px}
+      .fin-scope .r2{position:absolute;width:130px;height:130px;border-radius:50%;border:1px solid rgba(226,75,74,.35)}
+      .fin-scope .big{font-family:'Anton';font-size:64px;color:#E24B4A;z-index:2;text-shadow:0 0 30px rgba(226,75,74,.5)}
+      .fin-snp .nm{font-family:'Anton';font-size:clamp(34px,11vw,56px);margin-top:18px}
+      .fin-snp .lbl{font-size:12px;font-weight:700;letter-spacing:.2em;color:#7C879B;text-transform:uppercase}
+      .fin-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px}
+      .fin-stat{background:#0E1322;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px 16px}
+      .fin-stat .n{font-family:'Anton';font-size:38px;line-height:1;color:#F5C518}
+      .fin-stat.g .n{color:#1D9E75}.fin-stat.v .n{color:#8B5CF6}.fin-stat.r .n{color:#E24B4A}
+      .fin-stat .t{font-size:11px;font-weight:600;color:#7C879B;margin-top:8px;text-transform:uppercase;letter-spacing:.06em}
+      .fin-hof{display:flex;flex-direction:column;gap:12px;margin-top:22px}
+      .fin-hc{display:flex;align-items:center;gap:14px;background:linear-gradient(100deg,#0E1322,rgba(245,197,24,.04));border:1px solid rgba(255,255,255,.08);border-left:3px solid #F5C518;border-radius:14px;padding:14px 16px}
+      .fin-hc .ic{font-size:26px;flex-shrink:0}
+      .fin-hc .ti{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#F5C518}
+      .fin-hc .who{font-size:16px;font-weight:800;margin:1px 0}
+      .fin-hc .de{font-size:12px;color:#7C879B}
+      .fin-roast{background:repeating-linear-gradient(45deg,rgba(226,75,74,.04),rgba(226,75,74,.04) 12px,transparent 12px,transparent 24px),#0E1322;border:1px dashed rgba(226,75,74,.4);border-radius:14px;padding:16px;margin-top:12px;position:relative}
+      .fin-roast .stamp{position:absolute;top:10px;right:12px;font-family:'Anton';font-size:11px;color:rgba(226,75,74,.55);border:2px solid rgba(226,75,74,.4);padding:2px 7px;border-radius:6px;transform:rotate(8deg)}
+      .fin-roast .ti{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#E24B4A}
+      .fin-roast .who{font-family:'Anton';font-size:24px;margin:4px 0 2px}
+      .fin-roast .de{font-size:13px;color:#cbd2df}
+      .fin-outro{text-align:center;padding-bottom:90px}
+      .fin-outro h2{font-family:'Anton';font-size:clamp(40px,14vw,72px);color:transparent;-webkit-background-clip:text;background-clip:text;background:linear-gradient(180deg,#fff,#7C879B)}
+      .fin-share{margin-top:24px;display:inline-flex;align-items:center;gap:9px;background:#1D9E75;color:#04130d;font-weight:800;font-size:14px;padding:13px 26px;border-radius:99px;border:none;cursor:pointer}
+      .fin-foot{font-size:11px;color:#7C879B;margin-top:30px;letter-spacing:.05em}
+      #fin-cfx{position:fixed;inset:0;z-index:40;pointer-events:none}
+      @media(prefers-reduced-motion:reduce){.fin-rv{transition:none;opacity:1;transform:none}.fin-flag,.fin-bar{animation:none}}
+      `;
+      document.head.appendChild(s);
+    }
+
+    const ov = document.createElement('div'); ov.id = 'fin-ov';
+    ov.innerHTML = '<button id="fin-close" aria-label="Close">✕</button><div style="min-height:100svh;display:flex;align-items:center;justify-content:center;color:#7C879B;font-size:13px;">Preparing the ceremony…</div>';
+    document.body.appendChild(ov);
+    document.getElementById('fin-close').onclick = window.closeFinale;
+
+    try {
+      const [usersSnap, matchesSnap, predsSnap, jokerSnap, donSnap, wcSnap] = await Promise.all([
+        getDocs(collection(db, 'users')),
+        getDocs(collection(db, 'matches')),
+        getDocs(collection(db, 'predictions')),
+        getDocs(collection(db, 'jokerCards')),
+        getDocs(collection(db, 'donOptIns')),
+        getDocs(collection(db, 'wc_scorers')).catch(() => ({ forEach: () => {} }))
+      ]);
+
+      const users = {}; usersSnap.forEach(d => { users[d.id] = d.data(); });
+      const matches = {}; matchesSnap.forEach(d => { matches[d.id] = d.data(); });
+      const jokerMap = {}; jokerSnap.forEach(d => { const j = d.data(); if (j.userId && j.matchId) { (jokerMap[j.userId] = jokerMap[j.userId] || new Set()).add(j.matchId); } });
+      const donSet = new Set(); donSnap.forEach(d => { const v = d.data(); if (v.userId && v.matchId) donSet.add(v.userId + '_' + v.matchId); });
+      const wcNorm = buildNormalizedScorersMap(wcSnap);
+
+      // finished matches
+      const fin = {}; let finCount = 0;
+      Object.keys(matches).forEach(id => { const m = matches[id]; if (m.status === 'FINISHED' && m.homeScore !== null && m.homeScore !== undefined) { fin[id] = m; finCount++; } });
+
+      // champion (final)
+      let champion = null;
+      Object.keys(fin).forEach(id => {
+        const m = fin[id]; const g = (m.group || '').toUpperCase();
+        if (g.includes('FINAL') && !g.includes('SEMI') && !g.includes('QUARTER')) {
+          const h = Number(m.homeScore), a = Number(m.awayScore);
+          const winTeam = h > a ? m.homeTeam : a > h ? m.awayTeam : m.homeTeam;
+          const winFlag = h > a ? m.homeFlag : a > h ? m.awayFlag : m.homeFlag;
+          champion = { country: winTeam || 'TBD', flag: winFlag || '🏆', finalScore: (m.homeTeam || '') + ' ' + h + ' – ' + a + ' ' + (m.awayTeam || '') };
+        }
+      });
+
+      // per-user accumulators
+      const acc = {};
+      const A = uid => (acc[uid] = acc[uid] || { exact:0, correct:0, finished:0, zeros:0, miss1:0, og:0, scorer:0, best:0, jp:0, jl:0, dw:0, dl:0, stage:{} });
+      predsSnap.forEach(d => {
+        const p = d.data(); if (!p.userId) return;
+        const m = fin[p.matchId]; if (!m) return;
+        if (p.homeScore === null || p.homeScore === undefined || p.awayScore === null || p.awayScore === undefined) return;
+        const u = A(p.userId);
+        const ph = Number(p.homeScore), pa = Number(p.awayScore), mh = Number(m.homeScore), ma = Number(m.awayScore);
+        const po = ph > pa ? 'H' : ph < pa ? 'A' : 'D';
+        const ao = mh > ma ? 'H' : mh < ma ? 'A' : 'D';
+        const correct = po === ao, exact = ph === mh && pa === ma;
+        const hasJ = jokerMap[p.userId] ? jokerMap[p.userId].has(p.matchId) : false;
+        const hasD = donSet.has(p.userId + '_' + p.matchId);
+        const pts = calcPredPts(p, m, hasJ, hasD);
+        u.finished++; if (correct) u.correct++; if (exact) u.exact++;
+        if (ph === 0 && pa === 0) u.zeros++;
+        if (correct && !exact && (Math.abs(ph - mh) + Math.abs(pa - ma) === 1)) u.miss1++;
+        const ps = (p.firstScorer || '').toLowerCase();
+        if (ps.includes('own goal') || ps === 'og') u.og++;
+        if (p.firstScorer && (m.firstGoalscorer || m.hasOwnGoal)) {
+          const targets = (m.firstGoalscorer || '').split('/').map(_finNorm);
+          if (targets.some(t => t === _finNorm(p.firstScorer))) u.scorer++;
+        }
+        if (pts > u.best) u.best = pts;
+        if (hasJ) { u.jp++; if (correct) u.jl++; }
+        if (hasD) { if (correct) u.dw++; else u.dl++; }
+        const stg = (m.group || 'Group').toUpperCase();
+        u.stage[stg] = (u.stage[stg] || 0) + pts;
+      });
+
+      const nickOf = uid => (users[uid] && (users[uid].nickname || users[uid].displayName)) || 'Player';
+      const realUsers = Object.keys(users).filter(uid => !users[uid].removed);
+
+      // podium (stored points)
+      const ranked = realUsers.map(uid => ({ uid, nick: nickOf(uid), points: users[uid].points || 0 })).sort((x, y) => y.points - x.points);
+      const podium = ranked.slice(0, 3);
+
+      // sniper (fresh exact)
+      let sniper = { nick: '—', exact: 0, line: '' };
+      realUsers.forEach(uid => { const e = (acc[uid] && acc[uid].exact) || 0; if (e > sniper.exact) sniper = { nick: nickOf(uid), exact: e, line: e + ' exact scores. While the rest of you guessed 2-1 and prayed, this one saw the matrix.' }; });
+
+      // YOU
+      const meUid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
+      const meRankIdx = ranked.findIndex(r => r.uid === meUid);
+      const ma2 = acc[meUid] || { exact:0, correct:0, finished:0, best:0, jl:0, jp:0 };
+      const you = {
+        nick: meUid ? nickOf(meUid) : 'Player',
+        rank: meRankIdx >= 0 ? meRankIdx + 1 : ranked.length,
+        totalPlayers: ranked.length,
+        points: meUid && users[meUid] ? (users[meUid].points || 0) : 0,
+        exact: ma2.exact, bestMatch: ma2.best,
+        jokersPlayed: ma2.jp, jokersLanded: ma2.jl,
+        accuracy: ma2.finished ? Math.round(ma2.correct / ma2.finished * 100) : 0,
+      };
+      // tournament player (the player this user picked + their real goals/assists/reds)
+      const tpName = meUid && users[meUid] ? users[meUid].tournamentPlayer : null;
+      if (tpName) {
+        const td = wcNorm[normalizeName(tpName)] || null;
+        you.tp = td
+          ? { name: tpName, goals: td.goals || 0, assists: td.assists || 0, reds: td.redCards || 0, pts: (td.goals || 0) * 2 + (td.assists || 0) - (td.redCards || 0) }
+          : { name: tpName, goals: 0, assists: 0, reds: 0, pts: 0 };
+      }
+
+      // global
+      const global = {
+        totalPoints: ranked.reduce((s, r) => s + r.points, 0),
+        totalExact: realUsers.reduce((s, uid) => s + ((acc[uid] && acc[uid].exact) || 0), 0),
+        jokers: Object.keys(jokerMap).reduce((s, uid) => s + jokerMap[uid].size, 0),
+        dons: donSet.size,
+      };
+
+      // helper: pick max
+      const pick = (metric) => { let best = null; realUsers.forEach(uid => { const v = (acc[uid] && acc[uid][metric]) || 0; if (v > 0 && (!best || v > best.v)) best = { uid, v }; }); return best; };
+      const HOF = [], ROAST = [];
+      let b;
+      if ((b = pick('jl'))) HOF.push({ ic:'🃏', ti:'Joker Master', who: nickOf(b.uid), de: b.v + ' jokers landed on the right outcome. Doubling down like it\'s nothing.' });
+      if ((b = pick('dw'))) HOF.push({ ic:'🎰', ti:'The DON King', who: nickOf(b.uid), de: b.v + ' Double-or-Nothing bets survived. Ice in the veins.' });
+      if ((b = pick('best'))) HOF.push({ ic:'💎', ti:'Biggest Single Haul', who: nickOf(b.uid), de: b.v + ' points from one single match. Disgusting.' });
+      if ((b = pick('scorer'))) HOF.push({ ic:'⚽', ti:'Scorer Whisperer', who: nickOf(b.uid), de: 'Called the first goalscorer ' + b.v + ' times. Witchcraft.' });
+      // best single stage
+      let bs = null; realUsers.forEach(uid => { const st = (acc[uid] && acc[uid].stage) || {}; Object.keys(st).forEach(k => { if (!bs || st[k] > bs.v) bs = { uid, v: st[k], k }; }); });
+      if (bs) HOF.push({ ic:'🏔️', ti:'Best Single Stage', who: nickOf(bs.uid), de: bs.v + ' points banked in a single stage.' });
+
+      if ((b = pick('zeros'))) ROAST.push({ ic:'🎲', ti:'The BenjiTheBosnian Award', who: nickOf(b.uid), de: 'Predicted 0-0 ' + b.v + ' times. We checked the tape — this one has never actually seen a goal.' });
+      if ((b = pick('miss1'))) ROAST.push({ ic:'💔', ti:'Heartbreak Hotel', who: nickOf(b.uid), de: 'Missed the exact score by a single goal ' + b.v + ' times. The universe knows the address and it hates them.' });
+      if ((b = pick('dl'))) ROAST.push({ ic:'🤡', ti:'The Degenerate Gambler', who: nickOf(b.uid), de: 'Lost ' + b.v + ' Double-or-Nothing bets. Reached rock bottom and asked for a shovel.' });
+      if (ranked.length) { const last = ranked[ranked.length - 1]; ROAST.push({ ic:'🪦', ti:'Buried Alive', who: last.nick, de: 'Dead last out of ' + ranked.length + '. A coin would have finished higher. We ran the numbers — it\'s not close.' }); }
+      // ghost: most missing predictions
+      let gh = null; realUsers.forEach(uid => { const f = (acc[uid] && acc[uid].finished) || 0; const miss = finCount - f; if (miss > 0 && (!gh || miss > gh.v)) gh = { uid, v: miss }; });
+      if (gh && gh.v > 0) ROAST.push({ ic:'👻', ti:'The Ghost', who: nickOf(gh.uid), de: 'Skipped ' + gh.v + ' matches. The default scoreline carried them harder than their own opinions ever did.' });
+      if ((b = pick('og'))) ROAST.push({ ic:'🙈', ti:'Own Goal Enjoyer', who: nickOf(b.uid), de: 'Predicted an own goal as first scorer ' + b.v + ' time(s). On purpose. Please talk to someone.' });
+
+      const FINALE = { champion: champion || { country:'TBD', flag:'🏆', finalScore:'Final not played yet' }, you, podium, sniper, global, hallOfFame: HOF, superlatives: ROAST };
+
+      _renderFinale(ov, FINALE);
+    } catch (e) {
+      console.error('finale load failed', e);
+      ov.innerHTML = '<button id="fin-close2" style="position:fixed;top:14px;right:14px;width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.4);color:#fff;font-size:17px;">✕</button><div style="min-height:100svh;display:flex;align-items:center;justify-content:center;color:#E24B4A;font-size:14px;text-align:center;padding:30px;">Could not load the ceremony.<br>Close and try again.</div>';
+      const c2 = document.getElementById('fin-close2'); if (c2) c2.onclick = window.closeFinale;
+    }
+  };
+
+  function _renderFinale(ov, F) {
+    const podOrder = [
+      { p: F.podium[1], cls: 'fin-p2', rank: 2, crown: '' },
+      { p: F.podium[0], cls: 'fin-p1', rank: 1, crown: '👑' },
+      { p: F.podium[2], cls: 'fin-p3', rank: 3, crown: '' }
+    ].filter(o => o.p);
+    const podHTML = podOrder.map(o => '<div class="fin-pcol ' + o.cls + '">' + (o.crown ? '<div class="fin-crown">' + o.crown + '</div>' : '') + '<div class="av">' + (o.p.nick.charAt(0).toUpperCase()) + '</div><div class="nm">' + o.p.nick + '</div><div class="pts">' + o.p.points + ' pts</div><div class="fin-bar">' + o.rank + '</div></div>').join('');
+
+    const yC = [
+      { n: F.you.points, t: 'your points', c: '' },
+      { n: '#' + F.you.rank, t: 'final rank of ' + F.you.totalPlayers, c: 'g', raw: true },
+      { n: F.you.exact, t: 'exact scores', c: 'r' },
+      { n: F.you.bestMatch, t: 'best single match', c: 'v' },
+      { n: F.you.jokersLanded + '/' + F.you.jokersPlayed, t: 'jokers landed', c: '', raw: true },
+      { n: F.you.accuracy, t: 'accuracy %', c: 'g' }
+    ];
+    const youGrid = yC.map((s, i) => '<div class="fin-stat ' + s.c + ' fin-rv fin-d' + ((i % 5) + 1) + '"><div class="n" ' + (s.raw ? '' : 'data-count="' + s.n + '"') + '>' + (s.raw ? s.n : 0) + '</div><div class="t">' + s.t + '</div></div>').join('')
+      + (F.you.tp ? '<div class="fin-rv fin-d5" style="grid-column:1/-1;background:#0E1322;border:1px solid rgba(255,255,255,.08);border-left:3px solid #1D9E75;border-radius:14px;padding:14px 16px;margin-top:2px"><div style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#1D9E75">⭐ Your Tournament Player</div><div style="font-size:17px;font-weight:800;margin:3px 0 2px">' + F.you.tp.name + '</div><div style="font-size:12px;color:#7C879B">' + F.you.tp.goals + ' goals · ' + F.you.tp.assists + ' assists · ' + F.you.tp.reds + ' red — <b style="color:#F3F5FA">' + (F.you.tp.pts >= 0 ? '+' : '') + F.you.tp.pts + ' pts</b></div></div>' : '')
+      + '<div class="fin-rv fin-d5" style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,.08);margin-top:6px;padding-top:14px;font-size:12px;color:#7C879B;text-align:center;line-height:1.7">The group as a whole burned through<br><b style="color:#F3F5FA">' + F.global.totalPoints.toLocaleString() + '</b> pts · <b style="color:#F3F5FA">' + F.global.totalExact + '</b> exact · <b style="color:#F3F5FA">' + F.global.jokers + '</b> jokers · <b style="color:#F3F5FA">' + F.global.dons + '</b> DONs</div>';
+
+    const pctR = F.you.rank / Math.max(1, F.you.totalPlayers);
+    let verdict;
+    if (F.you.rank === 1) verdict = 'Champion of the whole group. Put it on the CV.';
+    else if (F.you.rank <= 3) verdict = 'Podium finish. Your mum is proud. Nobody else is.';
+    else if (pctR <= 0.34) verdict = 'Top third. Respectable, forgettable — respectably forgettable.';
+    else if (F.you.rank === F.you.totalPlayers) verdict = 'Dead last out of ' + F.you.totalPlayers + '. A coin would have done better. We checked. It\'s not close.';
+    else if (pctR <= 0.66) verdict = 'Squarely mid-table — the Tottenham of this league. All that effort to be aggressively average.';
+    else verdict = 'Bottom third. You watched football for a month to achieve this. Sit with that.';
+
+    const hofHTML = F.hallOfFame.map((h, i) => '<div class="fin-hc fin-rv fin-d' + ((i % 5) + 1) + '"><div class="ic">' + h.ic + '</div><div><div class="ti">' + h.ti + '</div><div class="who">' + h.who + '</div><div class="de">' + h.de + '</div></div></div>').join('');
+    const roastHTML = F.superlatives.map((r, i) => '<div class="fin-roast fin-rv fin-d' + ((i % 5) + 1) + '"><div class="stamp">GUILTY</div><div class="ti">' + r.ic + ' ' + r.ti + '</div><div class="who">' + r.who + '</div><div class="de">' + r.de + '</div></div>').join('');
+
+    ov.innerHTML =
+      '<button id="fin-close" aria-label="Close">✕</button>' +
+      '<canvas id="fin-cfx"></canvas>' +
+      '<div id="fin-intro"><div class="pre">And the 2026 World Champions are…</div><div id="fin-count">3</div><button id="fin-skip">Skip intro</button></div>' +
+      '<div class="fin-wrap">' +
+        '<section class="fin-act fin-champ" id="fin-a1"><div class="fin-flag" id="fin-flag">🏳️</div><div class="cl">🏆 World Champions · 2026</div><h1 class="fin-disp" id="fin-cname">—</h1><div class="sub">United States · Mexico · Canada</div><div class="rb" id="fin-rib">—</div></section>' +
+        '<section class="fin-act" id="fin-a2"><div class="fin-eb fin-rv">The Standings</div><h2 class="fin-disp fin-rv fin-d1" style="font-size:clamp(32px,10vw,52px)">The Podium</h2><p class="fin-rv fin-d1" style="color:#7C879B;font-size:13px;margin-top:8px">' + F.you.totalPlayers + ' players entered. Three of them actually knew ball.</p><div class="fin-pod fin-rv fin-d2">' + podHTML + '</div></section>' +
+        '<section class="fin-act fin-snp" id="fin-a3"><div class="fin-eb fin-rv" style="justify-content:center">The Sniper Prize</div><div class="fin-scope fin-rv fin-d1"><div class="r2"></div><div class="big" id="fin-snum">0</div></div><div class="nm fin-rv fin-d2">' + F.sniper.nick + '</div><div class="lbl fin-rv fin-d2">exact scores · dead on</div><p class="fin-rv fin-d3" style="color:#7C879B;font-size:13px;margin-top:14px;max-width:340px;margin-left:auto;margin-right:auto">' + F.sniper.line + '</p></section>' +
+        '<section class="fin-act" id="fin-a4"><div class="fin-eb fin-rv">Your Tournament</div><h2 class="fin-disp fin-rv fin-d1" style="font-size:clamp(30px,9vw,48px)">' + F.you.nick + ', here\'s your damage</h2><p class="fin-rv fin-d1" style="color:#7C879B;font-size:13px;margin-top:10px;max-width:380px">' + verdict + '</p><div class="fin-grid">' + youGrid + '</div></section>' +
+        '<section class="fin-act" id="fin-a5"><div class="fin-eb fin-rv">Hall of Fame</div><h2 class="fin-disp fin-rv fin-d1" style="font-size:clamp(30px,9vw,48px)">The Specialists</h2><div class="fin-hof">' + hofHTML + '</div></section>' +
+        '<section class="fin-act" id="fin-a6"><div class="fin-eb fin-rv" style="color:#E24B4A"><span style="background:#E24B4A;width:26px;height:2px"></span>&nbsp;The Roast Awards</div><h2 class="fin-disp fin-rv fin-d1" style="font-size:clamp(30px,9vw,48px)">Achievements<br>nobody wanted</h2>' + roastHTML + '</section>' +
+        '<section class="fin-act fin-outro" id="fin-a7"><div class="fin-eb fin-rv" style="justify-content:center">That\'s a wrap</div><h2 class="fin-disp fin-rv fin-d1">See you<br>in 2030</h2><button class="fin-share fin-rv fin-d2" id="fin-share">📸 Save &amp; share</button><div class="fin-foot fin-rv fin-d3">COED&FOOTBALL Mundial 2026 · The Closing Ceremony</div></section>' +
+      '</div>';
+
+    document.getElementById('fin-close').onclick = window.closeFinale;
+
+    // countdown
+    const intro = document.getElementById('fin-intro'), countEl = document.getElementById('fin-count');
+    let n = 3;
+    const reveal = () => {
+      document.getElementById('fin-flag').textContent = F.champion.flag;
+      document.getElementById('fin-cname').textContent = F.champion.country;
+      document.getElementById('fin-rib').textContent = 'Final · ' + F.champion.finalScore;
+      intro.classList.add('gone'); setTimeout(() => { intro.style.display = 'none'; }, 800);
+      _finConfetti();
+    };
+    const tick = () => { if (n > 0) { countEl.textContent = n; countEl.style.animation = 'none'; void countEl.offsetWidth; countEl.style.animation = 'finpop .5s cubic-bezier(.2,1.4,.4,1)'; n--; setTimeout(tick, 850); } else reveal(); };
+    setTimeout(tick, 1000);
+    document.getElementById('fin-skip').onclick = () => { n = 0; reveal(); };
+    document.getElementById('fin-share').onclick = () => {
+      const txt = '🏆 Champions: ' + F.champion.country + '\n🥇 ' + (F.podium[0] ? F.podium[0].nick : '') + ' wins it all!\n🎯 Sniper: ' + F.sniper.nick;
+      if (navigator.share) navigator.share({ title: 'COED&FOOTBALL Mundial 2026', text: txt }).catch(() => {});
+      else alert('Screenshot this page to share in the group! 📸');
+    };
+
+    // reveal on scroll (root = overlay)
+    const io = new IntersectionObserver((es) => { es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); const c = e.target.querySelector ? e.target.querySelector('[data-count]') : null; if (c || (e.target.matches && e.target.matches('[data-count]'))) _finCount(e.target); io.unobserve(e.target); } }); }, { root: ov, threshold: 0.18 });
+    ov.querySelectorAll('.fin-rv').forEach(el => io.observe(el));
+
+    const so = new IntersectionObserver((es) => { es.forEach(e => { if (e.isIntersecting) { const el = document.getElementById('fin-snum'); const tg = F.sniper.exact; const t0 = performance.now(); (function s(t) { const p = Math.min(1, (t - t0) / 1000); el.textContent = Math.round(tg * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(s); })(performance.now()); so.disconnect(); } }); }, { root: ov, threshold: 0.4 });
+    so.observe(document.getElementById('fin-a3'));
+  }
+
+  function _finCount(scope) {
+    scope.querySelectorAll('[data-count]').forEach(el => {
+      const target = +el.dataset.count, dur = 1100, t0 = performance.now();
+      (function step(t) { const p = Math.min(1, (t - t0) / dur); const e = 1 - Math.pow(1 - p, 3); el.textContent = Math.round(target * e).toLocaleString(); if (p < 1) requestAnimationFrame(step); })(performance.now());
+    });
+  }
+
+  function _finConfetti() {
+    const cv = document.getElementById('fin-cfx'); if (!cv) return; const ctx = cv.getContext('2d');
+    cv.width = innerWidth; cv.height = innerHeight;
+    const cols = ['#F5C518', '#1D9E75', '#fff', '#E24B4A', '#8B5CF6', '#C7CDD6'];
+    let P = [];
+    for (let i = 0; i < 160; i++) P.push({ x: innerWidth / 2 + (Math.random() - .5) * 120, y: innerHeight * 0.32, vx: (Math.random() - .5) * 11, vy: Math.random() * -13 - 4, g: 0.32, s: Math.random() * 7 + 4, c: cols[i % cols.length], r: Math.random() * Math.PI, vr: (Math.random() - .5) * .3, a: 1 });
+    let frames = 0;
+    (function loop() {
+      ctx.clearRect(0, 0, cv.width, cv.height); frames++;
+      P.forEach(p => { p.vy += p.g; p.x += p.vx; p.y += p.vy; p.r += p.vr; if (frames > 90) p.a -= 0.02; ctx.save(); ctx.globalAlpha = Math.max(0, p.a); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.c; ctx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * 0.5); ctx.restore(); });
+      if (frames < 170) requestAnimationFrame(loop); else if (ctx) ctx.clearRect(0, 0, cv.width, cv.height);
+    })();
+  }
 
   window.loadPerUserBreakdown = async () => {
     const uid = document.getElementById('peruser-select').value;
@@ -11114,6 +11437,8 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
       if (status) status.innerHTML = '<span style="color:var(--green);font-weight:700;">✅ Locked ' + h + '–' + a + ' · scored ' + changed + ' player(s) (result+exact, ×' + mult + ').' + (failed ? ' ⚠️ ' + failed + ' failed.' : '') + '</span> Auto-sync is now blocked for this match. Enter the 90-min first scorer & tournament-player separately.';
       if (btn) btn.disabled = false;
+      // Refresh the "Award Scorer Points Only" dropdown so this just-locked match shows up there
+      try { const ss = document.getElementById('scorer-only-match'); if (ss) { ss.dataset.loaded = ''; await loadScorerOnlyMatches(); } } catch(e) {}
     } catch (e) {
       if (status) status.innerHTML = '<span style="color:#E24B4A;">Error: ' + e.message + '</span>';
       if (btn) btn.disabled = false;
