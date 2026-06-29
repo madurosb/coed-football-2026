@@ -3860,6 +3860,12 @@
       const rows = await computeAllCalcTotals();
       const changed = rows.filter(r => r.diff !== 0);
       let html = '<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Preview only — <strong>nothing is written until you press Apply.</strong> Sets each player\'s stored points to the CALC value. Current points are backed up automatically (restorable). Only the <strong>points</strong> field changes — predictions, results, jokers, DON and wc_scorers are untouched.</div>';
+      html += '<div style="margin:0 0 14px;border:1px solid var(--border);border-radius:10px;padding:12px;">'
+        + '<div style="font-size:13px;font-weight:700;margin-bottom:4px;">📐 Exact Scores (for The Sniper)</div>'
+        + '<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">Verify each player\'s stored exact-score count against a fresh, number-safe computation.</div>'
+        + '<button onclick="loadExactRecompute()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;">Check exact scores →</button>'
+        + '<div id="exact-recompute-content" style="margin-top:10px;"></div>'
+        + '</div>';
       if (changed.length === 0) {
         html += '<div style="background:var(--badge-green-bg);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--badge-green-text);font-weight:500;">✅ All points already match CALC. Nothing to do.</div>';
         c.innerHTML = html;
@@ -3929,6 +3935,112 @@
     } catch (e) {
       if (status) status.innerHTML = '<span style="color:#E24B4A;">Error: ' + e.message + '</span>';
     }
+  };
+
+  // ===== Exact Scores recompute (for The Sniper) =====
+  // Computes each user's exact-score count from predictions × FINISHED matches, number-safe.
+  async function computeAllExactScores() {
+    const [usersSnap, matchesSnap, predsSnap] = await Promise.all([
+      getDocs(collection(db, 'users')),
+      getDocs(collection(db, 'matches')),
+      getDocs(collection(db, 'predictions'))
+    ]);
+    const matches = {};
+    matchesSnap.forEach(d => { const m = d.data(); if (m.status === 'FINISHED' && m.homeScore !== null && m.homeScore !== undefined && m.awayScore !== null && m.awayScore !== undefined) matches[d.id] = m; });
+    const computed = {};
+    predsSnap.forEach(d => {
+      const p = d.data();
+      if (!p.userId) return;
+      if (computed[p.userId] === undefined) computed[p.userId] = 0;
+      const m = matches[p.matchId];
+      if (!m) return;
+      if (p.homeScore === null || p.homeScore === undefined || p.awayScore === null || p.awayScore === undefined) return;
+      // Number-safe comparison (avoids string-vs-number mismatches)
+      if (Number(p.homeScore) === Number(m.homeScore) && Number(p.awayScore) === Number(m.awayScore)) computed[p.userId]++;
+    });
+    const rows = [];
+    usersSnap.forEach(d => {
+      const u = d.data();
+      const stored = u.exactScores || 0;
+      const comp = computed[d.id] || 0;
+      rows.push({ uid: d.id, name: u.nickname || u.displayName || d.id, stored, computed: comp, diff: stored - comp, removed: !!u.removed });
+    });
+    rows.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
+    window._exactRecomputeRows = rows;
+    return rows;
+  }
+
+  window.loadExactRecompute = async () => {
+    const c = document.getElementById('exact-recompute-content');
+    if (!c) return;
+    if (!window._isAdmin) { c.innerHTML = '<div style="color:#E24B4A;font-size:13px;">Admin only.</div>'; return; }
+    c.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Computing exact scores… (read-only)</div>';
+    try {
+      const rows = await computeAllExactScores();
+      const changed = rows.filter(r => r.diff !== 0);
+      let html = '<div style="font-size:12px;color:#fbbf24;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:8px 10px;margin-bottom:10px;">⚠️ Computed from <strong>current</strong> match scores. If a knockout match shows an extra-time / penalty score instead of the 90-minute score, the Calc value will be wrong — verify the 90-minute scores first.</div>';
+      html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Stored <strong>exactScores</strong> vs freshly computed. Apply writes the computed value (old value backed up, restorable). Only the <strong>exactScores</strong> field changes.</div>';
+      if (changed.length === 0) {
+        html += '<div style="background:var(--badge-green-bg);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--badge-green-text);font-weight:500;">✅ All stored exact scores match the computation.</div>';
+        c.innerHTML = html; return;
+      }
+      html += '<div style="background:var(--surface2);border-radius:10px;overflow:hidden;margin-bottom:12px;">'
+        + '<div style="display:grid;grid-template-columns:1fr 56px 56px 56px;font-size:11px;color:var(--text-muted);text-transform:uppercase;padding:6px 10px;font-weight:500;"><div>Player</div><div style="text-align:center">Stored</div><div style="text-align:center">Calc</div><div style="text-align:center">Δ</div></div>';
+      changed.forEach(r => {
+        const delta = r.computed - r.stored;
+        const dCol = delta < 0 ? '#E24B4A' : '#1D9E75';
+        html += '<div style="display:grid;grid-template-columns:1fr 56px 56px 56px;align-items:center;padding:7px 10px;border-top:0.5px solid var(--border);">'
+          + '<div style="font-size:12px;font-weight:500;">' + r.name + (r.removed ? ' <span style="color:var(--text-muted);font-size:10px;">(removed)</span>' : '') + '</div>'
+          + '<div style="text-align:center;font-size:13px;color:var(--text-muted);">' + r.stored + '</div>'
+          + '<div style="text-align:center;font-size:13px;font-weight:700;">' + r.computed + '</div>'
+          + '<div style="text-align:center;font-size:12px;font-weight:700;color:' + dCol + ';">' + (delta > 0 ? '+' : '') + delta + '</div>'
+          + '</div>';
+      });
+      html += '</div>';
+      html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;"><strong>' + changed.length + '</strong> player(s) differ.</div>';
+      html += '<button onclick="applyExactRecompute()" style="width:100%;padding:11px;border-radius:8px;border:none;background:#E24B4A;color:white;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px;">✅ Apply — set exactScores = Calc (' + changed.length + ')</button>';
+      html += '<button onclick="restoreExactBackup()" style="width:100%;padding:9px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;">↩️ Restore last exact-scores backup</button>';
+      html += '<div id="exact-recompute-status" style="margin-top:10px;font-size:13px;"></div>';
+      c.innerHTML = html;
+    } catch (e) {
+      c.innerHTML = '<div style="color:#E24B4A;font-size:13px;">Error: ' + e.message + '</div>';
+    }
+  };
+
+  window.applyExactRecompute = async () => {
+    if (!window._isAdmin) return;
+    const rows = window._exactRecomputeRows;
+    if (!rows) { alert('Run the exact-scores preview first.'); return; }
+    const changed = rows.filter(r => r.diff !== 0);
+    if (changed.length === 0) { alert('Nothing to apply.'); return; }
+    if (!confirm('Set exactScores = computed for ' + changed.length + ' player(s)?\n\n• Old exactScores are backed up first (restorable).\n• ONLY the exactScores field changes.\n• ⚠️ Make sure knockout match scores are the 90-MINUTE scores first!')) return;
+    const status = document.getElementById('exact-recompute-status');
+    if (status) status.innerHTML = '⏳ Applying…';
+    let done = 0, failed = 0;
+    for (const r of changed) {
+      try { await updateDoc(doc(db, 'users', r.uid), { exactScores: r.computed, exactScoresBackup: r.stored, exactScoresBackupAt: serverTimestamp() }); done++; }
+      catch (e) { failed++; console.error('exact recompute write failed for', r.uid, e); }
+    }
+    if (status) status.innerHTML = '<span style="color:var(--green);font-weight:700;">✅ Applied to ' + done + '.' + (failed ? ' ⚠️ ' + failed + ' failed.' : '') + '</span>';
+  };
+
+  window.restoreExactBackup = async () => {
+    if (!window._isAdmin) return;
+    if (!confirm('Restore exactScores from the last backup for every player who has one?')) return;
+    const status = document.getElementById('exact-recompute-status');
+    if (status) status.innerHTML = '⏳ Restoring…';
+    try {
+      const usersSnap = await getDocs(collection(db, 'users'));
+      let restored = 0, failed = 0;
+      for (const d of usersSnap.docs) {
+        const u = d.data();
+        if (u.exactScoresBackup !== undefined && u.exactScoresBackup !== null) {
+          try { await updateDoc(d.ref, { exactScores: u.exactScoresBackup }); restored++; }
+          catch (e) { failed++; console.error('exact restore failed for', d.id, e); }
+        }
+      }
+      if (status) status.innerHTML = '<span style="color:var(--green);font-weight:700;">↩️ Restored ' + restored + '.' + (failed ? ' ⚠️ ' + failed + ' failed.' : '') + '</span>';
+    } catch (e) { if (status) status.innerHTML = '<span style="color:#E24B4A;">Error: ' + e.message + '</span>'; }
   };
 
   window.loadPerUserBreakdown = async () => {
@@ -6881,7 +6993,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
             if ((p.homeScore ?? -1) === (p.awayScore ?? -2)) predStats[p.userId].draws++;
             const m = finishedMatchesRef[p.matchId];
             if (m && p.homeScore !== null && p.homeScore !== undefined &&
-                p.homeScore === m.homeScore && p.awayScore === m.awayScore)
+                Number(p.homeScore) === Number(m.homeScore) && Number(p.awayScore) === Number(m.awayScore))
               predStats[p.userId].exactScores++;
           });
           renderLeaderboard('full-leaderboard', users, predStats);
@@ -8996,7 +9108,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
         const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
         const predicted = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
         if (actual === predicted) userStats[p.userId].correct++;
-        if (p.homeScore === m.homeScore && p.awayScore === m.awayScore) userStats[p.userId].exact++;
+        if (Number(p.homeScore) === Number(m.homeScore) && Number(p.awayScore) === Number(m.awayScore)) userStats[p.userId].exact++;
 
         // Scorer matching — handles multi-scorer format "Mbappe / Own Goal" + accent variants
         if (m.firstGoalscorer && p.firstScorer) {
