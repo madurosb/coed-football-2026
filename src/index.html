@@ -3464,8 +3464,8 @@
     if (existing.exists()) {
       await deleteDoc(ref);
       myDonMatches.delete(matchId);
-      // Re-render all DON buttons to unlock
-      renderAllDONButtons();
+      // Rebuild DON state from DB so the stage lock is cleared everywhere, then re-render
+      await loadDONStatus();
       const t = document.createElement('div');
       t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#555;color:#fff;font-size:13px;padding:10px 16px;border-radius:10px;z-index:9999;white-space:nowrap;';
       t.textContent = '🎰 Double or Nothing cancelled';
@@ -3505,7 +3505,7 @@
       createdAt: serverTimestamp()
     });
     myDonMatches.add(matchId);
-    renderAllDONButtons();
+    await loadDONStatus();
 
     const t = document.createElement('div');
     t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#BA7517;color:#fff;font-size:13px;padding:10px 16px;border-radius:10px;z-index:9999;white-space:nowrap;';
@@ -6305,10 +6305,11 @@ Return ONLY this JSON:
 Position codes: GK, RB, CB, LB, LWB, RWB, CDM, CM, CAM, RM, LM, RW, LW, ST, CF
 Use exactly the formation provided. Only use players from the squad lists above.`
           }],
-          maxTokens: 1800
+          maxTokens: 1500
         })
       });
       const data = await resp.json();
+      if (data.error) throw new Error(typeof data.error === 'string' ? data.error : 'api error');
       let text = (data.text || '').trim();
       if (!text) throw new Error('empty lineup response');
       const m = text.match(/\{[\s\S]*\}/);
@@ -6318,8 +6319,37 @@ Use exactly the formation provided. Only use players from the squad lists above.
       lineupCache[matchId] = html;
       panel.innerHTML = html;
     } catch(e) {
-      console.error('lineup load failed:', e);
-      panel.innerHTML = '<div style="text-align:center;padding:12px;color:#ef4444;font-size:12px;">Could not load lineups. Tap again to retry.</div>';
+      console.error('lineup load failed, trying squad fallback:', e);
+      // Fallback: build a plausible lineup straight from the squad list (no AI needed)
+      try {
+        const mk = (team, formationStr, names) => {
+          const rows = (formationStr || '4-3-3').split('-').map(Number).filter(n => n > 0);
+          const defCount = rows[0] || 4;
+          const fwdCount = rows[rows.length - 1] || 3;
+          const midCount = Math.max(0, 10 - defCount - fwdCount);
+          const players = [{ name: names[0] || 'Goalkeeper', position: 'GK' }];
+          let i = 1;
+          for (let k = 0; k < defCount; k++) players.push({ name: names[i++] || '—', position: 'CB' });
+          for (let k = 0; k < midCount; k++) players.push({ name: names[i++] || '—', position: 'CM' });
+          for (let k = 0; k < fwdCount; k++) players.push({ name: names[i++] || '—', position: 'ST' });
+          return { team, formation: formationStr, players };
+        };
+        const hp = getPlayersForTeam(homeTeam, []);
+        const ap = getPlayersForTeam(awayTeam, []);
+        if (hp.length >= 11 && ap.length >= 11) {
+          const html = renderLineupHTML(
+            mk(homeTeam, TEAM_FORMATIONS[homeTeam] || '4-3-3', hp),
+            mk(awayTeam, TEAM_FORMATIONS[awayTeam] || '4-3-3', ap)
+          );
+          lineupCache[matchId] = html;
+          panel.innerHTML = html;
+          return;
+        }
+        throw new Error('insufficient squad data');
+      } catch(e2) {
+        console.error('lineup fallback failed:', e2);
+        panel.innerHTML = '<div style="text-align:center;padding:12px;color:#ef4444;font-size:12px;">Could not load lineups. Tap again to retry.</div>';
+      }
     }
   };
 
