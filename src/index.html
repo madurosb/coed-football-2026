@@ -1655,11 +1655,6 @@
       <!-- tournament hero image removed for knockout redesign -->
       <h1>COED&FOOTBALL Mundial 2026</h1>
       <p>Tournament starts June 11, 2026 - USA / Mexico / Canada</p>
-      <div class="hero-stats">
-        <div class="hero-stat"><div class="num" id="home-player-count">-</div><div class="lbl">Players</div></div>
-        <div class="hero-stat"><div class="num">72</div><div class="lbl">Matches <span style="font-size:10px;color:var(--text-muted);font-weight:400;">(group stage)</span></div></div>
-        <div class="hero-stat"><div class="num">48</div><div class="lbl">Teams</div></div>
-      </div>
     </div>
     <div class="stat-grid">
       <!-- LIVE MATCHES on home (only shown when games are active) -->
@@ -7640,6 +7635,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     document.querySelectorAll('[id^="knockout-joker-btn-"]').forEach(btn => {
       const matchId = btn.id.replace('knockout-joker-btn-','');
       if (knockoutJokerUsed && knockoutJokerMatchId === matchId) {
+        btn.style.display = '';
         btn.style.boxShadow = '0 0 0 3px #4ade80, 0 4px 16px rgba(124,58,237,0.6)';
         btn.style.borderColor = '#4ade80';
         btn.style.opacity = '';
@@ -7649,9 +7645,10 @@ Use exactly the formation provided. Only use players from the squad lists above.
         btn.innerHTML = '<span style="position:absolute;top:3px;right:5px;font-size:15px;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.6));">✅</span>';
         btn.disabled = false;
       } else if (knockoutJokerUsed) {
-        btn.style.opacity = '0.25'; btn.style.cursor = 'not-allowed'; btn.style.filter = 'grayscale(1)'; btn.style.boxShadow = 'none'; btn.style.animation = ''; btn.innerHTML = ''; btn.disabled = true;
+        // Used on another match — K-Joker is spent (one-time), hide it so DON fills the row
+        btn.style.display = 'none'; btn.innerHTML = ''; btn.disabled = true;
       } else {
-        btn.style.opacity = ''; btn.style.cursor = ''; btn.style.filter = ''; btn.style.animation = ''; btn.style.boxShadow = '0 4px 14px rgba(124,58,237,0.35)'; btn.style.borderColor = '#7C3AED'; btn.innerHTML = ''; btn.disabled = false;
+        btn.style.display = ''; btn.style.opacity = ''; btn.style.cursor = ''; btn.style.filter = ''; btn.style.animation = ''; btn.style.boxShadow = '0 4px 14px rgba(124,58,237,0.35)'; btn.style.borderColor = '#7C3AED'; btn.innerHTML = ''; btn.disabled = false;
       }
     });
   }
@@ -8200,7 +8197,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const usersSnap = await getDocs(collection(db, 'users'));
     const users = [];
     usersSnap.forEach(d => users.push(d.data()));
-    document.getElementById('home-player-count').textContent = users.length;
+    { const _pc = document.getElementById('home-player-count'); if (_pc) _pc.textContent = users.length; }
     users.sort((a, b) => (b.points || 0) - (a.points || 0));
     const rank = users.findIndex(u => u.uid === currentUser.uid) + 1;
     document.getElementById('home-rank').textContent = '#' + rank;
@@ -14691,10 +14688,23 @@ Use exactly the formation provided. Only use players from the squad lists above.
     if (!lc) select.value = currentVal; // restore selection when cleared
   };
 
+  function showSaveToast(msg) {
+    try {
+      const old = document.getElementById('save-toast'); if (old) old.remove();
+      const t = document.createElement('div');
+      t.id = 'save-toast';
+      t.textContent = msg;
+      t.style.cssText = 'position:fixed;left:50%;bottom:150px;transform:translateX(-50%);max-width:88%;text-align:center;background:linear-gradient(135deg,#052e16,#064e3b);border:1.5px solid #22c55e;color:#bbf7d0;font-size:13px;font-weight:700;padding:11px 18px;border-radius:99px;z-index:99999;box-shadow:0 8px 28px rgba(34,197,94,0.35);animation:ogSlideIn 0.3s ease;';
+      document.body.appendChild(t);
+      setTimeout(() => { try { t.style.transition='opacity 0.4s'; t.style.opacity='0'; } catch(e){} }, 2300);
+      setTimeout(() => { try { t.remove(); } catch(e){} }, 2800);
+    } catch(e) { console.error('save toast failed', e); }
+  }
+
   window.saveAllPredictions = async (btn) => {
     if (!allMatchesSnap) return;
     btn.disabled = true;
-    btn.innerHTML = '⏳ Saving...';
+    btn.innerHTML = '⏳';
     const now = new Date();
     let saved = 0, skipped = 0;
 
@@ -14720,13 +14730,14 @@ Use exactly the formation provided. Only use players from the squad lists above.
       } catch(e) { skipped++; }
     }
 
-    btn.innerHTML = `✅ Saved ${saved} prediction${saved!==1?'s':''}!`;
+    btn.innerHTML = '✅';
     btn.style.background = '#085041';
+    showSaveToast(`✅ Saved ${saved} prediction${saved!==1?'s':''}!` + (skipped > 0 ? ` · ${skipped} past deadline skipped` : ''));
     setTimeout(() => {
-      btn.innerHTML = '💾 Save all predictions';
-      btn.style.background = '';
+      btn.innerHTML = '💾';
+      btn.style.background = 'rgba(255,255,255,0.1)';
       btn.disabled = false;
-    }, 3000);
+    }, 1800);
 
     // Show hint update
     const hint = document.getElementById('save-hint-text');
