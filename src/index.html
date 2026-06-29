@@ -9491,14 +9491,20 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
           <div class="match-bonus">
             <div class="bonus-row">
-              <div style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:${isPast ? '0' : '6px'};">
-                <div><div class="bonus-label">First goalscorer</div><div class="bonus-pts">+2 pts if correct</div></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px;margin-bottom:0;">
+                <div style="flex-shrink:0;"><div class="bonus-label">First goalscorer</div><div class="bonus-pts">+2 pts if correct</div></div>
                 ${isFinished ? `<button onclick="showPostMatchCard('${d.id}')"
                   style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(220,38,38,0.08));border:1px solid rgba(239,68,68,0.5);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;color:#f87171;cursor:pointer;letter-spacing:0.04em;text-transform:uppercase;white-space:nowrap;flex-shrink:0;animation:postMatchGlow 2s ease-in-out infinite;"
                   onmouseover="this.style.background='linear-gradient(135deg,rgba(239,68,68,0.3),rgba(220,38,38,0.2))';this.style.color='#fca5a5'"
                   onmouseout="this.style.background='linear-gradient(135deg,rgba(239,68,68,0.15),rgba(220,38,38,0.08))';this.style.color='#f87171'">
                   🔥 Post Match
-                </button>` : ''}
+                </button>` : (!isPast ? `<div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;justify-content:flex-end;">
+                  <button id="scorer-btn-${d.id}" data-match-id="${d.id}" data-home-team="${m.homeTeam.replace(/"/g,'&quot;')}" data-away-team="${m.awayTeam.replace(/"/g,'&quot;')}" onclick="openScorerPickerById('${d.id}')" style="display:flex;align-items:center;gap:6px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);font-size:12px;font-weight:500;cursor:pointer;transition:all 0.15s;flex:1;min-width:0;max-width:175px;text-align:left;">
+                    <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="scorer-label-${d.id}">⚽ Pick scorer...</span>
+                    <span style="font-size:10px;flex-shrink:0;">▾</span>
+                  </button>
+                  <button id="og-btn-${d.id}" onclick="toggleOwnGoal('${d.id}')" title="Predict an Own Goal as the first scorer" style="width:44px;height:44px;flex-shrink:0;padding:0;border-radius:10px;border:2px solid rgba(239,68,68,0.45);background-color:#2a0a0a;background-image:url('https://raw.githubusercontent.com/madurosb/coed-football-2026/refs/heads/main/src/icons/own_goal.png');background-size:cover;background-position:center;background-repeat:no-repeat;cursor:pointer;box-shadow:0 2px 8px rgba(239,68,68,0.2);transition:transform 0.2s;overflow:hidden;position:relative;-webkit-tap-highlight-color:transparent;" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform=''"></button>
+                </div>` : '')}
               </div>
               <!-- Hidden select for data saving -->
               <select id="scorer-${d.id}" ${isPast?'disabled':''} onchange="autoSaveScorer('${d.id}', this)" style="display:none;">
@@ -9506,28 +9512,13 @@ Use exactly the formation provided. Only use players from the squad lists above.
                 <optgroup label="${m.homeTeam}">${(()=>{const s=new Set();return getPlayersForTeam(m.homeTeam,m.homePlayers).filter(p=>{const n=p.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\bjr\b\.?/g,'junior');return s.has(n)?false:!!s.add(n)});})().map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
                 <optgroup label="${m.awayTeam}">${(()=>{const s=new Set();return getPlayersForTeam(m.awayTeam,m.awayPlayers).filter(p=>{const n=p.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\bjr\b\.?/g,'junior');return s.has(n)?false:!!s.add(n)});})().map(p=>`<option value="${p}">${p}</option>`).join('')}</optgroup>
               </select>
-              ${!isPast ? `
-              <div style="display:flex;justify-content:center;align-items:center;gap:8px;">
-              <button id="scorer-btn-${d.id}"
-                data-match-id="${d.id}"
-                data-home-team="${m.homeTeam.replace(/"/g,'&quot;')}"
-                data-away-team="${m.awayTeam.replace(/"/g,'&quot;')}"
-                onclick="openScorerPickerById('${d.id}')"
-                style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;flex:1;max-width:230px;text-align:left;">
-                <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="scorer-label-${d.id}">⚽ Pick scorer...</span>
-                <span style="font-size:11px;flex-shrink:0;">▾</span>
-              </button>
-              <button id="og-btn-${d.id}" onclick="toggleOwnGoal('${d.id}')"
-                title="Predict an Own Goal as the first scorer"
-                style="width:56px;height:56px;flex-shrink:0;padding:0;border-radius:12px;border:2px solid rgba(239,68,68,0.45);background-color:#2a0a0a;background-image:url('https://raw.githubusercontent.com/madurosb/coed-football-2026/refs/heads/main/src/icons/own_goal.png');background-size:cover;background-position:center;background-repeat:no-repeat;cursor:pointer;box-shadow:0 2px 10px rgba(239,68,68,0.2);transition:transform 0.2s;overflow:hidden;position:relative;-webkit-tap-highlight-color:transparent;"
-                onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform=''"></button>
-              </div>` : `<div id="scorer-label-${d.id}" style="font-size:13px;color:var(--text-muted);font-style:italic;">⚽ —</div>`}
+              ${isPast ? `<div id="scorer-label-${d.id}" style="font-size:13px;color:var(--text-muted);font-style:italic;margin-top:4px;">⚽ —</div>` : ''}
 
             </div>
           </div>
           ${!isPast ? `
             <!-- Match actions: K-Joker (square) + Double or Nothing (wide) — one row, 1:2 -->
-            <div style="display:flex;align-items:center;gap:8px;margin-top:0.85rem;max-width:440px;margin-left:auto;margin-right:auto;">
+            <div style="display:flex;align-items:center;gap:8px;margin-top:0.75rem;max-width:320px;margin-left:auto;margin-right:auto;">
               ${kickoff >= new Date('2026-06-28T12:00:00Z') ? `
               <button id="knockout-joker-btn-${d.id}" onclick="activateKnockoutJoker('${d.id}')"
                 title="Knockout Joker — doubles points if correct. One use per stage."
