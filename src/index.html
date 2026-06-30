@@ -1595,7 +1595,7 @@
 
 
         <div class="drawer-item" data-page="hof" onclick="smartNav('hof')"><span class="d-icon">🏅</span><span class="d-label">Hall of Fame</span></div>
-        <div class="drawer-item" onclick="document.getElementById('smart-menu-drawer').classList.remove('open');openFinale()"><span class="d-icon">🎆</span><span class="d-label">Closing Ceremony</span></div>
+        <div class="drawer-item" id="drawer-finale" style="display:none" onclick="document.getElementById('smart-menu-drawer').classList.remove('open');openFinale()"><span class="d-icon">🎆</span><span class="d-label">Closing Ceremony</span></div>
 
         <div class="drawer-item" data-page="analysis" onclick="smartNav('analysis')"><span class="d-icon">📈</span><span class="d-label">Analysis</span></div>
         <div class="drawer-item" data-page="coach" onclick="smartNav('coach')"><span class="d-icon">🏟️</span><span class="d-label">Coaches</span></div>
@@ -2887,7 +2887,19 @@
         <div class="admin-card" onclick="showAdminSub('joker-don-overview')"><div class="icon">🃏</div><div class="title">Joker & DON overview</div><div class="desc">See which players activated their Joker card and Double or Nothing bets this tournament.</div></div>
         <div class="admin-card" onclick="showAdminSub('readiness-overview');loadReadinessOverview()"><div class="icon">✅</div><div class="title">Player readiness</div><div class="desc">Quick overview of every player — who picked their winner, tournament player, filled predictions, scorers, Joker & DON.</div></div>
         <div class="admin-card" onclick="showAdminSub('squad-editor');loadSquadEditor()"><div class="icon">🏟️</div><div class="title">Squad Editor</div><div class="desc">View and edit player squads for all 48 teams. Add or remove players from the first goalscorer lists.</div></div>
+        <div class="admin-card" onclick="showAdminSub('finale-admin');loadFinaleAdmin()"><div class="icon">🎆</div><div class="title">Closing Ceremony</div><div class="desc">Launch the end-of-tournament Closing Ceremony for ALL players. When live, it opens automatically on everyone's screen.</div></div>
 
+      </div>
+    </div>
+    <div id="admin-finale-admin" class="admin-sub">
+      <button class="back-btn" onclick="showAdminMain()">← Back to admin</button>
+      <div class="form-card">
+        <h2>🎆 Closing Ceremony</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">When you launch this, the Closing Ceremony opens <b>automatically on every player's screen</b> in real time. Each player sees their own personal stats. Players can return to the app by scrolling to the very bottom of the ceremony. Only launch once the Final is scored.</p>
+        <div id="finale-admin-status" style="font-size:14px;font-weight:700;margin-bottom:1rem;">Loading…</div>
+        <button class="submit-btn" id="finale-launch-btn" onclick="launchFinale(true)" style="background:#1D9E75;">🚀 Launch ceremony for everyone</button>
+        <button class="submit-btn" id="finale-stop-btn" onclick="launchFinale(false)" style="background:#E24B4A;margin-top:8px;display:none;">⏹️ Stop / hide ceremony</button>
+        <button class="submit-btn" onclick="openFinale()" style="background:#334155;margin-top:8px;">👁️ Preview it myself (without launching)</button>
       </div>
     </div>
     <div id="admin-readiness-overview" class="admin-sub">
@@ -4053,7 +4065,55 @@
   };
 
   // ============ GRAND FINALE — Closing Ceremony (self-contained overlay) ============
-  window.closeFinale = () => { const o = document.getElementById('fin-ov'); if (o) o.remove(); };
+  window.closeFinale = () => { try { sessionStorage.setItem('finaleClosed', '1'); } catch (e) {} const o = document.getElementById('fin-ov'); if (o) o.remove(); };
+
+  // Admin: load current launch state + wire buttons
+  window.loadFinaleAdmin = async () => {
+    const st = document.getElementById('finale-admin-status');
+    const lb = document.getElementById('finale-launch-btn');
+    const sb = document.getElementById('finale-stop-btn');
+    if (!st) return;
+    try {
+      const snap = await getDoc(doc(db, 'settings', 'finale'));
+      const launched = snap.exists() && snap.data().launched === true;
+      st.innerHTML = launched
+        ? '<span style="color:var(--green);">● LIVE — the ceremony is currently showing for all players.</span>'
+        : '<span style="color:var(--text-muted);">○ Not launched — players cannot see it yet.</span>';
+      if (lb) lb.style.display = launched ? 'none' : 'block';
+      if (sb) sb.style.display = launched ? 'block' : 'none';
+    } catch (e) { st.textContent = 'Could not read status.'; }
+  };
+
+  // Admin: flip the global launch flag (writes settings/finale)
+  window.launchFinale = async (on) => {
+    if (on && !confirm('Launch the Closing Ceremony for ALL players right now? It will open automatically on every screen.')) return;
+    if (!on && !confirm('Stop / hide the Closing Ceremony for everyone?')) return;
+    try {
+      await setDoc(doc(db, 'settings', 'finale'), { launched: !!on, updatedAt: serverTimestamp() }, { merge: true });
+      await loadFinaleAdmin();
+    } catch (e) { alert('Failed: ' + (e.message || e)); }
+  };
+
+  // All users: watch the launch flag in real time. When the admin launches, the ceremony
+  // opens automatically; the drawer entry appears so players can re-open it.
+  let _finaleUnsub = null;
+  window._watchFinale = () => {
+    if (_finaleUnsub) return;
+    try {
+      _finaleUnsub = onSnapshot(doc(db, 'settings', 'finale'), (snap) => {
+        const launched = snap.exists() && snap.data().launched === true;
+        const item = document.getElementById('drawer-finale');
+        if (item) item.style.display = launched ? 'flex' : 'none';
+        if (launched) {
+          let closed = false; try { closed = !!sessionStorage.getItem('finaleClosed'); } catch (e) {}
+          if (!closed && !document.getElementById('fin-ov')) openFinale();
+        } else {
+          try { sessionStorage.removeItem('finaleClosed'); } catch (e) {}
+          const o = document.getElementById('fin-ov'); if (o) o.remove();
+        }
+      }, (e) => { console.warn('finale watch error', e); });
+    } catch (e) { console.warn('finale watch setup failed', e); }
+  };
 
   function _finNorm(s){ let n=(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); return n; }
 
@@ -4311,7 +4371,7 @@
     const roastHTML = F.superlatives.map((r, i) => '<div class="fin-roast fin-rv fin-d' + ((i % 5) + 1) + '"><div class="stamp">GUILTY</div><div class="ti">' + r.ic + ' ' + r.ti + '</div><div class="who">' + r.who + '</div><div class="de">' + r.de + '</div></div>').join('');
 
     ov.innerHTML =
-      '<button id="fin-close" aria-label="Close">✕</button>' +
+      '<button id="fin-close" aria-label="Close" style="opacity:0;pointer-events:none;transition:opacity .5s">✕</button>' +
       '<canvas id="fin-cfx"></canvas>' +
       '<div id="fin-intro"><div class="pre">And the 2026 World Champions are…</div><div id="fin-count">3</div><button id="fin-skip">Skip intro</button></div>' +
       '<div class="fin-wrap">' +
@@ -4325,6 +4385,13 @@
       '</div>';
 
     document.getElementById('fin-close').onclick = window.closeFinale;
+
+    // Exit (✕) appears only once the player scrolls to the very bottom of the ceremony.
+    const closeBtn = document.getElementById('fin-close');
+    const revealClose = () => { if (closeBtn) { closeBtn.style.opacity = '1'; closeBtn.style.pointerEvents = 'auto'; } };
+    const onFinScroll = () => { if (ov.scrollTop + ov.clientHeight >= ov.scrollHeight - 140) { revealClose(); ov.removeEventListener('scroll', onFinScroll); } };
+    ov.addEventListener('scroll', onFinScroll);
+    setTimeout(revealClose, 45000); // safety: never trap a player who cannot scroll
 
     // countdown
     const intro = document.getElementById('fin-intro'), countEl = document.getElementById('fin-count');
@@ -7258,6 +7325,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const avatarEl = document.getElementById('user-avatar');
     const isAdmin = currentUserData.isAdmin || currentUser.email === ADMIN_EMAIL;
     window._isAdmin = isAdmin;
+    try { _watchFinale(); } catch (e) {}
     if (isAdmin) {
       avatarEl.innerHTML = `<img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #00ff41;">`;
       avatarEl.style.background = 'none';
@@ -10866,6 +10934,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     if (id === 'watch-admin') loadWatchAdmin();
     if (id === 'bold-pred') loadBoldPredAdmin();
     if (id === 'innercircle-admin') loadInnerCircleAdmin();
+    if (id === 'finale-admin') loadFinaleAdmin();
     if (id === 'knockout-admin') loadKnockoutAdmin();
     if (id === 'score-verify') loadScoreVerification();
     if (id === 'picks-overview') loadPicksOverview();
