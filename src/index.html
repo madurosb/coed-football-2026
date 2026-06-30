@@ -3863,8 +3863,9 @@
         const tpData = wcNormMap[normalizeName(u.tournamentPlayer)];
         if (tpData) { calc += (tpData.goals || 0) * 2 + (tpData.assists || 0) * 1 - (tpData.redCards || 0) * 1; }
       }
-      const stored = u.points || 0;
-      rows.push({ uid: uid, name: u.nickname || u.displayName || uid, stored: stored, calc: calc, diff: stored - calc, removed: !!u.removed });
+      const approvedDiff = u.pointsApprovedDiff || 0;
+      const diff = stored - calc;
+      rows.push({ uid: uid, name: u.nickname || u.displayName || uid, stored: stored, calc: calc, diff: diff, approvedDiff: approvedDiff, needsAttention: (diff !== 0 && diff !== approvedDiff), removed: !!u.removed });
     }
     rows.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
     window._recomputeRows = rows;
@@ -3879,7 +3880,9 @@
     c.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Computing… (read-only, nothing is saved)</div>';
     try {
       const rows = await computeAllCalcTotals();
-      const changed = rows.filter(r => r.diff !== 0);
+      const attention = rows.filter(r => r.needsAttention);
+      const gains = attention.filter(r => r.calc > r.stored);
+      const losses = attention.filter(r => r.stored > r.calc);
       let html = '<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Preview only — <strong>nothing is written until you press Apply.</strong> Sets each player\'s stored points to the CALC value. Current points are backed up automatically (restorable). Only the <strong>points</strong> field changes — predictions, results, jokers, DON and wc_scorers are untouched.</div>';
       html += '<div style="margin:0 0 14px;border:1px solid var(--border);border-radius:10px;padding:12px;">'
         + '<div style="font-size:13px;font-weight:700;margin-bottom:4px;">📐 Exact Scores (for The Sniper)</div>'
@@ -3887,27 +3890,43 @@
         + '<button onclick="loadExactRecompute()" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;">Check exact scores →</button>'
         + '<div id="exact-recompute-content" style="margin-top:10px;"></div>'
         + '</div>';
-      if (changed.length === 0) {
-        html += '<div style="background:var(--badge-green-bg);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--badge-green-text);font-weight:500;">✅ All points already match CALC. Nothing to do.</div>';
+      if (attention.length === 0) {
+        html += '<div style="background:var(--badge-green-bg);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--badge-green-text);font-weight:500;">✅ Nothing to review — all points match CALC (or have been approved).</div>';
         c.innerHTML = html;
         return;
       }
-      html += '<div style="background:var(--surface2);border-radius:10px;overflow:hidden;margin-bottom:12px;">'
-        + '<div style="display:grid;grid-template-columns:1fr 56px 56px 56px;font-size:11px;color:var(--text-muted);text-transform:uppercase;padding:6px 10px;font-weight:500;"><div>Player</div><div style="text-align:center">Now</div><div style="text-align:center">→ New</div><div style="text-align:center">Δ</div></div>';
-      changed.forEach(r => {
-        const delta = -r.diff; // new - old
+      const rowHtml = (r, withApprove) => {
+        const delta = r.calc - r.stored; // new - old
         const dCol = delta < 0 ? '#E24B4A' : '#1D9E75';
         const dTxt = (delta > 0 ? '+' : '') + delta;
-        html += '<div style="display:grid;grid-template-columns:1fr 56px 56px 56px;align-items:center;padding:7px 10px;border-top:0.5px solid var(--border);">'
+        return '<div style="display:grid;grid-template-columns:1fr 50px 50px 44px' + (withApprove ? ' 66px' : '') + ';align-items:center;padding:7px 10px;border-top:0.5px solid var(--border);gap:4px;">'
           + '<div style="font-size:12px;font-weight:500;">' + r.name + (r.removed ? ' <span style="color:var(--text-muted);font-size:10px;">(removed)</span>' : '') + '</div>'
           + '<div style="text-align:center;font-size:13px;color:var(--text-muted);">' + r.stored + '</div>'
           + '<div style="text-align:center;font-size:13px;font-weight:700;">' + r.calc + '</div>'
           + '<div style="text-align:center;font-size:12px;font-weight:700;color:' + dCol + ';">' + dTxt + '</div>'
+          + (withApprove ? '<button onclick="approveRecompute(\'' + r.uid + '\')" style="font-size:10px;padding:5px 4px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-weight:700;cursor:pointer;">✓ OK</button>' : '')
           + '</div>';
-      });
-      html += '</div>';
-      html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;"><strong>' + changed.length + '</strong> player(s) will change.</div>';
-      html += '<button onclick="applyRecompute()" style="width:100%;padding:11px;border-radius:8px;border:none;background:#E24B4A;color:white;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px;">✅ Apply — set points = CALC (' + changed.length + ' players)</button>';
+      };
+      const tableHead = (extra) => '<div style="display:grid;grid-template-columns:1fr 50px 50px 44px' + (extra ? ' 66px' : '') + ';font-size:11px;color:var(--text-muted);text-transform:uppercase;padding:6px 10px;font-weight:500;gap:4px;"><div>Player</div><div style="text-align:center">Now</div><div style="text-align:center">New</div><div style="text-align:center">Δ</div>' + (extra ? '<div style="text-align:center">Keep</div>' : '') + '</div>';
+
+      // ⬆️ UNDER-SCORED — owed more points. Safe to bump up in one click.
+      if (gains.length) {
+        html += '<div style="font-size:13px;font-weight:700;color:#1D9E75;margin:4px 0 6px;">⬆️ Under-scored — owed more points (' + gains.length + ')</div>';
+        html += '<div style="background:var(--surface2);border-radius:10px;overflow:hidden;margin-bottom:8px;">' + tableHead(false);
+        gains.forEach(r => { html += rowHtml(r, false); });
+        html += '</div>';
+        html += '<button onclick="applyRecomputeGains()" style="width:100%;padding:11px;border-radius:8px;border:none;background:#1D9E75;color:white;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:16px;">⬆️ Add the missing points — under-scored only (' + gains.length + ' players)</button>';
+      }
+
+      // ⬇️ OVER-SCORED — have extra. Review each; approve to silence, or fix in Firebase.
+      if (losses.length) {
+        html += '<div style="font-size:13px;font-weight:700;color:#E24B4A;margin:4px 0 6px;">⬇️ Over-scored — have extra points (' + losses.length + ')</div>';
+        html += '<div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">Press <strong>✓ OK</strong> to approve & silence a player (you\'ll adjust them manually in Firebase). They won\'t reappear here unless their discrepancy changes.</div>';
+        html += '<div style="background:var(--surface2);border-radius:10px;overflow:hidden;margin-bottom:12px;">' + tableHead(true);
+        losses.forEach(r => { html += rowHtml(r, true); });
+        html += '</div>';
+      }
+      html += '<button onclick="applyRecompute()" style="width:100%;padding:10px;border-radius:8px;border:1px solid #E24B4A;background:none;color:#E24B4A;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:8px;">⚠️ Apply to ALL — force every player = CALC (' + attention.length + ')</button>';
       html += '<button onclick="restorePointsBackup()" style="width:100%;padding:9px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;">↩️ Restore last backup</button>';
       html += '<div id="recompute-status" style="margin-top:10px;font-size:13px;"></div>';
       c.innerHTML = html;
@@ -3921,9 +3940,9 @@
     if (!window._isAdmin) return;
     const rows = window._recomputeRows;
     if (!rows) { alert('Run the preview first (open the Recompute tab).'); return; }
-    const changed = rows.filter(r => r.diff !== 0);
-    if (changed.length === 0) { alert('Nothing to apply — all points already match CALC.'); return; }
-    if (!confirm('Apply CALC totals to ' + changed.length + ' player(s)?\n\n• Current points are backed up first (restorable via "Restore last backup").\n• ONLY the points field changes.\n• Predictions, results, jokers, DON and wc_scorers are NOT touched.')) return;
+    const changed = rows.filter(r => r.needsAttention);
+    if (changed.length === 0) { alert('Nothing to apply — all points already match CALC (or are approved).'); return; }
+    if (!confirm('Force CALC totals onto ALL ' + changed.length + ' player(s) — including over-scored ones?\n\n• Current points are backed up first (restorable via "Restore last backup").\n• ONLY the points field changes.\n• Predictions, results, jokers, DON and wc_scorers are NOT touched.')) return;
     const status = document.getElementById('recompute-status');
     if (status) status.innerHTML = '⏳ Applying…';
     let done = 0, failed = 0;
@@ -3934,6 +3953,38 @@
       } catch (e) { failed++; console.error('recompute write failed for', r.uid, e); }
     }
     if (status) status.innerHTML = '<span style="color:var(--green);font-weight:700;">✅ Applied to ' + done + ' player(s).' + (failed ? ' ⚠️ ' + failed + ' failed.' : '') + '</span> Open the Summary tab and press Refresh to verify.';
+  };
+
+  // Adds the missing points to UNDER-SCORED players only (safe — never lowers anyone).
+  window.applyRecomputeGains = async () => {
+    if (!window._isAdmin) return;
+    const rows = window._recomputeRows;
+    if (!rows) { alert('Run the preview first (open the Recompute tab).'); return; }
+    const gains = rows.filter(r => r.needsAttention && r.calc > r.stored);
+    if (!gains.length) { alert('No under-scored players to fix.'); return; }
+    if (!confirm('Add the missing points to ' + gains.length + ' under-scored player(s)?\n\n• Only players who are OWED MORE points change.\n• Over-scored players are NOT touched.\n• Current points are backed up first (restorable).')) return;
+    const status = document.getElementById('recompute-status');
+    if (status) status.innerHTML = '⏳ Applying gains…';
+    let done = 0, failed = 0;
+    for (const r of gains) {
+      try { await updateDoc(doc(db, 'users', r.uid), { points: r.calc, pointsBackup: r.stored, pointsBackupAt: serverTimestamp() }); done++; }
+      catch (e) { failed++; console.error('gains write failed for', r.uid, e); }
+    }
+    if (status) status.innerHTML = '<span style="color:var(--green);font-weight:700;">✅ Added the missing points to ' + done + ' player(s).' + (failed ? ' ⚠️ ' + failed + ' failed.' : '') + '</span> Open the Summary tab and press Refresh to verify.';
+  };
+
+  // Approves an over-scored player as-is: silences them until their discrepancy changes.
+  // Does NOT modify points — the admin adjusts manually in Firebase if desired.
+  window.approveRecompute = async (uid) => {
+    if (!window._isAdmin) return;
+    const rows = window._recomputeRows || [];
+    const r = rows.find(x => x.uid === uid);
+    if (!r) return;
+    if (!confirm('Approve ' + r.name + ' as-is?\n\nThis silences the ' + (r.diff > 0 ? '+' : '') + r.diff + '-point discrepancy until it changes again.\nPoints are NOT modified — adjust manually in Firebase if you want.')) return;
+    try {
+      await updateDoc(doc(db, 'users', uid), { pointsApprovedDiff: r.diff, pointsApprovedAt: serverTimestamp() });
+      await loadRecomputePreview(); // refresh — the approved row drops off the list
+    } catch (e) { alert('Failed: ' + (e.message || e)); }
   };
 
   // Reverts the last Apply by restoring pointsBackup → points for every user that has one.
