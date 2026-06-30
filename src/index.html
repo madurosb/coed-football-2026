@@ -3863,6 +3863,7 @@
         const tpData = wcNormMap[normalizeName(u.tournamentPlayer)];
         if (tpData) { calc += (tpData.goals || 0) * 2 + (tpData.assists || 0) * 1 - (tpData.redCards || 0) * 1; }
       }
+      const stored = u.points || 0;
       const approvedDiff = u.pointsApprovedDiff || 0;
       const diff = stored - calc;
       rows.push({ uid: uid, name: u.nickname || u.displayName || uid, stored: stored, calc: calc, diff: diff, approvedDiff: approvedDiff, needsAttention: (diff !== 0 && diff !== approvedDiff), removed: !!u.removed });
@@ -10310,12 +10311,12 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const hasJoker = jokerMatchId === d.id || knockoutJokerMatchIdStr === d.id;
       const hasDon   = donMatchIds.has(d.id);
 
-      const stage = (m.stage || '').toLowerCase();
-      const isFinal   = stage.includes('final') && !stage.includes('semi') && !stage.includes('third');
-      const isSemi    = stage.includes('semi');
-      const isQuarter = stage.includes('quarter');
-      const isR32s    = stage.includes('32') && !stage.includes('16');
-      const isR16     = stage.includes('16') || stage.includes('round of 16') || stage.includes('r16');
+      const g = ((m.group || m.stage || '') + '').toUpperCase();
+      const isFinal   = g.includes('FINAL') && !g.includes('SEMI') && !g.includes('QUARTER') && !g.includes('THIRD');
+      const isSemi    = g.includes('SEMI');
+      const isQuarter = g.includes('QUARTER');
+      const isR32s    = g.includes('32') && !g.includes('16');
+      const isR16     = g.includes('16') || g.includes('ROUND_OF_16');
       const stageMulti = isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32s ? 2 : 1;
 
       let pts = 0;
