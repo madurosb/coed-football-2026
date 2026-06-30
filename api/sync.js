@@ -254,89 +254,46 @@ async function calculatePoints(db, matchId, homeScore, awayScore, firstScorer) {
   const isFinal = matchGroup.includes('FINAL') && !matchGroup.includes('QUARTER') && !matchGroup.includes('SEMI');
   const isSemi = matchGroup.includes('SEMI');
   const isQuarter = matchGroup.includes('QUARTER');
+  const isR32 = matchGroup.includes('32') && !matchGroup.includes('16');
   const isR16 = matchGroup.includes('16') || matchGroup.includes('ROUND_OF_16');
-  const multiplier = isFinal ? 1 : isSemi ? 4 : isQuarter ? 3 : isR16 ? 2 : 1;
+  const multiplier = isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32 ? 2 : 1;
 
   const predsSnap = await db.collection('predictions').where('matchId', '==', matchId).get();
   for (const predDoc of predsSnap.docs) {
     const pred = predDoc.data();
-    let pts = 0, exact = 0, bonus = 0;
+    let pts = 0, exact = 0;
     const actualResult = homeScore > awayScore ? 'home' : homeScore < awayScore ? 'away' : 'draw';
     const predResult = pred.homeScore > pred.awayScore ? 'home' : pred.homeScore < pred.awayScore ? 'away' : 'draw';
+    const correctOutcome = actualResult === predResult;
 
-    if (isFinal) {
-      if (pred.homeScore === homeScore && pred.awayScore === awayScore) { pts = 20; exact = 1; }
-      else if (actualResult === predResult) { pts = 10; }
-    } else {
-      if (actualResult === predResult) pts += 1 * multiplier;
-      if (pred.homeScore === homeScore && pred.awayScore === awayScore) { pts += 3 * multiplier; exact = 1; }
-    }
-    if (firstScorer && pred.firstScorer === firstScorer) { pts += 2 * multiplier; bonus += 1; }
+    // RESULT + EXACT ONLY, with canonical multipliers. First-scorer and tournament-player
+    // points are awarded through the app's manual admin tools (Award Scorer Points Only /
+    // tournament-player tool), so the cron must NOT add them here — doing so double-counts
+    // and used the wrong knockout multipliers.
+    if (correctOutcome) pts += 1 * multiplier;
+    if (pred.homeScore === homeScore && pred.awayScore === awayScore) { pts += 3 * multiplier; exact = 1; }
 
+    // Joker: doubles ONLY when the outcome is correct.
     const jokerSnap = await db.collection('jokerCards').where('matchId','==',matchId).where('userId','==',pred.userId).get();
-    if (!jokerSnap.empty) pts *= 2;
+    if (!jokerSnap.empty && correctOutcome) pts *= 2;
 
+    // DON: correct → double everything; wrong → −1×multiplier (overrides all).
     const donSnap = await db.collection('donOptIns').where('matchId','==',matchId).where('userId','==',pred.userId).get();
     if (!donSnap.empty) {
-      const isCorrect = actualResult === predResult;
-      const scorerPts = (firstScorer && pred.firstScorer === firstScorer) ? 2 * multiplier : 0;
-      const resultPts = pts - scorerPts;
-      if (isCorrect) {
-        pts = (resultPts * 2) + scorerPts;
-      } else {
-        const penalty = isFinal ? 10 : 1 * multiplier;
-        pts = scorerPts - penalty;
-      }
+      pts = correctOutcome ? pts * 2 : -1 * multiplier;
     }
 
-    if (pts !== 0 || exact > 0 || bonus > 0) {
+    if (pts !== 0 || exact > 0) {
       const userRef = db.collection('users').doc(pred.userId);
       const userSnap = await userRef.get();
       if (userSnap.exists) {
         await userRef.update({
           points: (userSnap.data().points || 0) + pts,
-          exactScores: (userSnap.data().exactScores || 0) + exact,
-          bonusPoints: (userSnap.data().bonusPoints || 0) + bonus
+          exactScores: (userSnap.data().exactScores || 0) + exact
         });
       }
     }
   }
-
-  try {
-    const detail = await fetchAPI(`/matches/${matchId}`);
-    const goals = (detail.goals || [])
-      .filter(g => g.type !== 'OWN_GOAL')
-      .map(g => g.scorer?.name)
-      .filter(Boolean);
-    const assists = (detail.goals || [])
-      .filter(g => g.type !== 'OWN_GOAL' && g.assist?.name)
-      .map(g => g.assist.name)
-      .filter(Boolean);
-    const bookings = detail.bookings || [];
-    const redCards = bookings
-      .filter(b => b.card === 'RED_CARD' || b.card === 'YELLOW_RED_CARD')
-      .map(b => b.player?.name)
-      .filter(Boolean);
-
-    if (goals.length > 0 || assists.length > 0 || redCards.length > 0) {
-      const usersSnap = await db.collection('users').get();
-      for (const userDoc of usersSnap.docs) {
-        const user = userDoc.data();
-        if (!user.tournamentPlayer) continue;
-        const tp = user.tournamentPlayer;
-        const goalsScored = goals.filter(g => g === tp).length;
-        const assistsMade = assists.filter(a => a === tp).length;
-        const reds = redCards.filter(r => r === tp).length;
-        const tpPts = (goalsScored * 2) + (assistsMade * 1) - (reds * 1);
-        if (tpPts !== 0) {
-          await userDoc.ref.update({
-            points: (user.points || 0) + tpPts,
-            bonusPoints: (user.bonusPoints || 0) + goalsScored + assistsMade
-          });
-        }
-      }
-    }
-  } catch(e) { console.log('Could not sync tournament player stats for', matchId); }
 }
 
 export default async function handler(req, res) {
