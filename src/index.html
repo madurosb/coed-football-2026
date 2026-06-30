@@ -10209,7 +10209,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
           <div class="match-bonus">
             <div class="bonus-row">
               <div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px;margin-bottom:0;">
-                <div style="flex-shrink:0;"><div class="bonus-label">First goalscorer</div><div class="bonus-pts">+2 pts if correct</div></div>
+                <div style="flex-shrink:0;"><div class="bonus-label">First goalscorer</div><div class="bonus-pts">+${(()=>{const G=((m.group||m.stage||'')+'').toUpperCase();const f=G.includes('FINAL')&&!G.includes('SEMI')&&!G.includes('QUARTER')&&!G.includes('THIRD');const s=G.includes('SEMI');const q=G.includes('QUARTER');const r32=G.includes('32')&&!G.includes('16');const r16=G.includes('16');return 2*(f?6:s?5:q?4:r16?3:r32?2:1);})()} pts if correct</div></div>
                 ${isFinished ? `<button onclick="showPostMatchCard('${d.id}')"
                   style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(220,38,38,0.08));border:1px solid rgba(239,68,68,0.5);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;color:#f87171;cursor:pointer;letter-spacing:0.04em;text-transform:uppercase;white-space:nowrap;flex-shrink:0;animation:postMatchGlow 2s ease-in-out infinite;"
                   onmouseover="this.style.background='linear-gradient(135deg,rgba(239,68,68,0.3),rgba(220,38,38,0.2))';this.style.color='#fca5a5'"
@@ -10466,8 +10466,9 @@ Use exactly the formation provided. Only use players from the squad lists above.
         const actualIsOG = (actualScorer||'').toLowerCase().includes('own goal') || (actualScorer||'').toLowerCase() === 'og';
         const scorerNailed = (actualScorer && pred.firstScorer === actualScorer) || (predIsOG && actualIsOG) || (predIsOG && matchHasOG);
         if (scorerNailed) {
-          pts += 2;
-          rows.push({ icon: predIsOG ? '🙈' : '⚽', text: 'Scorer nailed it! ' + (predIsOG ? 'Own Goal' : pred.firstScorer), pts: '+2', green: true });
+          const sp = 2 * stageMulti;
+          pts += sp;
+          rows.push({ icon: predIsOG ? '🙈' : '⚽', text: 'Scorer nailed it! ' + (predIsOG ? 'Own Goal' : pred.firstScorer) + (stageMulti > 1 ? ' ×' + stageMulti : ''), pts: '+' + sp, green: true });
         } else if (actualScorer || matchHasOG) {
           const actualDisplay = actualIsOG ? 'Own Goal 🙈' : (actualScorer || '');
           rows.push({ icon: '⚽', text: 'Picked: ' + (predIsOG ? 'Own Goal 🙈' : pred.firstScorer) + ' · Was: ' + actualDisplay + (matchHasOG && !actualIsOG && actualScorer ? ' (+ OG in match)' : ''), pts: '0', green: false });
