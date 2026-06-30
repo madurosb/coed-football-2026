@@ -2007,13 +2007,14 @@
       <div class="rule-row"><div><div class="rule-name">Tournament winner</div><div class="rule-desc">You correctly predicted the World Cup winner</div></div><div class="rule-pts">+15 pts</div></div>
 
       <div style="background:var(--surface2);border-radius:10px;padding:0.75rem 1rem;margin-top:0.75rem;">
-        <div style="font-size:13px;font-weight:500;margin-bottom:6px;">🔥 Stage multipliers — points double each round!</div>
+        <div style="font-size:13px;font-weight:500;margin-bottom:6px;">🔥 Stage multipliers — points rise each round!</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;">
           <div>Group stage <span style="color:var(--green);font-weight:500;">×1</span></div>
-          <div>Round of 16 <span style="color:var(--green);font-weight:500;">×2</span></div>
-          <div>Quarter-finals <span style="color:var(--green);font-weight:500;">×3</span></div>
-          <div>Semi-finals <span style="color:var(--green);font-weight:500;">×4</span></div>
-          <div>Final <span style="color:var(--badge-gold-text);font-weight:500;">exact=20pts · result=10pts</span></div>
+          <div>Round of 32 <span style="color:var(--green);font-weight:500;">×2</span></div>
+          <div>Round of 16 <span style="color:var(--green);font-weight:500;">×3</span></div>
+          <div>Quarter-finals <span style="color:var(--green);font-weight:500;">×4</span></div>
+          <div>Semi-finals <span style="color:var(--green);font-weight:500;">×5</span></div>
+          <div>Final <span style="color:var(--badge-gold-text);font-weight:500;">×6</span></div>
         </div>
       </div>
 
@@ -2030,14 +2031,16 @@
         <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:#5B21B6;">🎰 Double or Nothing — once per week</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12px;color:#6D28D9;">
           <div>✅ Correct result</div><div style="font-weight:600;">ALL pts ×2 (result + scorer)</div>
-          <div>❌ Wrong result</div><div style="font-weight:600;">-1 pt. Everything wiped.</div>
+          <div>❌ Wrong result</div><div style="font-weight:600;">−1 × stage. Everything wiped.</div>
           <div>⚽ First scorer</div><div style="font-weight:600;">also doubled if correct x2</div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;font-size:11px;color:#a78bfa;margin-top:8px;text-align:center;">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;font-size:11px;color:#a78bfa;margin-top:8px;text-align:center;">
           <div style="background:rgba(124,58,237,0.08);border-radius:6px;padding:4px;">Group<br><strong>−1</strong></div>
-          <div style="background:rgba(124,58,237,0.08);border-radius:6px;padding:4px;">R16<br><strong>−2</strong></div>
-          <div style="background:rgba(124,58,237,0.08);border-radius:6px;padding:4px;">QF<br><strong>−3</strong></div>
-          <div style="background:rgba(124,58,237,0.08);border-radius:6px;padding:4px;">SF<br><strong>−4</strong></div>
+          <div style="background:rgba(124,58,237,0.08);border-radius:6px;padding:4px;">R32<br><strong>−2</strong></div>
+          <div style="background:rgba(124,58,237,0.08);border-radius:6px;padding:4px;">R16<br><strong>−3</strong></div>
+          <div style="background:rgba(124,58,237,0.08);border-radius:6px;padding:4px;">QF<br><strong>−4</strong></div>
+          <div style="background:rgba(124,58,237,0.08);border-radius:6px;padding:4px;">SF<br><strong>−5</strong></div>
+          <div style="background:rgba(124,58,237,0.08);border-radius:6px;padding:4px;">Final<br><strong>−6</strong></div>
         </div>
       </div>
     </div>
@@ -2092,7 +2095,7 @@
       <div class="rule-row">
         <div>
           <div class="rule-name">🎰 Double or Nothing</div>
-          <div class="rule-desc">Once per week, pick any match and go Double or Nothing. Correct outcome = <strong>ALL points x2</strong> (result, exact score, and first scorer). Wrong outcome = <strong>-1 point</strong>, full stop. Everything else is wiped.</div>
+          <div class="rule-desc">Once per week, pick any match and go Double or Nothing. Correct outcome = <strong>ALL points x2</strong> (result, exact score, and first scorer). Wrong outcome = <strong>−1 × the stage multiplier</strong> (e.g. −2 in the Round of 32, −6 in the Final), full stop. Everything else is wiped.</div>
         </div>
       </div>
       <div class="rule-row">
@@ -2240,7 +2243,7 @@
             <div class="htp-icon">🎰</div>
             <div>
               <div class="htp-title">Double or Nothing — פעם בשבוע</div>
-              <div class="htp-desc">תוצאה נכונה = <strong>כל הנקודות x2</strong> (תוצאה + מדויק + מבקיע). תוצאה שגויה = <strong>-1 נקודה בלבד</strong>. הכל נמחק, לא משנה אם פגעת במבקיע.</div>
+              <div class="htp-desc">תוצאה נכונה = <strong>כל הנקודות x2</strong> (תוצאה + מדויק + מבקיע). תוצאה שגויה = <strong>−1 × מכפיל השלב</strong>. הכל נמחק, לא משנה אם פגעת במבקיע.</div>
             </div>
           </div>
         </div>
@@ -2258,7 +2261,7 @@
             <div class="htp-icon">⚡</div>
             <div>
               <div class="htp-title" style="color:white;">שלבי נוק-אאוט</div>
-              <div class="htp-desc" style="color:rgba(255,255,255,0.8);">שמינית: ×2 · רבע: ×3 · חצי: ×4<br><strong style="color:#FCD34D;">גמר: מדויק = 20 נק' · נכון = 10 נק'</strong></div>
+              <div class="htp-desc" style="color:rgba(255,255,255,0.8);">שלב ה-32: ×2 · שמינית: ×3 · רבע: ×4 · חצי: ×5<br><strong style="color:#FCD34D;">גמר: ×6</strong></div>
             </div>
           </div>
         </div>
@@ -2395,9 +2398,9 @@
           <div>
             <div class="htp-title" style="color:white;">Knockout stage multipliers</div>
             <div class="htp-desc" style="color:rgba(255,255,255,0.75);">As the stakes rise, so do the points:<br>
-              <strong style="color:#fca5a5;">Round of 16: ×2 &nbsp;·&nbsp; Quarter-finals: ×3</strong><br>
-              <strong style="color:#fca5a5;">Semi-finals: ×4</strong><br>
-              <strong style="color:#FCD34D;">Final: Exact score = 20 pts · Correct result = 10 pts 🏆</strong>
+              <strong style="color:#fca5a5;">Round of 32: ×2 &nbsp;·&nbsp; Round of 16: ×3</strong><br>
+              <strong style="color:#fca5a5;">Quarter-finals: ×4 &nbsp;·&nbsp; Semi-finals: ×5</strong><br>
+              <strong style="color:#FCD34D;">Final: ×6 🏆</strong>
             </div>
           </div>
         </div>
@@ -2420,7 +2423,7 @@
           <div class="htp-icon">🎰</div>
           <div>
             <div class="htp-title">Double or Nothing <span class="htp-badge" style="background:rgba(124,58,237,0.2);color:#a78bfa;border:1px solid rgba(124,58,237,0.3);">ONCE PER WEEK</span></div>
-            <div class="htp-desc">Once per tournament week, pick one match to go double or nothing. Correct outcome = <strong>x2 ALL points</strong> (result + exact score + first scorer). Wrong outcome = <strong>-1 point, everything wiped</strong> - even if you nailed the first scorer. High risk, high reward. For the mentally unhinged.</div>
+            <div class="htp-desc">Once per tournament week, pick one match to go double or nothing. Correct outcome = <strong>x2 ALL points</strong> (result + exact score + first scorer). Wrong outcome = <strong>−1 × the stage multiplier, everything wiped</strong> - even if you nailed the first scorer. High risk, high reward. For the mentally unhinged.</div>
           </div>
         </div>
       </div>
@@ -2594,7 +2597,7 @@
           <div class="htp-icon">🎰</div>
           <div>
             <div class="htp-title">Double or Nothing strategy</div>
-            <div class="htp-desc">Don't use it on matches you're unsure about. If you're wrong, you lose <strong>-1 point</strong> and all other points from that match disappear - even first scorer points. Use it only on matches where the outcome feels like a certainty.</div>
+            <div class="htp-desc">Don't use it on matches you're unsure about. If you're wrong, you lose <strong>−1 × the stage multiplier</strong> and all other points from that match disappear - even first scorer points. Use it only on matches where the outcome feels like a certainty.</div>
           </div>
         </div>
       </div>
@@ -14119,15 +14122,20 @@ Use exactly the formation provided. Only use players from the squad lists above.
     if (!canvas) return;
 
     // Get predictions sorted by match date with results
-    const [predsSnap, matchesSnap] = await Promise.all([
+    const [predsSnap, matchesSnap, jokerSnap, donSnap] = await Promise.all([
       getDocs(collection(db, 'predictions')),
-      getDocs(query(collection(db, 'matches'), orderBy('kickoff')))
+      getDocs(query(collection(db, 'matches'), orderBy('kickoff'))),
+      getDocs(collection(db, 'jokerCards')),
+      getDocs(collection(db, 'donOptIns'))
     ]);
 
     const matches = {};
     matchesSnap.forEach(d => matches[d.id] = { ...d.data(), id: d.id });
+    // This user's Joker & DON matches, so the chart matches the real per-match scoring
+    const myJoker = new Set(); jokerSnap.forEach(d => { const j = d.data(); if (j.userId === currentUser.uid && j.matchId) myJoker.add(j.matchId); });
+    const myDon = new Set(); donSnap.forEach(d => { const v = d.data(); if (v.userId === currentUser.uid && v.matchId) myDon.add(v.matchId); });
 
-    // Build cumulative points timeline
+    // Build cumulative points timeline using the canonical per-match calc
     const userPreds = [];
     predsSnap.forEach(d => {
       const p = d.data();
@@ -14135,14 +14143,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const m = matches[p.matchId];
       if (!m || m.status !== 'FINISHED' || m.homeScore === null) return;
       const kickoff = m.kickoff?.toDate?.() || new Date(m.kickoff);
-      let pts = 0;
-      const predOutcome = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
-      const actualOutcome = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
-      const correctOutcome = predOutcome === actualOutcome;
-      const exactScore = p.homeScore === m.homeScore && p.awayScore === m.awayScore;
-      if (exactScore) pts = 3;
-      else if (correctOutcome) pts = 1;
-      else pts = -1;
+      const pts = calcPredPts(p, m, myJoker.has(p.matchId), myDon.has(p.matchId));
       userPreds.push({ date: kickoff, pts });
     });
 
