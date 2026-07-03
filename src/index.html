@@ -3205,6 +3205,12 @@
           <button onclick="setKnockout(true)" style="padding:12px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">⚡ Enable knockout stage predictions</button>
           <button onclick="setKnockout(false)" style="padding:12px;border-radius:8px;border:0.5px solid #E24B4A;background:none;color:#E24B4A;font-size:13px;cursor:pointer;">🔒 Lock knockout stages</button>
         </div>
+        <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px;">
+          <h3 style="font-size:14px;margin-bottom:6px;">🔓 Open a specific round early</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Normally a round unlocks by itself once the previous round is fully finished. Use this to open the <b>next</b> round early — e.g. open the Round of 16 while a few Round of 32 games remain, once those matchups are already decided. Applies to <b>all players</b>. Leave the other rounds locked.</p>
+          <div id="stage-unlock-status" style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Loading…</div>
+          <div id="stage-unlock-buttons" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+        </div>
       </div>
     </div>
 
@@ -5068,6 +5074,50 @@
   }
 
   window.verifyAllScores = () => loadScoreVerification(true);
+
+  // ===== Per-stage early unlock (global, via settings/stageUnlock) =====
+  window.loadStageUnlock = async () => {
+    const statusEl = document.getElementById('stage-unlock-status');
+    const btnEl = document.getElementById('stage-unlock-buttons');
+    if (!statusEl || !btnEl) return;
+    const names = { R16: 'Round of 16', QF: 'Quarter-finals', SF: 'Semi-finals', FINAL: 'Final' };
+    let unlocked = [];
+    try { const snap = await getDoc(doc(db, 'settings', 'stageUnlock')); if (snap.exists()) unlocked = snap.data().unlockedStages || []; } catch (e) {}
+    statusEl.innerHTML = unlocked.length
+      ? 'Force-opened early: <b style="color:var(--green)">' + unlocked.map(s => names[s] || s).join(', ') + '</b>'
+      : 'Nothing force-opened — rounds unlock automatically when the previous round finishes.';
+    btnEl.innerHTML = ['R16', 'QF', 'SF', 'FINAL'].map(s => {
+      const on = unlocked.includes(s);
+      return '<button onclick="toggleStageUnlock(\'' + s + '\')" style="padding:9px 12px;border-radius:8px;border:1px solid ' + (on ? 'var(--green)' : 'var(--border)') + ';background:' + (on ? 'rgba(29,158,117,0.12)' : 'none') + ';color:' + (on ? 'var(--green)' : 'var(--text)') + ';font-size:12px;font-weight:700;cursor:pointer;">' + (on ? '🔓 ' : '🔒 ') + (names[s] || s) + '</button>';
+    }).join('');
+  };
+
+  window.toggleStageUnlock = async (stage) => {
+    if (!window._isAdmin) return;
+    const names = { R16: 'Round of 16', QF: 'Quarter-finals', SF: 'Semi-finals', FINAL: 'Final' };
+    let unlocked = [];
+    try { const snap = await getDoc(doc(db, 'settings', 'stageUnlock')); if (snap.exists()) unlocked = snap.data().unlockedStages || []; } catch (e) {}
+    const on = unlocked.includes(stage);
+    if (!on && !confirm('Open ' + (names[stage] || stage) + ' for predictions now — for ALL players?\n\nOnly do this if the matchups for this round are already decided.')) return;
+    if (on && !confirm('Re-lock ' + (names[stage] || stage) + '? Players won\'t be able to predict it (unless the previous round is already complete).')) return;
+    unlocked = on ? unlocked.filter(s => s !== stage) : unlocked.concat([stage]);
+    try {
+      await setDoc(doc(db, 'settings', 'stageUnlock'), { unlockedStages: unlocked, updatedAt: serverTimestamp() }, { merge: true });
+      await loadStageUnlock();
+    } catch (e) { alert('Failed: ' + (e.message || e)); }
+  };
+
+  // All users: keep the force-unlocked stage list fresh and repaint the bracket in real time
+  let _stageUnlockUnsub = null;
+  window._watchStageUnlock = () => {
+    if (_stageUnlockUnsub) return;
+    try {
+      _stageUnlockUnsub = onSnapshot(doc(db, 'settings', 'stageUnlock'), (snap) => {
+        window._forceUnlockedStages = (snap.exists() && Array.isArray(snap.data().unlockedStages)) ? snap.data().unlockedStages : [];
+        try { if (typeof renderPredictionsBracket === 'function') renderPredictionsBracket(); } catch (e) {}
+      }, (e) => { console.warn('stageUnlock watch error', e); });
+    } catch (e) { console.warn('stageUnlock watch setup failed', e); }
+  };
 
   async function loadKnockoutAdmin() {
     const statusEl = document.getElementById('knockout-status');
@@ -7489,6 +7539,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const isAdmin = currentUserData.isAdmin || currentUser.email === ADMIN_EMAIL;
     window._isAdmin = isAdmin;
     try { _watchFinale(); } catch (e) {}
+    try { _watchStageUnlock(); } catch (e) {}
     if (isAdmin) {
       avatarEl.innerHTML = `<img src="https://coed-football-2026.vercel.app/admin.jpeg" style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid #00ff41;">`;
       avatarEl.style.background = 'none';
@@ -8703,7 +8754,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
         if (i === 0) { unlocked[k] = true; continue; }
         const prevMs = byStage[_order[i-1]] || [];
         const prevDone = prevMs.length > 0 && prevMs.every(x => x.m.status === 'FINISHED');
-        unlocked[k] = prevDone || !!window._adminUnlockAllStages;
+        unlocked[k] = prevDone || (Array.isArray(window._forceUnlockedStages) && window._forceUnlockedStages.includes(k)) || !!window._adminUnlockAllStages;
       }
       window._predBracket = { STAGES, byStage, unlocked };
       // Default selection must be an unlocked stage
@@ -11099,7 +11150,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     if (id === 'bold-pred') loadBoldPredAdmin();
     if (id === 'innercircle-admin') loadInnerCircleAdmin();
     if (id === 'finale-admin') loadFinaleAdmin();
-    if (id === 'knockout-admin') loadKnockoutAdmin();
+    if (id === 'knockout-admin') { loadKnockoutAdmin(); loadStageUnlock(); }
     if (id === 'score-verify') loadScoreVerification();
     if (id === 'picks-overview') loadPicksOverview();
     if (id === 'joker-don-overview') loadJokerDonOverview();
