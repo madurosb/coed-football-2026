@@ -4650,13 +4650,15 @@
         (predIsOG && actualTargets.some(t => t.includes('own goal'))) ||
         (predIsOG && m.hasOwnGoal === true)
       );
+      const _g = ((m.group||m.stage||'')+'').toUpperCase();
+      const _mult = (_g.includes('FINAL')&&!_g.includes('SEMI')&&!_g.includes('QUARTER')&&!_g.includes('THIRD'))?6:_g.includes('SEMI')?5:_g.includes('QUARTER')?4:(_g.includes('16')||_g.includes('ROUND_OF_16'))?3:(_g.includes('32')&&!_g.includes('16'))?2:1;
       const flags = [];
       if (exact) flags.push('🎯');
       else if (correct) flags.push('✅');
       else flags.push('❌');
-      if (scorerHit) flags.push('⚽+2');
+      if (scorerHit) flags.push('⚽+' + (2 * _mult));
       if (hasJ) flags.push('🃏×2');
-      if (hasD) flags.push(correct ? '🎰×2' : '🎰-1');
+      if (hasD) flags.push(correct ? '🎰×2' : '🎰-' + _mult);
       rows.push({ match: (m.homeTeam||'') + ' ' + m.homeScore + '-' + m.awayScore + ' ' + (m.awayTeam||''), pred: pred.homeScore + '-' + pred.awayScore, scorer: pred.firstScorer || '—', flags: flags.join(' '), pts });
     });
     // Add tournament player pts
