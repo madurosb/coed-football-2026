@@ -11918,6 +11918,27 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const multiplier = isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32 ? 2 : 1;
       const pts = 2 * multiplier;
 
+      // Joker/DON aware: the first-scorer points share the SAME doubling the outcome gets
+      // (mirrors calcPredPts). Joker → ×2 if outcome correct; DON → ×2 if correct, wiped if wrong.
+      const _mh = matchData.homeScore, _ma = matchData.awayScore;
+      const _hasResult = _mh !== null && _mh !== undefined && _ma !== null && _ma !== undefined;
+      const _actualOutcome = _hasResult ? (_mh > _ma ? 'H' : _mh < _ma ? 'A' : 'D') : null;
+      const [_jSnapSc, _dSnapSc] = await Promise.all([
+        getDocs(query(collection(db, 'jokerCards'), where('matchId', '==', matchId))),
+        getDocs(query(collection(db, 'donOptIns'), where('matchId', '==', matchId)))
+      ]);
+      const _jokerUsersSc = new Set(); _jSnapSc.forEach(x => { const j = x.data(); if (j.userId) _jokerUsersSc.add(j.userId); });
+      const _donUsersSc = new Set(); _dSnapSc.forEach(x => { const v = x.data(); if (v.userId) _donUsersSc.add(v.userId); });
+      const scorerPtsFor = (pred) => {
+        let sp = 2 * multiplier;
+        if (!_hasResult) return sp;
+        const po = pred.homeScore > pred.awayScore ? 'H' : pred.homeScore < pred.awayScore ? 'A' : 'D';
+        const correct = po === _actualOutcome;
+        if (_jokerUsersSc.has(pred.userId) && correct) sp *= 2;
+        if (_donUsersSc.has(pred.userId)) sp = correct ? sp * 2 : 0;
+        return sp;
+      };
+
       const predsSnap = await getDocs(query(collection(db, 'predictions'), where('matchId', '==', matchId)));
       let awarded = 0;
       let awardedOG = 0;
@@ -11944,13 +11965,13 @@ Use exactly the formation provided. Only use players from the squad lists above.
         let bonusToAdd = 0;
 
         if (matched) {
-          ptsToAdd += pts;
+          ptsToAdd += scorerPtsFor(pred);
           bonusToAdd += 1;
           winnerNames.push(userSnap.data().nickname || userSnap.data().displayName || pred.userId);
           awarded++;
         }
         if (ogMatched) {
-          ptsToAdd += pts;
+          ptsToAdd += scorerPtsFor(pred);
           bonusToAdd += 1;
           ogWinnerNames.push(userSnap.data().nickname || userSnap.data().displayName || pred.userId);
           awardedOG++;
