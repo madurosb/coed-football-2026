@@ -3943,8 +3943,9 @@
     const scorerTargets = (m.firstGoalscorer || '').split('/').map(s => normSc2(s));
     const predIsOG = (pred.firstScorer || '').toLowerCase().includes('own goal') || (pred.firstScorer || '').toLowerCase() === 'og';
     const scorerMatch = scorerTargets.some(t => t === normSc2(pred.firstScorer)) ||
-      (predIsOG && scorerTargets.some(t => t.includes('own goal') || t === 'og'));
-    const scorerPts = (m.firstGoalscorer && pred.firstScorer && scorerMatch) ? 2 * multiplier : 0;
+      (predIsOG && scorerTargets.some(t => t.includes('own goal') || t === 'og')) ||
+      (predIsOG && m.hasOwnGoal === true);
+    const scorerPts = (pred.firstScorer && (m.firstGoalscorer || m.hasOwnGoal) && scorerMatch) ? 2 * multiplier : 0;
     pts += scorerPts;
     if (hasJoker && correctOutcome) pts *= 2;
     if (hasDon) { pts = correctOutcome ? pts * 2 : -1 * multiplier; }
@@ -5041,9 +5042,10 @@
       const scorerTargets = (m.firstGoalscorer || '').split('/').map(s => normSc2(s));
       const predIsOG = (pred.firstScorer || '').toLowerCase().includes('own goal') || (pred.firstScorer || '').toLowerCase() === 'og';
       const scorerMatch = scorerTargets.some(t => t === normSc2(pred.firstScorer)) ||
-        (predIsOG && scorerTargets.some(t => t.includes('own goal') || t === 'og'));
+        (predIsOG && scorerTargets.some(t => t.includes('own goal') || t === 'og')) ||
+        (predIsOG && m.hasOwnGoal === true);
       // Scorer pts awarded even if outcome wrong
-      const scorerPts = (m.firstGoalscorer && pred.firstScorer && scorerMatch) ? 2 * multiplier : 0;
+      const scorerPts = (pred.firstScorer && (m.firstGoalscorer || m.hasOwnGoal) && scorerMatch) ? 2 * multiplier : 0;
       pts += scorerPts;
       // Joker: doubles total pts when outcome correct
       if (hasJoker && correctOutcome) pts *= 2;
