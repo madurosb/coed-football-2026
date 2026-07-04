@@ -3144,6 +3144,7 @@
           <button onclick="setScoreVerifyTab('reaward')" id="svtab-reaward" style="padding:8px 14px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">🔁 Re-award</button>
           <button onclick="setScoreVerifyTab('perUser')" id="svtab-perUser" style="padding:8px 14px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">👤 Per User</button>
           <button onclick="setScoreVerifyTab('recompute')" id="svtab-recompute" style="padding:8px 14px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">🔄 Recompute</button>
+          <button onclick="setScoreVerifyTab('diffExplain')" id="svtab-diffExplain" style="padding:8px 14px;border-radius:8px;border:0.5px solid var(--border);background:none;color:var(--text-muted);font-size:13px;font-weight:500;cursor:pointer;">🔬 Diff Explain</button>
           <button onclick="loadScoreVerification(true)" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:white;font-size:13px;font-weight:500;cursor:pointer;">🔄 Refresh</button>
         </div>
         <div id="score-verify-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Click Refresh to load.</div></div>
@@ -3172,6 +3173,14 @@
         <div id="score-verify-recompute" style="display:none;padding:1rem;">
           <div style="font-size:13px;font-weight:600;margin-bottom:8px;">🔄 Recompute all points to CALC</div>
           <div id="score-verify-recompute-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading…</div></div>
+        </div>
+
+        <div id="score-verify-diffExplain" style="display:none;padding:1rem;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px;">🔬 Diff Explain — where does a player's gap come from?</div>
+          <select id="diffexplain-select" onchange="renderDiffExplain()" style="width:100%;padding:8px 12px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;margin-bottom:12px;">
+            <option value="">Select player…</option>
+          </select>
+          <div id="diffexplain-content"></div>
         </div>
       </div>
     </div>
@@ -3736,14 +3745,116 @@
   // Score verify — approved mismatches stored in memory (session only, no DB write)
   const _svApproved = new Set();
 
+  // ===== Diff Explainer (READ-ONLY): shows where a player's stored-vs-CALC gap comes from =====
+  window.loadDiffExplain = async () => {
+    const sel = document.getElementById('diffexplain-select');
+    if (!sel || sel.dataset.loaded) return;
+    try {
+      const usersSnap = await getDocs(collection(db, 'users'));
+      const arr = [];
+      usersSnap.forEach(d => { const u = d.data(); if (!u.removed) arr.push([d.id, u.nickname || u.displayName || d.id]); });
+      arr.sort((a, b) => a[1].localeCompare(b[1]));
+      sel.innerHTML = '<option value="">Select player…</option>' + arr.map(([id, n]) => '<option value="' + id + '">' + n + '</option>').join('');
+      sel.dataset.loaded = '1';
+    } catch (e) { sel.innerHTML = '<option value="">Error loading players</option>'; }
+  };
+
+  window.renderDiffExplain = async () => {
+    const sel = document.getElementById('diffexplain-select');
+    const c = document.getElementById('diffexplain-content');
+    if (!c || !sel) return;
+    const uid = sel.value;
+    if (!uid) { c.innerHTML = ''; return; }
+    c.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Computing… (read-only, writes nothing)</div>';
+    try {
+      const [usersSnap, matchesSnap, predsSnap, jokerSnap, donSnap, wcSnap, resultsSnap] = await Promise.all([
+        getDocs(collection(db, 'users')),
+        getDocs(collection(db, 'matches')),
+        getDocs(collection(db, 'predictions')),
+        getDocs(collection(db, 'jokerCards')),
+        getDocs(collection(db, 'donOptIns')),
+        getDocs(collection(db, 'wc_scorers')).catch(() => ({ forEach: () => {} })),
+        getDocs(collection(db, 'results')).catch(() => ({ forEach: () => {} }))
+      ]);
+      const users = {}; usersSnap.forEach(d => users[d.id] = d.data());
+      const matches = {}; matchesSnap.forEach(d => matches[d.id] = d.data());
+      resultsSnap.forEach(d => { const r = d.data(); if (r && r.firstScorer && matches[d.id] && !matches[d.id].firstGoalscorer) matches[d.id].firstGoalscorer = r.firstScorer; });
+      const jSet = new Set(); jokerSnap.forEach(d => { const j = d.data(); if (j.userId === uid && j.matchId) jSet.add(j.matchId); });
+      const dSet = new Set(); donSnap.forEach(d => { const v = d.data(); if (v.userId === uid && v.matchId) dSet.add(v.matchId); });
+      const wcNorm = buildNormalizedScorersMap(wcSnap);
+      const normSc = s => { let n = (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); n = n.replace(/\bjr\b\.?/g, 'junior').replace(/\bsr\b\.?/g, 'senior').replace(/\bst\b\./g, 'saint'); return n; };
+
+      const u = users[uid] || {};
+      const stored = u.points || 0;
+      const nick = u.nickname || u.displayName || uid;
+
+      const rows = []; let calcTotal = 0;
+      predsSnap.forEach(d => {
+        const p = d.data(); if (p.userId !== uid) return;
+        const m = matches[p.matchId]; if (!m || m.status !== 'FINISHED' || m.homeScore === null || m.homeScore === undefined) return;
+        const hasJ = jSet.has(p.matchId), hasD = dSet.has(p.matchId);
+        const pts = calcPredPts(p, m, hasJ, hasD);
+        calcTotal += pts;
+        const po = p.homeScore > p.awayScore ? 'H' : p.homeScore < p.awayScore ? 'A' : 'D';
+        const ao = Number(m.homeScore) > Number(m.awayScore) ? 'H' : Number(m.homeScore) < Number(m.awayScore) ? 'A' : 'D';
+        const correct = po === ao;
+        const exact = Number(p.homeScore) === Number(m.homeScore) && Number(p.awayScore) === Number(m.awayScore);
+        const targets = (m.firstGoalscorer || '').split('/').map(normSc);
+        const scorerHit = p.firstScorer && (m.firstGoalscorer || m.hasOwnGoal) && targets.some(t => t === normSc(p.firstScorer));
+        rows.push({
+          match: (m.homeTeam || '') + ' ' + m.homeScore + '-' + m.awayScore + ' ' + (m.awayTeam || ''),
+          pick: p.homeScore + '-' + p.awayScore,
+          exact, correct, scorerHit, hasJ, hasD, pts, watch: !correct
+        });
+      });
+      let tpPts = 0; const tpName = u.tournamentPlayer || null;
+      if (tpName) { const td = wcNorm[normalizeName(tpName)]; if (td) tpPts = (td.goals || 0) * 2 + (td.assists || 0) - (td.redCards || 0); }
+      calcTotal += tpPts;
+      const diff = stored - calcTotal;
+      rows.sort((a, b) => b.pts - a.pts);
+
+      const diffColor = diff > 0 ? '#E24B4A' : diff < 0 ? '#1D9E75' : 'var(--text-muted)';
+      const diffTxt = diff === 0 ? 'MATCH ✓' : (diff > 0 ? '+' + diff + ' extra' : (-diff) + ' owed');
+
+      let html = '<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Read-only — writes nothing. Every finished match <b>' + nick + '</b> predicted, with the <b>correct</b> points (CALC) under the <b>current</b> results. Stored is one number, so compare the CALC total below to Stored.</div>';
+      html += '<div style="display:flex;gap:8px;margin-bottom:12px;">'
+        + '<div style="flex:1;background:var(--surface2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;">Stored now</div><div style="font-size:22px;font-weight:800;">' + stored + '</div></div>'
+        + '<div style="flex:1;background:var(--surface2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;">Correct (CALC)</div><div style="font-size:22px;font-weight:800;">' + calcTotal + '</div></div>'
+        + '<div style="flex:1;background:var(--surface2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;">Difference</div><div style="font-size:20px;font-weight:800;color:' + diffColor + ';">' + diffTxt + '</div></div>'
+        + '</div>';
+      html += '<div style="background:var(--surface2);border-radius:10px;overflow:hidden;">'
+        + '<div style="display:grid;grid-template-columns:1fr 40px 46px 40px;font-size:10px;color:var(--text-muted);text-transform:uppercase;padding:6px 10px;gap:4px;"><div>Match (result) · pick</div><div style="text-align:center;">Hit</div><div style="text-align:center;">Extra</div><div style="text-align:right;">Pts</div></div>';
+      rows.forEach(r => {
+        const hit = r.exact ? '🎯' : r.correct ? '✅' : '❌';
+        let extras = ''; if (r.scorerHit) extras += '⚽'; if (r.hasJ) extras += '🃏'; if (r.hasD) extras += '🎰';
+        html += '<div style="display:grid;grid-template-columns:1fr 40px 46px 40px;align-items:center;padding:7px 10px;border-top:0.5px solid var(--border);gap:4px;' + (r.watch ? 'background:rgba(226,75,74,0.06);' : '') + '">'
+          + '<div style="font-size:11px;min-width:0;"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + r.match + '</div><div style="color:var(--text-muted);">pick: ' + r.pick + (r.watch ? ' · ⚠️ pick ≠ result' : '') + '</div></div>'
+          + '<div style="text-align:center;font-size:13px;">' + hit + '</div>'
+          + '<div style="text-align:center;font-size:11px;">' + (extras || '—') + '</div>'
+          + '<div style="text-align:right;font-size:13px;font-weight:700;color:' + (r.pts < 0 ? '#E24B4A' : r.pts > 0 ? '#1D9E75' : 'var(--text-muted)') + ';">' + (r.pts > 0 ? '+' : '') + r.pts + '</div>'
+          + '</div>';
+      });
+      if (tpPts) html += '<div style="display:grid;grid-template-columns:1fr 40px;align-items:center;padding:7px 10px;border-top:0.5px solid var(--border);"><div style="font-size:11px;font-weight:600;">⭐ Tournament player: ' + tpName + '</div><div style="text-align:right;font-size:13px;font-weight:700;color:#1D9E75;">+' + tpPts + '</div></div>';
+      html += '<div style="display:grid;grid-template-columns:1fr 60px;padding:9px 10px;border-top:1px solid var(--border);font-weight:800;font-size:14px;"><div>CALC TOTAL</div><div style="text-align:right;">' + calcTotal + '</div></div>';
+      html += '</div>';
+      html += '<div style="font-size:12px;color:var(--text-muted);margin-top:12px;line-height:1.6;">';
+      if (diff > 0) html += '<b style="color:#E24B4A;">' + nick + ' has ' + diff + ' point(s) too many.</b> This is almost always from a match whose result you corrected — the old points stayed in Stored, but CALC counts the corrected result once. The <b>⚠️ highlighted rows</b> (pick ≠ result) are the likely source; check those matches show the corrected result above. Applying will set ' + nick + ' to <b>' + calcTotal + '</b>.';
+      else if (diff < 0) html += '<b style="color:#1D9E75;">' + nick + ' is owed ' + (-diff) + ' point(s)</b> — e.g. a first scorer that wasn\'t doubled by a Joker. Applying (or Gains) will raise them to <b>' + calcTotal + '</b>.';
+      else html += '<b style="color:#1D9E75;">Perfect — Stored already equals CALC. Nothing to change for ' + nick + '.</b>';
+      html += '</div>';
+      c.innerHTML = html;
+    } catch (e) { c.innerHTML = '<div style="color:#E24B4A;font-size:13px;">Error: ' + (e.message || e) + '</div>'; }
+  };
+
   window.setScoreVerifyTab = (tab) => {
     const summary = document.getElementById('score-verify-content');
     const perMatch = document.getElementById('score-verify-perMatch');
     const reaward = document.getElementById('score-verify-reaward');
     const perUser = document.getElementById('score-verify-perUser');
     const recompute = document.getElementById('score-verify-recompute');
-    const tabs = ['summary','perMatch','reaward','perUser','recompute'];
-    const divs = { summary, perMatch, reaward, perUser, recompute };
+    const diffExplain = document.getElementById('score-verify-diffExplain');
+    const tabs = ['summary','perMatch','reaward','perUser','recompute','diffExplain'];
+    const divs = { summary, perMatch, reaward, perUser, recompute, diffExplain };
     tabs.forEach(t => {
       const btn = document.getElementById('svtab-'+t);
       const active = t === tab;
@@ -3753,6 +3864,7 @@
     if (tab === 'reaward') loadReawardMatches();
     if (tab === 'perUser') loadPerUserSelect();
     if (tab === 'recompute') loadRecomputePreview();
+    if (tab === 'diffExplain') loadDiffExplain();
   };
 
   function loadPerUserSelect() {
@@ -4657,7 +4769,7 @@
       else if (correct) flags.push('✅');
       else flags.push('❌');
       if (scorerHit) flags.push('⚽+' + (2 * _mult));
-      if (hasJ) flags.push('🃏×2');
+      if (hasJ) flags.push(correct ? '🃏×2' : '🃏✗(wrong outcome)');
       if (hasD) flags.push(correct ? '🎰×2' : '🎰-' + _mult);
       rows.push({ match: (m.homeTeam||'') + ' ' + m.homeScore + '-' + m.awayScore + ' ' + (m.awayTeam||''), pred: pred.homeScore + '-' + pred.awayScore, scorer: pred.firstScorer || '—', flags: flags.join(' '), pts });
     });
