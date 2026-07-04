@@ -3841,13 +3841,14 @@
 
   // Compute every user's authoritative CALC total. READ-ONLY — performs no DB writes.
   async function computeAllCalcTotals() {
-    const [usersSnap, matchesSnap, predsSnap, jokerVerSnap, donVerSnap, wcScorersSnap] = await Promise.all([
+    const [usersSnap, matchesSnap, predsSnap, jokerVerSnap, donVerSnap, wcScorersSnap, resultsSnap] = await Promise.all([
       getDocs(collection(db, 'users')),
       getDocs(collection(db, 'matches')),
       getDocs(collection(db, 'predictions')),
       getDocs(collection(db, 'jokerCards')),
       getDocs(collection(db, 'donOptIns')),
-      getDocs(collection(db, 'wc_scorers')).catch(() => ({ forEach: () => {} }))
+      getDocs(collection(db, 'wc_scorers')).catch(() => ({ forEach: () => {} })),
+      getDocs(collection(db, 'results')).catch(() => ({ forEach: () => {} }))
     ]);
     const jokerVerMap = {};
     jokerVerSnap.forEach(d => { const j = d.data(); if (j.userId && j.matchId) { if (!jokerVerMap[j.userId]) jokerVerMap[j.userId] = new Set(); jokerVerMap[j.userId].add(j.matchId); } });
@@ -3856,6 +3857,10 @@
     const users = {}, matches = {}, userPreds = {};
     usersSnap.forEach(d => { users[d.id] = d.data(); });
     matchesSnap.forEach(d => { matches[d.id] = d.data(); });
+    // The first scorer is stored in the results collection (Award-Scorer tool / cron write it
+    // there, NOT onto the match). Fill it into the match ONLY when the match has no scorer yet,
+    // so CALC counts scorer points. Fill-only (never override) => can never lower anyone's calc.
+    resultsSnap.forEach(d => { const r = d.data(); if (r && r.firstScorer && matches[d.id] && !matches[d.id].firstGoalscorer) matches[d.id].firstGoalscorer = r.firstScorer; });
     const wcNormMap = buildNormalizedScorersMap(wcScorersSnap);
     predsSnap.forEach(d => { const p = d.data(); if (!userPreds[p.userId]) userPreds[p.userId] = []; userPreds[p.userId].push(p); });
     const rows = [];
@@ -4852,13 +4857,14 @@
     container.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div>';
     if (perMatchContainer) perMatchContainer.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading...</div>';
 
-    const [usersSnap, matchesSnap, predsSnap, jokerVerSnap, donVerSnap, wcScorersSnap] = await Promise.all([
+    const [usersSnap, matchesSnap, predsSnap, jokerVerSnap, donVerSnap, wcScorersSnap, resultsSnap] = await Promise.all([
       getDocs(collection(db, 'users')),
       getDocs(collection(db, 'matches')),
       getDocs(collection(db, 'predictions')),
       getDocs(collection(db, 'jokerCards')),
       getDocs(collection(db, 'donOptIns')),
-      getDocs(collection(db, 'wc_scorers')).catch(() => ({ forEach: () => {} }))
+      getDocs(collection(db, 'wc_scorers')).catch(() => ({ forEach: () => {} })),
+      getDocs(collection(db, 'results')).catch(() => ({ forEach: () => {} }))
     ]);
 
     // Build joker map: userId → Set of matchIds (supports regular + knockout joker)
@@ -4877,6 +4883,9 @@
     const users = {}, matches = {}, userPreds = {}, predsByMatch = {};
     usersSnap.forEach(d => { users[d.id] = d.data(); });
     matchesSnap.forEach(d => { matches[d.id] = d.data(); });
+    // Fill first scorer from the results collection ONLY when the match has none yet (fill-only,
+    // never override) so the Summary CALC counts scorer points like the Per-User breakdown does.
+    resultsSnap.forEach(d => { const r = d.data(); if (r && r.firstScorer && matches[d.id] && !matches[d.id].firstGoalscorer) matches[d.id].firstGoalscorer = r.firstScorer; });
     // Build wc_scorers normalized map
     const wcNormMap = buildNormalizedScorersMap(wcScorersSnap);
     window._svWcNormMap = wcNormMap;
