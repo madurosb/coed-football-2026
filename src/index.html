@@ -9441,7 +9441,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
 
     // ── Stat-based (ordered from rarest to most common) ─────────
     if (u.boldPrediction)
-      return { emoji: '🐂', text: 'Bold caller',      bg: '#FFF0E0', color: '#92400E' };
+      return { emoji: '🐂', text: 'Bold caller',      bg: '#FFF0E0', color: '#92400E', img: 'https://raw.githubusercontent.com/madurosb/coed-football-2026/refs/heads/main/src/icons/bold.png' };
     if (exactRate >= 0.35 && exact >= 4)
       return { emoji: '🔥', text: 'On fire',          bg: '#FFF0E0', color: '#B45309' };
     if (pts > 0 && drawCount === 0 && predCount >= 10)
@@ -9516,7 +9516,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       }
       const badge = getUserBadge(u, i, users, predStats);
       const badgeHTML = badge
-        ? `<span style="font-size:10px;padding:1px 6px;border-radius:99px;background:${badge.bg};color:${badge.color};font-weight:500;margin-left:4px;">${badge.emoji} ${badge.text}</span>`
+        ? `<span style="font-size:10px;padding:1px 6px;border-radius:99px;background:${badge.bg};color:${badge.color};font-weight:500;margin-left:4px;display:inline-flex;align-items:center;gap:3px;vertical-align:middle;">${badge.img ? '<img src="' + badge.img + '" alt="" loading="lazy" style="height:14px;width:auto;vertical-align:middle;">' : badge.emoji} ${badge.text}</span>`
         : '';
       const streak = u.currentStreak || 0;
       const streakHTML = streak >= 3 ? `<span style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--badge-orange-bg);color:var(--badge-orange-text);font-weight:500;margin-left:4px;">🔥 ${streak}</span>` : '';
@@ -14181,7 +14181,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
           <div style="display:flex;flex-wrap:wrap;gap:6px;">
             ${badges.map(b => `<span style="font-size:11px;padding:2px 8px;border-radius:99px;font-weight:500;background:var(--surface2);color:var(--text-muted);">${b.label}</span>`).join('')}
             ${(user.currentStreak||0) >= 3 ? `<span style="font-size:11px;padding:2px 8px;border-radius:99px;font-weight:500;background:var(--badge-orange-bg);color:var(--badge-orange-text);">🔥 ${user.currentStreak} streak</span>` : ''}
-            ${user.boldPrediction ? `<span style="font-size:11px;padding:2px 8px;border-radius:99px;font-weight:500;background:var(--badge-orange-bg);color:var(--badge-orange-text);">🐂 Bold call</span>` : ''}
+            ${user.boldPrediction ? '<img src="https://raw.githubusercontent.com/madurosb/coed-football-2026/refs/heads/main/src/icons/bold.png" alt="Bold Prediction badge" title="Bold Prediction 🐂" loading="lazy" style="height:28px;width:auto;vertical-align:middle;filter:drop-shadow(0 2px 4px rgba(180,83,9,.45));">' : ''}
           </div>
         </div>
       </div>
@@ -14354,7 +14354,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
           <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${(user.currentStreak||0)>=6?'On fire!!':(user.currentStreak||0)>=3?'Nice streak!':'in a row correct'}</div>
         </div>
         <div style="background:${user.boldPrediction?'linear-gradient(135deg,#FFF0E0,#FEE2C0)':'var(--surface2)'};border-radius:12px;padding:1rem;border:1px solid ${user.boldPrediction?'#B45309':'var(--border)'};text-align:center;">
-          <div style="font-size:24px;margin-bottom:4px;">🐂</div>
+          <img src="https://raw.githubusercontent.com/madurosb/coed-football-2026/refs/heads/main/src/icons/bold.png" alt="Bold" loading="lazy" style="height:44px;width:auto;margin-bottom:4px;object-fit:contain;${user.boldPrediction ? 'filter:drop-shadow(0 2px 6px rgba(180,83,9,.35));' : 'opacity:.35;filter:grayscale(1);'}">
           <div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:2px;">Bold prediction</div>
           <div style="font-size:13px;font-weight:700;color:${user.boldPrediction?'#92400E':'var(--text-muted)'};">${user.boldPrediction?'Earned! 🏆':'Not yet'}</div>
           <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">${user.boldPrediction?'You called a wild one!':'Predict a big upset or crazy score'}</div>
