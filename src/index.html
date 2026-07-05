@@ -9517,7 +9517,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const badge = getUserBadge(u, i, users, predStats);
       const badgeHTML = badge
         ? (badge.img
-            ? `<img src="${badge.img}" alt="${badge.text}" title="${badge.text}" loading="lazy" style="height:24px;width:auto;vertical-align:middle;margin-left:6px;filter:drop-shadow(0 1px 3px rgba(0,0,0,.35));">`
+            ? `<img src="${badge.img}" alt="${badge.text}" title="${badge.text}" loading="lazy" style="height:34px;width:auto;vertical-align:middle;margin-left:8px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4));">`
             : `<span style="font-size:10px;padding:1px 6px;border-radius:99px;background:${badge.bg};color:${badge.color};font-weight:500;margin-left:4px;vertical-align:middle;">${badge.emoji} ${badge.text}</span>`)
         : '';
       const streak = u.currentStreak || 0;
