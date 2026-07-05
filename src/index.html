@@ -9516,7 +9516,9 @@ Use exactly the formation provided. Only use players from the squad lists above.
       }
       const badge = getUserBadge(u, i, users, predStats);
       const badgeHTML = badge
-        ? `<span style="font-size:10px;padding:1px 6px;border-radius:99px;background:${badge.bg};color:${badge.color};font-weight:500;margin-left:4px;display:inline-flex;align-items:center;gap:3px;vertical-align:middle;">${badge.img ? '<img src="' + badge.img + '" alt="" loading="lazy" style="height:14px;width:auto;vertical-align:middle;">' : badge.emoji} ${badge.text}</span>`
+        ? (badge.img
+            ? `<img src="${badge.img}" alt="${badge.text}" title="${badge.text}" loading="lazy" style="height:24px;width:auto;vertical-align:middle;margin-left:6px;filter:drop-shadow(0 1px 3px rgba(0,0,0,.35));">`
+            : `<span style="font-size:10px;padding:1px 6px;border-radius:99px;background:${badge.bg};color:${badge.color};font-weight:500;margin-left:4px;vertical-align:middle;">${badge.emoji} ${badge.text}</span>`)
         : '';
       const streak = u.currentStreak || 0;
       const streakHTML = streak >= 3 ? `<span style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--badge-orange-bg);color:var(--badge-orange-text);font-weight:500;margin-left:4px;">🔥 ${streak}</span>` : '';
