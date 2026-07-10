@@ -10644,9 +10644,15 @@ Use exactly the formation provided. Only use players from the squad lists above.
         const actualIsOG = (actualScorer||'').toLowerCase().includes('own goal') || (actualScorer||'').toLowerCase() === 'og';
         const scorerNailed = (actualScorer && pred.firstScorer === actualScorer) || (predIsOG && actualIsOG) || (predIsOG && matchHasOG);
         if (scorerNailed) {
-          const sp = 2 * stageMulti;
+          let sp = 2 * stageMulti;
+          let extra = '';
+          if (hasJoker && isWinner) { sp *= 2; extra += ' · 🃏 Joker ×2'; }
+          if (hasDon) {
+            if (isWinner) { sp *= 2; extra += ' · 🎰 DON ×2'; }
+            else { sp = 0; extra = ' · 🎰 DON — wiped'; }
+          }
           pts += sp;
-          rows.push({ icon: predIsOG ? '🙈' : '⚽', text: 'Scorer nailed it! ' + (predIsOG ? 'Own Goal' : pred.firstScorer) + (stageMulti > 1 ? ' ×' + stageMulti : ''), pts: '+' + sp, green: true });
+          rows.push({ icon: predIsOG ? '🙈' : '⚽', text: 'Scorer nailed it! ' + (predIsOG ? 'Own Goal' : pred.firstScorer) + (stageMulti > 1 ? ' ×' + stageMulti : '') + extra, pts: (sp >= 0 ? '+' : '') + sp, green: sp > 0 });
         } else if (actualScorer || matchHasOG) {
           const actualDisplay = actualIsOG ? 'Own Goal 🙈' : (actualScorer || '');
           rows.push({ icon: '⚽', text: 'Picked: ' + (predIsOG ? 'Own Goal 🙈' : pred.firstScorer) + ' · Was: ' + actualDisplay + (matchHasOG && !actualIsOG && actualScorer ? ' (+ OG in match)' : ''), pts: '0', green: false });
