@@ -3466,6 +3466,7 @@
   // One DON per knockout STAGE (group matches keep their weekly DON via getMatchWeekKey)
   function donStageKey(m) {
     const g = ((m && (m.group || m.stage)) || '').toString().toUpperCase();
+    if (g.includes('THIRD') || g.includes('3RD') || g.includes('BRONZE')) return 'wc2026-stage-FINAL';
     if (g.includes('FINAL') && !g.includes('QUARTER') && !g.includes('SEMI')) return 'wc2026-stage-FINAL';
     if (g.includes('SEMI')) return 'wc2026-stage-SF';
     if (g.includes('QUARTER')) return 'wc2026-stage-QF';
@@ -10383,7 +10384,18 @@ Use exactly the formation provided. Only use players from the squad lists above.
     const liveMatches = [];
     let visibleCount = 0;
     const KNOCKOUT_START_R = new Date('2026-06-28T12:00:00Z'); // Noon UTC — after group stage, before knockout
-    matchesSnap.forEach(d => {
+    // The 3rd-place match kicks off before the Final but shares the Final tab; bump its sort key
+    // by a few days so the Grand Final always renders first and the Bronze Final sits below it.
+    const _renderDocs = (matchesSnap.docs || []).slice().sort((a, b) => {
+      const gA = ((a.data().group || a.data().stage || '') + '').toUpperCase();
+      const gB = ((b.data().group || b.data().stage || '') + '').toUpperCase();
+      const tA = gA.includes('THIRD') || gA.includes('3RD') || gA.includes('BRONZE');
+      const tB = gB.includes('THIRD') || gB.includes('3RD') || gB.includes('BRONZE');
+      const kA = (a.data().kickoff?.toDate?.() || new Date(a.data().kickoff)).getTime() + (tA ? 3 * 86400000 : 0);
+      const kB = (b.data().kickoff?.toDate?.() || new Date(b.data().kickoff)).getTime() + (tB ? 3 * 86400000 : 0);
+      return kA - kB;
+    });
+    _renderDocs.forEach(d => {
       const m = d.data();
       const kickoff = m.kickoff?.toDate?.() || new Date(m.kickoff);
       // Hide knockout matches if not enabled
