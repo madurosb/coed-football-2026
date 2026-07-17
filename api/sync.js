@@ -252,11 +252,12 @@ async function calculatePoints(db, matchId, homeScore, awayScore, firstScorer) {
   const matchDoc = await db.collection('matches').doc(matchId).get();
   const matchGroup = (matchDoc.data()?.group || '').toUpperCase();
   const isFinal = matchGroup.includes('FINAL') && !matchGroup.includes('QUARTER') && !matchGroup.includes('SEMI');
+  const isThird = matchGroup.includes('THIRD') || matchGroup.includes('3RD') || matchGroup.includes('BRONZE');
   const isSemi = matchGroup.includes('SEMI');
   const isQuarter = matchGroup.includes('QUARTER');
   const isR32 = matchGroup.includes('32') && !matchGroup.includes('16');
   const isR16 = matchGroup.includes('16') || matchGroup.includes('ROUND_OF_16');
-  const multiplier = isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32 ? 2 : 1;
+  const multiplier = isThird ? 5 : isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32 ? 2 : 1;
 
   const predsSnap = await db.collection('predictions').where('matchId', '==', matchId).get();
   for (const predDoc of predsSnap.docs) {
