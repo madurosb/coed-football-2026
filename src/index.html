@@ -211,6 +211,22 @@
     }
     .match-card:hover { box-shadow: 0 4px 20px rgba(59,130,246,0.12); transform: translateY(-1px); }
     .match-card:hover::before { opacity: 1; }
+    .match-card.final-gold {
+      border: 2px solid #E5B94E !important;
+      background: linear-gradient(165deg, rgba(245,197,24,0.12), rgba(245,197,24,0.02)), var(--surface);
+      box-shadow: 0 6px 26px rgba(202,138,4,0.25);
+    }
+    .match-card.final-gold:hover { box-shadow: 0 8px 30px rgba(202,138,4,0.34); }
+    .match-card.final-gold::before { background: linear-gradient(90deg,#FFE16B,#B8860B) !important; opacity: 1 !important; }
+    body.dark-mode .match-card.final-gold { background: linear-gradient(165deg, rgba(245,197,24,0.14), rgba(245,197,24,0.03)), #14161f; border-color: #E5B94E !important; }
+    .match-card.bronze-third {
+      border: 2px solid #B87333 !important;
+      background: linear-gradient(165deg, rgba(184,115,51,0.12), rgba(184,115,51,0.02)), var(--surface);
+      box-shadow: 0 5px 22px rgba(140,90,43,0.22);
+    }
+    .match-card.bronze-third:hover { box-shadow: 0 7px 28px rgba(140,90,43,0.3); }
+    .match-card.bronze-third::before { background: linear-gradient(90deg,#D8996A,#8C5A2B) !important; opacity: 1 !important; }
+    body.dark-mode .match-card.bronze-third { background: linear-gradient(165deg, rgba(184,115,51,0.16), rgba(184,115,51,0.04)), #14161f; border-color: #B87333 !important; }
     .match-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
     .match-meta .group {
       font-size: 10px; color: var(--accent); font-weight: 800;
@@ -2904,6 +2920,27 @@
         <button class="submit-btn" id="finale-stop-btn" onclick="launchFinale(false)" style="background:#E24B4A;margin-top:8px;display:none;">⏹️ Stop / hide ceremony</button>
         <button class="submit-btn" onclick="openFinale()" style="background:#334155;margin-top:8px;">👁️ Preview it myself (without launching)</button>
       </div>
+      <div class="form-card" style="margin-top:12px;">
+        <h2>🎯 The Sniper</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Pick who wins the Sniper prize (most exact scores). This name is shown to <b>everyone</b> on the Closing Ceremony, and that player gets the 🎯 badge. Leave on <b>Auto</b> to let the app pick whoever has the most exact scores.</p>
+        <div id="sniper-admin-status" style="font-size:13px;font-weight:600;margin-bottom:10px;">Loading…</div>
+        <select id="sniper-select" style="width:100%;padding:9px 12px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;margin-bottom:10px;">
+          <option value="">🤖 Auto (most exact scores)</option>
+        </select>
+        <button class="submit-btn" onclick="setSniper()" style="background:#1D9E75;">💾 Save Sniper</button>
+      </div>
+      <div class="form-card" style="margin-top:12px;">
+        <h2>🏆 Podium (tiebreak override)</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Normally the top 3 are set automatically by points. If there's a <b>tie</b> and your rules decide it, set the places here. Leave a slot on <b>Auto</b> to keep the automatic pick for that place.</p>
+        <div id="podium-admin-status" style="font-size:13px;font-weight:600;margin-bottom:10px;">Loading…</div>
+        <label style="font-size:12px;color:var(--text-muted);">🥇 1st place</label>
+        <select id="podium-1" style="width:100%;padding:8px 12px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;margin:4px 0 10px;"><option value="">🤖 Auto</option></select>
+        <label style="font-size:12px;color:var(--text-muted);">🥈 2nd place</label>
+        <select id="podium-2" style="width:100%;padding:8px 12px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;margin:4px 0 10px;"><option value="">🤖 Auto</option></select>
+        <label style="font-size:12px;color:var(--text-muted);">🥉 3rd place</label>
+        <select id="podium-3" style="width:100%;padding:8px 12px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;margin:4px 0 10px;"><option value="">🤖 Auto</option></select>
+        <button class="submit-btn" onclick="setPodium()" style="background:#1D9E75;">💾 Save Podium</button>
+      </div>
     </div>
     <div id="admin-readiness-overview" class="admin-sub">
       <div class="form-card">
@@ -3889,11 +3926,12 @@
     if (!m || m.homeScore === null || m.homeScore === undefined || m.status !== 'FINISHED') return 0;
     const grp = (m.group || '').toUpperCase();
     const isFinal = grp.includes('FINAL') && !grp.includes('QUARTER') && !grp.includes('SEMI');
+    const isThird = grp.includes('THIRD') || grp.includes('3RD') || grp.includes('BRONZE');
     const isSemi = grp.includes('SEMI');
     const isQuarter = grp.includes('QUARTER');
     const isR32 = grp.includes('32') && !grp.includes('16');
     const isR16 = grp.includes('16') || grp.includes('ROUND_OF_16');
-    const multiplier = isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32 ? 2 : 1;
+    const multiplier = isThird ? 5 : isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32 ? 2 : 1;
     const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
     const predicted = pred.homeScore > pred.awayScore ? 'H' : pred.homeScore < pred.awayScore ? 'A' : 'D';
     const correctOutcome = actual === predicted;
@@ -3926,11 +3964,12 @@
     if (!m || m.homeScore === null || m.homeScore === undefined || m.status !== 'FINISHED') return 0;
     const grp = (m.group || '').toUpperCase();
     const isFinal = grp.includes('FINAL') && !grp.includes('QUARTER') && !grp.includes('SEMI');
+    const isThird = grp.includes('THIRD') || grp.includes('3RD') || grp.includes('BRONZE');
     const isSemi = grp.includes('SEMI');
     const isQuarter = grp.includes('QUARTER');
     const isR32 = grp.includes('32') && !grp.includes('16');
     const isR16 = grp.includes('16') || grp.includes('ROUND_OF_16');
-    const multiplier = isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32 ? 2 : 1;
+    const multiplier = isThird ? 5 : isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32 ? 2 : 1;
     const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
     const predicted = pred.homeScore > pred.awayScore ? 'H' : pred.homeScore < pred.awayScore ? 'A' : 'D';
     const correctOutcome = actual === predicted;
@@ -4246,6 +4285,72 @@
   // ============ GRAND FINALE — Closing Ceremony (self-contained overlay) ============
   window.closeFinale = () => { try { sessionStorage.setItem('finaleClosed', '1'); } catch (e) {} const o = document.getElementById('fin-ov'); if (o) o.remove(); };
 
+  // Admin: manual podium override (tiebreaks). Saved to settings/podium, read by the finale.
+  window.loadPodiumSelect = async () => {
+    const s1 = document.getElementById('podium-1'), s2 = document.getElementById('podium-2'), s3 = document.getElementById('podium-3');
+    const st = document.getElementById('podium-admin-status');
+    if (!s1 || !s2 || !s3) return;
+    try {
+      const [usersSnap, pdSnap] = await Promise.all([
+        getDocs(collection(db, 'users')),
+        getDoc(doc(db, 'settings', 'podium'))
+      ]);
+      const arr = [];
+      usersSnap.forEach(d => { const u = d.data(); if (!u.removed) arr.push([d.id, u.nickname || u.displayName || d.id]); });
+      arr.sort((a, b) => a[1].localeCompare(b[1]));
+      const pd = pdSnap.exists() ? pdSnap.data() : {};
+      const opts = (sel) => '<option value="">🤖 Auto</option>' + arr.map(([id, n]) => '<option value="' + id + '"' + (id === sel ? ' selected' : '') + '>' + n + '</option>').join('');
+      s1.innerHTML = opts(pd.first || ''); s2.innerHTML = opts(pd.second || ''); s3.innerHTML = opts(pd.third || '');
+      const anyManual = pd.first || pd.second || pd.third;
+      if (st) st.innerHTML = anyManual ? '<span style="color:var(--green);">● Manual override active for at least one place.</span>' : '<span style="color:var(--text-muted);">○ Fully automatic (by points).</span>';
+    } catch (e) { if (st) st.textContent = 'Could not load players.'; }
+  };
+
+  window.setPodium = async () => {
+    if (!window._isAdmin) return;
+    const s1 = document.getElementById('podium-1'), s2 = document.getElementById('podium-2'), s3 = document.getElementById('podium-3');
+    if (!s1 || !s2 || !s3) return;
+    try {
+      await setDoc(doc(db, 'settings', 'podium'), { first: s1.value || null, second: s2.value || null, third: s3.value || null, updatedAt: serverTimestamp() }, { merge: true });
+      await loadPodiumSelect();
+      const st = document.getElementById('podium-admin-status');
+      if (st) st.innerHTML = '<span style="color:var(--green);font-weight:700;">✅ Saved!</span> ' + st.innerHTML;
+    } catch (e) { alert('Failed: ' + (e.message || e)); }
+  };
+
+  // Admin: pick who wins the Sniper prize (or Auto). Saved to settings/sniper, read by the finale.
+  window.loadSniperSelect = async () => {
+    const sel = document.getElementById('sniper-select');
+    const st = document.getElementById('sniper-admin-status');
+    if (!sel) return;
+    try {
+      const [usersSnap, snSnap] = await Promise.all([
+        getDocs(collection(db, 'users')),
+        getDoc(doc(db, 'settings', 'sniper'))
+      ]);
+      const arr = [];
+      usersSnap.forEach(d => { const u = d.data(); if (!u.removed) arr.push([d.id, u.nickname || u.displayName || d.id]); });
+      arr.sort((a, b) => a[1].localeCompare(b[1]));
+      const saved = (snSnap.exists() && snSnap.data().uid) ? snSnap.data().uid : '';
+      sel.innerHTML = '<option value="">🤖 Auto (most exact scores)</option>' + arr.map(([id, n]) => '<option value="' + id + '"' + (id === saved ? ' selected' : '') + '>' + n + '</option>').join('');
+      const savedName = (arr.find(a => a[0] === saved) || [])[1];
+      if (st) st.innerHTML = saved ? '<span style="color:var(--green);">● Current Sniper: <b>' + (savedName || saved) + '</b></span>' : '<span style="color:var(--text-muted);">○ Auto — the app picks whoever has the most exact scores.</span>';
+    } catch (e) { if (st) st.textContent = 'Could not load players.'; }
+  };
+
+  window.setSniper = async () => {
+    if (!window._isAdmin) return;
+    const sel = document.getElementById('sniper-select');
+    if (!sel) return;
+    const uid = sel.value || null;
+    try {
+      await setDoc(doc(db, 'settings', 'sniper'), { uid: uid, updatedAt: serverTimestamp() }, { merge: true });
+      await loadSniperSelect();
+      const st = document.getElementById('sniper-admin-status');
+      if (st) st.innerHTML = '<span style="color:var(--green);font-weight:700;">✅ Saved!</span> ' + st.innerHTML;
+    } catch (e) { alert('Failed: ' + (e.message || e)); }
+  };
+
   // Admin: load current launch state + wire buttons
   window.loadFinaleAdmin = async () => {
     const st = document.getElementById('finale-admin-status');
@@ -4261,6 +4366,8 @@
       if (lb) lb.style.display = launched ? 'none' : 'block';
       if (sb) sb.style.display = launched ? 'block' : 'none';
     } catch (e) { st.textContent = 'Could not read status.'; }
+    try { loadSniperSelect(); } catch (e) {}
+    try { loadPodiumSelect(); } catch (e) {}
   };
 
   // Admin: flip the global launch flag (writes settings/finale)
@@ -4530,11 +4637,31 @@
 
       // podium (stored points)
       const ranked = realUsers.map(uid => ({ uid, nick: nickOf(uid), points: users[uid].points || 0 })).sort((x, y) => y.points - x.points);
-      const podium = ranked.slice(0, 3);
+      let podium = ranked.slice(0, 3);
+      // Admin manual override per place (tiebreaks) — each slot is manual-or-auto.
+      try {
+        const _pdSnap = await getDoc(doc(db, 'settings', 'podium'));
+        if (_pdSnap.exists()) {
+          const pd = _pdSnap.data();
+          const auto = podium.slice();
+          const mk = (id, fb) => (id && users[id]) ? { uid: id, nick: nickOf(id), points: users[id].points || 0 } : fb;
+          const merged = [mk(pd.first, auto[0]), mk(pd.second, auto[1]), mk(pd.third, auto[2])].filter(Boolean);
+          if (merged.length) podium = merged;
+        }
+      } catch (e) {}
 
       // sniper (fresh exact)
       let sniper = { uid: null, nick: '—', exact: 0, line: '' };
       realUsers.forEach(uid => { const e = (acc[uid] && acc[uid].exact) || 0; if (e > sniper.exact) sniper = { uid: uid, nick: nickOf(uid), exact: e, line: e + ' exact scores. While the rest of you guessed 2-1 and prayed, this one saw the matrix.' }; });
+      // Admin manual override — if a Sniper was hand-picked in admin, use that player instead.
+      try {
+        const _snSnap = await getDoc(doc(db, 'settings', 'sniper'));
+        const _suid = _snSnap.exists() ? _snSnap.data().uid : null;
+        if (_suid && users[_suid]) {
+          const _se = (acc[_suid] && acc[_suid].exact) || 0;
+          sniper = { uid: _suid, nick: nickOf(_suid), exact: _se, line: _se + ' exact scores. The sharpest eye of the tournament — dead-on when it mattered.' };
+        }
+      } catch (e) {}
 
       // YOU
       const meUid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
@@ -4627,11 +4754,12 @@
     else verdict = 'Bottom third. You watched football for a month to achieve this. Sit with that.';
 
     const LOGO = 'https://raw.githubusercontent.com/madurosb/coed-football-2026/refs/heads/main/src/logo-full.png';
-    // Winner detection — podium 1-3 and/or The Sniper
+    // Winner detection — podium 1-3 (respects the manual/tiebreak override) and/or The Sniper
     const winBadges = [];
-    if (F.you.rank === 1) winBadges.push('🥇 CHAMPION');
-    else if (F.you.rank === 2) winBadges.push('🥈 RUNNER-UP');
-    else if (F.you.rank === 3) winBadges.push('🥉 THIRD PLACE');
+    const _myPod = (F.podium || []).findIndex(p => p && p.uid === F.meUid);
+    if (_myPod === 0) winBadges.push('🥇 CHAMPION');
+    else if (_myPod === 1) winBadges.push('🥈 RUNNER-UP');
+    else if (_myPod === 2) winBadges.push('🥉 THIRD PLACE');
     if (F.meUid && F.sniper && F.meUid === F.sniper.uid && F.sniper.exact > 0) winBadges.push('🎯 THE SNIPER');
     const isWinner = winBadges.length > 0;
     const winnerBanner = isWinner
@@ -4764,7 +4892,7 @@
         (predIsOG && m.hasOwnGoal === true)
       );
       const _g = ((m.group||m.stage||'')+'').toUpperCase();
-      const _mult = (_g.includes('FINAL')&&!_g.includes('SEMI')&&!_g.includes('QUARTER')&&!_g.includes('THIRD'))?6:_g.includes('SEMI')?5:_g.includes('QUARTER')?4:(_g.includes('16')||_g.includes('ROUND_OF_16'))?3:(_g.includes('32')&&!_g.includes('16'))?2:1;
+      const _mult = (_g.includes('THIRD')||_g.includes('3RD')||_g.includes('BRONZE'))?5:(_g.includes('FINAL')&&!_g.includes('SEMI')&&!_g.includes('QUARTER')&&!_g.includes('THIRD'))?6:_g.includes('SEMI')?5:_g.includes('QUARTER')?4:(_g.includes('16')||_g.includes('ROUND_OF_16'))?3:(_g.includes('32')&&!_g.includes('16'))?2:1;
       const flags = [];
       if (exact) flags.push('🎯');
       else if (correct) flags.push('✅');
@@ -4854,11 +4982,12 @@
       const matchData = matchSnap.data();
       const matchGroup = (matchData?.group || '').toUpperCase();
       const isFinal = matchGroup.includes('FINAL') && !matchGroup.includes('QUARTER') && !matchGroup.includes('SEMI');
+      const isThird = matchGroup.includes('THIRD') || matchGroup.includes('3RD') || matchGroup.includes('BRONZE');
       const isSemi = matchGroup.includes('SEMI');
       const isQuarter = matchGroup.includes('QUARTER');
       const isR32 = matchGroup.includes('32') && !matchGroup.includes('16');
       const isR16 = matchGroup.includes('16') || matchGroup.includes('ROUND_OF_16');
-      const multiplier = isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32 ? 2 : 1;
+      const multiplier = isThird ? 5 : isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32 ? 2 : 1;
       const actualOutcome = homeScore > awayScore ? 'home' : homeScore < awayScore ? 'away' : 'draw';
       let count = 0;
       for (const d of predsSnap.docs) {
@@ -5024,11 +5153,12 @@
       if (!m || m.homeScore === null || m.homeScore === undefined || m.status !== 'FINISHED') return 0;
       const grp = (m.group || '').toUpperCase();
       const isFinal = grp.includes('FINAL') && !grp.includes('QUARTER') && !grp.includes('SEMI');
+    const isThird = grp.includes('THIRD') || grp.includes('3RD') || grp.includes('BRONZE');
       const isSemi = grp.includes('SEMI');
       const isQuarter = grp.includes('QUARTER');
       const isR32 = grp.includes('32') && !grp.includes('16');
       const isR16 = grp.includes('16') || grp.includes('ROUND_OF_16');
-      const multiplier = isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32 ? 2 : 1;
+      const multiplier = isThird ? 5 : isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32 ? 2 : 1;
       const actual = m.homeScore > m.awayScore ? 'H' : m.homeScore < m.awayScore ? 'A' : 'D';
       const predicted = pred.homeScore > pred.awayScore ? 'H' : pred.homeScore < pred.awayScore ? 'A' : 'D';
       const correctOutcome = actual === predicted;
@@ -8762,7 +8892,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const order = { R32:0, R16:1, QF:2, SF:3, FINAL:4 };
       const classify = (m) => {
         const g = ((m.group || m.stage || '') + '').toUpperCase();
-        if (g.includes('3RD') || g.includes('THIRD') || g.includes('BRONZE')) return null;
+        if (g.includes('3RD') || g.includes('THIRD') || g.includes('BRONZE')) return 'FINAL';
         if (g.includes('FINAL') && !g.includes('QUARTER') && !g.includes('SEMI')) return 'FINAL';
         if (g.includes('SEMI')) return 'SF';
         if (g.includes('QUARTER')) return 'QF';
@@ -8851,7 +8981,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       ];
       const classify = (m) => {
         const g = ((m.group || m.stage || '') + '').toUpperCase();
-        if (g.includes('3RD') || g.includes('THIRD') || g.includes('BRONZE')) return null;
+        if (g.includes('3RD') || g.includes('THIRD') || g.includes('BRONZE')) return 'FINAL';
         if (g.includes('FINAL') && !g.includes('QUARTER') && !g.includes('SEMI')) return 'FINAL';
         if (g.includes('SEMI')) return 'SF';
         if (g.includes('QUARTER')) return 'QF';
@@ -10297,7 +10427,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       // Stage-aware label: colored stage+multiplier badge for knockout, plain GROUP label otherwise
       const _koStage = (() => {
         const g = ((m.group || m.stage || '') + '').toUpperCase();
-        if (g.includes('3RD') || g.includes('THIRD') || g.includes('BRONZE')) return null;
+        if (g.includes('3RD') || g.includes('THIRD') || g.includes('BRONZE')) return { short:'BRONZE FINAL', mult:'×5', color:'#B87333', third:true };
         if (g.includes('FINAL') && !g.includes('QUARTER') && !g.includes('SEMI')) return { short:'FINAL', mult:'×6', color:'#CA8A04' };
         if (g.includes('SEMI')) return { short:'SEMI-FINAL', mult:'×5', color:'#7C3AED' };
         if (g.includes('QUARTER')) return { short:'QUARTER-FINAL', mult:'×4', color:'#EA580C' };
@@ -10305,8 +10435,14 @@ Use exactly the formation provided. Only use players from the squad lists above.
         if (g.includes('32')) return { short:'ROUND OF 32', mult:'×2', color:'#2563EB' };
         return null;
       })();
+      const _isFinalCard = _koStage && _koStage.short === 'FINAL';
+      const _isThirdCard = _koStage && _koStage.third === true;
       const stageBadge = _koStage
-        ? `<span style="background:${_koStage.color};color:#fff;border-radius:999px;padding:3px 10px;font-size:10px;font-weight:800;letter-spacing:0.04em;white-space:nowrap;">${_koStage.short} · ${_koStage.mult}</span>`
+        ? (_isThirdCard
+            ? `<span style="background:linear-gradient(135deg,#D8996A,#B87333 55%,#8C5A2B);color:#2a1608;border-radius:999px;padding:3px 11px;font-size:10px;font-weight:900;letter-spacing:0.05em;white-space:nowrap;box-shadow:0 2px 6px rgba(140,90,43,0.45);">🥉 BRONZE FINAL · ×5</span>`
+            : _isFinalCard
+              ? `<span style="background:linear-gradient(135deg,#FFE16B,#E5B94E 55%,#B8860B);color:#3a2a00;border-radius:999px;padding:3px 11px;font-size:10px;font-weight:900;letter-spacing:0.05em;white-space:nowrap;box-shadow:0 2px 6px rgba(202,138,4,0.4);">🏆 GRAND FINAL · ×6</span>`
+              : `<span style="background:${_koStage.color};color:#fff;border-radius:999px;padding:3px 10px;font-size:10px;font-weight:800;letter-spacing:0.04em;white-space:nowrap;">${_koStage.short} · ${_koStage.mult}</span>`)
         : `<span class="group">${(m.group || '').replace(/_/g, ' ')}</span>`;
 
       const liveIndicator = ''; // Badge injected dynamically by updateLiveScoreCards with minute
@@ -10319,7 +10455,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
         </div>` : '';
 
       html += `
-        <div class="match-card" data-match-id="${d.id}" data-home="${m.homeTeam}" data-away="${m.awayTeam}"
+        <div class="match-card${_isFinalCard ? ' final-gold' : ''}${_isThirdCard ? ' bronze-third' : ''}" data-match-id="${d.id}" data-home="${m.homeTeam}" data-away="${m.awayTeam}"
           data-is-past="${isPast ? '1' : '0'}"
           data-home-players='${JSON.stringify(getPlayersForTeam(m.homeTeam, m.homePlayers)).replace(/'/g,"&#39;")}'
           data-away-players='${JSON.stringify(getPlayersForTeam(m.awayTeam, m.awayPlayers)).replace(/'/g,"&#39;")}'
@@ -10387,7 +10523,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
           <div class="match-bonus">
             <div class="bonus-row">
               <div style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px;margin-bottom:0;">
-                <div style="flex-shrink:0;"><div class="bonus-label">First goalscorer</div><div class="bonus-pts">+${(()=>{const G=((m.group||m.stage||'')+'').toUpperCase();const f=G.includes('FINAL')&&!G.includes('SEMI')&&!G.includes('QUARTER')&&!G.includes('THIRD');const s=G.includes('SEMI');const q=G.includes('QUARTER');const r32=G.includes('32')&&!G.includes('16');const r16=G.includes('16');return 2*(f?6:s?5:q?4:r16?3:r32?2:1);})()} pts if correct</div></div>
+                <div style="flex-shrink:0;"><div class="bonus-label">First goalscorer</div><div class="bonus-pts">+${(()=>{const G=((m.group||m.stage||'')+'').toUpperCase();const th=G.includes('THIRD')||G.includes('3RD')||G.includes('BRONZE');const f=G.includes('FINAL')&&!G.includes('SEMI')&&!G.includes('QUARTER')&&!G.includes('THIRD');const s=G.includes('SEMI');const q=G.includes('QUARTER');const r32=G.includes('32')&&!G.includes('16');const r16=G.includes('16');return 2*(th?5:f?6:s?5:q?4:r16?3:r32?2:1);})()} pts if correct</div></div>
                 ${isFinished ? `<button onclick="showPostMatchCard('${d.id}')"
                   style="display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,rgba(239,68,68,0.15),rgba(220,38,38,0.08));border:1px solid rgba(239,68,68,0.5);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;color:#f87171;cursor:pointer;letter-spacing:0.04em;text-transform:uppercase;white-space:nowrap;flex-shrink:0;animation:postMatchGlow 2s ease-in-out infinite;"
                   onmouseover="this.style.background='linear-gradient(135deg,rgba(239,68,68,0.3),rgba(220,38,38,0.2))';this.style.color='#fca5a5'"
@@ -10606,7 +10742,8 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const isQuarter = g.includes('QUARTER');
       const isR32s    = g.includes('32') && !g.includes('16');
       const isR16     = g.includes('16') || g.includes('ROUND_OF_16');
-      const stageMulti = isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32s ? 2 : 1;
+      const isThird3  = g.includes('THIRD') || g.includes('3RD') || g.includes('BRONZE');
+      const stageMulti = isThird3 ? 5 : isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32s ? 2 : 1;
 
       let pts = 0;
       let rows = [];
@@ -11774,6 +11911,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const m = matchSnap.data();
       const grp = (m.group || '').toUpperCase();
       const isFinal = grp.includes('FINAL') && !grp.includes('QUARTER') && !grp.includes('SEMI');
+    const isThird = grp.includes('THIRD') || grp.includes('3RD') || grp.includes('BRONZE');
       const isSemi = grp.includes('SEMI');
       const isQuarter = grp.includes('QUARTER');
       const isR32 = grp.includes('32') && !grp.includes('16');
@@ -11936,11 +12074,12 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const matchSnap = await getDoc(doc(db, 'matches', matchId));
       const matchGroup = (matchSnap.data()?.group || '').toUpperCase();
       const isFinal = matchGroup.includes('FINAL') && !matchGroup.includes('QUARTER') && !matchGroup.includes('SEMI');
+      const isThird = matchGroup.includes('THIRD') || matchGroup.includes('3RD') || matchGroup.includes('BRONZE');
       const isSemi = matchGroup.includes('SEMI');
       const isQuarter = matchGroup.includes('QUARTER');
       const isR32 = matchGroup.includes('32') && !matchGroup.includes('16');
       const isR16 = matchGroup.includes('16') || matchGroup.includes('ROUND_OF_16');
-      const multiplier = isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32 ? 2 : 1;
+      const multiplier = isThird ? 5 : isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32 ? 2 : 1;
       // Normalize scorer names (accent/Jr/Junior/case-insensitive) — same logic as reAward & CALC
       const _normSc = s => { let n=(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); n=n.replace(/\bjr\b\.?/g,'junior').replace(/\bsr\b\.?/g,'senior').replace(/\bst\b\./g,'saint'); return n; };
 
@@ -12035,11 +12174,12 @@ Use exactly the formation provided. Only use players from the squad lists above.
       const matchData = matchSnap.data() || {};
       const matchGroup = (matchData.group || '').toUpperCase();
       const isFinal = matchGroup.includes('FINAL') && !matchGroup.includes('QUARTER') && !matchGroup.includes('SEMI');
+      const isThird = matchGroup.includes('THIRD') || matchGroup.includes('3RD') || matchGroup.includes('BRONZE');
       const isSemi = matchGroup.includes('SEMI');
       const isQuarter = matchGroup.includes('QUARTER');
       const isR32 = matchGroup.includes('32') && !matchGroup.includes('16');
       const isR16 = matchGroup.includes('16') || matchGroup.includes('ROUND_OF_16');
-      const multiplier = isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32 ? 2 : 1;
+      const multiplier = isThird ? 5 : isFinal ? 6 : isSemi ? 5 : isQuarter ? 4 : isR16 ? 3 : isR32 ? 2 : 1;
       const pts = 2 * multiplier;
 
       // Joker/DON aware: the first-scorer points share the SAME doubling the outcome gets
