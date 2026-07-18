@@ -173,6 +173,22 @@ async function syncLiveResults(db) {
     liveMatches = (data.matches || []).filter(m => ['IN_PLAY','PAUSED','FINISHED'].includes(m.status));
   } catch(e) { return 0; }
 
+  const ids = liveMatches.map(m => String(m.id));
+
+  // Batch-read existing match docs + result docs IN PARALLEL (was sequential -> caused timeouts).
+  const [matchSnaps, resultSnaps] = await Promise.all([
+    Promise.all(ids.map(id => db.collection('matches').doc(id).get())),
+    Promise.all(ids.map(id => db.collection('results').doc(id).get()))
+  ]);
+  const existingById = {}; const resultById = {};
+  ids.forEach((id, i) => {
+    existingById[id] = matchSnaps[i].data() || {};
+    resultById[id] = resultSnaps[i].exists ? resultSnaps[i].data() : null;
+  });
+
+  const writes = [];       // simple match-doc updates, run in parallel
+  const toScore = [];      // newly-finished matches that still need scoring (rare)
+
   for (const match of liveMatches) {
     const matchId = String(match.id);
     const score = match.score || {};
@@ -181,70 +197,81 @@ async function syncLiveResults(db) {
     const awayScore = ft.away ?? null;
     const status = match.status;
 
-    // If already FINISHED in Firebase, don't overwrite the score (admin may have corrected it)
-    const existingMatchSnap = await db.collection('matches').doc(matchId).get();
-    const existingMatch = existingMatchSnap.data() || {};
+    const existingMatch = existingById[matchId];
     const alreadyFinished = existingMatch.status === 'FINISHED';
+    const resultData = resultById[matchId];
+    const alreadyScored = status === 'FINISHED' && resultData && resultData.pointsCalculated;
 
+    // FAST SKIP: match is locked FINISHED in Firebase AND already scored -> nothing to do.
+    // (This is the bulk of matches deep in the tournament and was the source of the timeout.)
+    if (alreadyFinished && alreadyScored) continue;
+
+    // Update the live match doc. If already FINISHED in Firebase, NEVER overwrite score/status
+    // (admin may have locked the 90-minute result) — just a heartbeat.
     if (!alreadyFinished) {
-      await db.collection('matches').doc(matchId).set({
+      writes.push(db.collection('matches').doc(matchId).set({
         status, homeScore, awayScore, lastSynced: new Date()
-      }, { merge: true });
+      }, { merge: true }));
     } else {
-      // Already FINISHED in Firebase (e.g. admin locked the 90-minute result for an
-      // extra-time game). NEVER touch status or score — just a heartbeat. Overwriting
-      // status here would flip a locked match back to IN_PLAY during extra time.
-      await db.collection('matches').doc(matchId).set({
+      writes.push(db.collection('matches').doc(matchId).set({
         lastSynced: new Date()
-      }, { merge: true });
+      }, { merge: true }));
     }
 
-    if (status === 'FINISHED') {
-      const resultRef = db.collection('results').doc(matchId);
-      const existing = await resultRef.get();
-      if (!existing.exists || !existing.data()?.pointsCalculated) {
-        let firstScorer = null;
-        try {
-          const detail = await fetchAPI(`/matches/${match.id}`);
-          // ✅ OWN GOAL SUPPORT: if first goal is OG, firstScorer = 'Own Goal'
-          const allGoals = (detail.goals || [])
-            .sort((a, b) => (a.minute || 0) - (b.minute || 0));
-          if (allGoals.length > 0) {
-            const firstGoal = allGoals[0];
-            firstScorer = firstGoal.type === 'OWN_GOAL'
-              ? 'Own Goal'
-              : (firstGoal.scorer?.name || null);
-          }
-        } catch(e) { console.log('Could not get scorer for', matchId); }
-
-        await calculatePoints(db, matchId, homeScore, awayScore, firstScorer);
-
-        const matchData = (await db.collection('matches').doc(matchId).get()).data();
-        const grp = (matchData?.group || '').toUpperCase();
-        if (grp.includes('FINAL') && !grp.includes('SEMI') && !grp.includes('QUARTER')) {
-          const winner = homeScore > awayScore ? matchData.homeTeam : awayScore > homeScore ? matchData.awayTeam : null;
-          if (winner) {
-            const usersSnap = await db.collection('users').get();
-            for (const userDoc of usersSnap.docs) {
-              const u = userDoc.data();
-              if (u.tournamentWinner === winner && !u.winnerBonusAwarded) {
-                await userDoc.ref.update({
-                  points: (u.points || 0) + 15,
-                  winnerBonusAwarded: true
-                });
-              }
-            }
-          }
-        }
-
-        await resultRef.set({
-          homeScore, awayScore, firstScorer,
-          pointsCalculated: true,
-          calculatedAt: new Date()
-        }, { merge: true });
-      }
+    // Newly-finished and not yet scored -> queue for scoring.
+    if (status === 'FINISHED' && !alreadyScored) {
+      toScore.push({ match, matchId, homeScore, awayScore });
     }
   }
+
+  // Run all the simple match-doc writes in parallel.
+  await Promise.all(writes);
+
+  // Score the newly-finished matches (usually 0-2 at a time, so sequential is fine & safe).
+  for (const { match, matchId, homeScore, awayScore } of toScore) {
+    let firstScorer = null;
+    try {
+      const detail = await fetchAPI(`/matches/${match.id}`);
+      // ✅ OWN GOAL SUPPORT: if first goal is OG, firstScorer = 'Own Goal'
+      const allGoals = (detail.goals || [])
+        .sort((a, b) => (a.minute || 0) - (b.minute || 0));
+      if (allGoals.length > 0) {
+        const firstGoal = allGoals[0];
+        firstScorer = firstGoal.type === 'OWN_GOAL'
+          ? 'Own Goal'
+          : (firstGoal.scorer?.name || null);
+      }
+    } catch(e) { console.log('Could not get scorer for', matchId); }
+
+    await calculatePoints(db, matchId, homeScore, awayScore, firstScorer);
+
+    const matchData = (await db.collection('matches').doc(matchId).get()).data();
+    const grp = (matchData?.group || '').toUpperCase();
+    if (grp.includes('FINAL') && !grp.includes('SEMI') && !grp.includes('QUARTER')) {
+      const winner = homeScore > awayScore ? matchData.homeTeam : awayScore > homeScore ? matchData.awayTeam : null;
+      if (winner) {
+        const usersSnap = await db.collection('users').get();
+        const bonusWrites = [];
+        for (const userDoc of usersSnap.docs) {
+          const u = userDoc.data();
+          if (u.tournamentWinner === winner && !u.winnerBonusAwarded) {
+            bonusWrites.push(userDoc.ref.update({
+              points: (u.points || 0) + 15,
+              winnerBonusAwarded: true
+            }));
+          }
+        }
+        await Promise.all(bonusWrites);
+      }
+    }
+
+    await db.collection('results').doc(matchId).set({
+      homeScore, awayScore, firstScorer,
+      pointsCalculated: true,
+      calculatedAt: new Date()
+    }, { merge: true });
+  }
+
   return liveMatches.length;
 }
 
