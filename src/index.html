@@ -2906,6 +2906,7 @@
         <div class="admin-card" onclick="showAdminSub('joker-don-overview')"><div class="icon">🃏</div><div class="title">Joker & DON overview</div><div class="desc">See which players activated their Joker card and Double or Nothing bets this tournament.</div></div>
         <div class="admin-card" onclick="showAdminSub('readiness-overview');loadReadinessOverview()"><div class="icon">✅</div><div class="title">Player readiness</div><div class="desc">Quick overview of every player — who picked their winner, tournament player, filled predictions, scorers, Joker & DON.</div></div>
         <div class="admin-card" onclick="showAdminSub('squad-editor');loadSquadEditor()"><div class="icon">🏟️</div><div class="title">Squad Editor</div><div class="desc">View and edit player squads for all 48 teams. Add or remove players from the first goalscorer lists.</div></div>
+        <div class="admin-card" onclick="showAdminSub('final-picks');loadFinalPicks()"><div class="icon">🏆</div><div class="title">Final match picks</div><div class="desc">See exactly what every player predicted for the Grand Final — score, first scorer, and who used DON or the Joker.</div></div>
         <div class="admin-card" onclick="showAdminSub('finale-admin');loadFinaleAdmin()"><div class="icon">🎆</div><div class="title">Closing Ceremony</div><div class="desc">Launch the end-of-tournament Closing Ceremony for ALL players. When live, it opens automatically on everyone's screen.</div></div>
 
       </div>
@@ -2946,6 +2947,15 @@
         <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">How many <b>real people</b> opened the Closing Ceremony. Counted per player account, so one person opening it five times still counts as one person.</p>
         <div id="finale-views-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Click refresh to load.</div></div>
         <button class="submit-btn" onclick="loadFinaleViews()" style="background:#334155;margin-top:10px;">🔄 Refresh stats</button>
+      </div>
+    </div>
+    <div id="admin-final-picks" class="admin-sub">
+      <div class="back-link" onclick="showAdminSub('')">← Back to admin</div>
+      <div class="form-card">
+        <h2>🏆 Final match picks</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Everyone's prediction for the Grand Final: score, first goalscorer, and whether they used DON or the Joker. Read-only.</p>
+        <div id="final-picks-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading…</div></div>
+        <button class="submit-btn" onclick="loadFinalPicks()" style="background:#334155;margin-top:10px;">🔄 Refresh</button>
       </div>
     </div>
     <div id="admin-readiness-overview" class="admin-sub">
@@ -4291,6 +4301,85 @@
 
   // ============ GRAND FINALE — Closing Ceremony (self-contained overlay) ============
   window.closeFinale = () => { try { sessionStorage.setItem('finaleClosed', '1'); } catch (e) {} const o = document.getElementById('fin-ov'); if (o) o.remove(); };
+
+  // ===== Admin: everyone's picks for the GRAND FINAL (read-only) =====
+  window.loadFinalPicks = async () => {
+    const c = document.getElementById('final-picks-content');
+    if (!c) return;
+    c.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading…</div>';
+    try {
+      const [matchesSnap, predsSnap, usersSnap, jokerSnap, donSnap] = await Promise.all([
+        getDocs(collection(db, 'matches')),
+        getDocs(collection(db, 'predictions')),
+        getDocs(collection(db, 'users')),
+        getDocs(collection(db, 'jokerCards')),
+        getDocs(collection(db, 'donOptIns'))
+      ]);
+
+      // Find the Grand Final (never the semi/quarter, never the bronze match)
+      let finalId = null, finalM = null;
+      matchesSnap.forEach(d => {
+        const m = d.data();
+        const g = ((m.group || m.stage || '') + '').toUpperCase();
+        const isThird = g.includes('THIRD') || g.includes('3RD') || g.includes('BRONZE');
+        if (!isThird && g.includes('FINAL') && !g.includes('SEMI') && !g.includes('QUARTER')) { finalId = d.id; finalM = m; }
+      });
+      if (!finalId) { c.innerHTML = '<div style="font-size:13px;color:var(--text-muted);text-align:center;padding:12px;">The Final isn\'t in the schedule yet.</div>'; return; }
+
+      const users = {}; usersSnap.forEach(d => { const u = d.data(); if (!u.removed) users[d.id] = u.nickname || u.displayName || d.id; });
+      const jokerUsers = new Set(); jokerSnap.forEach(d => { const j = d.data(); if (j.matchId === finalId && j.userId) jokerUsers.add(j.userId); });
+      const donUsers = new Set(); donSnap.forEach(d => { const v = d.data(); if (v.matchId === finalId && v.userId) donUsers.add(v.userId); });
+
+      const rows = []; const scoreTally = {}; const scorerTally = {};
+      predsSnap.forEach(d => {
+        const p = d.data();
+        if (p.matchId !== finalId) return;
+        if (!users[p.userId]) return;
+        const pick = p.homeScore + '-' + p.awayScore;
+        scoreTally[pick] = (scoreTally[pick] || 0) + 1;
+        const sc = p.firstScorer || '—';
+        if (p.firstScorer) scorerTally[sc] = (scorerTally[sc] || 0) + 1;
+        rows.push({ nick: users[p.userId], pick: pick, scorer: sc, don: donUsers.has(p.userId), joker: jokerUsers.has(p.userId) });
+      });
+      rows.sort((a, b) => a.nick.localeCompare(b.nick));
+
+      const topOf = (obj) => Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, 3);
+      const donCount = rows.filter(r => r.don).length;
+      const jokerCount = rows.filter(r => r.joker).length;
+
+      let h = '<div style="font-size:13px;font-weight:700;margin-bottom:4px;">' + (finalM.homeTeam || '') + ' vs ' + (finalM.awayTeam || '') + '</div>'
+        + '<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">' + rows.length + ' predictions · 🎰 DON: ' + donCount + ' · 🃏 Joker: ' + jokerCount + '</div>';
+
+      if (!rows.length) {
+        h += '<div style="font-size:13px;color:var(--text-muted);text-align:center;padding:12px;">No predictions submitted for the Final yet.</div>';
+        c.innerHTML = h; return;
+      }
+
+      h += '<div style="display:flex;gap:8px;margin-bottom:12px;">'
+        + '<div style="flex:1;background:var(--surface2);border-radius:10px;padding:10px;"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Popular scores</div>'
+        + topOf(scoreTally).map(function (e) { return '<div style="font-size:12px;"><b>' + e[0] + '</b> · ' + e[1] + '</div>'; }).join('')
+        + '</div>'
+        + '<div style="flex:1;background:var(--surface2);border-radius:10px;padding:10px;"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px;">Popular scorers</div>'
+        + (topOf(scorerTally).length ? topOf(scorerTally).map(function (e) { return '<div style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><b>' + e[0] + '</b> · ' + e[1] + '</div>'; }).join('') : '<div style="font-size:12px;color:var(--text-muted);">—</div>')
+        + '</div></div>';
+
+      h += '<div style="background:var(--surface2);border-radius:10px;overflow:hidden;">'
+        + '<div style="display:grid;grid-template-columns:1fr 46px 1fr 34px 34px;font-size:10px;color:var(--text-muted);text-transform:uppercase;padding:6px 10px;gap:4px;"><div>Player</div><div style="text-align:center;">Score</div><div>First scorer</div><div style="text-align:center;">DON</div><div style="text-align:center;">JKR</div></div>';
+      rows.forEach(function (r) {
+        h += '<div style="display:grid;grid-template-columns:1fr 46px 1fr 34px 34px;align-items:center;padding:7px 10px;border-top:0.5px solid var(--border);gap:4px;font-size:12px;">'
+          + '<div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + r.nick + '</div>'
+          + '<div style="text-align:center;font-weight:700;">' + r.pick + '</div>'
+          + '<div style="color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + r.scorer + '</div>'
+          + '<div style="text-align:center;">' + (r.don ? '🎰' : '·') + '</div>'
+          + '<div style="text-align:center;">' + (r.joker ? '🃏' : '·') + '</div>'
+          + '</div>';
+      });
+      h += '</div>';
+      c.innerHTML = h;
+    } catch (e) {
+      c.innerHTML = '<div style="color:#E24B4A;font-size:13px;">Could not load: ' + (e.message || e) + '</div>';
+    }
+  };
 
   // ===== Closing Ceremony analytics (per-user, so repeat opens by the same person count once) =====
   window._logFinaleView = async (uid, nick) => {
