@@ -2941,6 +2941,12 @@
         <select id="podium-3" style="width:100%;padding:8px 12px;border-radius:8px;border:0.5px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;margin:4px 0 10px;"><option value="">🤖 Auto</option></select>
         <button class="submit-btn" onclick="setPodium()" style="background:#1D9E75;">💾 Save Podium</button>
       </div>
+      <div class="form-card" style="margin-top:12px;">
+        <h2>📊 Ceremony views</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">How many <b>real people</b> opened the Closing Ceremony. Counted per player account, so one person opening it five times still counts as one person.</p>
+        <div id="finale-views-content"><div style="text-align:center;padding:1rem;color:var(--text-muted);">Click refresh to load.</div></div>
+        <button class="submit-btn" onclick="loadFinaleViews()" style="background:#334155;margin-top:10px;">🔄 Refresh stats</button>
+      </div>
     </div>
     <div id="admin-readiness-overview" class="admin-sub">
       <div class="form-card">
@@ -4286,6 +4292,77 @@
   // ============ GRAND FINALE — Closing Ceremony (self-contained overlay) ============
   window.closeFinale = () => { try { sessionStorage.setItem('finaleClosed', '1'); } catch (e) {} const o = document.getElementById('fin-ov'); if (o) o.remove(); };
 
+  // ===== Closing Ceremony analytics (per-user, so repeat opens by the same person count once) =====
+  window._logFinaleView = async (uid, nick) => {
+    if (!uid) return;
+    try {
+      const ref = doc(db, 'finaleViews', uid);
+      const snap = await getDoc(ref);
+      const prev = snap.exists() ? (snap.data().opens || 0) : 0;
+      const payload = {
+        uid: uid,
+        nick: nick || 'Unknown',
+        opens: prev + 1,
+        lastOpened: serverTimestamp(),
+        device: (navigator.userAgent || '').slice(0, 120)
+      };
+      if (!snap.exists()) payload.firstOpened = serverTimestamp();
+      await setDoc(ref, payload, { merge: true });
+    } catch (e) { /* analytics must never break the ceremony */ }
+  };
+
+  window.loadFinaleViews = async () => {
+    const c = document.getElementById('finale-views-content');
+    if (!c) return;
+    c.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--text-muted);">Loading…</div>';
+    try {
+      const [viewsSnap, usersSnap] = await Promise.all([
+        getDocs(collection(db, 'finaleViews')).catch(() => ({ forEach: () => {}, size: 0 })),
+        getDocs(collection(db, 'users'))
+      ]);
+      const users = {}; usersSnap.forEach(d => { const u = d.data(); if (!u.removed) users[d.id] = u.nickname || u.displayName || d.id; });
+      const rows = []; let totalOpens = 0;
+      viewsSnap.forEach(d => {
+        const v = d.data();
+        totalOpens += (v.opens || 0);
+        const t = v.lastOpened && v.lastOpened.toDate ? v.lastOpened.toDate() : null;
+        rows.push({ uid: d.id, nick: users[d.id] || v.nick || d.id, opens: v.opens || 0, when: t });
+      });
+      rows.sort((a, b) => (b.when ? b.when.getTime() : 0) - (a.when ? a.when.getTime() : 0));
+      const totalPlayers = Object.keys(users).length;
+      const seen = new Set(rows.map(r => r.uid));
+      const notYet = Object.keys(users).filter(id => !seen.has(id)).map(id => users[id]).sort((a, b) => a.localeCompare(b));
+      const pct = totalPlayers ? Math.round(rows.length / totalPlayers * 100) : 0;
+
+      let h = '<div style="display:flex;gap:8px;margin-bottom:12px;">'
+        + '<div style="flex:1;background:var(--surface2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;">People who saw it</div><div style="font-size:22px;font-weight:800;color:#1D9E75;">' + rows.length + '</div><div style="font-size:10px;color:var(--text-muted);">of ' + totalPlayers + ' · ' + pct + '%</div></div>'
+        + '<div style="flex:1;background:var(--surface2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;">Total opens</div><div style="font-size:22px;font-weight:800;">' + totalOpens + '</div><div style="font-size:10px;color:var(--text-muted);">incl. repeats</div></div>'
+        + '</div>';
+
+      if (!rows.length) {
+        h += '<div style="font-size:13px;color:var(--text-muted);text-align:center;padding:12px;">Nobody has opened the ceremony yet.</div>';
+      } else {
+        h += '<div style="background:var(--surface2);border-radius:10px;overflow:hidden;">'
+          + '<div style="display:grid;grid-template-columns:1fr 54px 96px;font-size:10px;color:var(--text-muted);text-transform:uppercase;padding:6px 10px;"><div>Player</div><div style="text-align:center;">Opens</div><div style="text-align:right;">Last opened</div></div>';
+        rows.forEach(r => {
+          const w = r.when ? r.when.toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+          h += '<div style="display:grid;grid-template-columns:1fr 54px 96px;align-items:center;padding:7px 10px;border-top:0.5px solid var(--border);font-size:12px;">'
+            + '<div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + r.nick + '</div>'
+            + '<div style="text-align:center;font-weight:700;">' + r.opens + '</div>'
+            + '<div style="text-align:right;color:var(--text-muted);font-size:11px;">' + w + '</div>'
+            + '</div>';
+        });
+        h += '</div>';
+      }
+      if (notYet.length) {
+        h += '<div style="margin-top:12px;font-size:12px;color:var(--text-muted);line-height:1.6;"><b>Not opened yet (' + notYet.length + '):</b> ' + notYet.join(', ') + '</div>';
+      }
+      c.innerHTML = h;
+    } catch (e) {
+      c.innerHTML = '<div style="color:#E24B4A;font-size:13px;">Could not load: ' + (e.message || e) + '</div>';
+    }
+  };
+
   // Admin: manual podium override (tiebreaks). Saved to settings/podium, read by the finale.
   window.loadPodiumSelect = async () => {
     const s1 = document.getElementById('podium-1'), s2 = document.getElementById('podium-2'), s3 = document.getElementById('podium-3');
@@ -4718,6 +4795,9 @@
       const FINALE = { meUid: meUid, champion: champion || { country:'TBD', flag:'🏆', finalScore:'Final not played yet' }, you, podium, sniper, global, hallOfFame: HOF, superlatives: ROAST };
 
       _renderFinale(ov, FINALE);
+      // Fire-and-forget analytics: one doc per user, so the admin can see how many
+      // REAL people opened the ceremony (unique) vs how many times it was opened.
+      try { _logFinaleView(meUid, meUid ? nickOf(meUid) : 'Unknown'); } catch (e) {}
     } catch (e) {
       console.error('finale load failed', e);
       ov.innerHTML = '<button id="fin-close2" style="position:fixed;top:14px;right:14px;width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.4);color:#fff;font-size:17px;">✕</button><div style="min-height:100svh;display:flex;align-items:center;justify-content:center;color:#E24B4A;font-size:14px;text-align:center;padding:30px;">Could not load the ceremony.<br>Close and try again.</div>';
