@@ -4326,7 +4326,10 @@
       });
       if (!finalId) { c.innerHTML = '<div style="font-size:13px;color:var(--text-muted);text-align:center;padding:12px;">The Final isn\'t in the schedule yet.</div>'; return; }
 
-      const users = {}; usersSnap.forEach(d => { const u = d.data(); if (!u.removed) users[d.id] = u.nickname || u.displayName || d.id; });
+      const users = {}; const ptsById = {};
+      usersSnap.forEach(d => { const u = d.data(); if (!u.removed) { users[d.id] = u.nickname || u.displayName || d.id; ptsById[d.id] = u.points || 0; } });
+      // Only count Final points once the match is actually finished & has a result.
+      const finalDone = finalM.status === 'FINISHED' && finalM.homeScore !== null && finalM.homeScore !== undefined && finalM.awayScore !== null && finalM.awayScore !== undefined;
       const jokerUsers = new Set(); jokerSnap.forEach(d => { const j = d.data(); if (j.matchId === finalId && j.userId) jokerUsers.add(j.userId); });
       const donUsers = new Set(); donSnap.forEach(d => { const v = d.data(); if (v.matchId === finalId && v.userId) donUsers.add(v.userId); });
 
@@ -4339,7 +4342,12 @@
         scoreTally[pick] = (scoreTally[pick] || 0) + 1;
         const sc = p.firstScorer || '—';
         if (p.firstScorer) scorerTally[sc] = (scorerTally[sc] || 0) + 1;
-        rows.push({ nick: users[p.userId], pick: pick, scorer: sc, don: donUsers.has(p.userId), joker: jokerUsers.has(p.userId) });
+        const hasJ = jokerUsers.has(p.userId), hasD = donUsers.has(p.userId);
+        let finalPts = 0;
+        if (finalDone) { try { finalPts = calcPredPts(p, finalM, hasJ, hasD) || 0; } catch (e) { finalPts = 0; } }
+        const after = ptsById[p.userId] || 0;   // stored points right now
+        const before = after - finalPts;        // strip out what the Final gave them
+        rows.push({ nick: users[p.userId], pick: pick, scorer: sc, don: hasD, joker: hasJ, before: before, after: after, gained: finalPts });
       });
       rows.sort((a, b) => a.nick.localeCompare(b.nick));
 
@@ -4348,7 +4356,8 @@
       const jokerCount = rows.filter(r => r.joker).length;
 
       let h = '<div style="font-size:13px;font-weight:700;margin-bottom:4px;">' + (finalM.homeTeam || '') + ' vs ' + (finalM.awayTeam || '') + '</div>'
-        + '<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">' + rows.length + ' predictions · 🎰 DON: ' + donCount + ' · 🃏 Joker: ' + jokerCount + '</div>';
+        + '<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">' + rows.length + ' predictions · 🎰 DON: ' + donCount + ' · 🃏 Joker: ' + jokerCount + '</div>'
+        + '<div style="font-size:12px;margin-bottom:12px;color:' + (finalDone ? '#1D9E75' : 'var(--text-muted)') + ';">' + (finalDone ? '✅ Final is finished — <b>After</b> includes the Final, <b>Before</b> is what they had going in.' : '⏳ Final not played yet — Before and After are the same until it\'s scored.') + '</div>';
 
       if (!rows.length) {
         h += '<div style="font-size:13px;color:var(--text-muted);text-align:center;padding:12px;">No predictions submitted for the Final yet.</div>';
@@ -4364,14 +4373,18 @@
         + '</div></div>';
 
       h += '<div style="background:var(--surface2);border-radius:10px;overflow:hidden;">'
-        + '<div style="display:grid;grid-template-columns:1fr 46px 1fr 34px 34px;font-size:10px;color:var(--text-muted);text-transform:uppercase;padding:6px 10px;gap:4px;"><div>Player</div><div style="text-align:center;">Score</div><div>First scorer</div><div style="text-align:center;">DON</div><div style="text-align:center;">JKR</div></div>';
+        + '<div style="display:grid;grid-template-columns:1fr 44px 0.85fr 28px 28px 54px 54px;font-size:10px;color:var(--text-muted);text-transform:uppercase;padding:6px 10px;gap:4px;"><div>Player</div><div style="text-align:center;">Score</div><div>First scorer</div><div style="text-align:center;">DON</div><div style="text-align:center;">JKR</div><div style="text-align:right;">Before</div><div style="text-align:right;">After</div></div>';
       rows.forEach(function (r) {
-        h += '<div style="display:grid;grid-template-columns:1fr 46px 1fr 34px 34px;align-items:center;padding:7px 10px;border-top:0.5px solid var(--border);gap:4px;font-size:12px;">'
+        const gainTxt = r.gained ? (r.gained > 0 ? '+' + r.gained : String(r.gained)) : '';
+        const gainCol = r.gained > 0 ? '#1D9E75' : r.gained < 0 ? '#E24B4A' : 'var(--text-muted)';
+        h += '<div style="display:grid;grid-template-columns:1fr 44px 0.85fr 28px 28px 54px 54px;align-items:center;padding:7px 10px;border-top:0.5px solid var(--border);gap:4px;font-size:12px;">'
           + '<div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + r.nick + '</div>'
           + '<div style="text-align:center;font-weight:700;">' + r.pick + '</div>'
           + '<div style="color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + r.scorer + '</div>'
           + '<div style="text-align:center;">' + (r.don ? '🎰' : '·') + '</div>'
           + '<div style="text-align:center;">' + (r.joker ? '🃏' : '·') + '</div>'
+          + '<div style="text-align:right;color:var(--text-muted);">' + r.before + '</div>'
+          + '<div style="text-align:right;font-weight:800;">' + r.after + (gainTxt ? '<div style="font-size:10px;font-weight:600;color:' + gainCol + ';">' + gainTxt + '</div>' : '') + '</div>'
           + '</div>';
       });
       h += '</div>';
