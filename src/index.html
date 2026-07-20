@@ -4688,6 +4688,13 @@
       .fin-disp{font-family:'Anton',sans-serif;text-transform:uppercase;line-height:.92;font-weight:400}
       .fin-mono{font-family:'Space Mono',monospace;font-variant-numeric:tabular-nums}
       #fin-close{position:fixed;top:14px;right:14px;z-index:60;width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.4);color:#fff;font-size:17px;cursor:pointer}
+      @keyframes finspin{to{transform:rotate(360deg)}}
+      @keyframes finpulse{0%,100%{opacity:.4}50%{opacity:1}}
+      .fin-load{display:flex;flex-direction:column;align-items:center;gap:18px}
+      .fin-loadwrap{position:relative;width:78px;height:78px;display:flex;align-items:center;justify-content:center}
+      .fin-loadwrap .ring{position:absolute;inset:0;border-radius:50%;border:3px solid rgba(245,197,24,.13);border-top-color:#F5C518;animation:finspin .9s linear infinite}
+      .fin-loadwrap .tr{font-size:28px;animation:finpulse 1.8s ease-in-out infinite}
+      .fin-load .txt{font-size:11px;font-weight:800;letter-spacing:.24em;text-transform:uppercase;color:#7C879B;animation:finpulse 1.8s ease-in-out infinite}
       .fin-wrap{position:relative;z-index:1;max-width:520px;margin:0 auto}
       .fin-act{min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding:64px 22px;position:relative}
       .fin-eb{font-size:11px;font-weight:800;letter-spacing:.28em;text-transform:uppercase;color:#7C879B;margin-bottom:18px;display:flex;align-items:center;gap:10px}
@@ -4758,9 +4765,10 @@
     }
 
     const ov = document.createElement('div'); ov.id = 'fin-ov';
-    ov.innerHTML = '<button id="fin-close" aria-label="Close">✕</button><div style="min-height:100svh;display:flex;align-items:center;justify-content:center;color:#7C879B;font-size:13px;">Preparing the ceremony…</div>';
+    ov.innerHTML = '<div style="min-height:100svh;display:flex;align-items:center;justify-content:center;">'
+      + '<div class="fin-load"><div class="fin-loadwrap"><div class="ring"></div><div class="tr">🏆</div></div>'
+      + '<div class="txt">Preparing the ceremony</div></div></div>';
     document.body.appendChild(ov);
-    document.getElementById('fin-close').onclick = window.closeFinale;
 
     try {
       const [usersSnap, matchesSnap, predsSnap, jokerSnap, donSnap, wcSnap] = await Promise.all([
@@ -4829,7 +4837,7 @@
       const realUsers = Object.keys(users).filter(uid => !users[uid].removed);
 
       // podium (stored points)
-      const ranked = realUsers.map(uid => ({ uid, nick: nickOf(uid), points: users[uid].points || 0 })).sort((x, y) => y.points - x.points);
+      const ranked = realUsers.map(uid => ({ uid, nick: nickOf(uid), points: users[uid].points || 0, avatar: (users[uid] || {}).avatar || null })).sort((x, y) => y.points - x.points);
       let podium = ranked.slice(0, 3);
       // Admin manual override per place (tiebreaks) — each slot is manual-or-auto.
       try {
@@ -4837,7 +4845,7 @@
         if (_pdSnap.exists()) {
           const pd = _pdSnap.data();
           const auto = podium.slice();
-          const mk = (id, fb) => (id && users[id]) ? { uid: id, nick: nickOf(id), points: users[id].points || 0 } : fb;
+          const mk = (id, fb) => (id && users[id]) ? { uid: id, nick: nickOf(id), points: users[id].points || 0, avatar: users[id].avatar || null } : fb;
           const merged = [mk(pd.first, auto[0]), mk(pd.second, auto[1]), mk(pd.third, auto[2])].filter(Boolean);
           if (merged.length) podium = merged;
         }
@@ -4926,7 +4934,16 @@
       { p: F.podium[0], cls: 'fin-p1', rank: 1, crown: '👑' },
       { p: F.podium[2], cls: 'fin-p3', rank: 3, crown: '' }
     ].filter(o => o.p);
-    const podHTML = podOrder.map(o => '<div class="fin-pcol ' + o.cls + '">' + (o.crown ? '<div class="fin-crown">' + o.crown + '</div>' : '') + '<div class="av">' + (o.p.nick.charAt(0).toUpperCase()) + '</div><div class="nm">' + o.p.nick + '</div><div class="pts">' + o.p.points + ' pts</div><div class="fin-bar">' + o.rank + '</div></div>').join('');
+    // Use the player's chosen avatar art (same as the standings); fall back to the initial.
+    const _podAv = (p) => {
+      let av = null;
+      try { av = (p && p.avatar && typeof getAvatarById === 'function') ? getAvatarById(p.avatar) : null; } catch (e) { av = null; }
+      if (av && typeof makeAvatarSVG === 'function') {
+        return '<div class="av" style="background:none;overflow:hidden;padding:0;box-shadow:0 2px 10px rgba(0,0,0,.45)">' + makeAvatarSVG(av, 52) + '</div>';
+      }
+      return '<div class="av">' + (p.nick.charAt(0).toUpperCase()) + '</div>';
+    };
+    const podHTML = podOrder.map(o => '<div class="fin-pcol ' + o.cls + '">' + (o.crown ? '<div class="fin-crown">' + o.crown + '</div>' : '') + _podAv(o.p) + '<div class="nm">' + o.p.nick + '</div><div class="pts">' + o.p.points + ' pts</div><div class="fin-bar">' + o.rank + '</div></div>').join('');
 
     const yC = [
       { n: F.you.points, t: 'your points', c: '' },
@@ -4952,6 +4969,10 @@
     const LOGO = 'https://raw.githubusercontent.com/madurosb/coed-football-2026/refs/heads/main/src/logo-full.png';
     // Image shown at the very end of the ceremony (above Save/Share). Swap this URL to change it.
     const OUTRO_IMG = 'https://raw.githubusercontent.com/madurosb/coed-football-2026/refs/heads/main/src/final_pic.png';
+    // Manual override for the champion ribbon: the stored result is the 90-minute score,
+    // but the trophy was decided in extra time. Set to '' to fall back to the stored score.
+    const FINAL_RESULT_OVERRIDE = 'Spain 1 – 0 Argentina (a.e.t.)';
+    const FINAL_SCORER_NOTE = '⚽ Ferran Torres 106\'';
     // Winner detection — podium 1-3 (respects the manual/tiebreak override) and/or The Sniper
     const winBadges = [];
     const _myPod = (F.podium || []).findIndex(p => p && p.uid === F.meUid);
@@ -4976,7 +4997,7 @@
       '<div id="fin-scrollhint"><div class="fin-sh-txt">Scroll</div><div class="fin-sh-chev"></div></div>' +
       '<div id="fin-intro"><div class="pre">And the 2026 World Champions are…</div><div id="fin-count">3</div><button id="fin-skip">Skip intro</button></div>' +
       '<div class="fin-wrap">' +
-        '<section class="fin-act fin-champ" id="fin-a1"><div class="fin-flag" id="fin-flag">🏳️</div><div class="cl">🏆 World Champions · 2026</div><h1 class="fin-disp" id="fin-cname">—</h1><div class="sub">United States · Mexico · Canada</div><div class="rb" id="fin-rib">—</div></section>' +
+        '<section class="fin-act fin-champ" id="fin-a1"><div class="fin-flag" id="fin-flag">🏳️</div><div class="cl">🏆 World Champions · 2026</div><h1 class="fin-disp" id="fin-cname">—</h1><div class="sub">United States · Mexico · Canada</div><div class="rb" id="fin-rib">—</div><div id="fin-scorer" style="font-size:12px;color:#7C879B;margin-top:11px;font-weight:600;letter-spacing:.03em"></div></section>' +
         '<section class="fin-act" id="fin-a2"><div class="fin-eb fin-rv">The Standings</div><h2 class="fin-disp fin-rv fin-d1" style="font-size:clamp(32px,10vw,52px)">The Podium</h2><p class="fin-rv fin-d1" style="color:#7C879B;font-size:13px;margin-top:8px">' + F.you.totalPlayers + ' players entered. Three of them actually knew ball.</p><div class="fin-pod fin-rv fin-d2">' + podHTML + '</div></section>' +
         '<section class="fin-act fin-snp" id="fin-a3"><div class="fin-eb fin-rv" style="justify-content:center">The Sniper Prize</div><div class="fin-scope fin-rv fin-d1"><div class="r2"></div><div class="big" id="fin-snum">0</div></div><div class="nm fin-rv fin-d2">' + F.sniper.nick + '</div><div class="lbl fin-rv fin-d2">exact scores · dead on</div><p class="fin-rv fin-d3" style="color:#7C879B;font-size:13px;margin-top:14px;max-width:340px;margin-left:auto;margin-right:auto">' + F.sniper.line + '</p></section>' +
         '<section class="fin-act" id="fin-a4"><div class="fin-eb fin-rv">Your Tournament</div><h2 class="fin-disp fin-rv fin-d1" style="font-size:clamp(30px,9vw,48px)">' + F.you.nick + ', here\'s your damage</h2><p class="fin-rv fin-d1" style="color:#7C879B;font-size:13px;margin-top:10px;max-width:380px">' + verdict + '</p>'
@@ -5013,7 +5034,8 @@
     const reveal = () => {
       document.getElementById('fin-flag').textContent = F.champion.flag;
       document.getElementById('fin-cname').textContent = F.champion.country;
-      document.getElementById('fin-rib').textContent = 'Final · ' + F.champion.finalScore;
+      document.getElementById('fin-rib').textContent = 'Final · ' + (FINAL_RESULT_OVERRIDE || F.champion.finalScore);
+      const _finSc = document.getElementById('fin-scorer'); if (_finSc) _finSc.textContent = FINAL_SCORER_NOTE || '';
       intro.classList.add('gone'); setTimeout(() => { intro.style.display = 'none'; }, 800);
       _finConfetti();
       // Nudge the user that there's more below — fades in after the reveal settles
