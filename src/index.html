@@ -4765,6 +4765,7 @@
     }
 
     const ov = document.createElement('div'); ov.id = 'fin-ov';
+    ov.style.overflowY = 'hidden';   // stays locked through loading + countdown, freed on reveal
     ov.innerHTML = '<div style="min-height:100svh;display:flex;align-items:center;justify-content:center;">'
       + '<div class="fin-load"><div class="fin-loadwrap"><div class="ring"></div><div class="tr">🏆</div></div>'
       + '<div class="txt">Preparing the ceremony</div></div></div>';
@@ -4868,8 +4869,70 @@
       const meUid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
       const meRankIdx = ranked.findIndex(r => r.uid === meUid);
       const ma2 = acc[meUid] || { exact:0, correct:0, finished:0, best:0, jl:0, jp:0 };
+      // --- What happened to the team you backed for the trophy? ---
+      const _myPick = (meUid && users[meUid]) ? (users[meUid].tournamentWinner || null) : null;
+      const _pickRight = !!(meUid && users[meUid] && users[meUid].winnerBonusAwarded);
+      let _pickStage = '', _pickLine = '';
+      if (_myPick) {
+        let last = null;
+        Object.keys(fin).forEach(id => {
+          const m = fin[id];
+          if (m.homeTeam === _myPick || m.awayTeam === _myPick) {
+            const kk = (m.kickoff && m.kickoff.toDate) ? m.kickoff.toDate().getTime() : new Date(m.kickoff).getTime();
+            if (!last || kk > last.k) last = { k: kk, m: m };
+          }
+        });
+        const gg = last ? ((last.m.group || last.m.stage || '') + '').toUpperCase() : '';
+        _pickStage = (gg.includes('THIRD') || gg.includes('3RD') || gg.includes('BRONZE')) ? 'the Bronze Final'
+          : (gg.includes('FINAL') && !gg.includes('SEMI') && !gg.includes('QUARTER')) ? 'the Final'
+          : gg.includes('SEMI') ? 'the Semi-finals'
+          : gg.includes('QUARTER') ? 'the Quarter-finals'
+          : (gg.includes('16') || gg.includes('ROUND_OF_16')) ? 'the Round of 16'
+          : (gg.includes('32')) ? 'the Round of 32'
+          : 'the Group stage';
+        const nickNow = meUid ? nickOf(meUid) : 'You';
+        const LINES = {
+          'the Group stage': [
+            "{n} went all-in on {t}. They were checking out of the hotel while other teams were still unpacking.",
+            "{t} did not survive the group stage. {n}, that pick aged like milk on a Miami dashboard.",
+            "Brave call on {t}, {n}. Brave, doomed, and finished before the knockouts even started."
+          ],
+          'the Round of 32': [
+            "{t} lasted exactly one knockout game. {n} had hope for roughly 90 minutes.",
+            "{n} backed {t} all the way to the Round of 32, and then straight to the airport."
+          ],
+          'the Round of 16': [
+            "{t} reached the Round of 16 and then politely stepped aside. Rough one, {n}.",
+            "{n} picked {t}. They made the last 16, which is football for almost."
+          ],
+          'the Quarter-finals': [
+            "{t} got to the quarter-finals. {n} got to explain why that was basically a win.",
+            "Quarter-finals for {t}. Respectable. Worth exactly zero bonus points, {n}."
+          ],
+          'the Semi-finals': [
+            "{t} made the semi-final and then remembered who they were. Painful, {n}.",
+            "So close, {n}. {t} reached the semis and left the trophy for somebody else."
+          ],
+          'the Bronze Final': [
+            "{t} won the bronze. {n}, that is the participation trophy of world champions.",
+            "{n} picked {t} and got third place. Somewhere that is a national holiday."
+          ],
+          'the Final': [
+            "Brutal. {t} reached the Final and lost it. {n}, you were 90 minutes from 15 points.",
+            "{n} picked the runner-up. The most expensive silver medal in this group chat."
+          ]
+        };
+        if (_pickRight) {
+          _pickLine = "Called it. " + nickNow + " put the flag on " + _myPick + " before a ball was kicked, and collected the bonus for the privilege.";
+        } else {
+          const pool = LINES[_pickStage] || LINES['the Group stage'];
+          const seed = (meUid || 'x').split('').reduce((s, c) => s + c.charCodeAt(0), 0);
+          _pickLine = pool[seed % pool.length].split('{n}').join(nickNow).split('{t}').join(_myPick);
+        }
+      }
       const you = {
         nick: meUid ? nickOf(meUid) : 'Player',
+        champPick: _myPick, champRight: _pickRight, champStage: _pickStage, champLine: _pickLine,
         rank: meRankIdx >= 0 ? meRankIdx + 1 : ranked.length,
         totalPlayers: ranked.length,
         points: meUid && users[meUid] ? (users[meUid].points || 0) : 0,
@@ -4923,6 +4986,7 @@
       try { _logFinaleView(meUid, meUid ? nickOf(meUid) : 'Unknown'); } catch (e) {}
     } catch (e) {
       console.error('finale load failed', e);
+      ov.style.overflowY = 'auto';
       ov.innerHTML = '<button id="fin-close2" style="position:fixed;top:14px;right:14px;width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.4);color:#fff;font-size:17px;">✕</button><div style="min-height:100svh;display:flex;align-items:center;justify-content:center;color:#E24B4A;font-size:14px;text-align:center;padding:30px;">Could not load the ceremony.<br>Close and try again.</div>';
       const c2 = document.getElementById('fin-close2'); if (c2) c2.onclick = window.closeFinale;
     }
@@ -4954,6 +5018,7 @@
       { n: F.you.accuracy, t: 'accuracy %', c: 'g' }
     ];
     const youGrid = yC.map((s, i) => '<div class="fin-stat ' + s.c + ' fin-rv fin-d' + ((i % 5) + 1) + '"><div class="n" ' + (s.raw ? '' : 'data-count="' + s.n + '"') + '>' + (s.raw ? s.n : 0) + '</div><div class="t">' + s.t + '</div></div>').join('')
+      + (F.you.champPick ? '<div class="fin-rv fin-d5" style="grid-column:1/-1;background:#0E1322;border:1px solid rgba(255,255,255,.08);border-left:3px solid ' + (F.you.champRight ? '#F5C518' : '#E24B4A') + ';border-radius:14px;padding:14px 16px;margin-top:2px"><div style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:' + (F.you.champRight ? '#F5C518' : '#E24B4A') + '">🏆 Your World Cup Winner Pick</div><div style="font-size:17px;font-weight:800;margin:3px 0 2px">' + F.you.champPick + (F.you.champRight ? ' — CHAMPIONS 🥇' : ' — knocked out in ' + F.you.champStage) + '</div><div style="font-size:12px;color:#7C879B;line-height:1.5">' + F.you.champLine + '</div>' + (F.you.champRight ? '<div style="font-size:12px;color:#F3F5FA;margin-top:5px;font-weight:800">+15 pts</div>' : '') + '</div>' : '')
       + (F.you.tp ? '<div class="fin-rv fin-d5" style="grid-column:1/-1;background:#0E1322;border:1px solid rgba(255,255,255,.08);border-left:3px solid #1D9E75;border-radius:14px;padding:14px 16px;margin-top:2px"><div style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#1D9E75">⭐ Your Tournament Player</div><div style="font-size:17px;font-weight:800;margin:3px 0 2px">' + F.you.tp.name + '</div><div style="font-size:12px;color:#7C879B">' + F.you.tp.goals + ' goals · ' + F.you.tp.assists + ' assists · ' + F.you.tp.reds + ' red — <b style="color:#F3F5FA">' + (F.you.tp.pts >= 0 ? '+' : '') + F.you.tp.pts + ' pts</b></div></div>' : '')
       + '<div class="fin-rv fin-d5" style="grid-column:1/-1;border-top:1px solid rgba(255,255,255,.08);margin-top:6px;padding-top:14px;font-size:12px;color:#7C879B;text-align:center;line-height:1.7">The group as a whole burned through<br><b style="color:#F3F5FA">' + F.global.totalPoints.toLocaleString() + '</b> pts · <b style="color:#F3F5FA">' + F.global.totalExact + '</b> exact · <b style="color:#F3F5FA">' + F.global.jokers + '</b> jokers · <b style="color:#F3F5FA">' + F.global.dons + '</b> DONs</div>';
 
@@ -5037,6 +5102,7 @@
       document.getElementById('fin-rib').textContent = 'Final · ' + (FINAL_RESULT_OVERRIDE || F.champion.finalScore);
       const _finSc = document.getElementById('fin-scorer'); if (_finSc) _finSc.textContent = FINAL_SCORER_NOTE || '';
       intro.classList.add('gone'); setTimeout(() => { intro.style.display = 'none'; }, 800);
+      ov.scrollTop = 0; ov.style.overflowY = 'auto';   // champion is out — scrolling unlocked
       _finConfetti();
       // Nudge the user that there's more below — fades in after the reveal settles
       setTimeout(() => { const sh = document.getElementById('fin-scrollhint'); if (sh && ov.scrollTop < 40) sh.classList.add('show'); }, 1500);
