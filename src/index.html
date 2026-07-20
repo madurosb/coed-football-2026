@@ -2997,6 +2997,13 @@
         <div id="ko90-status" style="margin-top:8px;font-size:12px;text-align:center;min-height:20px;"></div>
       </div>
       <div class="form-card" style="margin-top:1rem;">
+        <h2>🧹 Clear First Scorer</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Removes the first goalscorer from a match — use when the only goal came in <strong>extra time</strong>, so under the 90-minute rule nobody scored. Points are <strong>not</strong> changed here: run <strong>Score Verification → Recompute → Apply to ALL</strong> afterwards.</p>
+        <div class="form-row"><label>Match</label><select id="clearsc-match" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;"><option value="">Select match...</option></select></div>
+        <button class="submit-btn" onclick="clearFirstScorer()" style="background:#B45309;">🧹 Clear first scorer</button>
+        <div id="clearsc-status" style="margin-top:8px;font-size:12px;text-align:center;min-height:20px;"></div>
+      </div>
+      <div class="form-card" style="margin-top:1rem;">
         <h2>🎯 Award Scorer Points Only</h2>
         <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem;">Use when result was already submitted but first scorer was missing. Awards +2 pts to correct pickers only — no duplicate result points. Works for <strong>Own Goal</strong> too.</p>
         <div class="form-row"><label>Match</label><select id="scorer-only-match" style="width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;"><option value="">Select match...</option></select></div>
@@ -3864,6 +3871,8 @@
       let tpPts = 0; const tpName = u.tournamentPlayer || null;
       if (tpName) { const td = wcNorm[normalizeName(tpName)]; if (td) tpPts = (td.goals || 0) * 2 + (td.assists || 0) - (td.redCards || 0); }
       calcTotal += tpPts;
+      const winBonus = u.winnerBonusAwarded ? 15 : 0;
+      calcTotal += winBonus;
       const diff = stored - calcTotal;
       rows.sort((a, b) => b.pts - a.pts);
 
@@ -3889,6 +3898,7 @@
           + '</div>';
       });
       if (tpPts) html += '<div style="display:grid;grid-template-columns:1fr 40px;align-items:center;padding:7px 10px;border-top:0.5px solid var(--border);"><div style="font-size:11px;font-weight:600;">⭐ Tournament player: ' + tpName + '</div><div style="text-align:right;font-size:13px;font-weight:700;color:#1D9E75;">+' + tpPts + '</div></div>';
+      if (winBonus) html += '<div style="display:grid;grid-template-columns:1fr 40px;align-items:center;padding:7px 10px;border-top:0.5px solid var(--border);"><div style="font-size:11px;font-weight:600;">🏆 Champion pick bonus</div><div style="text-align:right;font-size:13px;font-weight:700;color:#1D9E75;">+' + winBonus + '</div></div>';
       html += '<div style="display:grid;grid-template-columns:1fr 60px;padding:9px 10px;border-top:1px solid var(--border);font-weight:800;font-size:14px;"><div>CALC TOTAL</div><div style="text-align:right;">' + calcTotal + '</div></div>';
       html += '</div>';
       html += '<div style="font-size:12px;color:var(--text-muted);margin-top:12px;line-height:1.6;">';
@@ -4046,6 +4056,9 @@
         const tpData = wcNormMap[normalizeName(u.tournamentPlayer)];
         if (tpData) { calc += (tpData.goals || 0) * 2 + (tpData.assists || 0) * 1 - (tpData.redCards || 0) * 1; }
       }
+      // World Cup winner bonus (+15) is granted by the cron and lives only on the user doc.
+      // CALC must include it or Apply would strip 15 pts from everyone who picked the champion.
+      if (u.winnerBonusAwarded) calc += 15;
       const stored = u.points || 0;
       const approvedDiff = u.pointsApprovedDiff || 0;
       const diff = stored - calc;
@@ -5099,6 +5112,7 @@
         calcTotal += tpCalcPts;
       }
     }
+    if (u.winnerBonusAwarded) calcTotal += 15;   // champion bonus (see note in Recompute)
 
     rows.sort((a,b) => b.pts - a.pts);
     const stored = u.points || 0;
@@ -5402,6 +5416,7 @@
           calcPts -= (tpData.redCards || 0) * 1;
         }
       }
+      if (u.winnerBonusAwarded) calcPts += 15;   // champion bonus (see note in Recompute)
 
       const stored = u.points || 0;
       const diff = stored - calcPts;
@@ -11610,7 +11625,7 @@ Use exactly the formation provided. Only use players from the squad lists above.
     document.getElementById('admin-main').style.display = 'none';
     document.querySelectorAll('.admin-sub').forEach(s => s.classList.remove('active'));
     document.getElementById('admin-' + id).classList.add('active');
-    if (id === 'results') { loadMatchesForAdmin(); loadScorerOnlyMatches(); loadKnockout90Matches(); }
+    if (id === 'results') { loadMatchesForAdmin(); loadScorerOnlyMatches(); loadKnockout90Matches(); loadClearScorerMatches(); }
     if (id === 'players') loadMatchesForPlayerAdmin();
     if (id === 'members') loadMembersLog();
     if (id === 'watch-admin') loadWatchAdmin();
@@ -12062,6 +12077,44 @@ Use exactly the formation provided. Only use players from the squad lists above.
   window.showAdminMain = () => {
     document.getElementById('admin-main').style.display = 'block';
     document.querySelectorAll('.admin-sub').forEach(s => s.classList.remove('active'));
+  };
+
+  // Admin: remove the first scorer from a match (e.g. the only goal came in extra time,
+  // so per the rules nobody scored inside 90'). Clears it on BOTH the match and result docs.
+  // Points are NOT touched here — run Recompute -> Apply afterwards.
+  window.loadClearScorerMatches = async () => {
+    const sel = document.getElementById('clearsc-match');
+    if (!sel) return;
+    try {
+      const snap = await getDocs(query(collection(db, 'matches'), orderBy('kickoff', 'desc')));
+      const opts = [];
+      snap.forEach(d => {
+        const m = d.data();
+        if (m.status !== 'FINISHED') return;
+        const sc = m.firstGoalscorer || '';
+        opts.push('<option value="' + d.id + '">' + (m.homeTeam || '') + ' ' + (m.homeScore ?? '') + '-' + (m.awayScore ?? '') + ' ' + (m.awayTeam || '') + (sc ? '  ·  ⚽ ' + sc : '  ·  (no scorer)') + '</option>');
+      });
+      sel.innerHTML = '<option value="">Select match...</option>' + opts.join('');
+    } catch (e) { sel.innerHTML = '<option value="">Could not load matches</option>'; }
+  };
+
+  window.clearFirstScorer = async () => {
+    if (!window._isAdmin) return;
+    const sel = document.getElementById('clearsc-match');
+    const st = document.getElementById('clearsc-status');
+    if (!sel || !sel.value) { if (st) st.innerHTML = '<span style="color:#E24B4A;">Pick a match first.</span>'; return; }
+    const matchId = sel.value;
+    const label = sel.options[sel.selectedIndex].text;
+    if (!confirm('Remove the first scorer from:\n\n' + label + '\n\nNobody will get first-scorer points for this match.\nPoints are not changed here — run Recompute afterwards.')) return;
+    if (st) st.textContent = 'Working…';
+    try {
+      await setDoc(doc(db, 'matches', matchId), { firstGoalscorer: '', hasOwnGoal: false }, { merge: true });
+      await setDoc(doc(db, 'results', matchId), { firstScorer: null }, { merge: true });
+      if (st) st.innerHTML = '<span style="color:var(--green);font-weight:700;">✅ Scorer cleared.</span> Now run <b>Score Verification → Recompute → Apply to ALL</b>.';
+      loadClearScorerMatches();
+    } catch (e) {
+      if (st) st.innerHTML = '<span style="color:#E24B4A;">Failed: ' + (e.message || e) + '</span>';
+    }
   };
 
   async function loadKnockout90Matches() {
